@@ -136,7 +136,10 @@
           im1=i-1
 !
           if (u(i,j).gt.0.) then
-             im2=im1-iu(im1,j)
+            !iu is a water mask (water at point and to left of point);
+            !for waves we make it 1 everywhere and mask waves that go on land later;
+            !im2   = im1-iu(im1,j)
+            im2=im1-1
 !
             q0=cq00*g(im2,j)+cq01*g(im1,j)
             q1=cq10*g(im1,j)+cq11*g(i  ,j)
@@ -149,7 +152,8 @@
 !
 
           else
-            ip1=i+iu(i+1,j)
+            !ip1=i+iu(i+1,j)
+            ip1=i+1
 !
             q0=cq11*g(im1,j)+cq10*g(i  ,j)
             q1=cq01*g(i  ,j)+cq00*g(ip1,j)
@@ -178,7 +182,10 @@
         do i=0,ii+1!![TW 28.1.2014]
 !
           if (v(i,j).gt.0.) then
-            jm2=jm1-iv(i,jm1)
+            !iv is a water mask (water at point and beneath point);
+            !for waves we make it 1 everywhere and mask waves that go on land later;
+            !jm2=jm1-iv(i,jm1)
+            jm2=jm1-1
 !
             q0=cq00*g(i,jm2)+cq01*g(i,jm1)
             q1=cq10*g(i,jm1)+cq11*g(i,j  )
@@ -190,7 +197,8 @@
             fvl(i,j)=v(i,j)*g(i,jm1)*scvx(i,j)
 !
           else
-            jp1=j+iv(i,j+1)
+            !jp1=j+iv(i,j+1)
+            jp1=j+1
 !
             q0=cq11*g(i,jm1)+cq10*g(i,j  )
             q1=cq01*g(i,j  )+cq00*g(i,jp1)
