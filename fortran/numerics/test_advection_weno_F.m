@@ -24,7 +24,7 @@ scp2     = scuy.*scvx;
 scp2i    = 1./scp2;
 LANDMASK = 0*X;
 
-OPT   = 3;
+OPT   = 1;
 CFL   = .4;
 
 if OPT==1
@@ -206,7 +206,7 @@ if 1%%plot u,v,h
    GEN_pause;
 end
 
-nt = length(dir('out/*.a'))-1
+nt = length(dir('out/*.a'))-1;
 for n = 1:nt
    %% open output file
    nnn      = num2str(n,'%3.3d');

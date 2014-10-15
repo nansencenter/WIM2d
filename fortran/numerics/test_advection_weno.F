@@ -11,7 +11,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer, parameter   :: OPT = 3
+      integer, parameter   :: OPT = 1
       real*8, parameter    :: CFL = 0.4
       !!
       real*8   :: xm,ym
@@ -79,7 +79,8 @@
          u        = uc*cos(pi/180.0*adv_dir)
          v        = uc*sin(pi/180.0*adv_dir)
          dt       = CFL*dx/uc
-         nt       = 2*aint(2*xm/(uc*dt))
+         !nt       = 2*aint(2*xm/(uc*dt))
+         nt       = aint(2*xm/(uc*dt))
          !!
          h  = 0.0
          do j=1,jj
@@ -165,15 +166,17 @@
 
       !!output initial conditions for reading by matlab/python
       n  = 0
+      stat1 = 'replace'
+      stat2 = 'old'
+      !!
       write(cts,'(i3.3)') n
       afile = outdir//outfile//cts//'.a'
       bfile = outdir//outfile//cts//'.b'
       call wrt_bfile(bfile,ii,jj,OPT)
-      stat1 = 'replace'
-      stat2 = 'old'
       call wrt_afile_2d(afile,x,ii,jj,stat1,1)
       call wrt_afile_2d(afile,y,ii,jj,stat2,2)
       call wrt_afile_2d(afile,h,ii,jj,stat2,3)
+      !!
       print*,'******************************************'
       print*,'finished writing initial conditions to:'
       print*,afile

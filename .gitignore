@@ -1,5 +1,6 @@
 *.swp
 *.o
 *.mod
-fortran/out/*
-fortran/test_out/*
+*.exe
+fortran/numerics/out/*
+fortran/numerics/test_out/*

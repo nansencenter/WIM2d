@@ -68,8 +68,8 @@
       call pad_var(scuy_pad,scuy,1)
       call pad_var(scvx_pad,scvx,1)
 
-      if (.false.) then
-      !if (.true.) then
+      !if (.false.) then
+      if (.true.) then
          !!make h just be zero on boundaries
          call pad_var(h_pad,h,0)
       else
