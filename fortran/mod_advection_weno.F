@@ -1,4 +1,13 @@
-      subroutine iceadv_v2(h,u,v,scuy,scvx,scp2i,scp2,dt)
+      module mod_advection_weno
+
+      implicit none
+
+      integer, parameter   :: nbdy     = 3
+      integer, parameter   :: margin   = nbdy
+
+      contains
+
+      subroutine advection_weno(h,u,v,dt)
 !
 ! --- ------------------------------------------------------------------
 ! --- Advection is done with flux limited 3rd order WENO in space and
@@ -6,53 +15,123 @@
 ! --- ------------------------------------------------------------------
 !
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! modified [TW 28.1.2014] for wave advection
       !! - iceadv builds up ice (& thus waves) at coast;
       !! - iceadv_v2 lets waves go into/out of land,
       !!   then cancels the waves on land at end of routine;
       !! - just adds the wave cancellation to Luke's original fix
       !!   for waves on boundaries;
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! ARGUMENTS:
       !! in/out:  h is qty to be advected;
       !!
       !! in:      u,v,dt are speed components and time step;
-      !! in:      scuy,scvx is mesh size at u (v) points in y (x) direction
-      !!           - see common_blocks.h;
-      !! in:      scp2, scp2i are grid box area at p points, and its inverse;
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!
+      !! Now in mod_gridinfo.F
+      !! in: scuy,scvx is mesh size at u (v) points in y (x) direction
+      !!      - see common_blocks.h;
+      !! in: scp2, scp2i are grid box area at p points, and its inverse;
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      use mod_xc
+      use mod_gridinfo
+      use mod_file_utils
 !
       implicit none
 !
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::               &
-     &  h,u,v,scuy,scvx,scp2i,scp2
-      real dt
+      integer, parameter   :: nbdy  = 3
+      real*8,intent(in),dimension(idm,jdm) :: u,v
+      !,scuy,scvx,scp2i,scp2,LANDMASK
+      real*8,intent(inout),dimension(idm,jdm) :: h
+      real*8,intent(in) :: dt
 !
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao,hp
-      real dtm
-      integer i,j,l
+      real*8, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao,hp      &
+     &   ,u_pad,v_pad,scp2_pad,scp2i_pad,scuy_pad,scvx_pad,h_pad
+      real*8   :: dtm
+      integer  :: i,j,l
+      character(len=80) :: outfile,stat1,stat2
 
-       sao(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)=0
+      sao   = 0.0
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!pad out variables
+      !! - apply boundary conditions via "ghost cells"
+
+      !!make u,v,sc* periodic
+      call pad_var(u_pad,u,1)
+      call pad_var(v_pad,v,1)
+      call pad_var(scp2_pad,scp2,1)
+      call pad_var(scp2i_pad,scp2i,1)
+      call pad_var(scuy_pad,scuy,1)
+      call pad_var(scvx_pad,scvx,1)
+
+      if (.false.) then
+      !if (.true.) then
+         !!make h just be zero on boundaries
+         call pad_var(h_pad,h,0)
+      else
+         !!make h periodic too
+         call pad_var(h_pad,h,1)
+      end if
+
+      if (.false.) then
+      !if (.true.) then
+         !!test padding with zero on boundaries
+         stat1    = 'replace'
+         outfile  = 'test_out/h.a'
+
+         print*,'******************************************'
+         print*,'testing advection_weno:'
+         print*,'check',outfile
+         print*,'******************************************'
+         print*,''
+
+         i        = idm+2*nbdy
+         j        = jdm+2*nbdy
+         call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
+      elseif (.false.) then
+         !!test padding with periodic boundary conditions
+         stat1    = 'replace'
+         stat2    = 'old'
+         outfile  = 'test_out/all.a'
+
+         print*,'******************************************'
+         print*,'testing advection_weno:'
+         print*,'check: ',outfile
+         print*,'******************************************'
+         print*,''
+
+         i     = idm+2*nbdy
+         j     = jdm+2*nbdy
+         call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
+         call wrt_afile_2d(outfile,v_pad,    i,j,stat2,2)
+         call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,3)
+         call wrt_afile_2d(outfile,scp2i_pad,i,j,stat2,4)
+         call wrt_afile_2d(outfile,scuy_pad, i,j,stat2,5)
+         call wrt_afile_2d(outfile,scvx_pad, i,j,stat2,6)
+      end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
 !
 ! --- Use a modified time step since velocities are in m/s while scale
 ! --- factors are in cm
 !      dtm=dt*1.e2
        dtm=dt
 ! --- Prediction step
-      call weno3pd_v2(h,sao,u,v,scuy,scvx,scp2i,scp2,dtm)
+      call weno3pd_v2(h_pad,sao,u_pad,v_pad,                            &
+     &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dtm)
+
 !$OMP PARALLEL DO
-       margin=nbdy 
+       !margin=nbdy 
       do j=1-margin,jj+margin
 !       do l=1,isp(j)
 !       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
         do i=1-margin,ii+margin!![TW 28.1.2014]
-          hp(i,j)=h(i,j)+dtm*sao(i,j)
+          hp(i,j) = h_pad(i,j)+dtm*sao(i,j)
         enddo
 !       enddo
 !       enddo
@@ -60,29 +139,71 @@
 !$OMP END PARALLEL DO
 !
 ! --- Correction step
-      call weno3pd_v2(hp,sao,u,v,scuy,scvx,scp2i,scp2,dtm)
+      call weno3pd_v2(hp,sao,u_pad,v_pad,                               &
+     &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dtm)
 !$OMP PARALLEL DO
       do j=1-margin,jj+margin
 !       do l=1,isp(j)
 !       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
         do i=1-margin,ii+margin!![TW 28.1.2014]
-          if (LANDMASK(i,j).eq.0.0) then
-             !!if not on land keep as it is;
-             h(i,j)  = .5*(h(i,j)+hp(i,j)+dtm*sao(i,j))
-          else
-             !!if on land set quantitity (waves) to zero
-             h(i,j)  = 0.0
-          end if
+           h_pad(i,j)  = .5*(h_pad(i,j)+hp(i,j)+dtm*sao(i,j))
         enddo
 !       enddo
 !       enddo
       enddo
 !$OMP END PARALLEL DO
-      return
-      end subroutine iceadv_v2
 
+      h  = h_pad(1:ii,1:jj)
+      !!mask land (no waves on land)
+      h  = h*(1-LANDMASK)
 
-       subroutine weno3pd_v2(g,sao,u,v,scuy,scvx,scp2i,scp2,dt)
+      end subroutine advection_weno
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine pad_var(u_pad,u,OPT)
+
+      use mod_gridinfo, only: ii,jj,idm,jdm
+
+      implicit none
+
+      real*8,intent(out),                                               &
+     &  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: u_pad
+      real*8,intent(in),dimension(idm,jdm)         :: u
+      integer,intent(in)                           :: OPT
+
+      u_pad             = 0.0
+      u_pad(1:ii,1:jj)  = u
+      if (OPT.eq.1) then
+         !!make things periodic
+
+         !!make it periodic in i
+         u_pad(1-nbdy:0,1:jj)       = u(ii-nbdy:ii-1,:)
+         u_pad(ii+1:ii+nbdy,1:jj)   = u(1:nbdy,:)
+
+         !!make it periodic in j
+         u_pad(1:ii,1-nbdy:0)       = u(1:ii,jj-nbdy:jj-1)
+         u_pad(1:ii,jj+1:jj+nbdy)   = u(1:ii,1:nbdy)
+
+         !!BR,TL
+         u_pad(ii+1:ii+nbdy,jj+1:jj+nbdy)                               &
+     &     = u(1:nbdy,1:nbdy)
+         u_pad(1-nbdy:0,1-nbdy:0)                                       &
+     &     = u(ii-nbdy:ii-1,jj-nbdy:jj-1)
+
+         !!BL,TR
+         u_pad(ii+1:ii+nbdy,1-nbdy:0)                                   &
+     &     = u(1:nbdy,jj-nbdy:jj-1)
+         u_pad(1-nbdy:0,jj+1:jj+nbdy)                                   &
+     &     = u(ii-nbdy:ii-1,1:nbdy)
+
+      end if
+
+      end subroutine pad_var
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine weno3pd_v2(g,sao,u,v,scuy,scvx,scp2i,scp2,dt)
 !
 ! --- ------------------------------------------------------------------
 ! --- By a weighted essentially non-oscillatory scheme with up to 3th
@@ -93,24 +214,28 @@
 ! --- and v-points, respectively.
 ! --- ------------------------------------------------------------------
 !
-      use mod_xc
+
+      use mod_gridinfo, only: ii,jj,idm,jdm
 !
       implicit none
 !
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::               &
-     &  g,sao,u,v,scuy,scvx,scp2i,scp2
-      real dt
+      real*8,intent(in),                                                &
+     &  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: g,u,v             &
+     &    ,scp2,scp2i,scuy,scvx
+      real*8,intent(out),                                               &
+     &  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao
+      real*8,intent(in) :: dt
 !
-      real cq00,cq01,cq10,cq11,ca0,ca1,eps
+      real*8   ::  cq00,cq01,cq10,cq11,ca0,ca1,eps
       parameter (cq00=-1./2.,cq01= 3./2.,                               &
      &           cq10= 1./2.,cq11= 1./2.,                               &
      &           ca0=1./3.,ca1=2./3.,                                   &
      &           eps=1.e-12)
 !
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::               &
+      real*8, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::             &
      &  ful,fuh,fvl,fvh,gt
-      real q0,q1,a0,a1,q
-      integer i,j,l,im1,im2,ip1,jm1,jm2,jp1
+      real*8   :: q0,q1,a0,a1,q
+      integer  :: i,j,l,im1,im2,ip1,jm1,jm2,jp1
 !
 ! --- Compute grid cell boundary fluxes. Split in a low order flux
 ! --- (donor cell) and a high order correction flux.
@@ -275,3 +400,6 @@
 !
       return
       end subroutine weno3pd_v2
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      end module mod_advection_weno
