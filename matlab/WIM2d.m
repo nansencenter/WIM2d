@@ -8,33 +8,32 @@ function [Dmiz,Lmiz,out] =...
 %%   SDF_Bretschneider.m, SDF_jonswap.m
 %% 3. 
 %
-DO_SAVE  = 1;
+DO_SAVE  = 0;
 DO_PLOT  = 1;%% change this to 0
              %% if graphics aren't supported;
 DD_elseoption  = 0
 USE_ICE_WLNG   = 0%% if 0, approx ice wlng by water wlng;  
 DO_ATTEN       = 1%% if 0, just advect waves
-                   %%  without attenuation;
-TEST1D         = 1
+                  %%  without attenuation;
+
+OPT   = 1;%%ice-water-land configuration;
 if ~exist('SHARP_DIST')
    SHARP_DIST     = 1
 end
-USE_CAVITATION = 0
 %%
 SINGLE_FREQ    = 1;
 %%
 if ~exist('Tm')
    Tm       = 10;%% peak period;
 end
-Hs       = [];%% sig wave height 
-              %%  ([]->Pierson-Moskowitz spectrum
+Hs = [];%% sig wave height 
+        %%  ([]->Pierson-Moskowitz spectrum
 if ~exist('mwd_dim')
    mwd_dim  = 180%% waves towards south;
 end
 mwd      = mwd_dim*pi/180;%% convert dirn to radians;
 %%
-h     = 2;
-c     = 0.75;
+
 if ~exist('AC_option')
    AC_option   = 6;
 end
@@ -44,34 +43,16 @@ if DO_SAVE
             's_',num2str(mwd_dim),...
             'deg_spread',num2str(SHARP_DIST),'.mat'];
 else
-   disp('not saving - push any key');
-   pause;
+   disp('not saving');
+   %disp('not saving - push any key');
+   %pause;
 end
 
 %% set attenuation model;
 %% also give progress report every 'reps' time
 %%  steps;
-reps        = 10;
-
-%% EXTERNAL CALL:
-if AC_option==1%%KM08 AC;
-   ALPfxn   = @ALPfxn_KM08_lin;
-   reps        = 10;
-elseif AC_option==2
-   %ALPfxn   = @ALPfxn_TWrslPL_cheb;
-   ALPfxn   = @ALPfxn_TWrslPL_cheb2;%% faster version :)
-elseif AC_option==3
-   ALPfxn   = @ALPfxn_TWrslRay_cheb2;
-elseif AC_option==4
-   ALPfxn   = @ALPfxn_TWrslPL_NOSUB_cheb2;
-elseif AC_option==5 | AC_option==6
-   ALPfxn   = @ALPfxn_LB_LFA4Mar2011_cheb2;
-   %% NB this has a damping aspect to it also;
-end
-
-maxNumCompThreads(4);
-format short g 
-format compact
+reps  = 10;
+format long
 
 disp('Initialization')
 
@@ -80,46 +61,111 @@ disp('Initialization')
 % wavedir = [homedir,'/waves'];
 % mizdir  = [homedir,'/validation/miz'];
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Grid
-% dx      = 3500; % m
-% npts    = 100;
-if TEST1D
-   dx    = 5000; % m
-   nx    = 15;
-   xgrid = (0:nx-1)*dx';
-   %%
-   dy    = dx;
-   ny    = 15;
-   ygrid = fliplr((0:ny-1)*dy');
-   %% Time
-   % dt      = 280;   % s
-   % nsteps  = 240;
-   dt      = 400;   % s
-   nsteps  = 50;
-   time    = 0:dt:nsteps*dt;
-   %time',pause
-   nt      = length(time);
-else
-   dx    = 3000; % m
-   nx    = 50;
-   xgrid = (0:nx-1)*dx';
-   %%
-   dy    = dx;
-   ny    = nx;
-   ygrid = fliplr((0:ny-1)*dy');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%check what inputs we are given;
+HAVE_GRID   = exist('grid_prams','var');
+HAVE_ICE    = exist('ice_fields','var');
+HAVE_WAVES  = exist('wave_fields','var');
+HAVE3       = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
+if (HAVE3>0)&(HAVE3<3)
+   disp(' ');
+   disp('*********************************************************************');
+   disp('Please specify all 3 of ''grid_prams'',''ice_fields'',''wave_fields''');
+   disp('(or specify none, and let configuration be chosen through local variable ''OPT'')');
+   disp(['HAVE_GRID   = ',num2str(HAVE_GRID )]);
+   disp(['HAVE_ICE    = ',num2str(HAVE_ICE  )]);
+   disp(['HAVE_WAVES  = ',num2str(HAVE_WAVES)]);
+   disp('*********************************************************************');
+   disp(' ');
+   return
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-   %% Time
-   % dt      = 280;   % s
-   % nsteps  = 240;
-   dt       = 200;   % s
-   nsteps   = 250;
-   time     = 0:dt:nsteps*dt;
-   nt       = length(time);
+%% Grid
+if HAVE_GRID==0
+
+   %%can pass in all/none of grid_prams,ice_fields,wave_fields
+   %%but not some
+   if exist('ice_fields','var')|exist('wave_fields','var')
+      disp('WIM2d.m');
+      disp('Please specify all 3 of ''grid_prams'',''ice_fields'',''wave_fields''');
+      disp('(at least ''grid_prams'' not given)');
+      return;
+   end
+
+   nx = 51;
+   ny = 51;
+   dx = 4000; % m
+   dy = 4000; % m
+   %%
+   grid_prams  = struct('nx',nx,'ny',ny,...
+                        'dx',dx,'dy',dy);
+   grid_prams  = get_grid(grid_prams,OPT);
+   %% grid_prams  = structure, eg:
+   %%        nx: 51
+   %%        ny: 51
+   %%        dx: 4000
+   %%        dy: 4000
+   %%         X: [51x51 double]
+   %%         Y: [51x51 double]
+   %%  LANDMASK: [51x51 double]
+   %%      scuy: [51x51 double]
+   %%      scvx: [51x51 double]
+   %%      scp2: [51x51 double]
+   %%     scp2i: [51x51 double]
+end
+nx       = grid_prams.nx;
+ny       = grid_prams.ny;
+dy       = grid_prams.dy;
+dy       = grid_prams.dy;
+X        = grid_prams.X;
+Y        = grid_prams.Y;
+LANDMASK = grid_prams.LANDMASK;
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Ice/water;
+if HAVE_ICE==0
+   h           = 2;
+   c           = 0.75;
+   ice_prams   = struct('c',c,'h',h);
+   ice_fields  = iceinit(ice_prams,grid_prams,OPT);
+   %% ice_fields  = structure:
+   %%      cice: [51x51 double]
+   %%      hice: [51x51 double]
+   %%      Dmax: [51x51 double]
+   %%  WTR_MASK: [51x51 logical]
+   %%  ICE_MASK: [51x51 double]
+   cice     = ice_fields.cice;
+   hice     = ice_fields.hice;
+   Dmax     = ice_fields.Dmax;
+   WTR_MASK = ice_fields.WTR_MASK;
+   ICE_MASK = ice_fields.ICE_MASK;
+end
+if 0
+   fn_plot_ice(grid_prams,ice_fields);
+   return
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%waves
+if HAVE_WAVES==0
+   wave_prams  = struct('Hs',Hs,'Tp',Tp);
+   wave_fields = waves_init(grid_prams,ice_fields,wave_prams,OPT);
 end
 
+wave_stuff  = get_wave_spec(wave_fields);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%waves
+
+CFL   = .7;
+dt    = CFL*dx/max(ag_eff); 
+
+
 %%
-brkcrt  = zeros(ny,nx,nt);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,10 +180,13 @@ if 1%%default
 end
 om = 2*pi./T;
 %%
-dtheta   = pi/8;%% directional resolution of
-                %% spectral density function;
-theta = 0:dtheta:2*pi-1e-8;
-ndir  = length(theta);
+ndir        = 8;
+theta       = linspace(0,2*pi,ndir+1)';
+theta(end)  = [];
+dtheta      = theta(2);%% directional resolution of
+                       %% spectral density function;
+
+%%find closest direction to mwd;
 err   = abs(theta-mwd);
 jmwd  = find(err==min(err));
 mwd   = theta(jmwd);
@@ -150,7 +199,6 @@ cice        = zeros(ny,nx);
 hice        = cice;
 ag_ice      = zeros(ny,nx,nw);
 wavlen_ice  = ag_ice;
-atten       = cice;
 %%
 Dmax        = zeros(ny,nx);
 S           = zeros(ny,nx,nw,ndir);
@@ -197,85 +245,13 @@ fragility   = 0.9;        %                       [-]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TODO: move this to iceinit.m
 %% ICE CONDITIONS:
 %% set ice conc's, thicknesses & pre-compute
 %%  ice wavelength, group vel, etc;
 %% NB may need to move this inside the time loop
 
-if TEST1D
-   ICE_SHAPE   = 0;
-
-   %% ice indices;
-   edge  = 3;
-   jy    = (edge:ny);
-   jx    = 1:nx;
-
-   %% water indices;
-   Jy0{1}   = 1:jy(1)-1;
-   Jx0{1}   = 1:nx;
-
-   %% land indices;
-   jy2   = [];
-   jx2   = [];
-
-   %% boundary indices;
-   Jy_boundary   = {1};
-   if 0%% usual waves from top row;
-      Jx_boundary   = {1:nx};
-   else%% test - waves from one cell
-      Jx_boundary   = {round(nx/2)}; 
-      disp('warning - test: waves coming out of only one cell');
-      disp('push any key');
-      pause
-   end
-elseif 0%% south-west corner land surrounded by ice;
-   ICE_SHAPE   = 1;
-
-   %% ice indices;
-   jy = (ny-round(ny/3):ny);
-   jx = 1:round(.8*nx);
-
-   %% water indices;
-   Jy0{1}   = 1:jy(1)-1;
-   Jx0{1}   = 1:nx;
-   %%
-   Jy0{2}   = 1:ny;
-   Jx0{2}   = jx(end)+1:nx;
-
-
-   %% land indices;
-   jy2   = ny-round(ny/5):ny;
-   jx2   = 1:round(.3*nx);
-
-   %% boundary indices;
-   Jy_boundary   = {Jy0{1},1,1:ny,ny};
-   Jx_boundary   = {1,1:nx,nx,Jx0{2}};
-else%% southern 80% ice;
-   ICE_SHAPE   = 2;
-
-   %% ice indices;
-   jy = ny-round(.8*ny):ny;
-   jx = 1:nx;
-
-   %% water indices;
-   Jy0{1}   = 1:jy(1)-1;
-   Jx0{1}   = 1:nx;
-
-   %% land indices;
-   jy2   = [];
-   jx2   = [];
-
-   %% boundary indices;
-   Jy_boundary   = {Jy0{1},1,Jy0{1}};
-   Jx_boundary   = {1,1:nx,1};
-end
-
-cice(jy,jx)    = c;%% ice
-Dmax(jy,jx)    = 500;
-cice(jy2,jx2)  = -1;%% land
-Dmax(jy2,jx2)  = -1;
-%%
-hice(jy,jx)    = h;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Water wavelength and wave speed
 %% is a function only of wave period
@@ -437,10 +413,10 @@ disp('');
 
 %% Integration
 disp('Integrating ...')
-t0    = 24*60*rem(now,1);
+t0       = 24*60*rem(now,1);
+brkcrt  = zeros(ny,nx,nt);
 
 %% define weights for numerical quadrature;
-
 if ~SINGLE_FREQ%% weights for integral over frequency
    %% (Simpson's rule);
    wt_simp            = 2+0*T;
@@ -484,12 +460,19 @@ if DO_PLOT
    set(H,'EdgeColor', 'none');
    daspect([1 1 1]);
    colorbar;
+   GEN_proc_fig('\itx, \rmkm','\ity, \itkm');
+   ttl   = title('Concentration');
+   GEN_font(ttl);
+   colorbar;
    %%
    subplot(1,3,2);
    %GEN_plot_matrix(xgrid/1e3,ygrid/1e3,Dmax,[-1 500]);
    H  = pcolor(xgrid/1e3,ygrid/1e3,Dmax);
    set(H,'EdgeColor', 'none');
    daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \itkm');
+   ttl   = title('\itD_{\rmmax}');
+   GEN_font(ttl);
    colorbar;
    %%
    subplot(1,3,3);
@@ -497,6 +480,10 @@ if DO_PLOT
    H  = pcolor(xgrid/1e3,ygrid/1e3,S(:,:,jpp,jmwd));
    set(H,'EdgeColor', 'none');
    daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \itkm');
+   colorbar;
+   ttl   = title('\itS(T_\rmp,<\theta>), m^2s');
+   GEN_font(ttl);
    %%
    disp('beginning main integration (push any key):');
    pause
@@ -514,7 +501,6 @@ for n = 2:nt
    var_strain     = zeros(ny,nx);
 
    %% test integrals;
-   intspec        = zeros(nw,ny,nx);
    var_boundary   = cell(1,length(Jy_boundary));
    for r=1:length(Jy_boundary)
       var_boundary{r}   = 0;
@@ -578,23 +564,9 @@ for n = 2:nt
 
             %% INTEGRATE SPECTRUM OVER DIRECTION;
             Sint              = wt_theta'*squeeze(S(i,j,jw,:));
-            intspec(jw,i,j)   = Sint;
-            if 0% (j==1 & i==13)|(j==10 & i==13)% & n>=15
-               jpp   =...
-                  find(abs(T-Tm)==min(abs(T-Tm)));
-               S00   = squeeze(S(i,j,jw,:));
-               if j==1
-                  subplot(1,2,1), plot(theta,S00');
-               else
-                  subplot(1,2,2), plot(theta,S00');
-               end
-%               tstSint  =...
- %              [Sint,S(i,j,jw,jmwd),n,i,T(jw)]
-               pause
-            end
 
             %% convert from water amp's to ice amp's;
-            F     = disp_ratio(jw,i,j);
+            F     = disp_ratio(jw,i,j);%%|T| also
             k_ice = 2*pi/wlng_ice(jw,i,j);
 
             %% SPECTRAL MOMENTS;
@@ -602,27 +574,13 @@ for n = 2:nt
             mom2(i,j)   = mom2(i,j)+wt_om(jw)*om(jw)^2*Sint*F^2;
 
             %% VARIANCES OF STRESS AND STRAIN;
-            stress_density    = Sint*F^2*...
-                                  (3*g*rhoave*wlng_ice(jw,i,j)^2)^2/...
-                                    (2*pi*hice(i,j)^2)^2;
             strain_density    = Sint*F^2*...
                                   (k_ice^2*hice(i,j)/2)^2;
-            var_stress(i,j)   = var_stress(i,j)+...
-               + wt_om(jw)*stress_density;
             var_strain(i,j)   = var_strain(i,j)+...
-               + wt_om(jw)*strain_density;
+                                 + wt_om(jw)*strain_density;
          end%% end spatial loop x;
       end%% end spatial loop y;
 
-      if 0%%plot theta-integrated spectrum in each cell
-         disp(T(jw));
-         [Y,X] = meshgrid(ygrid,xgrid);
-         surf(X,Y,intspec');
-         set(gca,'CameraPosition',[mean(xgrid),mean(ygrid),...
-            max(S00)+1]);
-%         colorbar;
-         pause;
-      end
    end%% end spectral loop;
 
    if 1%%plot sig wave height in each cell;
@@ -663,27 +621,19 @@ for n = 2:nt
             P_crit   = 1/Nwaves;
             T_crit   = 2*pi*sqrt(mom0(i,j)/mom2(i,j));
 
-            %% significant stress & strain;
-            sig_stress  = 4*sqrt(var_stress(i,j));
+            %% significant strain
             sig_strain  = 4*sqrt(var_strain(i,j));
 
-            %% from sig stress & strain work out 
-            %%  probability of critical stress & strain 
+            %% from sig stress
+            %%  probability of critical stress
             %%  being exceeded from Rayleigh distribution;
-            Pstress  =...
-               FB_wave_height_Raleigh_truncdist(sigma_c,sig_stress);
-            Pstrain  =...
-               FB_wave_height_Raleigh_truncdist(strain_c,sig_strain);
+            Pstrain  = exp( -strain_c/(2*var_strain(i,j)) );
+               %FB_wave_height_Raleigh_truncdist(strain_c,sig_strain);
 
             %% FLOE BREAKING:
-            if USE_CAVITATION
-               BREAK_CRIT   = ( max(Pstress,Pstrain)>=P_crit );
-               bc = 2*(Pstress>P_crit) + (Pstrain>=P_crit);
-               brkcrt(i,j,n)  = bc;
-            else
-               BREAK_CRIT   = ( Pstrain>=P_crit );
-               brkcrt(i,j,n)  = BREAK_CRIT;
-            end
+            BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
+            brkcrt(i,j,n)  = BREAK_CRIT;
+
             if BREAK_CRIT
                %% use crest period to work out wavelength
                %% - half this is max poss floe length;
@@ -699,10 +649,12 @@ for n = 2:nt
                   Dmax(i,j)   = Dc;
                end
             end%% end breaking action;
-if 0%i==11 & j==1
-   BREAK_CRIT
-   Dmax(i,j)
-end
+
+            if 0%i==11 & j==1
+               BREAK_CRIT
+               Dmax(i,j)
+            end
+
          elseif cice(i,j)<=0%% only water present
             Dmax(i,j)   = 0;
          end
@@ -727,13 +679,23 @@ end
       Dmiz  = max(Dmax(jmiz))
       Lmiz  = dx/1e3*length(jmiz);
       if DO_PLOT
+         %%plot Dmax
          subplot(1,3,2);
-         GEN_plot_matrix(xgrid/1e3,ygrid/1e3,Dmax,[-1 500]);
+         pcolor(xgrid/1e3,ygrid/1e3,Dmax);
          daspect([1 1 1]);
-         %%
+         GEN_proc_fig('\itx, \rmkm','\ity, \itkm');
+         ttl   = title('\itD_{\rm max}, m');
+         GEN_font(ttl);
+         colorbar;
+
+         %%plot peak period
          subplot(1,3,3);
-         GEN_plot_matrix(xgrid/1e3,ygrid/1e3,S(:,:,jpp,jmwd));
+         pcolor(xgrid/1e3,ygrid/1e3,S(:,:,jpp,jmwd));
          daspect([1 1 1]);
+         GEN_proc_fig('\itx, \rmkm','\ity, \itkm');
+         colorbar;
+         ttl   = title('\itS(T_\rmp,<\theta>), m^2s');
+         GEN_font(ttl);
          pause(.1);
       end
       %%
@@ -741,12 +703,13 @@ end
          Jlook = nx-16+(1:16);
          Dmax(edge:edge+9,Jlook)
       end
-  end
-for jw=[]%11
-[n,T(jw)],%[ag_ice(jw,1:11,1)]
-testSatt=S(1:11,1,jw,jmwd)
-pause
-end
+   end
+
+   for jw=[]%11
+   [n,T(jw)],%[ag_ice(jw,1:11,1)]
+   testSatt=S(1:11,1,jw,jmwd)
+   pause
+   end
 
 end%% end time loop
 
@@ -754,3 +717,46 @@ end%% end time loop
 if DO_SAVE
    save(filename,'out');
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function fn_plot_ice(grid_prams,ice_fields);
+
+X  = grid_prams.X;
+Y  = grid_prams.Y;
+%%
+cice  = ice_fields.cice;
+hice  = ice_fields.hice;
+Dmax  = ice_fields.Dmax;
+
+subplot(1,3,1);
+%GEN_plot_matrix(X/1e3,Y/1e3,cice,[-1 1]);
+H  = pcolor(X/1e3,Y/1e3,cice);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+colorbar;
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+ttl   = title('Concentration');
+GEN_font(ttl);
+colorbar;
+%%
+subplot(1,3,3);
+%GEN_plot_matrix(X/1e3,Y/1e3,Dmax,[-1 500]);
+H  = pcolor(X/1e3,Y/1e3,Dmax);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+ttl   = title('\itD_{\rmmax}');
+GEN_font(ttl);
+colorbar;
+%%
+subplot(1,3,2);
+%GEN_plot_matrix(X/1e3,Y/1e3,S(:,:,jpp,jmwd));
+H  = pcolor(X/1e3,Y/1e3,hice);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+ttl   = title('\ith, \rmm');
+GEN_font(ttl);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
