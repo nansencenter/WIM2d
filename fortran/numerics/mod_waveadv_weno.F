@@ -1,4 +1,4 @@
-      module mod_advection_weno
+      module mod_waveadv_weno
 
       implicit none
 
@@ -7,7 +7,7 @@
 
       contains
 
-      subroutine advection_weno(h,u,v,dt)
+      subroutine waveadv_weno(h,u,v,dt,bc_opt)
 !
 ! --- ------------------------------------------------------------------
 ! --- Advection is done with flux limited 3rd order WENO in space and
@@ -45,8 +45,9 @@
       integer, parameter   :: nbdy  = 3
       real*8,intent(in),dimension(idm,jdm) :: u,v
       !,scuy,scvx,scp2i,scp2,LANDMASK
-      real*8,intent(inout),dimension(idm,jdm) :: h
-      real*8,intent(in) :: dt
+      real*8,intent(inout),dimension(idm,jdm)   :: h
+      real*8,intent(in)                         :: dt
+      integer,intent(in)                        :: bc_opt
 !
       real*8, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao,hp      &
      &   ,u_pad,v_pad,scp2_pad,scp2i_pad,scuy_pad,scvx_pad,h_pad
@@ -61,21 +62,18 @@
       !! - apply boundary conditions via "ghost cells"
 
       !!make u,v,sc* periodic
-      call pad_var(u_pad,u,1)
-      call pad_var(v_pad,v,1)
-      call pad_var(scp2_pad,scp2,1)
-      call pad_var(scp2i_pad,scp2i,1)
-      call pad_var(scuy_pad,scuy,1)
-      call pad_var(scvx_pad,scvx,1)
+      call pad_var(u_pad      ,u       ,1)
+      call pad_var(v_pad      ,v       ,1)
+      call pad_var(scp2_pad   ,scp2    ,1)
+      call pad_var(scp2i_pad  ,scp2i   ,1)
+      call pad_var(scuy_pad   ,scuy    ,1)
+      call pad_var(scvx_pad   ,scvx    ,1)
 
-      !if (.false.) then
-      if (.true.) then
-         !!make h just be zero on boundaries
-         call pad_var(h_pad,h,0)
-      else
-         !!make h periodic too
-         call pad_var(h_pad,h,1)
-      end if
+      !!bc_opt applies boundary conditions
+      !!0: make h just be zero on boundaries
+      !!1: make h be periodic in x,y
+      !!2: make h be periodic in y only
+      call pad_var(h_pad,h,bc_opt)
 
       if (.false.) then
       !if (.true.) then
@@ -84,7 +82,7 @@
          outfile  = 'test_out/h.a'
 
          print*,'******************************************'
-         print*,'testing advection_weno:'
+         print*,'testing waveadv_weno:'
          print*,'check',outfile
          print*,'******************************************'
          print*,''
@@ -99,7 +97,7 @@
          outfile  = 'test_out/all.a'
 
          print*,'******************************************'
-         print*,'testing advection_weno:'
+         print*,'testing waveadv_weno:'
          print*,'check: ',outfile
          print*,'******************************************'
          print*,''
@@ -157,7 +155,7 @@
       !!mask land (no waves on land)
       h  = h*(1-LANDMASK)
 
-      end subroutine advection_weno
+      end subroutine waveadv_weno
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -174,6 +172,7 @@
 
       u_pad             = 0.0
       u_pad(1:ii,1:jj)  = u
+
       if (OPT.eq.1) then
          !!make things periodic
 
@@ -196,6 +195,11 @@
      &     = u(1:nbdy,jj-nbdy:jj-1)
          u_pad(1-nbdy:0,jj+1:jj+nbdy)                                   &
      &     = u(ii-nbdy:ii-1,1:nbdy)
+
+      else if (OPT.eq.2) then
+         !!make it periodic in j only
+         u_pad(1:ii,1-nbdy:0)       = u(1:ii,jj-nbdy:jj-1)
+         u_pad(1:ii,jj+1:jj+nbdy)   = u(1:ii,1:nbdy)
 
       end if
 
@@ -402,4 +406,4 @@
       end subroutine weno3pd_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      end module mod_advection_weno
+      end module mod_waveadv_weno

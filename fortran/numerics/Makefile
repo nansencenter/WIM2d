@@ -9,13 +9,13 @@ MDIR	:=	../mods
 FCFLAGS=-g -I$(MDIR)
 FCFLAGS2=-J$(MDIR)
 
-PROG=test_advection_weno.o 
+PROG=test_waveadv_weno.o 
 
 OBJS=mod_gridinfo.o \
-     mod_advection_weno.o \
+     mod_waveadv_weno.o \
      mod_file_utils.o
 
-TARGET=test_advection_weno.exe
+TARGET=test_waveadv_weno.exe
 
 # Create objects by compiling their respective .F files
 %.o:	%.F
@@ -25,7 +25,7 @@ TARGET=test_advection_weno.exe
 default: $(PROG) $(OBJS)
 	$(FC) -o $(TARGET) $^ $(FCFLAGS)
 
-mod_advection_weno.o:	mod_gridinfo.o \
+mod_waveadv_weno.o:	mod_gridinfo.o \
 			mod_file_utils.o
 $(PROG): 		$(OBJS)
 

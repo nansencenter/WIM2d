@@ -1,9 +1,9 @@
-      !! test_advection_weno.F
+      !! test_waveadv_weno.F
       !! Author: Timothy Williams
       !! Date:   20140821, 12:22:17 CEST
       program main
 
-      use mod_advection_weno
+      use mod_waveadv_weno
       use mod_gridinfo
       use mod_file_utils
 
@@ -11,8 +11,10 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer, parameter   :: OPT = 1
-      real*8, parameter    :: CFL = 0.4
+      integer, parameter   :: OPT      = 1
+      integer, parameter   :: bc_opt   = 2
+         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
+      real*8, parameter    :: CFL      = 0.4
       !!
       real*8   :: xm,ym
       real*8   :: xx(ii),yy(jj)
@@ -79,8 +81,13 @@
          u        = uc*cos(pi/180.0*adv_dir)
          v        = uc*sin(pi/180.0*adv_dir)
          dt       = CFL*dx/uc
-         !nt       = 2*aint(2*xm/(uc*dt))
-         nt       = aint(2*xm/(uc*dt))
+         if (bc_opt.eq.1) then
+            nt = 2*aint(2*xm/(uc*dt))  !test periodic boundary condition
+         elseif (bc_opt.eq.2) then
+            nt = aint(3*xm/(uc*dt))  !test periodic boundary condition
+         else
+            nt = aint(2*xm/(uc*dt))
+         end if
          !!
          h  = 0.0
          do j=1,jj
@@ -188,7 +195,7 @@
       !do n = 1,1
          !print*,'timestep = ',n
          !!advect for one time step
-         call advection_weno(h,u,v,dt)
+         call waveadv_weno(h,u,v,dt,bc_opt)
 
          !!output initial conditions for reading by matlab/python
          write(cts,'(i3.3)') n
@@ -199,6 +206,13 @@
          call wrt_afile_2d(afile,y,ii,jj,stat2,2)
          call wrt_afile_2d(afile,h,ii,jj,stat2,3)
       end do
+
+      print*,'******************************************'
+      print*,'finished writing results to:'
+      print*,afile
+      print*,bfile
+      print*,'******************************************'
+      print*,''
 
       end program main
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

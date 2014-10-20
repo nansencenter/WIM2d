@@ -9,7 +9,7 @@
       !!global variables
       !integer, parameter   :: nbdy     = 3
       !integer, parameter   :: margin   = nbdy
-      integer, parameter   :: ii = 51
+      integer, parameter   :: ii = 49
       integer, parameter   :: jj = 51
       real*8, parameter    :: dx = 4e3!m
       real*8, parameter    :: dy = 4e3!m

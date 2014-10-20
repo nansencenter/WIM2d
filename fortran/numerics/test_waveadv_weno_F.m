@@ -1,10 +1,10 @@
-%% test_advection_weno_F.m
+%% test_waveadv_weno_F.m
 %% Author: Timothy Williams
 %% Date:   20140821, 12:22:17 CEST
 
 clear;
 %%testing:
-ii = 51;
+ii = 49;
 jj = 51;
 dx = 4e3;%m
 dy = 4e3;%m
@@ -63,7 +63,7 @@ elseif OPT==3
    dtheta      = dt*angrot;
 end
 
-if 0%%test outputs from mod_advection_weno.F
+if 0%%test outputs from mod_waveadv_weno.F
    %afile       = 'test_out/scp2i.a';
    afile       = 'test_out/h.a';
    aid         = fopen(afile,'rb');
@@ -78,7 +78,7 @@ if 0%%test outputs from mod_advection_weno.F
    set(ax, 'EdgeColor', 'none');
    GEN_proc_fig('I','J');
    return;
-elseif 0%%test outputs from mod_advection_weno.F
+elseif 0%%test outputs from mod_waveadv_weno.F
    nbdy  = 3;
    if 1
       afile    = 'test_out/all.a';
