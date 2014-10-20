@@ -103,7 +103,7 @@ modT     = NaN*om;
 argR     = NaN*om;
 argT     = NaN*om;
 
-if (nargout>4) | do_test
+if (nargout>5) | do_test
 
    for j=1:length(om)
       if 0

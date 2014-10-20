@@ -8,7 +8,7 @@ if nargin==0
    do_test  = 1;
    OPT      = 1;
    %%
-   ii = 51;
+   ii = 49;
    jj = 51;
    dx = 4e3;%m
    dy = 4e3;%m
@@ -26,8 +26,7 @@ ym = (jj+1)/2*dy;%%y\in[-ym,ym]
 xx = -xm+dx*(1:ii)';
 yy = -ym+dy*(1:jj)';
 %
-%[Y,X] = meshgrid(yy,xx);
-[X,Y] = meshgrid(xx,yy);
+[Y,X] = meshgrid(yy,xx);%%x~i,y~j
 R     = sqrt(X.^2+Y.^2);
 Theta = atan2(Y,X);
 %%

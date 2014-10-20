@@ -28,7 +28,7 @@ wave_stuff  = struct('nfreq',nw,...
 
 %% change from: waves-from (degrees, 0=north, clockwise)
 %%          to: waves-to   (radians, 0=east,  anti-clockwise)
-theta = pi/180*(90-wavdir);
+theta = -pi/180*(90+wavdir);
 dth   = 2*pi/ndir;%%direcional resolution in radians
 nx    = grid_prams.nx;
 ny    = grid_prams.ny;

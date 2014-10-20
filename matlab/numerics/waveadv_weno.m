@@ -113,6 +113,7 @@ h  = h(ireal,jreal).*(1-LANDMASK);
 
 return
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function u_pad = pad_var(u,OPT,nbdy)
 
 [ii,jj]  = size(u);%ii,jj,nbdy
@@ -158,35 +159,15 @@ if (OPT==1)
    u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,1:nbdy);
 
 elseif (OPT==2)
-   %%make things periodic in y only
-
-   %%make it periodic in j
+   %%make it periodic in j (y) only
    jvec1 = 1-nbdy:0;
    jvec2 = jj+1:jj+nbdy;
    %%
    u_pad(ivec+nbdy,jvec1+nbdy) = u(1:ii,jj-nbdy:jj-1);
    u_pad(ivec+nbdy,jvec2+nbdy) = u(1:ii,1:nbdy);
-
-   % %%BR,TL
-   % ivec1 = ii+1:ii+nbdy;
-   % ivec2 = 1-nbdy:0;
-   % jvec1 = jj+1:jj+nbdy;
-   % jvec2 = 1-nbdy:0;
-   % %%
-   % u_pad(ivec1+nbdy,jvec1+nbdy)  = u(1:nbdy,1:nbdy);
-   % u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,jj-nbdy:jj-1);
-     
-   % %%BL,TR
-   % ivec1 = ii+1:ii+nbdy;
-   % ivec2 = 1-nbdy:0;
-   % jvec1 = 1-nbdy:0;
-   % jvec2 = jj+1:jj+nbdy;
-   % %%
-   % u_pad(ivec1+nbdy,jvec1+nbdy)  = u(1:nbdy,jj-nbdy:jj-1);
-   % u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,1:nbdy);
 end
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy)
 %
 % --- ------------------------------------------------------------------

@@ -12,14 +12,26 @@ atten_dim   = s1.atten_dim;
 ICE_MASK    = s1.ICE_MASK;
 clear s1;
 
-theta = pi/180*(90-wavdir);%%waves-to, anti-clockwise, radians
+adv_opt  = 0;%%zeros outside real domain
+% adv_opt  = 1;%%periodic in x,y
+% adv_opt  = 2;%%periodic in y only
+
+theta = -pi/180*(90+wavdir);%%waves-to, anti-clockwise, radians
+% S0 = S;
+% {wavdir,theta}
 
 %%advection;
 for jth  = 1:ndir
-   u  = ag_eff*cos(theta(jth));
-   v  = ag_eff*sin(theta(jth));
-   S(:,:,jth)  = waveadv_weno(S(:,:,jth),u,v,grid_prams,dt);
+   u           = ag_eff*cos(theta(jth));
+   v           = ag_eff*sin(theta(jth));
+   S(:,:,jth)  = waveadv_weno(S(:,:,jth),u,v,grid_prams,dt,adv_opt);
 end
+% S0-S
+% [min(S0(:)),max(S0(:))]
+% [min(S(:)),max(S(:))]
+% [min(u(:)),max(u(:))]
+% [min(v(:)),max(v(:))]
+% GEN_pause
 
 %%attenuation
 nx = grid_prams.nx;

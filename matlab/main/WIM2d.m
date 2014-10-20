@@ -5,7 +5,7 @@ DO_SAVE     = 0;
 DO_PLOT     = 1;  %% change this to 0
                   %% if graphics aren't supported;
 USE_ICE_VEL = 0   %% if 0, approx ice wlng by water wlng;  
-DO_ATTEN    = 1   %% if 0, just advect waves
+DO_ATTEN    = 0   %% if 0, just advect waves
                   %%  without attenuation;
 
 OPT   = 1;%%ice-water-land configuration;
@@ -87,7 +87,7 @@ if HAVE_GRID==0
       return;
    end
 
-   nx = 51;
+   nx = 49;
    ny = 51;
    dx = 4000; % m
    dy = 4000; % m
@@ -184,6 +184,7 @@ if HAVE_WAVES==0
    wave_prams  = struct('Hs',Hs0,...
                         'Tp',Tp0);
    wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
+   WAVE_MASK   = wave_fields.WAVE_MASK;
    wave_stuff  = set_incident_waves(grid_prams,wave_fields);
 end
 
@@ -204,22 +205,31 @@ wlng     = g.*T.^2./(2.*pi);
 ap       = sqrt(g.*wlng./(2.*pi)); % Phase speed
 ag       = ap./2;                  % Group speed
 
-ag_eff      = zeros(ny,nx,nw);
-wlng_ice    = zeros(ny,nx,nw);
-disp_ratio  = ones (ny,nx,nw);
-atten_nond  = zeros(ny,nx,nw);
-damping     = zeros(ny,nx,nw);
+ag_eff      = zeros(nx,ny,nw);
+wlng_ice    = zeros(nx,ny,nw);
+disp_ratio  = ones (nx,ny,nw);
+atten_nond  = zeros(nx,ny,nw);
+damping     = zeros(nx,ny,nw);
 
 for i = 1:nx
 for j = 1:ny
-   if cice(i,j)>0
+   if ICE_MASK(i,j)==1
       %% if ice is present:
       %% get ice wavelengths, group velocities,
       %% displacement ratios (convert wtr disp to ice),
       %% attenuation;
-      [damping_rp,kice,kwtr,int_adm,NDprams,...
+      if DO_ATTEN==1
+         [damping_rp,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
                RT_param_outer(hice(i,j),om,young,visc_rp);
+         %%
+         atten_nond(i,j,:) = alp_scat;
+         damping(i,j,:)    = damping_rp;
+      else
+         [damping_rp,kice,kwtr,int_adm,NDprams] =...
+            RT_param_outer(hice(i,j),om,young,visc_rp);
+         modT  = 1;
+      end
 
       if USE_ICE_VEL==0
          %%use wtr group vel;
@@ -233,15 +243,13 @@ for j = 1:ny
 
       wlng_ice(i,j,:)   = 2*pi./kice;
       disp_ratio(i,j,:) = wlng.*(kice/2/pi)*modT;
-      atten_nond(i,j,:) = alp_scat;
-      damping(i,j,:)    = damping_rp;
    else
+      ag_eff(i,j,:)     = ag;
       wlng_ice(i,j,:)   = wlng;
    end
 end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 CFL   = .7;
 dt    = CFL*dx/max(ag_eff(:)); 
@@ -268,6 +276,8 @@ disp(['Hs         = ' num2str(wave_prams.Hs) ' m']);
 disp(['CFL        = ' num2str(CFL)]);
 disp(['dt         = ' num2str(dt)]);
 disp(['nt         = ' num2str(nt)]);
+disp(['nfreq      = ' num2str(nw)]);
+disp(['ndir       = ' num2str(ndir)]);
 disp('------------------------------------')
 disp(' ');
 
@@ -309,7 +319,7 @@ end
 
 GET_OUT  = 1;
 if GET_OUT
-   Dmax_all         = zeros(ny,nx,floor(nt/reps));
+   Dmax_all         = zeros(nx,ny,floor(nt/reps));
    Dmax_all(:,:,1)  = Dmax;
 end
 
@@ -318,7 +328,7 @@ if DO_PLOT
    figure(1);
    fn_plot_ice(grid_prams,ice_fields);
    %%
-   figure(2);
+   figure(2),clf;
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(ndir/2);
@@ -327,8 +337,22 @@ if DO_PLOT
                'Sdir',Sdir(:,:,jchq,jdir));
    %%
    fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+   if OPT==1
+      subplot(2,2,1);
+      hold on;
+      x0 = min(X(:));
+      x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1);
+      % {x0/1e3,x1/1e3}
+      yc = .3*max(Y(:))/1e3;
+      x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+      y_ = [0,0,yc*[1,1],0,0];
+      plot(x_,y_,'k');
+      plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+      hold off;
+   end
    %%
    clear s1;
+   %X,Y
    GEN_pause
 end
 
@@ -338,12 +362,12 @@ for n = 2:nt
    disp([n nt])
 
    %% spectral moments;
-   mom0  = zeros(ny,nx);
-   mom2  = zeros(ny,nx);
+   mom0  = zeros(nx,ny);
+   mom2  = zeros(nx,ny);
 
    %% variances of stress and strain;
-   var_stress     = zeros(ny,nx);
-   var_strain     = zeros(ny,nx);
+   var_stress     = zeros(nx,ny);
+   var_strain     = zeros(nx,ny);
 
    % %% test integrals;
    % var_boundary   = cell(1,length(Jy_boundary));
@@ -354,12 +378,11 @@ for n = 2:nt
    %%
    for jw   = 1:nw
 
-
       %% CALC DIMENSIONAL ATTEN COEFF;
       atten_dim   = 0*X;
       for i = 1:nx
       for j = 1:ny
-         if cice(i,j)>0
+         if ICE_MASK(i,j)>0 & DO_ATTEN==1
             Dave  = floe_scaling(fragility,xi,...
                      Dmin,Dmax(i,j));
 
@@ -407,7 +430,7 @@ for n = 2:nt
          mom0(i,j)   = mom0(i,j)+wt_om(jw)*Sint*F^2;
          mom2(i,j)   = mom2(i,j)+wt_om(jw)*om(jw)^2*Sint*F^2;
 
-         if ICE_MASK(i,j)>0
+         if ICE_MASK(i,j)==1
             %% VARIANCE OF STRAIN;
             strain_density    = Sint*F^2*...
                                   (k_ice^2*hice(i,j)/2)^2;
@@ -418,6 +441,7 @@ for n = 2:nt
       end%% end spatial loop y;
 
    end%% end spectral loop;
+   %mom0,mom2,wlng_ice,return
 
    % if 1%%plot sig wave height in each cell;
    %    for r = []%1:length(Jy_boundary)
@@ -445,9 +469,9 @@ for n = 2:nt
    wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
 
    %% FINALLY DO FLOE BREAKING;
-   for i=1:ny
-   for j=1:nx
-      if ICE_MASK(i,j)>0 & mom0(i,j)>0
+   for i=1:nx
+   for j=1:ny
+      if ICE_MASK(i,j)==1 & mom0(i,j)>0
          %% only try breaking if ice is present
          %%  & some waves have arrived;
 
@@ -457,23 +481,21 @@ for n = 2:nt
          %%  probability of critical strain
          %%  being exceeded from Rayleigh distribution;
          Pstrain  = exp( -strain_c^2/(2*var_strain(i,j)) );
+         P_crit   = exp(-1);%%this is critical prob if monochromatic wave
 
          %% FLOE BREAKING:
          BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
          brkcrt(i,j,n)  = BREAK_CRIT;
 
          if BREAK_CRIT
-            disp('breaking')
             %% use crest period to work out wavelength
             %% - half this is max poss floe length;
-            if ~USE_ICE_WLNG
-               wlng_crest = g.*T_crit.^2./(2.*pi);
-            else
-               wlng_crest =...
-                  GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young); 
-            end
+            T_crit      = wave_fields.Tp(i,j);
+            wlng_crest  = ...
+               GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young);
 
             Dc = wlng_crest/2;
+            % {Dc, Dmin, Dmax(i,j)}
             if Dc >= Dmin & Dmax(i,j)>Dc
                Dmax(i,j)   = Dc;
             end
@@ -484,7 +506,7 @@ for n = 2:nt
             Dmax(i,j)
          end
 
-      elseif cice(i,j)<=0%% only water present
+      elseif WTR_MASK(i,j)==1%% only water present
          Dmax(i,j)   = 0;
       end
       
@@ -493,7 +515,7 @@ for n = 2:nt
 
    ice_fields.Dmax   = Dmax;
    jmiz              = find((Dmax>0)&(Dmax<250));
-   {jmiz}
+   % {jmiz}
 
    %% progress report;
    if round(n/reps)==(n/reps)
@@ -515,6 +537,28 @@ for n = 2:nt
                      'Sdir',Sdir(:,:,jchq,jdir));
          %%
          fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+
+         if OPT==1
+            subplot(2,2,1);
+            hold on;
+            uc = max(max(ag_eff(:,:,jchq)));
+            x0 = min(X(:))+uc*n*dt;
+            x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
+            % {uc,x0/1e3,x1/1e3}
+            yc = .3*max(Y(:))/1e3;
+            x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+            y_ = [0,0,yc*[1,1],0,0];
+            plot(x_,y_,'k');
+            plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+            hold off;
+            %%
+            subplot(2,2,2);
+            hold on;
+            plot(x_,y_,'k');
+            plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+            hold off;
+         end
+
          clear s1;
          GEN_pause;
       end
@@ -554,6 +598,7 @@ GEN_font(ttl);
 
 subplot(2,2,2);
 H  = pcolor(X/1e3,Y/1e3,Dmax);
+caxis([0 250]);
 set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
