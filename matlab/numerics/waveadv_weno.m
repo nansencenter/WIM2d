@@ -1,4 +1,4 @@
-function h  = advection_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK)
+function h  = waveadv_weno(h,u,v,grid_prams,dt)
 %% advection_weno.m
 %% Author: Timothy Williams
 %% Date:   20140821, 05:40:03 CEST
@@ -31,8 +31,15 @@ function h  = advection_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK)
 %% in:      scp2, scp2i are grid box area at p points, and its inverse;
 %%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-ii    = size(h,1);
-jj    = size(h,1);
+ii       = grid_prams.nx;
+jj       = grid_prams.ny;
+scuy     = grid_prams.scuy;
+scvx     = grid_prams.scvx;
+scp2i    = grid_prams.scp2i;
+scp2     = grid_prams.scp2;
+LANDMASK = grid_prams.LANDMASK;
+clear grid_prams;
+
 idm   = ii;
 jdm   = jj;
 %%

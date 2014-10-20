@@ -2,7 +2,7 @@
 %% Author: Timothy Williams
 %% Date: 20141016, 18:13:51 CEST
 
-function wave_fields = waves_init(grid_prams,ice_fields,OPT);
+function wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
 
 do_test  = 0;
 if nargin==0
@@ -21,15 +21,17 @@ if nargin==0
    ice_prams   = struct('c',c,'h',h)
    ice_fields  = iceinit(ice_prams,grid_prams,OPT);
    %%
-   Hs    = 3;
-   Tp    = 11;
-   if OPT==0
-      mwd   = 135;%%waves-from direction
-   elseif OPT==1
-      mwd   = -90;%%waves-from direction
-   elseif OPT==2
-      mwd   = 135;%%waves-from direction
-   end
+   Hs          = 3;
+   Tp          = 11;
+   wave_prams  = struct('Hs',Hs,'Tp',Tp);
+end
+
+if OPT==0
+   mwd   = 135;%%waves-from direction
+elseif OPT==1
+   mwd   = -90;%%waves-from direction
+elseif OPT==2
+   mwd   = 135;%%waves-from direction
 end
 
 X  = grid_prams.X;
@@ -49,6 +51,9 @@ elseif OPT==2
    WAVE_MASK   = (X<-.25*xm)|(Y>.25*ym);
    jWV         = find(WAVE_MASK==1);
 end
+
+Hs = wave_prams.Hs;
+Tp = wave_prams.Tp;
 
 Hs_mat   = zeros(nx,ny);
 Tp_mat   = zeros(nx,ny);

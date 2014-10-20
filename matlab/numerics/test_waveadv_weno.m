@@ -1,6 +1,7 @@
 %% test_advection_weno.m
 %% Author: Timothy Williams
 %% Date:   20140821, 12:22:17 CEST
+clear;
 
 %%testing:
 ii = 51;
@@ -17,11 +18,15 @@ yy = -ym+dy*(1:jj)';
 R     = sqrt(X.^2+Y.^2);
 Theta = atan2(Y,X);
 
-scuy     = 0*X+dy;
-scvx     = 0*X+dx;
-scp2     = scuy.*scvx;
-scp2i    = 1./scp2;
-LANDMASK = 0*X;
+s1.nx       = ii;
+s1.ny       = jj;
+s1.scuy     = 0*X+dy;
+s1.scvx     = 0*X+dx;
+s1.scp2     = s1.scuy.*s1.scvx;
+s1.scp2i    = 1./s1.scp2;
+s1.LANDMASK = 0*X;
+grid_prams  = s1;
+clear s1;
 
 OPT   = 1;
 CFL   = .4;
@@ -136,13 +141,14 @@ if 1%%plot u,v,h
       plot(x2/1e3,y2/1e3,'m');
       hold off;
    end
-   pause;
+   GEN_pause;
 end
 
 
 for n = 1:nt
    [n,nt]
-   h     = advection_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK);
+   %h     = waveadv_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK);
+   h     = waveadv_weno(h,u,v,grid_prams,dt);
    hmax  = max(h(:))
    %%
    subplot(2,2,4);

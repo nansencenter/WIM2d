@@ -1,10 +1,12 @@
 %% iceinit.m
 %% Author: Timothy Williams
 %% Date: 20141016, 12:00:41 CEST
-function ice_fields = iceinit(ice_prams,grid_prams,OPT)
+function [ice_fields,ice_prams] = iceinit(ice_prams,grid_prams,OPT)
 %% ice_prams is struct eg:
 %%   c: 0.750000000000000  (conc)
 %%   h: 1                  (thickness)
+%% optional fields 'young'  (Young's modulus)
+%%             and 'bc_opt' [breaking criteria = 0(beam) or 1(Marchenko)]
 %% grid_prams is struct eg:
 %%   nx: 15                (size of grid in x dirn)
 %%   ny: 15                (size of grid in y dirn)
@@ -16,7 +18,10 @@ if nargin==0
    do_test     = 1;
    h           = 2;
    c           = 0.75;
-   ice_prams   = struct('c',c,'h',h)
+   ice_prams   = struct('c'         ,c,...
+                        'h'         ,h,...
+                        'bc_opt'    ,0,...
+                        'young_opt' ,1)
    %%
    nx          = 51;
    dx          = 4e3;
@@ -27,6 +32,28 @@ if nargin==0
    grid_prams  = get_grid(grid_prams,OPT)
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% get rest of ice_prams
+ice_prams   = fn_fill_iceprams(ice_prams);
+%% structure eg:
+%%               c: 0.750000000000000
+%%               h: 2
+%%           young: 2.000000000000000e+09
+%%          bc_opt: 0
+%%          rhoice: 9.225000000000000e+02
+%%               g: 9.810000000000000
+%%         poisson: 0.300000000000000
+%%             vbf: 0.100000000000000
+%%              vb: 100
+%%         sigma_c: 2.741429878818372e+05
+%%        strain_c: 1.370714939409186e-04
+%%  flex_rig_coeff: 1.831501831501831e+08
+%%            Dmin: 20
+%%              xi: 2
+%%       fragility: 0.900000000000000
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% cice/hice/Dmax in ice_fields
 nx       = grid_prams.nx;
 ny       = grid_prams.ny;
 dx       = grid_prams.dx;
@@ -52,14 +79,6 @@ if OPT==0
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
 
-   if 0
-      pcolor((1-LANDMASK).*Rsq);colorbar;daspect([1 1 1]);pause
-   elseif 0
-      pcolor(LANDMASK*1.0);colorbar;daspect([1 1 1]);pause
-   elseif 0
-      pcolor(WTR_MASK+LANDMASK);colorbar;daspect([1 1 1]);pause
-   end
-
 elseif OPT==1
    %% south-east corner land surrounded by ice;
    xm       = max(X(:));
@@ -75,16 +94,17 @@ elseif OPT==2
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
+
 end
 
 cice(jI) = ice_prams.c;%% ice
-cice(jL) = -.5;%% land
+cice(jL) = NaN;%% land
 %%
-Dmax(jI) = 500;
-Dmax(jL) = -250;
+Dmax(jI) = 250;
+Dmax(jL) = NaN;
 %%
 hice(jI) = ice_prams.h;
-hice(jL) = -1;
+hice(jL) = NaN;
 
 %% outputs:
 ice_fields  = struct('cice',cice,...
@@ -94,35 +114,5 @@ ice_fields  = struct('cice',cice,...
                      'ICE_MASK',ICE_MASK);
 
 if do_test
-   subplot(1,3,1);
-   %GEN_plot_matrix(X/1e3,Y/1e3,cice,[-1 1]);
-   H  = pcolor(X/1e3,Y/1e3,cice);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   colorbar;
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   ttl   = title('Concentration');
-   GEN_font(ttl);
-   colorbar;
-   %%
-   subplot(1,3,3);
-   %GEN_plot_matrix(X/1e3,Y/1e3,Dmax,[-1 500]);
-   H  = pcolor(X/1e3,Y/1e3,Dmax);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   ttl   = title('\itD_{\rmmax}');
-   GEN_font(ttl);
-   colorbar;
-   %%
-   subplot(1,3,2);
-   %GEN_plot_matrix(X/1e3,Y/1e3,S(:,:,jpp,jmwd));
-   H  = pcolor(X/1e3,Y/1e3,hice);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   ttl   = title('\ith, \rmm');
-   GEN_font(ttl);
-   %%
+   fn_plot_ice(grid_prams,ice_fields);
 end
