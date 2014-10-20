@@ -5,8 +5,9 @@ DO_SAVE     = 0;
 DO_PLOT     = 1;  %% change this to 0
                   %% if graphics aren't supported;
 USE_ICE_VEL = 0   %% if 0, approx ice wlng by water wlng;  
-DO_ATTEN    = 0   %% if 0, just advect waves
+DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
+STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 
 OPT   = 1;%%ice-water-land configuration;
 if ~exist('SHARP_DIST')
@@ -193,6 +194,9 @@ om       = 2*pi*wave_stuff.freq; %% radial freq
 ndir     = wave_stuff.ndir;      %% number of directions
 wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
+if STEADY==1
+   S_inc = Sdir;
+end
 %%
 T  = 2*pi./om;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -382,6 +386,13 @@ for n = 2:nt
       atten_dim   = 0*X;
       for i = 1:nx
       for j = 1:ny
+
+         %%top-up waves in wave mask if STEADY==1
+         %%(steady-state solution);
+         if WAVE_MASK(i,j)>0 & STEADY==1
+            Sdir(i,j,:,:)  = S_inc(i,j,:,:);
+         end
+         
          if ICE_MASK(i,j)>0 & DO_ATTEN==1
             Dave  = floe_scaling(fragility,xi,...
                      Dmin,Dmax(i,j));
