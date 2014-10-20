@@ -312,13 +312,13 @@ else
    wt_om = 1;
 end
 
-%% weights for integral over directions
-%% NB using radians for mwd;
-if ndir>1
-   wt_theta = ones(ndir,1)*(2*pi/ndir);
-else
-   wt_theta = 1;
-end
+% %% weights for integral over directions
+% %% NB using radians for mwd;
+% if ndir>1
+%    wt_theta = ones(ndir,1)*(2*pi/ndir);
+% else
+%    wt_theta = 1;
+% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 GET_OUT  = 1;
@@ -331,6 +331,7 @@ if DO_PLOT
    %%
    figure(1);
    fn_plot_ice(grid_prams,ice_fields);
+   pause(0.1);
    %%
    figure(2),clf;
    Tc    = 12;%check this period
@@ -357,7 +358,8 @@ if DO_PLOT
    %%
    clear s1;
    %X,Y
-   GEN_pause
+   %GEN_pause
+   pause(0.1);
 end
 
 disp('beginning main integration...');
@@ -416,14 +418,16 @@ for n = 2:nt
 
       s1.ndir        = ndir;
       s1.wavdir      = wavdir;
-      s1.Sdir        = reshape( Sdir(:,:,jw,:), nx,ny,ndir);
+      %s1.Sdir        = reshape( Sdir(:,:,jw,:), nx,ny,ndir);
+      s1.Sdir        = Sdir(:,:,:,jw);
       s1.ag_eff      = ag_eff(:,:,jw);
       s1.atten_dim   = atten_dim;
       s1.ICE_MASK    = ice_fields.ICE_MASK;
 
       %% Simple attenuation scheme - doesn't conserve scattered energy
-      S_out          = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
-      Sdir(:,:,jw,:) = reshape( S_out, nx,ny,1,ndir);
+      % S_out          = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
+      % Sdir(:,:,jw,:) = reshape( S_out, nx,ny,1,ndir);
+      [Sdir(:,:,:,jw),S_freq] = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
       clear s1 S_out;
 
       %% DO BREAKING:
@@ -431,19 +435,19 @@ for n = 2:nt
       for j = 1:ny
 
          %% INTEGRATE SPECTRUM OVER DIRECTION;
-         Sint  = wt_theta'*squeeze(Sdir(i,j,jw,:));
+         %S_freq   = wt_theta'*squeeze(Sdir(i,j,jw,:));
 
          %% convert from water amp's to ice amp's;
          F     = disp_ratio(i,j,jw);%%|T| also
          k_ice = 2*pi/wlng_ice(i,j,jw);
 
          %% SPECTRAL MOMENTS;
-         mom0(i,j)   = mom0(i,j)+wt_om(jw)*Sint*F^2;
-         mom2(i,j)   = mom2(i,j)+wt_om(jw)*om(jw)^2*Sint*F^2;
+         mom0(i,j)   = mom0(i,j)+wt_om(jw)*S_freq(i,j)*F^2;
+         mom2(i,j)   = mom2(i,j)+wt_om(jw)*om(jw)^2*S_freq(i,j)*F^2;
 
          if ICE_MASK(i,j)==1
             %% VARIANCE OF STRAIN;
-            strain_density    = Sint*F^2*...
+            strain_density    = S_freq(i,j)*F^2*...
                                   (k_ice^2*hice(i,j)/2)^2;
             var_strain(i,j)   = var_strain(i,j)+...
                                  + wt_om(jw)*strain_density;
@@ -571,7 +575,8 @@ for n = 2:nt
          end
 
          clear s1;
-         GEN_pause;
+         %GEN_pause;
+         pause(0.1);
       end
       %%
       if 0

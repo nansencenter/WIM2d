@@ -32,7 +32,7 @@ theta = -pi/180*(90+wavdir);
 dth   = 2*pi/ndir;%%direcional resolution in radians
 nx    = grid_prams.nx;
 ny    = grid_prams.ny;
-Sdir  = zeros(nx,ny,nw,ndir);
+Sdir  = zeros(nx,ny,ndir,nw);
 
 for i=1:nx
    for j=1:ny
@@ -75,11 +75,11 @@ for i=1:nx
 
             for jw=1:nw
             for jt=1:ndir
-               Sdir(i,j,jw,jt)   = Sfreq(jw)*dir_fac(jt);
+               Sdir(i,j,jt,jw)   = Sfreq(jw)*dir_fac(jt);
             end
             end
          else
-            Sdir(i,j,:,1)  = Sfreq;
+            Sdir(i,j,1,:)  = Sfreq;
          end
       end
    end

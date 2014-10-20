@@ -2,7 +2,7 @@
 %% Author: Timothy Williams
 %% Date: 20141018, 18:04:46 CEST
 
-function S = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt)
+function [S,S_freq] = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt)
 
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
@@ -38,6 +38,15 @@ nx = grid_prams.nx;
 ny = grid_prams.ny;
 clear grid_prams;
 
+%% weights for integral over directions
+%% NB using radians for mwd;
+if ndir>1
+   wt_theta = ones(ndir,1)*(2*pi/ndir);
+else
+   wt_theta = 1;
+end
+S_freq   = zeros(nx,ny);
+
 for i = 1:nx
 for j = 1:ny
    %% atten_dim = ENERGY attenuation coeff [m^{-1}]
@@ -45,5 +54,10 @@ for j = 1:ny
       S(i,j,:) = S(i,j,:)*...
          exp(-atten_dim(i,j)*ag_eff(i,j)*dt);
    end
+
+   %% INTEGRATE SPECTRUM OVER DIRECTION;
+   %% TODO: add stress calculation here;
+   S_freq(i,j) = wt_theta'*squeeze(S(i,j,:));
 end
 end
+
