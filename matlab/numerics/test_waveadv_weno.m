@@ -3,8 +3,13 @@
 %% Date:   20140821, 12:22:17 CEST
 clear;
 
+%%boundary conditions:
+%bc_opt   = 0; %waves escape domain
+%bc_opt   = 1; %waves periodic in i,j
+bc_opt   = 2; %waves periodic in j (y) only
+
 %%testing:
-ii = 51;
+ii = 49;
 jj = 51;
 dx = 4e3;%m
 dy = 4e3;%m
@@ -14,7 +19,8 @@ ym = (jj+1)/2*dy;
 xx = -xm+dx*(1:ii)';
 yy = -ym+dy*(1:jj)';
 %
-[Y,X] = meshgrid(yy,xx);
+%[X,Y] = meshgrid(xx,yy);
+[Y,X] = meshgrid(yy,xx);%%x~i,y~j
 R     = sqrt(X.^2+Y.^2);
 Theta = atan2(Y,X);
 
@@ -34,8 +40,9 @@ CFL   = .4;
 if OPT==1
    uc          = 30;%const speed m/s
    xc          = 2*xm/3;
-   %theta       = 180;%deg straight across
-   theta       = 135;%deg
+   %theta       = 180;%wave-to direction [deg] - to left
+   theta       = 135;%wave-to direction [deg] - up and to the left
+   %theta       = 0;%wave-to direction [deg] - to right
    u           = 0*X+uc*cos(pi/180*theta);
    v           = 0*X+uc*sin(pi/180*theta);
    h           = 0*X;
@@ -43,6 +50,9 @@ if OPT==1
    %%
    dt          = CFL*dx/uc;
    nt          = 2*xm/(uc*dt);
+   if bc_opt==1
+      nt = 2*nt;
+   end
 elseif OPT==2
    uc          = 30;%const speed m/s
    xc          = 2*xm/3;
@@ -148,7 +158,7 @@ end
 for n = 1:nt
    [n,nt]
    %h     = waveadv_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK);
-   h     = waveadv_weno(h,u,v,grid_prams,dt);
+   h     = waveadv_weno(h,u,v,grid_prams,dt,bc_opt);
    hmax  = max(h(:))
    %%
    subplot(2,2,4);

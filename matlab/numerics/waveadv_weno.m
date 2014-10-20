@@ -1,4 +1,4 @@
-function h  = waveadv_weno(h,u,v,grid_prams,dt)
+function h  = waveadv_weno(h,u,v,grid_prams,dt,bc_opt)
 %% advection_weno.m
 %% Author: Timothy Williams
 %% Date:   20140821, 05:40:03 CEST
@@ -50,41 +50,21 @@ jreal = nbdy+(1:jdm)';  %%non-ghost j indices
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%assign values in ghost cells
 %%-do this beforehand in case want to parallelise??
-%     real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::               &
-%    &  h,u,v,scuy,scvx,scp2i,scp2
-%     real dt
-tmp            = h;
-h              = zeros(idm+2*nbdy,jdm+2*nbdy);
-h(ireal,jreal) = tmp;
-%%
-tmp            = u;
-u              = zeros(idm+2*nbdy,jdm+2*nbdy);
-u(ireal,jreal) = tmp;
-%%
-tmp            = v;
-v              = zeros(idm+2*nbdy,jdm+2*nbdy);
-v(ireal,jreal) = tmp;
-%%
-dx                = max(max(scvx));
-tmp               = scvx;
-scvx              = dx+zeros(idm+2*nbdy,jdm+2*nbdy);
-scvx(ireal,jreal) = tmp;
-%%
-dy                = max(max(scuy));
-tmp               = scuy;
-scuy              = dy+zeros(idm+2*nbdy,jdm+2*nbdy);
-scuy(ireal,jreal) = tmp;
-%%
-Area              = max(max(scp2));
-tmp               = scp2;
-scp2              = Area+zeros(idm+2*nbdy,jdm+2*nbdy);
-scp2(ireal,jreal) = tmp;
-%%
-Areai                = max(max(scp2i));
-tmp                  = scp2i;
-scp2i                = Areai+zeros(idm+2*nbdy,jdm+2*nbdy);
-scp2i(ireal,jreal)   = tmp;
-clear tmp;
+
+%%make all these periodic in i,j (x,y)
+u     = pad_var(u    ,1,nbdy);
+v     = pad_var(v    ,1,nbdy);
+scvx  = pad_var(scvx ,1,nbdy);
+scuy  = pad_var(scuy ,1,nbdy);
+scp2  = pad_var(scp2 ,1,nbdy);
+scp2i = pad_var(scp2i,1,nbdy);
+
+%%bc_opt determines how h is extended to ghost cells:
+%% 0: zeros in ghost cells
+%% 1: periodic in i,j
+%% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
+h  = pad_var(h,bc_opt,nbdy);
+%pcolor(h),colorbar,GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %     real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao,hp
@@ -101,7 +81,7 @@ clear tmp;
 dtm   = dt;
 
 % --- Prediction step
-sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dtm);
+sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dtm,nbdy);
 margin   = nbdy;
 %     do j=1-margin,jj+margin
 %       do i=1-margin,ii+margin!![TW 28.1.2014]
@@ -115,7 +95,7 @@ end%j
 end%i
 
 % --- Correction step
-sao   = weno3pd_v2(hp,u,v,scuy,scvx,scp2i,scp2,dtm);
+sao   = weno3pd_v2(hp,u,v,scuy,scvx,scp2i,scp2,dtm,nbdy);
 %     do j=1-margin,jj+margin
 %       do i=1-margin,ii+margin!![TW 28.1.2014]
 for i_ = 1-margin:ii+margin
@@ -133,7 +113,81 @@ h  = h(ireal,jreal).*(1-LANDMASK);
 
 return
 
-function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt)
+function u_pad = pad_var(u,OPT,nbdy)
+
+[ii,jj]  = size(u);%ii,jj,nbdy
+u_pad    = zeros(ii+2*nbdy,jj+2*nbdy);
+ivec     = 1:ii;
+jvec     = 1:jj;
+%%
+u_pad(ivec+nbdy,jvec+nbdy)  = u;
+
+if (OPT==1)
+   %%make things periodic
+
+   %%make it periodic in i
+   ivec1 = 1-nbdy:0;
+   ivec2 = ii+1:ii+nbdy;
+   %%
+   u_pad(ivec1+nbdy,jvec+nbdy) = u(ii-nbdy:ii-1,:);
+   u_pad(ivec2+nbdy,jvec+nbdy) = u(1:nbdy,:);
+
+   %%make it periodic in j
+   jvec1 = 1-nbdy:0;
+   jvec2 = jj+1:jj+nbdy;
+   %%
+   u_pad(ivec+nbdy,jvec1+nbdy) = u(1:ii,jj-nbdy:jj-1);
+   u_pad(ivec+nbdy,jvec2+nbdy) = u(1:ii,1:nbdy);
+
+   %%BR,TL
+   ivec1 = ii+1:ii+nbdy;
+   ivec2 = 1-nbdy:0;
+   jvec1 = jj+1:jj+nbdy;
+   jvec2 = 1-nbdy:0;
+   %%
+   u_pad(ivec1+nbdy,jvec1+nbdy)  = u(1:nbdy,1:nbdy);
+   u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,jj-nbdy:jj-1);
+
+   %%BL,TR
+   ivec1 = ii+1:ii+nbdy;
+   ivec2 = 1-nbdy:0;
+   jvec1 = 1-nbdy:0;
+   jvec2 = jj+1:jj+nbdy;
+   %%
+   u_pad(ivec1+nbdy,jvec1+nbdy)  = u(1:nbdy,jj-nbdy:jj-1);
+   u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,1:nbdy);
+
+elseif (OPT==2)
+   %%make things periodic in y only
+
+   %%make it periodic in j
+   jvec1 = 1-nbdy:0;
+   jvec2 = jj+1:jj+nbdy;
+   %%
+   u_pad(ivec+nbdy,jvec1+nbdy) = u(1:ii,jj-nbdy:jj-1);
+   u_pad(ivec+nbdy,jvec2+nbdy) = u(1:ii,1:nbdy);
+
+   % %%BR,TL
+   % ivec1 = ii+1:ii+nbdy;
+   % ivec2 = 1-nbdy:0;
+   % jvec1 = jj+1:jj+nbdy;
+   % jvec2 = 1-nbdy:0;
+   % %%
+   % u_pad(ivec1+nbdy,jvec1+nbdy)  = u(1:nbdy,1:nbdy);
+   % u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,jj-nbdy:jj-1);
+     
+   % %%BL,TR
+   % ivec1 = ii+1:ii+nbdy;
+   % ivec2 = 1-nbdy:0;
+   % jvec1 = 1-nbdy:0;
+   % jvec2 = jj+1:jj+nbdy;
+   % %%
+   % u_pad(ivec1+nbdy,jvec1+nbdy)  = u(1:nbdy,jj-nbdy:jj-1);
+   % u_pad(ivec2+nbdy,jvec2+nbdy)  = u(ii-nbdy:ii-1,1:nbdy);
+end
+
+
+function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy)
 %
 % --- ------------------------------------------------------------------
 % --- By a weighted essentially non-oscillatory scheme with up to 3th
@@ -153,7 +207,6 @@ function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt)
 %    &           cq10= 1./2.,cq11= 1./2.,                               &
 %    &           ca0=1./3.,ca1=2./3.,                                   &
 %    &           eps=1.e-12)
-nbdy  = 3;
 ii    = size(g,1)-2*nbdy; 
 jj    = size(g,2)-2*nbdy; 
 idm   = ii;
