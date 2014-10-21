@@ -4,20 +4,18 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 DO_SAVE     = 0;
 DO_PLOT     = 1;  %% change this to 0
                   %% if graphics aren't supported;
-USE_ICE_VEL = 0   %% if 0, approx ice wlng by water wlng;  
+USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
-STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
+STEADY      = 0   %% Steady-state solution: top-up waves inside wave mask
+SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
 OPT   = 1;%%ice-water-land configuration;
-if ~exist('SHARP_DIST')
-   SHARP_DIST     = 1
-end
 
 %if DO_SAVE
 %   filename=['wim2d_out',num2str(Tm),...
 %            's_',num2str(mwd_dim),...
-%            'deg_spread',num2str(SHARP_DIST),'.mat'];
+%            'deg_spread','.mat'];
 %else
 %   disp('not saving');
 %   %disp('not saving - push any key');
@@ -27,7 +25,7 @@ end
 %% set attenuation model;
 %% also give progress report every 'reps' time
 %%  steps;
-reps  = 10;
+reps  = 5;
 format long
 
 disp('Initialization')
@@ -88,7 +86,7 @@ if HAVE_GRID==0
       return;
    end
 
-   if 0
+   if 1
       nx = 49;
       ny = 51;
    else
@@ -200,7 +198,12 @@ ndir     = wave_stuff.ndir;      %% number of directions
 wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
 if STEADY==1
-   S_inc = Sdir;
+   S_inc    = Sdir;
+   theta    = -pi/180*(90+wavdir);
+   [i1,j1]  = find(WAVE_MASK==1,1,'first');
+   J_STEADY = find(S_inc(i1,j1,:,ceil(nw/2))>0);
+   % squeeze(S_inc(i1,j1,:))
+   % GEN_pause;
 end
 %%
 T  = 2*pi./om;
@@ -275,20 +278,23 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display parameters
-disp('------------------------------------')
-disp(['sigma_c    = ' num2str(ice_prams.sigma_c) ' Pa']);
-disp(['fragility  = ' num2str(fragility)]);
-disp(['strain_c   = ' num2str(strain_c)]);
-disp(['h          = ' num2str(ice_prams.h) ' m const']);
-disp(['Tp         = ' num2str(wave_prams.Tp) ' s']);
-disp(['Hs         = ' num2str(wave_prams.Hs) ' m']);
-disp(['CFL        = ' num2str(CFL)]);
-disp(['dt         = ' num2str(dt)]);
-disp(['nt         = ' num2str(nt)]);
-disp(['nfreq      = ' num2str(nw)]);
-disp(['ndir       = ' num2str(ndir)]);
-disp('------------------------------------')
-disp(' ');
+Info  = { '------------------------------------';
+         ['sigma_c    = ' num2str(ice_prams.sigma_c) ' Pa'];
+         ['fragility  = ' num2str(fragility)];
+         ['strain_c   = ' num2str(strain_c)];
+         ['h          = ' num2str(ice_prams.h) ' m const'];
+         ['Tp         = ' num2str(wave_prams.Tp) ' s'];
+         ['Hs         = ' num2str(wave_prams.Hs) ' m'];
+         ['CFL        = ' num2str(CFL)];
+         ['dt         = ' num2str(dt)];
+         ['nt         = ' num2str(nt)];
+         ['nfreq      = ' num2str(nw)];
+         ['ndir       = ' num2str(ndir)];
+         ['SOLVER     = ' num2str(SOLVER)];
+         '------------------------------------';
+         ' '};
+
+disp(strvcat(Info));
 
 %% Integration
 t0       = now;   %%days
@@ -342,9 +348,10 @@ if DO_PLOT
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(ndir/2);
+   {jdir,wave_stuff.dirs,Sdir}
    s1 = struct('dir',wave_stuff.dirs(jdir),...
                'period',Tc,...
-               'Sdir',Sdir(:,:,jchq,jdir));
+               'Sdir',Sdir(:,:,jdir,jchq));
    %%
    fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
    if OPT==1
@@ -391,13 +398,14 @@ for n = 2:nt
 
       %% CALC DIMENSIONAL ATTEN COEFF;
       atten_dim   = 0*X;
+      damp_dim    = 0*X;
       for i = 1:nx
       for j = 1:ny
 
          %%top-up waves in wave mask if STEADY==1
          %%(steady-state solution);
          if WAVE_MASK(i,j)>0 & STEADY==1
-            Sdir(i,j,:,:)  = S_inc(i,j,:,:);
+            Sdir(i,j,J_STEADY,:)  = S_inc(i,j,J_STEADY,:);
          end
          
          if ICE_MASK(i,j)>0 & DO_ATTEN==1
@@ -415,8 +423,8 @@ for n = 2:nt
             end
 
             %% ENERGY attenuation coeff;
-            atten_dim(i,j)   = atten_nond(i,j,jw)*c1d+...
-                                +2*damping(i,j,jw)*cice(i,j);
+            atten_dim(i,j) = atten_nond(i,j,jw)*c1d;%%scattering
+            damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j);%%damping
          end
       end% j
       end% i
@@ -427,13 +435,31 @@ for n = 2:nt
       s1.Sdir        = Sdir(:,:,:,jw);
       s1.ag_eff      = ag_eff(:,:,jw);
       s1.atten_dim   = atten_dim;
+      s1.damp_dim    = damp_dim;
       s1.ICE_MASK    = ice_fields.ICE_MASK;
 
-      %% Simple attenuation scheme - doesn't conserve scattered energy
-      % S_out          = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
-      % Sdir(:,:,jw,:) = reshape( S_out, nx,ny,1,ndir);
-      [Sdir(:,:,:,jw),S_freq] = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
-      clear s1 S_out;
+      if ndir==1
+         if SOLVER~=0
+            disp('warning: changing SOLVER option as not enough directions');
+            disp(['(ndir = ',num2str(ndir)]);
+         end
+         SOLVER   = 0;
+      end
+
+      if SOLVER==0
+         %% Simple attenuation scheme - doesn't conserve scattered energy
+         % S_out          = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
+         % Sdir(:,:,jw,:) = reshape( S_out, nx,ny,1,ndir);
+         [Sdir(:,:,:,jw),S_freq] = ...
+            adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
+         clear s1 S_out;
+      elseif SOLVER==1
+         %%same as SOLVER==0, but scattered energy
+         %%is distributed isotropically
+         [Sdir(:,:,:,jw),S_freq] = ...
+            adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt);
+         clear s1 S_out;
+      end
 
       %% DO BREAKING:
       for i = 1:nx
@@ -447,13 +473,14 @@ for n = 2:nt
          k_ice = 2*pi/wlng_ice(i,j,jw);
 
          %% SPECTRAL MOMENTS;
-         mom0(i,j)   = mom0(i,j)+wt_om(jw)*S_freq(i,j)*F^2;
-         mom2(i,j)   = mom2(i,j)+wt_om(jw)*om(jw)^2*S_freq(i,j)*F^2;
+         %%take abs as small errors can make S_freq negative
+         mom0(i,j)   = mom0(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2 );
+         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*om(jw)^2*S_freq(i,j)*F^2 );
 
          if ICE_MASK(i,j)==1
             %% VARIANCE OF STRAIN;
-            strain_density    = S_freq(i,j)*F^2*...
-                                  (k_ice^2*hice(i,j)/2)^2;
+            strain_density    = abs( S_freq(i,j)*F^2*...
+                                  (k_ice^2*hice(i,j)/2)^2 );
             var_strain(i,j)   = var_strain(i,j)+...
                                  + wt_om(jw)*strain_density;
          end
@@ -554,7 +581,7 @@ for n = 2:nt
          figure(2),clf;
          s1 = struct('dir',wave_stuff.dirs(jdir),...
                      'period',Tc,...
-                     'Sdir',Sdir(:,:,jchq,jdir));
+                     'Sdir',Sdir(:,:,jdir,jchq));
          %%
          fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
 
@@ -597,6 +624,9 @@ for n = 2:nt
    end
 
 end%% end time loop
+
+%%display info again
+disp(strvcat(Info));
 
 %% save time-stepped Dmax;
 if DO_SAVE

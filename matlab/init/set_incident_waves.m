@@ -18,8 +18,8 @@ end
 
 %%direction grid:
 SHARP_DIST  = 0;
-ndir        = 1;
-wavdir      = linspace(-180,180,ndir+1)';
+ndir        = 8;
+wavdir      = linspace(90,-270,ndir+1)';
 wavdir(end) = [];
 wave_stuff  = struct('nfreq',nw,...
                      'ndir',ndir,...
@@ -42,7 +42,7 @@ for i=1:nx
          Hs    = wave_fields.Hs(i,j);
          Tp    = wave_fields.Tp(i,j);
          mwd0  = wave_fields.mwd(i,j);
-         mwd   = pi/180*(90-mwd0);
+         mwd   = -pi/180*(90+mwd0);
 
          if nw>1
             %% Bretschneider spectrum
@@ -63,7 +63,7 @@ for i=1:nx
 
             if SHARP_DIST==0
                %% Spreading fxn
-               dir_fac     = (1+cos(del))/2/(pi/2); 
+               dir_fac     = (1+cos(2*del))/2/(pi/2); 
                j0          = find(abs(del)>pi/2);
                dir_fac(j0) = 0;
             else
@@ -72,6 +72,12 @@ for i=1:nx
                dir_fac        = 0*wavdir;
                dir_fac(jmwd)  = 1/dth;
             end
+
+            % mwd
+            % [180/pi*[theta,del],dir_fac]
+            % dth   = abs(theta(2)-theta(1));
+            % sum(dth*dir_fac)
+            % GEN_pause
 
             for jw=1:nw
             for jt=1:ndir
