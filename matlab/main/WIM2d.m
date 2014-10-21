@@ -88,8 +88,13 @@ if HAVE_GRID==0
       return;
    end
 
-   nx = 49;
-   ny = 51;
+   if 0
+      nx = 49;
+      ny = 51;
+   else
+      nx = 149;
+      ny = 151;
+   end
    dx = 4000; % m
    dy = 4000; % m
    %%
