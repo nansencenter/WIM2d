@@ -2,7 +2,8 @@
 %% Author: Timothy Williams
 %% Date: 20141018, 18:04:46 CEST
 
-function [S,S_freq] = adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt)
+function [S,S_freq,tau_x,tau_y] = ...
+   adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt)
 
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
@@ -48,6 +49,9 @@ else
    wt_theta = 1;
 end
 S_freq   = zeros(nx,ny);
+tau_x    = zeros(nx,ny);
+tau_y    = zeros(nx,ny);
+%%
 oo       = ones(ndir,ndir);
 id       = eye(ndir);
 
@@ -59,7 +63,8 @@ for j = 1:ny
       q_scat   = atten_dim(i,j);
       %%absorbed energy:
       q_abs    = damp_dim(i,j);
-
+      %%
+      M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id )/dth;% [m^{-1}]
       if 1
          %% get eigenvalues analytically
          %% eigenvalues are [-1/dth,-1/dth,...,-1/dth,0]-q_abs/dth
@@ -74,10 +79,21 @@ for j = 1:ny
          %% - can find wih null
          U  = [null(uu'),uu];
       else
-         M_bolt   = q_scat*(oo/ndir-id)-q_abs*id;
-         [U,D]    = eig(M_bolt/dth);
+         [U,D]    = eig(M_bolt);
          dd       = diag(D);
       end
+      S_th        = squeeze(S(i,j,:));
+      source      = ag_eff(i,j)*M_bolt*squeeze(S_th*dth);%% m^{-1}*[m/s]*[m^2s] = m^2
+      tau_x(i,j)  = -(cos(theta).*wt_theta)'*source;      %% [m^2]
+      tau_y(i,j)  = -(sin(theta).*wt_theta)'*source;      %% [m^2]
+         %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
+         %%  and integrated over frequency as well;
+         %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
+         %%         = kg/m/s^2 = Pa
+
+         %% NB take '-' because here we have calc'd the stress
+         %% ON the waves (cf Donelan et al, 2012, JGR)
+         %% - we want the stress on the ice
 
       cc       = U'*squeeze(S(i,j,:));                %%expand in terms of eigenvectors
       S(i,j,:) = U*diag(exp(dd*ag_eff(i,j)*dt))*cc;   %%exponential attenuation

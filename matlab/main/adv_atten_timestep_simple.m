@@ -2,7 +2,8 @@
 %% Author: Timothy Williams
 %% Date: 20141018, 18:04:46 CEST
 
-function [S,S_freq] = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt)
+function [S,S_freq,tau_x,tau_y] = ...
+   adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt)
 
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
@@ -46,11 +47,37 @@ else
    wt_theta = 1;
 end
 S_freq   = zeros(nx,ny);
+tau_x    = zeros(nx,ny);
+tau_y    = zeros(nx,ny);
 
+chk   = 1;
 for i = 1:nx
 for j = 1:ny
    %% atten_dim = ENERGY attenuation coeff [m^{-1}]
    if ICE_MASK(i,j)>0
+      S_th        = squeeze(S(i,j,:));
+      source      = -atten_dim(i,j)*ag_eff(i,j)*S_th;%% m^{-1}*[m/s]*[m^2s] = m^2
+      tau_x(i,j)  = -(cos(theta).*wt_theta)'*source;
+      tau_y(i,j)  = -(sin(theta).*wt_theta)'*source;
+         %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
+         %%  and integrated over frequency as well;
+         %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
+         %%         = kg/m/s^2 = Pa
+
+         %% NB take '-' because here we have calc'd the stress
+         %% ON the waves (cf Donelan et al, 2012, JGR)
+         %% - we want the stress on the ice
+
+      % if chk==1
+      %    chk   = 0;
+      %    i,j
+      %    [theta,cos(theta),sin(theta)]
+      %    [S_th,S_th.*cos(theta),S_th.*sin(theta),source]
+      %    {tau_x(i,j),tau_y(i,j)}
+      %    GEN_pause
+      % end
+
+      %%do attenuation
       S(i,j,:) = S(i,j,:)*...
          exp(-atten_dim(i,j)*ag_eff(i,j)*dt);
    end

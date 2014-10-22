@@ -3,8 +3,12 @@
 %% Date: 20141016, 18:55:20 CEST
 function wave_stuff = set_incident_waves(grid_prams,wave_fields)
 
+
+SHARP_DIST  = 0;%%Single direction
+SING_FREQ   = 0;%%Single frequency
+
 %%frequency grid:
-if 1%%single freq
+if SING_FREQ==1%%single freq
    nw    = 1;
    T     = max(wave_fields.Tp(:));
    freq  = 1/T;
@@ -17,10 +21,20 @@ else
 end
 
 %%direction grid:
-SHARP_DIST  = 0;
-ndir        = 8;
-wavdir      = linspace(90,-270,ndir+1)';
-wavdir(end) = [];
+if SHARP_DIST==1
+   ndir     = 1;
+   wavdir   = -90;
+else
+   r        = 4;%%5->32 points
+   ndir     = 2^r;
+   wavdir   = linspace(90,-270,ndir+1)';
+   %%
+   if mod(ndir,2)==0
+      %%make symmtric
+      wavdir   = wavdir+(wavdir(2)-wavdir(1))/2;
+   end
+   wavdir(end) = [];
+end
 wave_stuff  = struct('nfreq',nw,...
                      'ndir',ndir,...
                      'freq',freq,...
@@ -28,7 +42,7 @@ wave_stuff  = struct('nfreq',nw,...
 
 %% change from: waves-from (degrees, 0=north, clockwise)
 %%          to: waves-to   (radians, 0=east,  anti-clockwise)
-theta = -pi/180*(90+wavdir);
+theta = -pi/180*(90+wavdir);%theta/pi
 dth   = 2*pi/ndir;%%direcional resolution in radians
 nx    = grid_prams.nx;
 ny    = grid_prams.ny;

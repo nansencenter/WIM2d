@@ -40,6 +40,7 @@ ice_prams   = fn_fill_iceprams(ice_prams);
 %%               h: 2
 %%           young: 2.000000000000000e+09
 %%          bc_opt: 0
+%%          rhowtr: 1.025000000000000e+03
 %%          rhoice: 9.225000000000000e+02
 %%               g: 9.810000000000000
 %%         poisson: 0.300000000000000

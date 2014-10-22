@@ -9,6 +9,7 @@ s1 = ice_prams;%%shorten name for convenience
 clear ice_prams;
 
 %% Model Parameters
+s1.rhowtr   = 1025;  % Ice density      [kg/m^3]
 s1.rhoice   = 922.5; % Ice density      [kg/m^3]
 s1.g        = 9.81;  % Gravity          [m/s^2]
 s1.poisson  = .3;    % Poisson's ratio

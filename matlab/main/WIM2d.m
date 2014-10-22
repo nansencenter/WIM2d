@@ -7,10 +7,13 @@ DO_PLOT     = 1;  %% change this to 0
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
-STEADY      = 0   %% Steady-state solution: top-up waves inside wave mask
+STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
-OPT   = 1;%%ice-water-land configuration;
+OPT      = 1;%%ice-water-land configuration;
+PLOT_OPT = 2;%%plot option
+
+CHK_ATTEN   = 0;%%check by running with old attenuation
 
 %if DO_SAVE
 %   filename=['wim2d_out',num2str(Tm),...
@@ -25,7 +28,7 @@ OPT   = 1;%%ice-water-land configuration;
 %% set attenuation model;
 %% also give progress report every 'reps' time
 %%  steps;
-reps  = 5;
+reps  = 1;
 format long
 
 disp('Initialization')
@@ -51,12 +54,13 @@ if HAVE_ICE
       ice_prams   = fn_fill_iceprams(ice_prams);
    end
 end
-HAVE_WAVES  = exist('wave_fields','var');
+HAVE_WAVES  = exist('wave_prams','var');
 if HAVE_WAVES
    %%check if full info is given or just partial info;
-   if ~isfield(wave_fields,'dir_spec')
-      wave_prams  = wave_fields;
-      HAVE_ICE    = 0;
+   if isfield(wave_prams,'dir_spec')
+      wave_fields = wave_prams;
+   else
+      HAVE_WAVES  = 0;
    end
 end
 HAVE3       = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
@@ -139,17 +143,13 @@ if HAVE_ICE==0
    %%      Dmax: [51x51 double]
    %%  WTR_MASK: [51x51 logical]
    %%  ICE_MASK: [51x51 double]
-   cice     = ice_fields.cice;
-   hice     = ice_fields.hice;
-   Dmax     = ice_fields.Dmax;
-   WTR_MASK = ice_fields.WTR_MASK;
-   ICE_MASK = ice_fields.ICE_MASK;
 
    %% ice_prams = structure eg:
    %%               c: 0.750000000000000
    %%               h: 2
    %%           young: 2.000000000000000e+09
    %%          bc_opt: 0
+   %%          rhowtr: 1.025000000000000e+03
    %%          rhoice: 9.225000000000000e+02
    %%               g: 9.810000000000000
    %%         poisson: 0.300000000000000
@@ -163,7 +163,18 @@ if HAVE_ICE==0
    %%       fragility: 0.900000000000000
 end
 
+cice     = ice_fields.cice;
+hice     = ice_fields.hice;
+Dmax     = ice_fields.Dmax;
+WTR_MASK = ice_fields.WTR_MASK;
+ICE_MASK = ice_fields.ICE_MASK;
+
+%% add wave stress computation
+ice_fields.tau_x  = 0*cice;
+ice_fields.tau_y  = 0*cice;
+
 %% Model Parameters
+rho_wtr  = ice_prams.rhowtr;   % Water density   [m/s^2]
 g        = ice_prams.g;        % Gravity         [m/s^2]
 strain_c = ice_prams.strain_c; % breaking strain [-] 
 young    = ice_prams.young;    % Young's modulus [Pa]
@@ -183,10 +194,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%waves
 if HAVE_WAVES==0
-   Hs0         = 2;
-   Tp0         = 12;
-   wave_prams  = struct('Hs',Hs0,...
-                        'Tp',Tp0);
+   if ~exist('wave_prams','var');
+      Hs0         = 2;
+      Tp0         = 12;
+      %Tp0         = 6;
+      wave_prams  = struct('Hs',Hs0,...
+                           'Tp',Tp0);
+   end
    wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
    WAVE_MASK   = wave_fields.WAVE_MASK;
    wave_stuff  = set_incident_waves(grid_prams,wave_fields);
@@ -218,6 +232,7 @@ ap       = sqrt(g.*wlng./(2.*pi)); % Phase speed
 ag       = ap./2;                  % Group speed
 
 ag_eff      = zeros(nx,ny,nw);
+ap_eff      = zeros(nx,ny,nw);
 wlng_ice    = zeros(nx,ny,nw);
 disp_ratio  = ones (nx,ny,nw);
 atten_nond  = zeros(nx,ny,nw);
@@ -235,6 +250,9 @@ for j = 1:ny
             alp_scat,modT,argR,argT] =...
                RT_param_outer(hice(i,j),om,young,visc_rp);
          %%
+         if CHK_ATTEN==1
+            %%check with old version
+         end
          atten_nond(i,j,:) = alp_scat;
          damping(i,j,:)    = damping_rp;
       else
@@ -246,17 +264,25 @@ for j = 1:ny
       if USE_ICE_VEL==0
          %%use wtr group vel;
          ag_eff(i,j,:)  = ag;
+         ap_eff(i,j,:)  = ap;
       else
+         %%TODO check if this is correct
          %%weighted avg of ice and wtr group vel;
          ag_ice         = GEN_get_ice_groupvel(hice(i,j),T,Inf,young);
          ag_eff(i,j,:)  = cice(i,j)*ag_ice+...
                            +(1-cice(i,j))*ag;
+
+         %%weighted avg of ice and wtr phase vel;
+         ap_ice         = om./k_ice;
+         ap_eff(i,j,:)  = cice(i,j)*ap_ice+...
+                           +(1-cice(i,j))*ap;
       end
 
       wlng_ice(i,j,:)   = 2*pi./kice;
-      disp_ratio(i,j,:) = wlng.*(kice/2/pi)*modT;
+      disp_ratio(i,j,:) = wlng.*(kice/2/pi).*modT;
    else
       ag_eff(i,j,:)     = ag;
+      ap_eff(i,j,:)     = ap;
       wlng_ice(i,j,:)   = wlng;
    end
 end
@@ -340,7 +366,7 @@ end
 
 if DO_PLOT
    %%
-   figure(1);
+   figure(1),clf;
    fn_plot_ice(grid_prams,ice_fields);
    pause(0.1);
    %%
@@ -353,7 +379,12 @@ if DO_PLOT
                'period',Tc,...
                'Sdir',Sdir(:,:,jdir,jchq));
    %%
-   fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+   if PLOT_OPT==1
+      fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+   else
+      fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
+         Dmax,ice_fields.tau_y);
+   end
    if OPT==1
       subplot(2,2,1);
       hold on;
@@ -382,6 +413,10 @@ for n = 2:nt
    %% spectral moments;
    mom0  = zeros(nx,ny);
    mom2  = zeros(nx,ny);
+
+   %% wave stresses;
+   tau_x = zeros(nx,ny);
+   tau_y = zeros(nx,ny);
 
    %% variances of stress and strain;
    var_stress     = zeros(nx,ny);
@@ -428,6 +463,11 @@ for n = 2:nt
          end
       end% j
       end% i
+      % max(ag_eff(:))
+      % max(atten_dim(:))
+      % max(damp_dim(:))
+      %1e3*max(ag_eff(:))*max(atten_dim(:))
+      % GEN_pause
 
       s1.ndir        = ndir;
       s1.wavdir      = wavdir;
@@ -448,18 +488,25 @@ for n = 2:nt
 
       if SOLVER==0
          %% Simple attenuation scheme - doesn't conserve scattered energy
-         % S_out          = adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
-         % Sdir(:,:,jw,:) = reshape( S_out, nx,ny,1,ndir);
-         [Sdir(:,:,:,jw),S_freq] = ...
+         [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
             adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
          clear s1 S_out;
       elseif SOLVER==1
-         %%same as SOLVER==0, but scattered energy
-         %%is distributed isotropically
-         [Sdir(:,:,:,jw),S_freq] = ...
+         %% same as SOLVER==0, but scattered energy
+         %% is distributed isotropically
+         [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
             adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt);
          clear s1 S_out;
       end
+
+      %% integrate stress densities over frequency
+      %% TODO: check if this is correct for ice-covered water
+      tmp   = rho_wtr*g*tau_x_om./ap_eff(:,:,jw);  %%[Pa*s]
+      tau_x = tau_x+wt_om(jw)*tmp;                 %%[Pa]
+      tmp   = rho_wtr*g*tau_y_om./ap_eff(:,:,jw);  %%[Pa*s]
+      tau_y = tau_y+wt_om(jw)*tmp;                 %%[Pa]
+      clear tmp;
+      %GEN_pause
 
       %% DO BREAKING:
       for i = 1:nx
@@ -514,6 +561,10 @@ for n = 2:nt
    wave_fields.Tp       = 0*X;
    jnz                  = find(mom2>0);
    wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+
+   %% wave stresses
+   ice_fields.tau_x  = tau_x;
+   ice_fields.tau_y  = tau_y;
 
    %% FINALLY DO FLOE BREAKING;
    for i=1:nx
@@ -583,7 +634,12 @@ for n = 2:nt
                      'period',Tc,...
                      'Sdir',Sdir(:,:,jdir,jchq));
          %%
-         fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+         if PLOT_OPT==1
+            fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+         else
+            fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
+               Dmax,ice_fields.tau_y);
+         end
 
          if OPT==1
             subplot(2,2,1);
@@ -674,4 +730,46 @@ GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 colorbar;
 ttl   = [num2str(s1.period),'s, ',num2str(s1.dir),'^o'];
 ttl   = title({'\itS, \rmm^2s',ttl});
+GEN_font(ttl);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function fn_plot_spec_2(X,Y,Hs,tau_x,Dmax,tau_y)
+%% plot Hs, Dmax, Tw &
+%% S for 1 particular freq and dir
+
+subplot(2,2,1);
+H  = pcolor(X/1e3,Y/1e3,Hs);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+ttl   = title('{\itH}_{\rm s}, m');
+GEN_font(ttl);
+
+subplot(2,2,2);
+H  = pcolor(X/1e3,Y/1e3,Dmax);
+caxis([0 250]);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+ttl   = title('{\itD}_{\rm max}, m');
+GEN_font(ttl);
+
+subplot(2,2,3);
+H  = pcolor(X/1e3,Y/1e3,tau_x);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+ttl   = title('{\tau}_{x}, Pa');
+GEN_font(ttl);
+
+subplot(2,2,4);
+H  = pcolor(X/1e3,Y/1e3,tau_y);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+ttl   = title('{\tau}_{y}, Pa');
 GEN_font(ttl);
