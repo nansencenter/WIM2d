@@ -106,22 +106,10 @@ argT     = NaN*om;
 if (nargout>5) | do_test
 
    for j=1:length(om)
-      if 0
-         %% slower version using loading of files
-         %% -needs to be run first to save chebyshev coefficients to datfiles;
-         [alp_scat(j),modT(j),argR(j),argT(j)]  =...
-            RT_param(alp_nd(j),h_nd(j),int_adm(j));
-      elseif 0
-         %% faster version with no loading of files
-         %% (everything is hard-coded);
-         [alp_scat(j),modT(j),argR(j),argT(j)]  =...
-            RT_param_fast(alp_nd(j),h_nd(j),int_adm(j));
-      else
-         %% faster version with no loading of files
-         %% (everything is hard-coded);
-         [alp_scat(j),modT(j),argR(j),argT(j)]  =...
-            RT_param_fast_v2(alp_nd(j),h_nd(j),int_adm(j));
-      end
+      %% faster version with no loading of files
+      %% (everything is hard-coded);
+      [alp_scat(j),modT(j),argR(j),argT(j)]  =...
+         RT_param_fast_v2(alp_nd(j),h_nd(j),int_adm(j));
    end
 
 end
