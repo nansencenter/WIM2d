@@ -64,13 +64,19 @@ for j = 1:ny
       %%absorbed energy:
       q_abs    = damp_dim(i,j);
       %%
-      M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id )/dth;% [m^{-1}]
+      %M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id )/dth;% [m^{-1}]
+      M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id );% [m^{-1}] - dth shouldn't be here
       if 1
          %% get eigenvalues analytically
-         %% eigenvalues are [-1/dth,-1/dth,...,-1/dth,0]-q_abs/dth
-         dd       = -q_scat./wt_theta;
+         %% eigenvalues are -q_scat*[1/dth,1/dth,...,1/dth,0]-q_abs/dth
+         %% - should be the same as solving in Fourier space
+         %% - TODO: check this
+         % dd       = -q_scat./wt_theta;
+         % dd(end)  = 0;
+         % dd       = dd-q_abs/dth;
+         dd       = -q_scat*wt_theta/(2*pi);
          dd(end)  = 0;
-         dd       = dd-q_abs/dth;
+         dd       = dd-q_abs;
 
          %% last eigenvector corresponds to same scattering in all directions
          uu = oo(:,1)/sqrt(ndir);
@@ -81,9 +87,10 @@ for j = 1:ny
       else
          [U,D]    = eig(M_bolt);
          dd       = diag(D);
+         %GEN_pause;
       end
       S_th        = squeeze(S(i,j,:));
-      source      = ag_eff(i,j)*M_bolt*squeeze(S_th*dth);%% m^{-1}*[m/s]*[m^2s] = m^2
+      source      = ag_eff(i,j)*M_bolt*squeeze(S_th);%% m^{-1}*[m/s]*[m^2s] = m^2
       tau_x(i,j)  = -(cos(theta).*wt_theta)'*source;      %% [m^2]
       tau_y(i,j)  = -(sin(theta).*wt_theta)'*source;      %% [m^2]
          %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
