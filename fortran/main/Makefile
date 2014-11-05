@@ -1,5 +1,6 @@
 CC	:=	gcc
-FC	:=	gfortran
+# FC	:=	gfortran
+FC	:=	gfortran-mp-4.8
 VPATH 	:=	.:../misc:../init:../numerics:../attenuation_youngs
 
 MDIR	:=	../mods

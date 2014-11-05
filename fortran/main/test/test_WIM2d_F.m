@@ -1,9 +1,19 @@
 %% test_waveadv_weno_F.m
 %% Author: Timothy Williams
 %% Date:   20140821, 12:22:17 CEST
+function test_WIM2d_F()
+%clear;
 
-clear;
-%%testing:
+%%check initialisation
+[grid_prams,ice_fields] = check_init();
+figure(1);
+fn_fullscreen;
+fn_plot_ice(grid_prams,ice_fields);
+
+
+return;
+
+
 ii = 49;
 jj = 51;
 dx = 4e3;%m
@@ -260,3 +270,71 @@ for n = 1:nt
    pause(.1);
    %GEN_pause
 end
+
+function [grid_prams,ice_fields] = check_init()
+
+afile = 'out/wim_grid.a';
+bfile = 'out/wim_grid.b';
+
+grid_prams  = struct('nx',[],...
+                     'ny',[],...
+                     'dx',[],...
+                     'dy',[],...
+                     'X',[],...
+                     'Y',[],...
+                     'scuy',[],...
+                     'scvx',[],...
+                     'scp2',[],...
+                     'scp2i',[],...
+                     'LANDMASK',[]);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% get basic info from bfile
+bid   = fopen(bfile);
+C     = textscan(bid,'%2.2d %s %s %s',1);
+nrec  = C{1};
+%%
+C              = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
+grid_prams.nx  = C{1};
+%%
+C              = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
+grid_prams.ny  = C{1};
+fclose(bid);
+
+nx = grid_prams.nx;
+ny = grid_prams.ny;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%read afile
+fmt   = 'float32';
+aid   = fopen(afile);
+%%
+grid_prams.X         = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+grid_prams.Y         = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+grid_prams.scuy      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+grid_prams.scvx      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+grid_prams.scp2      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+grid_prams.scp2i     = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+grid_prams.LANDMASK  = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+%%
+fclose(aid);
+
+grid_prams.dx  = mean(grid_prams.scvx(:));
+grid_prams.dy  = mean(grid_prams.scuy(:))
+
+ice_fields  = struct('cice',[],...
+                     'hice',[],...
+                     'Dmax',[],...
+                     'ICE_MASK',[]);
+
+afile       = 'out/wim_init.a';
+aid         = fopen(afile);
+%%
+ice_fields.cice      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+ice_fields.hice      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+ice_fields.Dmax      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+ice_fields.ICE_MASK  = 1.0*(ice_fields.cice>0)
+%%
+fclose(aid);

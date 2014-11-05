@@ -46,6 +46,7 @@
       if (.true.) then
          !!check initialisation
          !!(dump binaries to look at with test_WIM2d_F.m)
+         call check_grid(GRID_OPT)
          call check_init(GRID_OPT)
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -211,6 +212,71 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine check_grid(GRID_OPT)
+
+      use mod_gridinfo
+      !use mod_common_wim
+      use mod_file_utils
+
+      implicit none
+      integer,intent(in)   :: GRID_OPT
+      character(len=80)    :: afile,bfile
+      character(len=10)    :: stat1,stat2
+
+      afile = 'out/wim_grid.a'
+      bfile = 'out/wim_grid.b'
+      stat1 = 'replace'
+      stat2 = 'old'
+
+ 111  format(i2.2,a)  
+ 112  format(i3.3,a)  
+ 113  format(a)
+
+      !! write .b file (description of stuff in .a file)
+      open(unit=2,file=trim(bfile),status = 'replace')
+
+      write(2,111)                                                      &
+     &  5,          "       Number of records"
+      write(2,112)                                                      &
+     &  ii,          "      Record length in x direction (elements)"
+      write(2,112)                                                      &
+     &  jj,          "      Record length in y direction (elements)"
+      write(2,111)                                                      &
+     &  GRID_OPT,   "       Option number for initial conditions"
+      write(2,113) ""
+
+      write(2,113)    "Record number and name:"
+      write(2,111)                                                      &
+     &  1,    "       X"
+      write(2,111)                                                      &
+     &  2,    "       Y"
+      write(2,111)                                                      &
+     &  3,    "       scuy"
+      write(2,111)                                                      &
+     &  4,    "       scvx"
+      write(2,111)                                                      &
+     &  5,    "       scp2"
+      write(2,111)                                                      &
+     &  6,    "       scp2i"
+      write(2,111)                                                      &
+     &  7,    "       LANDMASK"
+
+      close(2)
+
+      !! dump arrays to .a file
+      !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
+      call wrt_afile_2d(afile ,X          ,ii,jj  ,stat1,1)
+      call wrt_afile_2d(afile ,Y          ,ii,jj  ,stat2,2)
+      call wrt_afile_2d(afile ,scuy       ,ii,jj  ,stat2,3)
+      call wrt_afile_2d(afile ,scvx       ,ii,jj  ,stat2,4)
+      call wrt_afile_2d(afile ,scp2       ,ii,jj  ,stat2,5)
+      call wrt_afile_2d(afile ,scp2i      ,ii,jj  ,stat2,6)
+      call wrt_afile_2d(afile ,LANDMASK   ,ii,jj  ,stat2,7)
+
+      end subroutine check_grid
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine check_init(GRID_OPT)
 
       use mod_gridinfo
@@ -235,35 +301,30 @@
       open(unit=2,file=trim(bfile),status = 'replace')
 
       write(2,111)                                                      &
-     &  2,        "       Number of records"
+     &  5,          "       Number of records"
       write(2,112)                                                      &
-     &  ii,       "      Record length in x direction (elements)"
+     &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
-     &  jj,       "      Record length in y direction (elements)"
+     &  jj,          "      Record length in y direction (elements)"
       write(2,111)                                                      &
-     &  GRID_OPT, "      Option number for initial conditions"
+     &  GRID_OPT,   "       Option number for initial conditions"
       write(2,113) ""
 
       write(2,113)    "Record number and name:"
       write(2,111)                                                      &
-     &  1,    "       X (m)"
+     &  1,    "       icec"
       write(2,111)                                                      &
-     &  2,    "       Y (m)"
+     &  2,    "       iceh"
       write(2,111)                                                      &
-     &  3,    "       icec"
-      write(2,111)                                                      &
-     &  4,    "       iceh (m)"
-      write(2,111)                                                      &
-     &  5,    "       dfloe (m)"
+     &  3,    "       Dmax"
 
       close(2)
 
-      !!dump arrays to .a file
-      call wrt_afile_2d(afile,X,ii,jj    ,stat1,1)
-      call wrt_afile_2d(afile,Y,ii,jj    ,stat2,2)
-      call wrt_afile_2d(afile,icec,ii,jj ,stat2,3)
-      call wrt_afile_2d(afile,iceh,ii,jj ,stat2,4)
-      call wrt_afile_2d(afile,dfloe,ii,jj,stat2,5)
+      !! dump arrays to .a file
+      !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
+      call wrt_afile_2d(afile ,icec       ,ii,jj  ,stat1,1)
+      call wrt_afile_2d(afile ,iceh       ,ii,jj  ,stat2,2)
+      call wrt_afile_2d(afile ,dfloe      ,ii,jj  ,stat2,3)
 
       end subroutine check_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
