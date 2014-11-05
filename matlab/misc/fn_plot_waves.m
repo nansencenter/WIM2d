@@ -25,6 +25,7 @@ GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 ttl   = title('{\itH}_{\rms}, m');
 GEN_font(ttl);
 colorbar;
+GEN_font(gca);
 %%
 subplot(1,3,2);
 %GEN_plot_matrix(X/1e3,Y/1e3,Dmax,[-1 500]);
@@ -35,6 +36,7 @@ GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 ttl   = title('\itT_{\rmp}');
 GEN_font(ttl);
 colorbar;
+GEN_font(gca);
 %%
 subplot(1,3,3);
 %GEN_plot_matrix(X/1e3,Y/1e3,S(:,:,jpp,jmwd));
@@ -43,5 +45,6 @@ set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 colorbar;
+GEN_font(gca);
 ttl   = title('<theta>, \rmm');
 GEN_font(ttl);

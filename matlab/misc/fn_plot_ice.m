@@ -17,6 +17,7 @@ GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 ttl   = title('Concentration');
 GEN_font(ttl);
 colorbar;
+GEN_font(gca);
 %%
 subplot(1,3,3);
 %GEN_plot_matrix(X/1e3,Y/1e3,Dmax,[-1 500]);
@@ -27,6 +28,7 @@ GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 ttl   = title('\itD_{\rmmax}');
 GEN_font(ttl);
 colorbar;
+GEN_font(gca);
 %%
 subplot(1,3,2);
 %GEN_plot_matrix(X/1e3,Y/1e3,S(:,:,jpp,jmwd));
@@ -34,6 +36,7 @@ H  = pcolor(X/1e3,Y/1e3,hice);
 set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
 ttl   = title('\ith, \rmm');
 GEN_font(ttl);
+colorbar;
+GEN_font(gca);

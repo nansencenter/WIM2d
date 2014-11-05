@@ -6,7 +6,7 @@ function test_WIM2d_F()
 
 %%check initialisation
 [grid_prams,ice_fields] = check_init();
-figure(1);
+figure(1),clf;
 fn_fullscreen;
 fn_plot_ice(grid_prams,ice_fields);
 
