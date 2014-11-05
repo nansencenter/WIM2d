@@ -10,10 +10,10 @@
 
       implicit none
 
-      character(len=80), intent(in)       :: outfile
-      real*8, dimension(nx), intent(in)   :: x  !!1d array to write in
-      integer, intent(in)                 :: nx !!length of x
-      character(len=80), intent(in)       :: stat
+      character(len=80), intent(in)    :: outfile
+      real, dimension(nx), intent(in)  :: x  !!1d array to write in
+      integer, intent(in)              :: nx !!length of x
+      character(len=80), intent(in)    :: stat
       !! stat can be:
       !! 'replace' - overwrite file
       !! 'new'     - file doesn't exist already
@@ -22,7 +22,7 @@
 
       integer  :: rec_len
 
-      inquire(IOLENGTH=rec_len) x !should be 8*nx
+      inquire(IOLENGTH=rec_len) x !should be 4*nx
 
       open(unit=1,file=trim(outfile),status = trim(stat),               &
      &   form='unformatted', access='direct',recl=rec_len)
@@ -37,11 +37,11 @@
 
       implicit none
 
-      character(len=80), intent(in)          :: outfile
-      real*8, dimension(nx,ny), intent(in)   :: x     !!2d array to write in
-      integer, intent(in)                    :: nx,ny !!size of x
-      integer, intent(in)                    :: recno !!record no
-      character(len=10), intent(in)          :: stat
+      character(len=80), intent(in)       :: outfile
+      real, dimension(nx,ny), intent(in)  :: x     !!2d array to write in
+      integer, intent(in)                 :: nx,ny !!size of x
+      integer, intent(in)                 :: recno !!record no
+      character(len=10), intent(in)       :: stat
       !! stat can be:
       !! 'replace' - overwrite file
       !! 'new'     - file doesn't exist already

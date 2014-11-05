@@ -81,7 +81,7 @@ if OPT==0
    jI       = find( ICE_MASK==1 );
 
 elseif OPT==1
-   %% south-east corner land surrounded by ice;
+   %% column of land on right
    xm       = max(X(:));
    WTR_MASK = (X<-.7*xm);
    jW       = find(WTR_MASK==1);
