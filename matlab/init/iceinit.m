@@ -83,7 +83,7 @@ if OPT==0
 elseif OPT==1
    %% south-east corner land surrounded by ice;
    xm       = max(X(:));
-   WTR_MASK = (X<-.4*xm);
+   WTR_MASK = (X<-.7*xm);
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );

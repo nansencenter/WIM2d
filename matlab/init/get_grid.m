@@ -43,7 +43,7 @@ if OPT==0%%make an island;
    %%
    LANDMASK(j0)   = 1;
 elseif OPT==1
-   x0             = .5*xm;
+   x0             = .8*xm;
    j0             = find(X>x0);
    LANDMASK(j0)   = 1;
 elseif OPT==2

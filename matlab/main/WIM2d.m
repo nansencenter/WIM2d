@@ -1,5 +1,6 @@
 function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
    WIM_2D(grid_prams,wave_prams,ice_prams)
+% clear;
 
 DO_SAVE     = 0;
 DO_PLOT     = 1;  %% change this to 0
@@ -7,6 +8,7 @@ DO_PLOT     = 1;  %% change this to 0
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
+DO_BREAKING = 1   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
@@ -91,8 +93,8 @@ if HAVE_GRID==0
    end
 
    if 1
-      nx = 49;
-      ny = 51;
+      nx = 150;
+      ny = 50;
    else
       nx = 149;
       ny = 151;
@@ -290,16 +292,17 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CFL   = .7;
+amax  = max(ag_eff(:))
 dt    = CFL*dx/max(ag_eff(:)); 
 
 if 0
    nt    = 50;
-   amax  = max(ag_eff(:))
    L     = nt*dt*amax
 else
    L     = max(X(:))-min(X(:));
-   amax  = max(ag_eff(:));
-   nt    = round( L/amax/dt );
+   amin  = min(ag_eff(:));
+   uc    = amin+.7*(amax-amin);
+   nt    = round( L/uc/dt );
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -367,10 +370,12 @@ end
 if DO_PLOT
    %%
    figure(1),clf;
+   fn_full_screen;
    fn_plot_ice(grid_prams,ice_fields);
    pause(0.1);
    %%
    figure(2),clf;
+   fn_full_screen;
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(ndir/2);
@@ -579,7 +584,7 @@ for n = 2:nt
          %%  probability of critical strain
          %%  being exceeded from Rayleigh distribution;
          Pstrain  = exp( -strain_c^2/(2*var_strain(i,j)) );
-         P_crit   = exp(-1);%%this is critical prob if monochromatic wave
+         P_crit   = (1-DO_BREAKING)+exp(-1);%%this is critical prob if monochromatic wave
 
          %% FLOE BREAKING:
          BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
@@ -630,11 +635,11 @@ for n = 2:nt
 
       if DO_PLOT
          figure(2),clf;
-         s1 = struct('dir',wave_stuff.dirs(jdir),...
-                     'period',Tc,...
-                     'Sdir',Sdir(:,:,jdir,jchq));
          %%
          if PLOT_OPT==1
+            s1 = struct('dir',wave_stuff.dirs(jdir),...
+                        'period',Tc,...
+                        'Sdir',Sdir(:,:,jdir,jchq));
             fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
          else
             fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
@@ -644,7 +649,6 @@ for n = 2:nt
          if OPT==1
             subplot(2,2,1);
             hold on;
-            uc = max(max(ag_eff(:,:,jchq)));
             x0 = min(X(:))+uc*n*dt;
             x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
             % {uc,x0/1e3,x1/1e3}
@@ -673,6 +677,7 @@ for n = 2:nt
       end
    end
 
+
    for jw=[]%11
    [n,T(jw)],%[ag_ice(jw,1:11,1)]
    testSatt=S(1:11,1,jw,jmwd)
@@ -680,6 +685,37 @@ for n = 2:nt
    end
 
 end%% end time loop
+
+if DO_PLOT%%check exponential attenuation
+   figure(2),clf;
+   if PLOT_OPT==1
+      s1 = struct('dir',wave_stuff.dirs(jdir),...
+                  'period',Tc,...
+                  'Sdir',Sdir(:,:,jdir,jchq));
+      fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+   else
+      fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
+         Dmax,ice_fields.tau_y);
+   end
+   %%
+   figure(3);
+   plot(X(:,1)/1e3,wave_fields.Hs(:,1),'-k');
+   set(gca,'yscale','log');
+   GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+
+   if 1%%save figures
+      fig_dir  = 'test_B/B';  %%use this for monochromatic wave
+      %fig_dir  = 'test_B2/B'; %%use this for full freq spec
+
+      figure(3);
+      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'_atten.fig']);
+      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'_atten.png']);
+      %%
+      figure(2);
+      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'.fig']);
+      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'.png']);
+   end
+end
 
 %%display info again
 disp(strvcat(Info));

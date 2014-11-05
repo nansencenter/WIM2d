@@ -4,3 +4,5 @@
 *.exe
 fortran/numerics/out/*
 fortran/numerics/test_out/*
+matlab/main/test_B2
+matlab/main/test_B
