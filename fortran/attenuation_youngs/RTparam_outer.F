@@ -1,0 +1,185 @@
+      !!function [damping,kice,kwtr,int_adm,...
+      !!            alp_scat,modT,argR,argT] =...
+      !!               RT_param_outer(h,om,E,visc_rp,guess)
+      subroutine RTparam_outer(damping,kice,kwtr,int_adm,
+     &                  ac,modT,argR,argT,
+     &                  h,om,guess)
+!    &                  h,om,visc_rp,guess,params)
+
+      use mod_wim_prams
+
+      real,intent(out)   :: damping,kice,kwtr,int_adm,
+     &                           ac,modT,argR,argT
+      real,intent(in)    :: h,om,guess
+      !real,intent(in)    :: h,om,visc_rp,guess,params(5)
+      
+      real   :: alp_nd,hnd,zeta_nd
+      real   :: Hw_nd,varpi,L
+      real   :: damping_nd,visc_rp_nd
+      real   :: H_nd = 4.0d0!!infinite depth used in scattering calculation;
+      !!
+      real   :: ki,kw,avc,BG1,BG2
+      real   :: E,g,rhow,rhoi,nu,rho
+      real   :: D
+      
+      !E     = params(1)
+      !g     = params(2)
+      !rhow  = params(3)
+      !rhoi  = params(4)
+      !nu    = params(5)
+      !rho   = rhoi/rhow
+      E     = youngs
+      g     = gravity
+      rhow  = rho_wtr
+      rhoi  = rho_ice
+      nu    = poisson
+      rho   = rhoi/rhow
+      !!
+      D        = E*(h*h*h)/12.0/(1.0-nu*nu)
+      L        = exp( 0.2*log(D/rhow/om/om) )
+      alp_nd   = om*om/g*L
+      hnd     = h/L
+      zeta_nd  = rho*hnd
+      
+      !!get wavenumber for ice;
+      varpi = 1/alp_nd-zeta_nd
+      !![ki,BG2,avc]   = gen_root_ice(varpi,H_nd,guess*L);
+      call gen_root_ice(ki,BG2,avc,varpi,H_nd,guess*L)
+      kice = ki/L
+         
+      !!get wavenumber for water;
+      varpi = 1.0/alp_nd
+      Hw_nd = H_nd+zeta_nd
+      !![kw,BG1] = gen_root_wtr(varpi,Hw_nd,alp_nd);
+      call gen_root_wtr(kw,BG1,varpi,Hw_nd,alp_nd)
+      kwtr  = kw/L
+         
+      !!get intrinsic admittance;
+      !!|R|^2+int_adm*|T|^2=1
+      !print*,'BG1   = ', BG1
+      !print*,'BG2   = ', BG2
+      int_adm  = BG1/BG2
+         
+      !!get viscous attenuation;
+      visc_rp_nd  = visc_rp/rhow/om/L
+      damping_nd  = avc*visc_rp_nd
+      damping     = damping_nd/L
+      
+      !!get interpolated attenuation coefficient;
+      call RTparam_fast(ac,modT,argR,argT,
+     &             alp_nd,hnd,int_adm)
+      
+      end subroutine RTparam_outer
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      !!%%function [ki,BG2,avc]=gen_root_ice(del,H,guess)
+      !!finds the root of the ice dispersion relation nearest to 'guess'.
+      subroutine gen_root_ice(ki,BG2,avc,
+     &                 del, H,guess)
+
+      real,intent(out)   :: ki,BG2,avc
+      real,intent(in)    :: del,H,guess
+      
+      real   :: fac,k0,dk,tol
+      real   :: res,Lam,Lampr,denom
+      
+      fac   = 1.0d0
+      k0    = guess
+      tol   = 1.0d-12
+      
+      !!Call dispersion relation function;
+      !!dk    = NR_corr_term(k0,del,H,fac);
+      call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
+      ki = k0-dk
+        
+      do while(abs(dk) > tol)
+         k0 = ki
+        
+         !!Call dispersion relation function;
+         !!dk = NR_corr_term(k0,del,H,fac);
+         call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
+         ki = k0-dk
+      end do
+        
+      !!Call dispersion relation function;
+      !![dk,Lam,Lampr] = NR_corr_term(ki,del,H,fac);
+      call NR_corr_term(dk,Lam,Lampr,ki,del,H,fac)
+      !!
+      denom = H*(Lam*Lam*ki*ki-1.0d0)+Lampr
+      res   = -ki/denom
+      
+      !!Outputs;
+      BG2  = Lam*Lam*res
+      avc  = ki/denom!! -1i*dk/d(visc_rp) - non-dimensional
+      end subroutine gen_root_ice
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      !!function [kw,BG1]=gen_root_wtr(del,H,guess)
+      !!%% finds the root of the water dispersion relation nearest to 'guess'.
+      subroutine gen_root_wtr(kw,BG1,
+     &                 del, H,guess)
+      
+      real,intent(out)   :: kw,BG1
+      real,intent(in)    :: del,H,guess
+      !!
+      real   :: fac,k0,dk,tol
+      real   :: res,Lam,Lampr,denom
+      
+      tol   = 1.0d-12
+      fac   = 0.0d0
+      k0    = guess
+      
+      !!Call dispersion relation function;
+      !!dk    = NR_corr_term(k0,del,H,fac);
+      call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
+      kw = k0-dk
+      
+      do while(abs(dk) > tol)
+         k0 = kw
+      
+         !!Call dispersion relation function;
+         !!dk       = NR_corr_term(k0,del,H,fac);
+         call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
+         kw = k0-dk
+      end do
+      
+      !!Call dispersion relation function;
+      !![dk,Lam,Lampr] = NR_corr_term(kw,del,H,fac);
+      call NR_corr_term(dk,Lam,Lampr,kw,del,H,fac)
+      denom          = H*(Lam*Lam*kw*kw-1.0d0)+Lampr
+      res            = -kw/denom
+      !!printf("(denom,res,Bg2)=(%.9e,%.9e,%.9e)",res,denom,Lam*Lam*res);
+      
+      !!Outputs;
+      BG1  = Lam*Lam*res
+      end subroutine gen_root_wtr
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      !! function [dk,Lam,Lampr] = NR_corr_term(k,del,H,fac)
+      !! %% dk=f/f_k, where f has the same zeros as of the dispersion function, 
+      !! %% is the correction term in the Newton-Rhapson method for finding zeros in f.
+      subroutine NR_corr_term(dk,Lam,Lampr,
+     &                 k, del, H,fac)
+      
+      real,intent(out)   :: dk,Lam,Lampr
+      real,intent(in)    :: k,del,H,fac
+      !!
+      real   :: f,df,x,k4
+      
+      k4    = k*k*k*k
+      Lam   = fac*k4+del
+      Lampr = 5.0d0*fac*k4+del
+      x     = 7.5d0
+      
+      if (abs(k*H)<=x) then
+         f  = Lam*k*sinh(k*H)-cosh(k*H)
+         df = Lam*(k*H)*cosh(k*H)+(Lampr-H)*sinh(k*H)
+      else
+         f  = Lam*k*tanh(k*H)-1
+         df = Lam*k*H+(Lampr-H)*tanh(k*H)
+      end if
+      
+      !!Outputs;
+      dk      = f/df
+      
+      end subroutine NR_corr_term

@@ -5,10 +5,17 @@ function test_WIM2d_F()
 %clear;
 
 %%check initialisation
-[grid_prams,ice_fields] = check_init();
-figure(1),clf;
-fn_fullscreen;
-fn_plot_ice(grid_prams,ice_fields);
+[grid_prams,ice_fields,wave_fields] = check_init();
+
+if 1
+   figure(1),clf;
+   fn_fullscreen;
+   fn_plot_ice(grid_prams,ice_fields);
+   %%
+   figure(2),clf;
+   fn_fullscreen;
+   fn_plot_waves(grid_prams,wave_fields,ice_fields);
+end
 
 
 return;
@@ -271,7 +278,7 @@ for n = 1:nt
    %GEN_pause
 end
 
-function [grid_prams,ice_fields] = check_init()
+function [grid_prams,ice_fields,wave_fields] = check_init()
 
 afile = 'out/wim_grid.a';
 bfile = 'out/wim_grid.b';
@@ -329,6 +336,11 @@ ice_fields  = struct('cice',[],...
                      'Dmax',[],...
                      'ICE_MASK',[]);
 
+wave_fields = struct('Hs',[],...
+                     'Tp',[],...
+                     'mwd',[],...
+                     'WAVE_MASK',[]);
+
 afile       = 'out/wim_init.a';
 aid         = fopen(afile);
 %%
@@ -336,5 +348,10 @@ ice_fields.cice      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 ice_fields.hice      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 ice_fields.Dmax      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 ice_fields.ICE_MASK  = 1.0*(ice_fields.cice>0)
+%%
+wave_fields.Hs          = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+wave_fields.Tp          = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+wave_fields.mwd         = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+wave_fields.WAVE_MASK   = 1.0*(wave_fields.Hs>0)
 %%
 fclose(aid);

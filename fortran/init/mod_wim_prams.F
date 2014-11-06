@@ -5,7 +5,7 @@
       !! Model Parameters
       real,parameter :: rhowtr   = 1025   ! Ice density      [kg/m^3]
       real,parameter :: rhoice   = 922.5  ! Ice density      [kg/m^3]
-      real,parameter :: g        = 9.81   ! Gravity          [m/s^2]
+      real,parameter :: gravity  = 9.81   ! Gravity          [m/s^2]
       real,parameter :: poisson  = .3     ! Poisson's ratio
       real,parameter :: visc_rp  = 13     ! Robinson-Palmer viscosity coefficient [Pa/(m/s)]
 
@@ -76,6 +76,16 @@
 
       !! flex rigidity = flex_rig_coeff*h^3
       flex_rig_coeff = young/12.0/(1-poisson**2)
+
+      print*,'********************************************'
+      print*,'in set_wim_prams()...'
+      print*,'Brine volume fraction:      ',vbf
+      print*,'Youngs modulus (Pa):        ',young
+      print*,'Flexural strength (Pa):     ',sigma_c
+      print*,'Breaking strain:            ',epsc
+      print*,'Damping (Pa.s/m):           ',visc_rp
+      print*,'********************************************'
+      print*,' '
 
       end subroutine set_wim_prams
 

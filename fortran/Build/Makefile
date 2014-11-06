@@ -1,9 +1,9 @@
 CC	:=	gcc
-# FC	:=	gfortran
-FC	:=	gfortran-mp-4.8
-VPATH 	:=	.:../misc:../init:../numerics:../attenuation_youngs
+FC	:=	gfortran
+# FC	:=	gfortran-mp-4.8
+VPATH 	:=	.:../main:../misc:../init:../numerics:../attenuation_youngs
 
-MDIR	:=	../mods
+MDIR	:=	mods
 
 # include modules from $(MDIR), and put them in $(MDIR) when they are created
 # FCFLAGS=-O -I$(MDIR)
@@ -16,7 +16,12 @@ OBJS=mod_gridinfo.o \
      mod_wim_init.o \
      mod_common_wim.o \
      mod_file_utils.o \
-     mod_wim_prams.o
+     mod_wim_prams.o \
+     RTparam_outer.o \
+     RTparam_fast.o \
+     RTparam_hardcoded_v2.o \
+     RTparam_utilities.o
+
 
 # mod_waveadv_weno.o
 
@@ -35,17 +40,22 @@ default: $(PROG) $(OBJS)
 # 			mod_file_utils.o
 mod_wim_init.o:		mod_gridinfo.o mod_common_wim.o
 mod_common_wim.o:	mod_gridinfo.o
+#
+RTparam_outer.o:        RTparam_fast.o
+RTparam_fast.o:         RTparam_hardcoded_v2.o
+RTparam_hardcoded_v2.o: RTparam_utilities.o
+#
 $(PROG): 		$(OBJS)
 
 .PHONY: clean
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm *.o ../mods/*
+	rm *.o $(MDIR)/*
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(TARGET) *.o ../mods/*
+	rm $(TARGET) *.o $(MDIR)/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

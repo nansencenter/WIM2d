@@ -6,6 +6,11 @@ Y  = grid_prams.Y;
 cice  = ice_fields.cice;
 hice  = ice_fields.hice;
 Dmax  = ice_fields.Dmax;
+%%
+jL       = find(grid_prams.LANDMASK==1);
+cice(jL) = NaN;
+hice(jL) = NaN;
+Dmax(jL) = NaN;
 
 subplot(1,3,1);
 %GEN_plot_matrix(X/1e3,Y/1e3,cice,[-1 1]);

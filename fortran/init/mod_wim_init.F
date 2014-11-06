@@ -1,17 +1,13 @@
       module mod_wim_init
 
       use mod_gridinfo
+      use mod_common_wim
 
       implicit none
 
-      integer,parameter :: n_wavdir    = 16
-      integer,parameter :: n_wave_freq = 21!should be odd (Simpson's rule)
-      !!
       real,parameter :: Hs_inc   = 2.0
       real,parameter :: Tp_inc   = 12.0
       real           :: mwd_inc                       !mwd - set in waves_init
-      !!
-      real,dimension(n_wave_freq)   :: freq_vec !set in set_inc_waves
 
       contains
 
@@ -23,7 +19,7 @@
       implicit none
 
       integer,intent(in)   :: GRID_OPT
-      integer  :: i,j,w
+      integer  :: i,j,w,wth
       real     :: xm,ym
       logical  :: critter
 
@@ -33,6 +29,7 @@
       real,parameter :: Tmin  = 2.5
       real,parameter :: Tmax  = 25.0
       real           :: fmin,fmax,df
+      real           :: theta_min,theta_max,dtheta
       real           :: PI
 
       PI    = 4.0*atan(1.0)
@@ -49,17 +46,30 @@
             freq_vec(w) = fmin+(w-1)*df
          end do
       end if
+
+      !!set directional grid
+      if (GRID_OPT.eq.0) then
+         mwd_inc  = 135.0!!waves-from direction
+      elseif (GRID_OPT.eq.1) then
+         mwd_inc  = -90.0!!waves-from direction
+      elseif (GRID_OPT.eq.2) then
+         mwd_inc  = 135.0!!waves-from direction
+      end if
+
+      if (ndir.eq.1) then
+         wavdir(1)   = mwd_inc
+      else
+         theta_max   = 90.0
+         theta_min   = -270.0
+         dtheta      = (theta_min-theta_max)/(1.0*ndir)
+         do wth=1,ndir
+            wavdir(wth) = theta_max+(wth-1)*dtheta
+         end do
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Set WAVEMASK
-      if (GRID_OPT.eq.0) then
-         mwd   = 135!!waves-from direction
-      elseif (GRID_OPT.eq.1) then
-         mwd   = -90!!waves-from direction
-      elseif (GRID_OPT.eq.2) then
-         mwd   = 135!!waves-from direction
-      end if
 
       xm = maxval(X)
       ym = maxval(Y)
@@ -69,26 +79,34 @@
       Tp          = 0.0
       mwd         = 0.0
 
-      do j=1,jj
-      do i=1,ii
+      if (GRID_OPT.eq.0) then
 
-         if (GRID_OPT.eq.0) then
-            critter  = (X(i,j).lt.-0.4*xm).or.(Y(i,j).gt.0.4*ym)
-         elseif (GRID_OPT.eq.1) then
-            critter  = (X(i,j).lt.-0.6*xm)
-         elseif (GRID_OPT.eq.2) then
-            critter  = (X(i,j).lt.-0.25*xm).or.(Y(i,j).gt.0.25*ym)
-         end if
+         !!island in corner, with some ice around it
+         where ((X.lt.-0.4*xm).or.(Y.gt.0.4*ym))
+            WAVE_MASK   = 1.0
+         end where
 
-         if (critter) then
-            WAVE_MASK(i,j) = 1.0
-            Hs(i,j)        = Hs_inc
-            Tp(i,j)        = Tp_inc
-            mwd(i,j)       = mwd_inc
-         end if
-         
-      end do
-      end do
+      elseif (GRID_OPT.eq.1) then
+
+         !!column of land on right
+         where (X.lt.-.8*xm)
+            WAVE_MASK   = 1.0
+         end where
+
+      elseif (GRID_OPT.eq.2) then
+
+         !!land in southeast corner
+         where ((X.lt.-0.25*xm).or.(Y.gt.0.25*ym))
+            WAVE_MASK   = 1.0
+         end where
+
+      end if
+
+      where (WAVE_MASK.eq.1.0)
+         Hs    = Hs_inc
+         Tp    = Tp_inc
+         mwd   = mwd_inc
+      end where
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       end subroutine waves_init
@@ -103,16 +121,22 @@
 
       integer,parameter :: nw    = n_wavdir
       integer,parameter :: ndir  = n_wave_freq
-      integer           :: i,j,w
-      real  :: Sfreq(nw),om
-      real  :: PI
+      integer           :: i,j,w,wth
+      !!
+      real,dimension(nw)   :: Sfreq(nw)
+      real,dimension(ndir) :: theta_fac
+      real  :: PI,om,chi
 
-      PI = 4.0*atan(1.0)
+      PI       = 4.0*atan(1.0)
+      sdf_inc  = 0.0
+      sdf_dir  = 0.0
 
       do j=1,jj
       do i=1,ii
-         if (WAVE_MASK(i,j).eq.1.0) then
+      if (WAVE_MASK(i,j).eq.1.0) then
+         !!set the incident waves
 
+         !!freq
          if (nw.gt.1) then
             !! Bretschneider spectrum
             !! - freq spectrum
@@ -122,10 +146,30 @@
      &                  Sfreq(w),om,Tp(i,j),Hs(i,j))
             end do
          else
-            Sfreq(w) = (Hs(i,j)/4.0)**2;!!Hs=4*sqrt(Sfreq*wt_om), wt_om=1
+            Sfreq(1) = (Hs(i,j)/4.0)**2!!Hs=4*sqrt(Sfreq*wt_om), wt_om=1
          end if
 
+         !!direcional spreading
+         if (ndir.eq.1) then
+            theta_fac   = 1.0
+         else
+            theta_fac   = 0.0
+            do wth=1,ndir
+               chi   = PI/180.0*(wavdir(wth)-mwd(i,j))
+               if (cos(chi).gt.0.0) then
+                  theta_fac(wth) = 2.0/PI*cos(chi)**2
+               end if
+            end do
          end if
+
+         !!combine freq & dir
+         do w=1,nw
+         do wth=1,ndir
+            sdf_inc(i,j,wth,w)   = Sfreq(w)*theta_fac(wth)
+         end do
+         end do
+
+      end if
       end do
       end do
 

@@ -14,34 +14,65 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer, parameter   :: OPT      = 1
-      integer, parameter   :: bc_opt   = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
-      integer, parameter   :: GRID_OPT = 1!option for land/ice/water config
-      real  , parameter    :: CFL      = 0.4
+      integer,parameter :: SOLVER      = 1
+      integer,parameter :: STEADY      = 1
+      integer,parameter :: DO_ATTEN    = 1
+      integer,parameter :: DO_BREAKING = 1
+      integer,parameter :: USE_ICE_VEL = 0
       !!
-      real     :: xm,ym
-      real     :: xx(ii),yy(jj)
-      real  ,dimension(idm,jdm)   :: R,Theta,u,v,h
+      integer,parameter :: OPT      = 1
+      integer,parameter :: bc_opt   = 2
+         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
+      integer,parameter :: GRID_OPT = 1!option for land/ice/water config
+      real,parameter    :: CFL      = 0.4
+      !!
+      integer,parameter :: nw    = n_wave_freq
+      integer,parameter :: ndir  = n_wavdir
+      !!
+      real,dimension(idm,jdm)    :: mom0,mom2,var_strain,tau_x,tau_y
+      real,dimension(idm,jdm,nw) ::                                     &
+     &   ag_eff,ap_eff,wlng_ice,atten_nond,damping,disp_ratio
 
-      real     :: adv_dir,xc,yc,uc,Rc,angrot,dt,dtheta,PI
-      integer  :: nt,n,i,j
+      real     :: PI
+      real     :: adv_dir,dt,dtheta,om,dom,guess
+      real     :: kwtr,kice,modT,int_adm,argT,argR
+      real,dimension(nw)   :: wt_om,wt_simp,T,wlng,ag,ap
+      integer  :: nt,n,i,j,w,wth
       logical  :: critter
 
       character(len=*),parameter :: outfile = "init"
       character(len=*),parameter :: outdir = "out/"
       character(len=3)           :: cts
       !character(len=80)          :: afile,bfile,stat1,stat2
+
+      real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       PI = 4.0*atan(1.0)
+      et = etime(tictoc)!!startup etime
+
+      print*,'****************************************'
+      print*,'Initialising...'
+      print*,'****************************************'
+      print*,' '
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation
       call set_wim_prams()
       call get_grid(GRID_OPT)
       call ice_init(GRID_OPT)
+
+      !!incident waves
       call waves_init(GRID_OPT)
+      call set_inc_waves()
+
+      do w=1,nw
+      do wth=1,ndir
+         where (WAVE_MASK.eq.1.0)
+            sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+         end where
+      end do
+      end do
 
       if (.true.) then
          !!check initialisation
@@ -50,6 +81,218 @@
          call check_init(GRID_OPT)
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! define weights for numerical quadrature;
+      if (nw.gt.1) then!! weights for integral over frequency
+         !! (Simpson's rule);
+         wt_simp     = 2.0
+         wt_simp(1)  = 1.0
+         wt_simp(nw) = 1.0
+
+         w  = 0
+         do while ((w+2).lt.nw)
+            w  = w+2
+            wt_simp(w)  = 4.0
+         end do
+      
+         !!NB om needs to be equally spaced;
+         dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
+         wt_om = dom/3.0*wt_simp
+      else
+         wt_om = 1
+      end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!get wave speeds and attenuation coefficients
+      print*,'****************************************'
+      print*,'Get attenuation coefficients...'
+      print*,'****************************************'
+      print*,' '
+
+      !! Water wavelength and wave speed
+      !! is a function only of wave period
+      wlng     = gravity*T**2/(2*PI)
+      ap       = sqrt(gravity*wlng/(2*PI))   ! Phase speed
+      ag       = ap/2.0                      ! Group speed
+
+      ag_eff      = 0.0
+      ap_eff      = 0.0
+      wlng_ice    = 0.0
+      disp_ratio  = 1.0
+      atten_nond  = 0.0
+      damping     = 0.0
+
+      do w=1,nw
+         
+         om    = 2*PI*freq_vec(1)
+         guess = om**2/gravity!guess for root
+
+         do j=1,jj
+         do i=1,ii
+         if (ICE_MASK(i,j).eq.1.0) then
+
+            om = 2*PI*freq_vec(w)
+            call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
+     &                  atten_nond(i,j,w),modT,argR,argT,               &
+     &                  iceh(i,j),om,guess)
+
+            guess             = kice
+            disp_ratio(i,j,w) = kice/kwtr*modT
+            wlng_ice(i,j,w)   = 2*PI/kice
+
+            if (USE_ICE_VEL.eq.0) then
+               !!use water group and phase velocity
+               ag_eff(i,j,w)  = ag(w)
+               ap_eff(i,j,w)  = ap(w)
+            end if
+
+         else
+
+            !!no ice
+            wlng_ice(i,j,w)   = wlng(w)
+            ag_eff(i,j,w)     = ag(w)
+            ap_eff(i,j,w)     = ap(w)
+
+         end if
+         end do
+         end do
+      end do
+
+      if (DO_ATTEN.eq.0) then
+         atten_nond  = 0.0
+         damping     = 0.0
+      end if
+
+      nt = 100
+      print*,' '
+      print*,'******************************************************'
+      print*,'Number of time steps:       ',nt
+      print*,'Number of wave frequencies: ',nw
+      print*,'Number of wave directions:  ',ndir
+      print*,'******************************************************'
+      print*,' '
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+
+      print*,'Beginning main integration...'
+
+      do n=2,nt
+         print*,'n/nt',n,nt
+
+         !! spectral moments;
+         mom0  = 0.0
+         mom2  = 0.0
+
+         !! wave stresses;
+         tau_x = 0.0
+         tau_y = 0.0
+
+         !! variance of strain;
+         var_strain     = 0.0
+         do w=1,nw
+
+            !! CALC DIMENSIONAL ATTEN COEFF;
+            atten_dim   = 0.0
+            damp_dim    = 0.0
+            do j = 1,jj
+            do i = 1,ii
+
+               !!top-up waves in wave mask if STEADY==1
+               !!(steady-state solution);
+               if ((WAVE_MASK(i,j).ge.0).and.(STEADY.eq.1))
+                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
+                  sdf_dir(i,j,:,:)  = sdf_inc(i,j,:,:)
+               end if
+               
+               if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
+                  call floe_scaling(Dave,Dmax(i,j))
+
+                  !! get expected no of floes met per unit
+                  !!  distance if travelling in a line;
+                  if (Dmax(i,j).lt.200.0) then
+                     c1d = cice(i,j)/Dave
+                     !! floes per unit length;
+                  else
+                     c1d = cice(i)/Dmax(i,j)
+                     !! uniform lengths
+                  end if
+
+                  !! ENERGY attenuation coeff;
+                  atten_dim(i,j) = atten_nond(i,j,jw)*c1d      !!scattering
+                  damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j) !!damping
+               end if
+            end do!! j
+            end do!! i
+
+            if (ndir==1) then
+               if (SOLVER.ne.0) then
+                  print*,'warning: changing SOLVER option'
+     &                  ,'as not enough directions'
+                  print*,'(ndir = ',ndir,')'
+               end if
+               SOLVER   = 0
+            end if
+
+            if (SOLVER.eq.0) then
+               !! Simple attenuation scheme - doesn't conserve scattered energy
+!              call adv_atten_simple(S_freq,sdf_dir(:,:,:,w)            &
+!    &            ,tau_x_om,tau_y_om,                                   &
+!    &            ,atten_dim,damp_dim,ag_eff(:,:,w),wavdir,dt)
+            elseif (SOLVER.eq.1) then
+               !! same as SOLVER==0, but scattered energy
+               !! is distributed isotropically
+!              call adv_atten_isotropic(S_freq,sdf_dir(:,:,:,w)         &
+!    &            ,tau_x_om,tau_y_om,                                   &
+!    &            ,atten_dim,damp_dim,ag_eff(:,:,w),wavdir,dt)
+            end if
+
+            !! integrate stress densities over frequency
+            !! TODO: check if this is correct for ice-covered water
+!           tmp1  = rhowtr*gravity*tau_x_om/ap_eff(:,:,w)   !![Pa*s]
+!           tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
+!           tmp1  = rhowtr*gravity*tau_y_om./ap_eff(:,:,w)  !![Pa*s]
+!           tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
+
+            !! INTEGRALS FOR BREAKING PROB:
+            do j=1,jj
+            do i=1,ii
+
+               !! convert from water amp's to ice amp's;
+               F     = disp_ratio(i,j,w)
+               k_ice = 2*PI/wlng_ice(i,j,w)
+
+               !! SPECTRAL MOMENTS;
+               !!take abs as small errors can make S_freq negative
+               om          = 2*PI*freq_vec(w)
+               tmp         = wt_om(w)*S_freq(i,j)*F**2
+               mom0(i,j)   = mom0(i,j)+abs( tmp )!!variance of displacement
+               tmp         = wt_om(w)*om**2*S_freq(i,j)*F**2
+               mom2(i,j)   = mom2(i,j)+abs( tmp )!!variance of speed
+
+               if (ICE_MASK(i,j).eq.1.0) then
+                  !! VARIANCE OF STRAIN;
+                  tmp   = F*k_ice**2*hice(i,j)/2.0    !!strain conversion factor
+                  tmp   = wt_om(w)*S_freq(i,j)*tmp**2 !!strain density
+                  var_strain(i,j)   = var_strain(i,j)+abs( tmp )
+               end if
+            end do!! i, end spatial loop x;
+            end do!! j, end spatial loop y;
+
+         end do!! end spectral loop;
+
+      end do
+
+      et = etime(tictoc)!!finish etime
+      print*,' '
+      print*,'******************************************************'
+      print*,'p_WIM2d.F finished'
+      print *,'Elapsed time (s):',et                                    &
+!    &       ,', user:', tictoc(1),                                     &
+!    &       ,', sys:' ,tictoc(2)
+      print*,'******************************************************'
+      print*,' '
 
 !!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
@@ -317,14 +560,23 @@
      &  2,    "       iceh"
       write(2,111)                                                      &
      &  3,    "       Dmax"
+      write(2,111)                                                      &
+     &  4,    "       Hs"
+      write(2,111)                                                      &
+     &  5,    "       Tp"
+      write(2,111)                                                      &
+     &  6,    "       mwd"
 
       close(2)
 
       !! dump arrays to .a file
       !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      call wrt_afile_2d(afile ,icec       ,ii,jj  ,stat1,1)
-      call wrt_afile_2d(afile ,iceh       ,ii,jj  ,stat2,2)
-      call wrt_afile_2d(afile ,dfloe      ,ii,jj  ,stat2,3)
+      call wrt_afile_2d(afile ,icec    ,ii,jj  ,stat1,1)
+      call wrt_afile_2d(afile ,iceh    ,ii,jj  ,stat2,2)
+      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,stat2,3)
+      call wrt_afile_2d(afile ,Hs      ,ii,jj  ,stat2,4)
+      call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)
+      call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
 
       end subroutine check_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

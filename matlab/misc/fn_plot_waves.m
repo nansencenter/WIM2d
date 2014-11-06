@@ -10,10 +10,10 @@ Hs_mat   = wave_fields.Hs;
 Tp_mat   = wave_fields.Tp;
 mwd_mat  = wave_fields.mwd;
 %%
-jI          = find(ice_fields.ICE_MASK==1);
-Hs_mat(jI)  = NaN;
-Tp_mat(jI)  = NaN;
-mwd_mat(jI) = NaN;
+jL          = find(grid_prams.LANDMASK==1);
+Hs_mat(jL)  = NaN;
+Tp_mat(jL)  = NaN;
+mwd_mat(jL) = NaN;
 
 subplot(1,3,1);
 %GEN_plot_matrix(X/1e3,Y/1e3,cice,[-1 1]);

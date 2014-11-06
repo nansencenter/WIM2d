@@ -513,7 +513,7 @@ for n = 2:nt
       clear tmp;
       %GEN_pause
 
-      %% DO BREAKING:
+      %% INTEGRALS FOR BREAKING PROB:
       for i = 1:nx
       for j = 1:ny
 
