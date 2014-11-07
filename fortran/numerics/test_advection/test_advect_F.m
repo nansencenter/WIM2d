@@ -4,8 +4,13 @@
 
 clear;
 %%testing:
-ii = 49;
-jj = 51;
+
+%%set precision of binary outputs
+fmt   = 'float32';%%single precision
+%fmt   = 'float64';%%single precision
+
+ii = 150;
+jj = 50;
 dx = 4e3;%m
 dy = 4e3;%m
 %%
@@ -67,7 +72,7 @@ if 0%%test outputs from mod_waveadv_weno.F
    %afile       = 'test_out/scp2i.a';
    afile       = 'test_out/h.a';
    aid         = fopen(afile,'rb');
-   test_pad   = reshape( fread(aid,'float64'), ii+6,jj+6 );
+   test_pad   = reshape( fread(aid,fmt), ii+6,jj+6 );
    fclose(aid);
    %%
    nbdy  = 3;
@@ -83,7 +88,7 @@ elseif 0%%test outputs from mod_waveadv_weno.F
    if 1
       afile    = 'test_out/all.a';
       aid      = fopen(afile,'rb');
-      test_pad = fread(aid,'float64');
+      test_pad = fread(aid,fmt);
       fclose(aid);
       test_pad = reshape( test_pad, ii+6,jj+6,6 );
       ip       = (1-nbdy:ii+nbdy);
@@ -91,7 +96,7 @@ elseif 0%%test outputs from mod_waveadv_weno.F
    else
       afile    = 'test_out/all0.a';
       aid      = fopen(afile,'rb');
-      test_pad = fread(aid,'float64');
+      test_pad = fread(aid,fmt);
       fclose(aid);
       test_pad = reshape( test_pad, ii,jj,6 );
       ip       = (1:ii);
@@ -119,13 +124,9 @@ n        = 0;
 nnn      = num2str(n,'%3.3d');
 afile    = [outfile,nnn,'.a'];
 aid      = fopen(afile,'rb');
-XX       = reshape( fread(aid,ii*jj,'float64'), ii,jj );
-YY       = reshape( fread(aid,ii*jj,'float64'), ii,jj );
-if 0%%test fseek
-   fseek(aid,0,'bof')         %%go back to start
-   fseek(aid,2*8*ii*jj,'bof');%%skip ahead 2 records (2*8B*(ii*jj))
-end
-hh       = reshape( fread(aid,ii*jj,'float64'), ii,jj );
+XX       = reshape( fread(aid,ii*jj,fmt), ii,jj );
+YY       = reshape( fread(aid,ii*jj,fmt), ii,jj );
+hh       = reshape( fread(aid,ii*jj,fmt), ii,jj );
 fclose(aid);
 
 if 0%%test initial conditions
@@ -207,13 +208,18 @@ if 1%%plot u,v,h
 end
 
 nt = length(dir('out/*.a'))-1;
+if strcmp(fmt,'float32')
+   element_size   = 4;
+elseif strcmp(fmt,'float64')
+   element_size   = 8;
+end
 for n = 1:nt
    %% open output file
    nnn      = num2str(n,'%3.3d');
    afile    = [outfile,nnn,'.a'];
    aid      = fopen(afile,'rb');
-   fseek(aid,2*8*ii*jj,'bof');%%skip ahead 2 records (2*8B*(ii*jj))
-   hh       = reshape( fread(aid,ii*jj,'float64'), ii,jj );
+   fseek(aid,2*element_size*ii*jj,'bof');%%skip ahead 2 records (2*8B*(ii*jj))
+   hh       = reshape( fread(aid,ii*jj,fmt), ii,jj );
    fclose(aid);
    %%
    [n,nt]

@@ -3,7 +3,7 @@
       !! Date:   20140821, 12:22:17 CEST
       program main
 
-      use mod_waveadv_weno
+      use mod_advect
       use mod_gridinfo
       use mod_file_utils
 
@@ -14,13 +14,13 @@
       integer, parameter   :: OPT      = 1
       integer, parameter   :: bc_opt   = 2
          !1: periodic in x,y; 2: periodic in y only; 0: not periodic
-      real*8, parameter    :: CFL      = 0.4
+      real, parameter    :: CFL      = 0.4
       !!
-      real*8   :: xm,ym
-      real*8   :: xx(ii),yy(jj)
-      real*8,dimension(idm,jdm)   :: R,Theta,u,v,h
+      real   :: xm,ym
+      real   :: xx(ii),yy(jj)
+      real,dimension(idm,jdm)   :: R,Theta,u,v,h
 
-      real*8   :: adv_dir,xc,yc,uc,Rc,angrot,dt,dtheta,PI
+      real   :: adv_dir,xc,yc,uc,Rc,angrot,dt,dtheta,PI
       integer  :: nt,n,i,j
       logical  :: critter
 

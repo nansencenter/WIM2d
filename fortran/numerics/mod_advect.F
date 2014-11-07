@@ -1,9 +1,9 @@
-      module mod_waveadv_weno
+      module mod_advect
 
       implicit none
 
-      integer, parameter   :: nbdy     = 3
-      integer, parameter   :: margin   = nbdy
+      integer, parameter   :: n_bdy     = 3
+      integer, parameter   :: margin   = n_bdy
 
       contains
 
@@ -42,16 +42,16 @@
 !
       implicit none
 !
-      integer, parameter   :: nbdy  = 3
-      real*8,intent(in),dimension(idm,jdm) :: u,v
+      integer, parameter   :: n_bdy  = 3
+      real,intent(in),dimension(idm,jdm) :: u,v
       !,scuy,scvx,scp2i,scp2,LANDMASK
-      real*8,intent(inout),dimension(idm,jdm)   :: h
-      real*8,intent(in)                         :: dt
+      real,intent(inout),dimension(idm,jdm)   :: h
+      real,intent(in)                         :: dt
       integer,intent(in)                        :: bc_opt
 !
-      real*8, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao,hp      &
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: sao,hp    &
      &   ,u_pad,v_pad,scp2_pad,scp2i_pad,scuy_pad,scvx_pad,h_pad
-      real*8   :: dtm
+      real   :: dtm
       integer  :: i,j,l
       character(len=80) :: outfile,stat1,stat2
 
@@ -87,8 +87,8 @@
          print*,'******************************************'
          print*,''
 
-         i        = idm+2*nbdy
-         j        = jdm+2*nbdy
+         i        = idm+2*n_bdy
+         j        = jdm+2*n_bdy
          call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
       elseif (.false.) then
          !!test padding with periodic boundary conditions
@@ -102,8 +102,8 @@
          print*,'******************************************'
          print*,''
 
-         i     = idm+2*nbdy
-         j     = jdm+2*nbdy
+         i     = idm+2*n_bdy
+         j     = jdm+2*n_bdy
          call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
          call wrt_afile_2d(outfile,v_pad,    i,j,stat2,2)
          call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,3)
@@ -124,7 +124,7 @@
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dtm)
 
 !$OMP PARALLEL DO
-       !margin=nbdy 
+       !margin=n_bdy 
       do j=1-margin,jj+margin
 !       do l=1,isp(j)
 !       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
@@ -165,9 +165,9 @@
 
       implicit none
 
-      real*8,intent(out),                                               &
-     &  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: u_pad
-      real*8,intent(in),dimension(idm,jdm)         :: u
+      real,intent(out),                                                 &
+     &  dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: u_pad
+      real,intent(in),dimension(idm,jdm)         :: u
       integer,intent(in)                           :: OPT
 
       u_pad             = 0.0
@@ -177,29 +177,29 @@
          !!make things periodic
 
          !!make it periodic in i
-         u_pad(1-nbdy:0,1:jj)       = u(ii-nbdy:ii-1,:)
-         u_pad(ii+1:ii+nbdy,1:jj)   = u(1:nbdy,:)
+         u_pad(1-n_bdy:0,1:jj)       = u(ii-n_bdy:ii-1,:)
+         u_pad(ii+1:ii+n_bdy,1:jj)   = u(1:n_bdy,:)
 
          !!make it periodic in j
-         u_pad(1:ii,1-nbdy:0)       = u(1:ii,jj-nbdy:jj-1)
-         u_pad(1:ii,jj+1:jj+nbdy)   = u(1:ii,1:nbdy)
+         u_pad(1:ii,1-n_bdy:0)       = u(1:ii,jj-n_bdy:jj-1)
+         u_pad(1:ii,jj+1:jj+n_bdy)   = u(1:ii,1:n_bdy)
 
          !!BR,TL
-         u_pad(ii+1:ii+nbdy,jj+1:jj+nbdy)                               &
-     &     = u(1:nbdy,1:nbdy)
-         u_pad(1-nbdy:0,1-nbdy:0)                                       &
-     &     = u(ii-nbdy:ii-1,jj-nbdy:jj-1)
+         u_pad(ii+1:ii+n_bdy,jj+1:jj+n_bdy)                             &
+     &     = u(1:n_bdy,1:n_bdy)
+         u_pad(1-n_bdy:0,1-n_bdy:0)                                     &
+     &     = u(ii-n_bdy:ii-1,jj-n_bdy:jj-1)
 
          !!BL,TR
-         u_pad(ii+1:ii+nbdy,1-nbdy:0)                                   &
-     &     = u(1:nbdy,jj-nbdy:jj-1)
-         u_pad(1-nbdy:0,jj+1:jj+nbdy)                                   &
-     &     = u(ii-nbdy:ii-1,1:nbdy)
+         u_pad(ii+1:ii+n_bdy,1-n_bdy:0)                                 &
+     &     = u(1:n_bdy,jj-n_bdy:jj-1)
+         u_pad(1-n_bdy:0,jj+1:jj+n_bdy)                                 &
+     &     = u(ii-n_bdy:ii-1,1:n_bdy)
 
       else if (OPT.eq.2) then
          !!make it periodic in j only
-         u_pad(1:ii,1-nbdy:0)       = u(1:ii,jj-nbdy:jj-1)
-         u_pad(1:ii,jj+1:jj+nbdy)   = u(1:ii,1:nbdy)
+         u_pad(1:ii,1-n_bdy:0)       = u(1:ii,jj-n_bdy:jj-1)
+         u_pad(1:ii,jj+1:jj+n_bdy)   = u(1:ii,1:n_bdy)
 
       end if
 
@@ -223,22 +223,22 @@
 !
       implicit none
 !
-      real*8,intent(in),                                                &
-     &  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: g,u,v             &
+      real,intent(in),                                                  &
+     &  dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: g,u,v         &
      &    ,scp2,scp2i,scuy,scvx
-      real*8,intent(out),                                               &
-     &  dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) :: sao
-      real*8,intent(in) :: dt
+      real,intent(out),                                                 &
+     &  dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: sao
+      real,intent(in) :: dt
 !
-      real*8   ::  cq00,cq01,cq10,cq11,ca0,ca1,eps
+      real   ::  cq00,cq01,cq10,cq11,ca0,ca1,eps
       parameter (cq00=-1./2.,cq01= 3./2.,                               &
      &           cq10= 1./2.,cq11= 1./2.,                               &
      &           ca0=1./3.,ca1=2./3.,                                   &
      &           eps=1.e-12)
 !
-      real*8, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::             &
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) ::           &
      &  ful,fuh,fvl,fvh,gt
-      real*8   :: q0,q1,a0,a1,q
+      real   :: q0,q1,a0,a1,q
       integer  :: i,j,l,im1,im2,ip1,jm1,jm2,jp1
 !
 ! --- Compute grid cell boundary fluxes. Split in a low order flux
@@ -406,4 +406,4 @@
       end subroutine weno3pd_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      end module mod_waveadv_weno
+      end module mod_advect

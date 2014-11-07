@@ -1,21 +1,24 @@
 CC	:=	gcc
 FC	:=	gfortran
-VPATH 	:=	.:../misc
 
-MDIR	:=	../mods
+#path to numerics directory
+numerics:=	../..
+VPATH 	:=	.:..:$(numerics):$(numerics)/../misc:$(numerics)/../init
+
+MDIR	:=	mods
 
 # include modules from ../mods, and put them in ../mods when they are created
 # FCFLAGS=-O -I$(MDIR)
 FCFLAGS=-g -I$(MDIR)
 FCFLAGS2=-J$(MDIR)
 
-PROG=test_waveadv_weno.o 
+PROG=test_advect.o 
 
 OBJS=mod_gridinfo.o \
-     mod_waveadv_weno.o \
-     mod_file_utils.o
+     mod_file_utils.o \
+     mod_advect.o
 
-TARGET=test_waveadv_weno.exe
+TARGET=test_advect.exe
 
 # Create objects by compiling their respective .F files
 %.o:	%.F
@@ -25,14 +28,14 @@ TARGET=test_waveadv_weno.exe
 default: $(PROG) $(OBJS)
 	$(FC) -o $(TARGET) $^ $(FCFLAGS)
 
-mod_waveadv_weno.o:	mod_gridinfo.o \
-			mod_file_utils.o
-$(PROG): 		$(OBJS)
+mod_advect.o:	mod_gridinfo.o \
+		mod_file_utils.o
+$(PROG): 	$(OBJS)
 
 .PHONY: clean
 
 clean:
-	rm $(TARGET) *.o ../mods/*
+	rm $(TARGET) *.o mods/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
