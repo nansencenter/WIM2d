@@ -83,7 +83,6 @@ for j = 1:ny
    end
 
    %% INTEGRATE SPECTRUM OVER DIRECTION;
-   %% TODO: add stress calculation here;
    S_freq(i,j) = wt_theta'*squeeze(S(i,j,:));
 end
 end

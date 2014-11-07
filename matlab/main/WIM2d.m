@@ -494,13 +494,13 @@ for n = 2:nt
       if SOLVER==0
          %% Simple attenuation scheme - doesn't conserve scattered energy
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-            adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt);
+            adv_atten_simple(grid_prams,ice_prams,s1,dt);
          clear s1 S_out;
       elseif SOLVER==1
          %% same as SOLVER==0, but scattered energy
          %% is distributed isotropically
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-            adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt);
+            adv_atten_isotropic(grid_prams,ice_prams,s1,dt);
          clear s1 S_out;
       end
 
