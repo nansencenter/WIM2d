@@ -1,8 +1,11 @@
 CC	:=	gcc
-FC	:=	gfortran
-# FC	:=	gfortran-mp-4.8
+# FC	:=	gfortran
+FC	:=	gfortran-mp-4.8
+
+# set path for compiler
 VPATH 	:=	.:../main:../misc:../init:../numerics:../attenuation_youngs
 
+# directory where modules are put into
 MDIR	:=	mods
 
 # include modules from $(MDIR), and put them in $(MDIR) when they are created
@@ -20,10 +23,9 @@ OBJS=mod_gridinfo.o \
      RTparam_outer.o \
      RTparam_fast.o \
      RTparam_hardcoded_v2.o \
-     RTparam_utilities.o
-
-
-# mod_waveadv_weno.o
+     RTparam_utilities.o \
+     mod_adv_atten.o \
+     mod_advect.o
 
 TARGET=WIM2d.exe
 
@@ -40,6 +42,8 @@ default: $(PROG) $(OBJS)
 # 			mod_file_utils.o
 mod_wim_init.o:		mod_gridinfo.o mod_common_wim.o
 mod_common_wim.o:	mod_gridinfo.o
+mod_advect.o:		mod_gridinfo.o mod_common_wim.o
+mod_adv_atten.o:	mod_gridinfo.o mod_common_wim.o mod_advect.o
 #
 RTparam_outer.o:        RTparam_fast.o
 RTparam_fast.o:         RTparam_hardcoded_v2.o

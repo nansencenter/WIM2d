@@ -3,18 +3,17 @@
       !! Date:   20140821, 12:22:17 CEST
       program main
 
-      use mod_gridinfo     !!grid info
-      use mod_wim_prams    !!ice parameters
-      use mod_wim_init   !!initial wave fields
-      use mod_common_wim   !!initial ice fields
-      !use mod_file_utils   !!file reading/writing
-      !use mod_waveadv_weno !!advection routine
+      use mod_gridinfo     !! grid info
+      use mod_wim_prams    !! ice parameters
+      use mod_wim_init     !! initial wave fields
+      use mod_common_wim   !! initial ice fields
+      use mod_adv_atten    !! advection routine
 
       implicit none
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,parameter :: SOLVER      = 1
+      integer           :: SOLVER
       integer,parameter :: STEADY      = 1
       integer,parameter :: DO_ATTEN    = 1
       integer,parameter :: DO_BREAKING = 1
@@ -29,13 +28,15 @@
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
       !!
-      real,dimension(idm,jdm)    :: mom0,mom2,var_strain,tau_x,tau_y
+      real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
+     &   ,tau_x,tau_y,S_freq,atten_dim,damp_dim                         &
+     &   ,taux_om,tauy_om
       real,dimension(idm,jdm,nw) ::                                     &
      &   ag_eff,ap_eff,wlng_ice,atten_nond,damping,disp_ratio
 
-      real     :: PI
+      real     :: PI,tmp
       real     :: adv_dir,dt,dtheta,om,dom,guess
-      real     :: kwtr,kice,modT,int_adm,argT,argR
+      real     :: kwtr,kice,modT,int_adm,argT,argR,F,Dave,c1d
       real,dimension(nw)   :: wt_om,wt_simp,T,wlng,ag,ap
       integer  :: nt,n,i,j,w,wth
       logical  :: critter
@@ -48,8 +49,9 @@
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      PI = 4.0*atan(1.0)
-      et = etime(tictoc)!!startup etime
+      SOLVER   = 0
+      PI       = 4.0*atan(1.0)
+      et       = etime(tictoc)!!startup etime
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -201,27 +203,27 @@
 
                !!top-up waves in wave mask if STEADY==1
                !!(steady-state solution);
-               if ((WAVE_MASK(i,j).ge.0).and.(STEADY.eq.1))
+               if ((WAVE_MASK(i,j).ge.0).and.(STEADY.eq.1)) then
                   !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
                   sdf_dir(i,j,:,:)  = sdf_inc(i,j,:,:)
                end if
                
                if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
-                  call floe_scaling(Dave,Dmax(i,j))
+                  call floe_scaling(Dave,dfloe(i,j))
 
                   !! get expected no of floes met per unit
                   !!  distance if travelling in a line;
-                  if (Dmax(i,j).lt.200.0) then
-                     c1d = cice(i,j)/Dave
+                  if (dfloe(i,j).lt.200.0) then
+                     c1d = icec(i,j)/Dave
                      !! floes per unit length;
                   else
-                     c1d = cice(i)/Dmax(i,j)
+                     c1d = icec(i,j)/dfloe(i,j)
                      !! uniform lengths
                   end if
 
                   !! ENERGY attenuation coeff;
-                  atten_dim(i,j) = atten_nond(i,j,jw)*c1d      !!scattering
-                  damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j) !!damping
+                  atten_dim(i,j) = atten_nond(i,j,w)*c1d      !!scattering
+                  damp_dim(i,j)  = 2*damping(i,j,w)*icec(i,j) !!damping
                end if
             end do!! j
             end do!! i
@@ -237,9 +239,9 @@
 
             if (SOLVER.eq.0) then
                !! Simple attenuation scheme - doesn't conserve scattered energy
-!              call adv_atten_simple(S_freq,sdf_dir(:,:,:,w)            &
-!    &            ,tau_x_om,tau_y_om,                                   &
-!    &            ,atten_dim,damp_dim,ag_eff(:,:,w),wavdir,dt)
+               call adv_atten_simple(sdf_dir(:,:,:,w)                   &
+     &            ,S_freq,taux_om,tauy_om                               &
+     &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
             elseif (SOLVER.eq.1) then
                !! same as SOLVER==0, but scattered energy
                !! is distributed isotropically
@@ -261,7 +263,7 @@
 
                !! convert from water amp's to ice amp's;
                F     = disp_ratio(i,j,w)
-               k_ice = 2*PI/wlng_ice(i,j,w)
+               kice  = 2*PI/wlng_ice(i,j,w)
 
                !! SPECTRAL MOMENTS;
                !!take abs as small errors can make S_freq negative
@@ -273,7 +275,7 @@
 
                if (ICE_MASK(i,j).eq.1.0) then
                   !! VARIANCE OF STRAIN;
-                  tmp   = F*k_ice**2*hice(i,j)/2.0    !!strain conversion factor
+                  tmp   = F*kice**2*iceh(i,j)/2.0    !!strain conversion factor
                   tmp   = wt_om(w)*S_freq(i,j)*tmp**2 !!strain density
                   var_strain(i,j)   = var_strain(i,j)+abs( tmp )
                end if
@@ -579,4 +581,44 @@
       call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
 
       end subroutine check_init
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine floe_scaling(Dave,dmax)
+
+      use mod_wim_prams, only: fragility,xi,Dmin
+      implicit none
+
+      real,    intent(out) :: Dave
+      real,    intent(in)  :: dmax
+      integer              :: m,mm 
+      real                 :: n,nsum,nd,ndsum,r,dfac
+
+      mm    = 0  
+      r     = dmax/dmin
+      do while ( r .gt. xi ) 
+         r  = r/xi 
+         mm = mm+1 
+      end do
+
+      if ( mm .gt. 0 ) then 
+      n     = 0.0
+      nsum  = 0.0
+      nd    = 0.0
+      ndsum = 0.0
+
+         do m = 0,1,mm
+            n     = (1.0-fragility)*(fragility*xi**2)**m
+            nd    = n/(xi**m)
+            nsum  = nsum +n
+            ndsum = ndsum+nd
+            dfac  = ndsum/nsum
+         end do
+         Dave  = dfac*dmax
+
+      else
+         Dave = dmin
+      end if
+
+      end subroutine floe_scaling
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

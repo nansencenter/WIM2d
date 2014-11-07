@@ -7,7 +7,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!global variables
-      !integer, parameter   :: nbdy     = 3
+      integer, parameter   :: nbdy     = 0
       !integer, parameter   :: margin   = nbdy
       integer, parameter   :: ii = 150
       integer, parameter   :: jj = 50

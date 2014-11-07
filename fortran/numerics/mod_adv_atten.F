@@ -4,7 +4,7 @@
 
       subroutine adv_atten_simple(Sdir                                  &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,ag_eff,dt)
+     &   ,atten_dim,damp_dim,ag_eff,dt)
 
       use mod_gridinfo
       use mod_common_wim
@@ -16,31 +16,30 @@
       integer,parameter :: ADV_OPT  = 2
          !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
-      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir),
-     &   intent(inout)  :: Sdir
+      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
+     &   ,intent(inout)  :: Sdir
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
-     &   intent(out) Sfreq,taux_om,tauy_om
+     &   ,intent(out)    :: Sfreq,taux_om,tauy_om
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
-     &   intent(in) ag_eff,atten_dim,damp_dim
+     &   ,intent(in)     :: ag_eff,atten_dim,damp_dim
       real,intent(in)   :: dt
       !!
       integer  :: i,j,wth
-      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
+      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
      &   uwave,vwave
-      real  :: PI,adv_dir,wt_theta(ndir),S_th,tmp
+      real  :: PI,adv_dir,wt_theta(ndir),S_th,tmp,alp_dim,source
 
       PI          = 4.0*atan(1.0)
-      theta_vec   = -PI/180.0*(90.0+wavdir)
 
       !!do advection
       do wth  = 1,ndir
          !!define wave direction & speeds
          adv_dir  = -PI/180.0*(90.0+wavdir(wth))
-         u        = ag_eff*cos(adv_dir)
-         v        = ag_eff*sin(adv_dir)
+         uwave    = ag_eff*cos(adv_dir)
+         vwave    = ag_eff*sin(adv_dir)
 
          !!advect
-         call waveadv_weno(Sdir(:,:,wth),u,v,dt,ADV_OPT)
+         call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
       end do
 
       !!weights for integral over direction
@@ -87,10 +86,10 @@
          !! INTEGRATE SPECTRUM OVER DIRECTION;
          !! NB do this in water also
          do wth=1,ndir
-            S_freq(i,j) = S_freq(i,j)+wt_theta(wth)*Sdir(i,j,wth)
+            Sfreq(i,j)  = Sfreq(i,j)+wt_theta(wth)*Sdir(i,j,wth)
          end do
-      end do
-      end do
+      end do!i
+      end do!j
       
       end subroutine adv_atten_simple
       end module mod_adv_atten
