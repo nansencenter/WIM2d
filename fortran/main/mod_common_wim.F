@@ -5,6 +5,9 @@
 
       implicit none
 
+      integer,parameter :: itest = 75
+      integer,parameter :: jtest = 25
+
       real,dimension(ii,jj)   :: icec,iceh,dfloe,ICE_MASK
       real,dimension(ii,jj)   :: WTR_MASK
       real,dimension(idm,jdm) :: Hs,Tp,mwd,WAVE_MASK  !set in waves_init

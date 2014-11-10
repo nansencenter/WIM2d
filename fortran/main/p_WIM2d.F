@@ -14,7 +14,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer           :: SOLVER
-      integer,parameter :: STEADY      = 1
+      integer,parameter :: STEADY      = 0
       integer,parameter :: DO_ATTEN    = 1
       integer,parameter :: DO_BREAKING = 1
       integer,parameter :: USE_ICE_VEL = 0
@@ -118,9 +118,11 @@
 
       !! Water wavelength and wave speed
       !! is a function only of wave period
-      wlng     = gravity*T**2/(2*PI)
+      T        = 1.0/freq_vec
+      wlng     = gravity/(2*PI*freq_vec**2)
       ap       = sqrt(gravity*wlng/(2*PI))   ! Phase speed
       ag       = ap/2.0                      ! Group speed
+      !print*,'T,wlng,ag,ap',T,wlng,ag,ap
 
       ag_eff      = 0.0
       ap_eff      = 0.0
@@ -170,7 +172,7 @@
          damping     = 0.0
       end if
 
-      nt = 100
+      nt = 3
       print*,' '
       print*,'******************************************************'
       print*,'Number of time steps:       ',nt
@@ -197,6 +199,14 @@
 
          !! variance of strain;
          var_strain     = 0.0
+
+         !!top-up waves in wave mask if STEADY==1
+         !!(steady-state solution);
+         if ((WAVE_MASK(i,j).ge.0).and.(STEADY.eq.1)) then
+            !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
+            sdf_dir(i,j,:,:)  = sdf_inc(i,j,:,:)
+         end if
+
          do w=1,nw
 
             !! CALC DIMENSIONAL ATTEN COEFF;
@@ -205,13 +215,6 @@
             do j = 1,jj
             do i = 1,ii
 
-               !!top-up waves in wave mask if STEADY==1
-               !!(steady-state solution);
-               if ((WAVE_MASK(i,j).ge.0).and.(STEADY.eq.1)) then
-                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
-                  sdf_dir(i,j,:,:)  = sdf_inc(i,j,:,:)
-               end if
-               
                if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
                   call floe_scaling(Dave,dfloe(i,j))
 
@@ -246,6 +249,9 @@
                call adv_atten_simple(sdf_dir(:,:,:,w)                   &
      &            ,S_freq,taux_om,tauy_om                               &
      &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+               !print*,'Spectrum at',itest,jtest
+               !print*,S_freq(itest,jtest)
+               !print*,sdf_dir(itest,jtest,:,w)
             elseif (SOLVER.eq.1) then
                !! same as SOLVER==0, but scattered energy
                !! is distributed isotropically
@@ -346,6 +352,8 @@
          end do!!end spatial loop i in x;
          
          !!dump fields to binary
+         print*,'dfloe  lims',maxval(dfloe),minval(dfloe)
+         print*,'Hs     lims',maxval(Hs   ),minval(Hs   )
          call check_prog(GRID_OPT,n)
 
       end do!! n - finish time stepping

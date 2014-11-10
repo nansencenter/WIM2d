@@ -32,6 +32,8 @@
       PI          = 4.0*atan(1.0)
 
       !!do advection
+      print*,'Spectrum at',itest,jtest
+      print*,'Before advection',Sdir(itest,jtest,1)
       do wth  = 1,ndir
          !!define wave direction & speeds
          adv_dir  = -PI/180.0*(90.0+wavdir(wth))
@@ -41,6 +43,11 @@
          !!advect
          call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
       end do
+      !print*,'ag,adv_dir      ',ag_eff(itest,jtest),adv_dir
+      print*,'u,v of wave     ',uwave(itest,jtest),vwave(itest,jtest)
+      print*,'After  advection',Sdir(itest,jtest,1)
+      print*,'Attenuation     ',atten_dim(itest,jtest)                  &
+     &                         ,damp_dim(itest,jtest)
 
       !!weights for integral over direction
       if (ndir.eq.1) then

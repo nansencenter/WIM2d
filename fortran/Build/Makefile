@@ -1,6 +1,5 @@
 CC	:=	gcc
-# FC	:=	gfortran
-FC	:=	gfortran-mp-4.8
+FC	:=	gfortran
 
 # set path for compiler
 VPATH 	:=	.:../main:../misc:../init:../numerics:../attenuation_youngs

@@ -37,10 +37,10 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set frequency grid
       if (nw.eq.1) then
-         freq_vec(1) = Tp_inc
+         freq_vec(1) = 1.0/Tp_inc
       else
-         fmin  = 2*PI/Tmax
-         fmax  = 2*PI/Tmin
+         fmin  = 1/Tmax
+         fmax  = 1/Tmin
          df    = (fmax-fmin)/(n_wave_freq-1.0)
          do w=1,nw
             freq_vec(w) = fmin+(w-1)*df

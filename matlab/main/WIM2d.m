@@ -776,6 +776,7 @@ set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 colorbar;
+GEN_font(gca);
 ttl   = title('{\itH}_{\rm s}, m');
 GEN_font(ttl);
 
@@ -786,6 +787,7 @@ set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 colorbar;
+GEN_font(gca);
 ttl   = title('{\itD}_{\rm max}, m');
 GEN_font(ttl);
 
@@ -795,6 +797,7 @@ set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 colorbar;
+GEN_font(gca);
 ttl   = title('{\tau}_{x}, Pa');
 GEN_font(ttl);
 
@@ -804,5 +807,6 @@ set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
 GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
 colorbar;
+GEN_font(gca);
 ttl   = title('{\tau}_{y}, Pa');
 GEN_font(ttl);
