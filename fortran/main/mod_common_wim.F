@@ -8,6 +8,7 @@
       real,dimension(ii,jj)   :: icec,iceh,dfloe,ICE_MASK
       real,dimension(ii,jj)   :: WTR_MASK
       real,dimension(idm,jdm) :: Hs,Tp,mwd,WAVE_MASK  !set in waves_init
+      real,dimension(idm,jdm) :: tau_x,tau_y
       !!
       real,parameter          :: unif_c            = .7
       real,parameter          :: unif_h            = 1.5

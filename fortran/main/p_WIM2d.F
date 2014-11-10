@@ -29,8 +29,8 @@
       integer,parameter :: ndir  = n_wavdir
       !!
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
-     &   ,tau_x,tau_y,S_freq,atten_dim,damp_dim                         &
-     &   ,taux_om,tauy_om
+     &   ,S_freq,atten_dim,damp_dim                                     &
+     &   ,taux_om,tauy_om,tmp1
       real,dimension(idm,jdm,nw) ::                                     &
      &   ag_eff,ap_eff,wlng_ice,atten_nond,damping,disp_ratio
 
@@ -39,11 +39,15 @@
       real     :: kwtr,kice,modT,int_adm,argT,argR,F,Dave,c1d
       real,dimension(nw)   :: wt_om,wt_simp,T,wlng,ag,ap
       integer  :: nt,n,i,j,w,wth
-      logical  :: critter
+
+      !!for breaking
+      real     :: sig_strain,Pstrain,P_crit,wlng_crest,Dc
+      real     :: ommin,ommax,om1,lam1,lam2
+      integer  :: jcrest
+      logical  :: BREAK_CRIT
 
       character(len=*),parameter :: outfile = "init"
       character(len=*),parameter :: outdir = "out/"
-      character(len=3)           :: cts
       !character(len=80)          :: afile,bfile,stat1,stat2
 
       real :: et,etime,tictoc(2) !!print time
@@ -252,10 +256,10 @@
 
             !! integrate stress densities over frequency
             !! TODO: check if this is correct for ice-covered water
-!           tmp1  = rhowtr*gravity*tau_x_om/ap_eff(:,:,w)   !![Pa*s]
-!           tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
-!           tmp1  = rhowtr*gravity*tau_y_om./ap_eff(:,:,w)  !![Pa*s]
-!           tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
+            tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)   !![Pa*s]
+            tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
+            tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
+            tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
 
             !! INTEGRALS FOR BREAKING PROB:
             do j=1,jj
@@ -284,7 +288,67 @@
 
          end do!! end spectral loop;
 
-      end do
+         Hs = 4*sqrt(mom0)
+         Tp = 0.0
+         where (mom2.gt.0.0)
+            Tp = 2*PI*sqrt(mom0/mom2)
+         end where
+
+         !! FINALLY DO FLOE BREAKING;
+         do j=1,jj
+         do i=1,ii
+            if ((ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
+               !! only try breaking if ice is present
+               !!  & some waves have arrived;
+      
+               !! significant strain amp
+               sig_strain  = 2*sqrt(var_strain(i,j))
+      
+               !! probability of critical strain
+               !! being exceeded from Rayleigh distribution;
+               Pstrain  = exp( -epsc**2/(2*var_strain(i,j)) )
+               P_crit   = (1-DO_BREAKING)+exp(-1.0)!!this is critical prob if monochromatic wave
+      
+               !! FLOE BREAKING:
+               BREAK_CRIT  = ( Pstrain.ge.P_crit )!!breaks if larger than this
+      
+               if (BREAK_CRIT) then
+                  !! use crest period to work out wavelength
+                  !! - interpolate using pre-calc'd wavelengths
+                  !! - half this is max poss floe length;
+                  om    = 2*pi/Tp(i,j)
+                  ommin = 2*PI*freq_vec(1)
+                  ommax = 2*PI*freq_vec(nw)
+                  if (om.le.ommin) then
+                     wlng_crest  = wlng_ice(i,j,1)
+                  elseif (om.ge.ommax) then
+                     wlng_crest  = wlng_ice(i,j,nw)
+                  else
+                     jcrest      = floor((om-ommin+dom)/dom)
+                     om1         = 2*PI*freq_vec(jcrest)
+                     lam1        = wlng_ice(i,j,jcrest)
+                     lam2        = wlng_ice(i,j,jcrest+1)
+                     wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom
+                  end if
+      
+                  !!change dfloe if wavelength/2 is shorter than it
+                  !!(keeping it bigger than Dmin)
+                  Dc          = max(Dmin,wlng_crest/2.0)
+                  dfloe(i,j)  = min(Dc,dfloe(i,j))
+
+               end if!! end breaking action;
+      
+            elseif (WTR_MASK(i,j).eq.1.0) then!! only water present
+               dfloe(i,j)  = 0.0
+            end if
+            
+         end do!! end spatial loop j in y;
+         end do!!end spatial loop i in x;
+         
+         !!dump fields to binary
+         call check_prog(GRID_OPT,n)
+
+      end do!! n - finish time stepping
 
       et = etime(tictoc)!!finish etime
       print*,' '
@@ -295,163 +359,6 @@
 !    &       ,', sys:' ,tictoc(2)
       print*,'******************************************************'
       print*,' '
-
-!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!!      do j=1,jj
-!!      do i=1,ii
-!!         R(i,j)      = sqrt(X(i,j)**2+Y(i,j)**2)
-!!         Theta(i,j)  = atan2(Y(i,j),X(i,j))
-!!      end do
-!!      end do
-!!
-!!      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!      !!Test situations
-!!      if (OPT.eq.1) then
-!!         !!constant speed
-!!         print*,'******************************************'
-!!         print*,'using constant speed: OPT = ',OPT
-!!         print*,'******************************************'
-!!         print*,''
-!!         uc       = 30!const speed m/s
-!!         xc       = 2*xm/3.0
-!!         !adv_dir = 180.0!deg straight across
-!!         adv_dir  = 135.0!deg
-!!         u        = uc*cos(pi/180.0*adv_dir)
-!!         v        = uc*sin(pi/180.0*adv_dir)
-!!         dt       = CFL*dx/uc
-!!         if (bc_opt.eq.1) then
-!!            nt = 2*aint(2*xm/(uc*dt))  !test periodic boundary condition
-!!         elseif (bc_opt.eq.2) then
-!!            nt = aint(3*xm/(uc*dt))  !test periodic boundary condition
-!!         else
-!!            nt = aint(2*xm/(uc*dt))
-!!         end if
-!!         !!
-!!         h  = 0.0
-!!         do j=1,jj
-!!         do i=1,ii
-!!            if (X(i,j).gt.xc) then
-!!               h(i,j)   = 1.0
-!!            end if
-!!         end do
-!!         end do
-!!
-!!      elseif (OPT.eq.2) then
-!!         !!variable speed
-!!         uc = 30!max speed m/s
-!!         xc = 2*xm/3.0
-!!         u  = -uc*X/xm!speed variable with x
-!!         v  = 0.0
-!!         dt = CFL*dx/uc
-!!         nt = 2*xm/(uc*dt)
-!!         !!
-!!         h  = 0.0
-!!         do j=1,jj
-!!         do i=1,ii
-!!            if (X(i,j).gt.xc) then
-!!               h(i,j)   = 1.0
-!!            end if
-!!         end do
-!!         end do
-!!
-!!      elseif (OPT.eq.3) then
-!!         !!pacman
-!!         Rc       = xm/3.0
-!!         Yc       = ym/12.0
-!!         angrot   = (1/20.0)*pi/180.0!!radian/s
-!!         u        = 0.0
-!!         v        = 0.0
-!!         !!
-!!         h  = 0.0
-!!         do j=1,jj
-!!         do i=1,ii
-!!            critter  = ((R(i,j).lt.Rc).and.(X(i,j).le.0))
-!!            if (critter) then
-!!               h(i,j)   = 1.0
-!!            end if
-!!            critter  = ((R(i,j).lt.Rc).and.(X(i,j).ge.0)                &
-!!     &                  .and.(abs(Y(i,j)).ge.Yc))
-!!            if (critter) then
-!!               h(i,j)   = 1.0
-!!            end if
-!!            critter  = (R(i,j).lt.(1.45*Rc))
-!!            if (critter) then
-!!               u(i,j)   = -Y(i,j)*angrot
-!!               v(i,j)   =  X(i,j)*angrot
-!!            end if
-!!         end do
-!!         end do
-!!         !!
-!!         uc       = Rc*angrot!max speed
-!!         dt       = CFL*dx/uc
-!!         nt       = aint(2*pi/(angrot*dt))
-!!         print*,angrot,dt,CFL
-!!         dtheta   = dt*angrot
-!!      end if
-!!
-!!      !if (.false.) then
-!!      if (.true.) then
-!!         stat1 = 'replace'
-!!         stat2 = 'old'
-!!         afile = 'test_out/all0.a'
-!!
-!!         print*,'******************************************'
-!!         print*,'testing initial conditions:'
-!!         print*,'check: ',afile
-!!         print*,'******************************************'
-!!         print*,''
-!!
-!!         call wrt_afile_2d(afile,u,    idm,jdm,stat1,1)
-!!         call wrt_afile_2d(afile,v,    idm,jdm,stat2,2)
-!!         call wrt_afile_2d(afile,scp2, idm,jdm,stat2,3)
-!!         call wrt_afile_2d(afile,scp2i,idm,jdm,stat2,4)
-!!         call wrt_afile_2d(afile,scuy, idm,jdm,stat2,5)
-!!         call wrt_afile_2d(afile,scvx, idm,jdm,stat2,6)
-!!      end if
-!!
-!!      !!output initial conditions for reading by matlab/python
-!!      n  = 0
-!!      stat1 = 'replace'
-!!      stat2 = 'old'
-!!      !!
-!!      write(cts,'(i3.3)') n
-!!      afile = outdir//outfile//cts//'.a'
-!!      bfile = outdir//outfile//cts//'.b'
-!!      call wrt_bfile(bfile,ii,jj,OPT)
-!!      call wrt_afile_2d(afile,x,ii,jj,stat1,1)
-!!      call wrt_afile_2d(afile,y,ii,jj,stat2,2)
-!!      call wrt_afile_2d(afile,h,ii,jj,stat2,3)
-!!      !!
-!!      print*,'******************************************'
-!!      print*,'finished writing initial conditions to:'
-!!      print*,afile
-!!      print*,bfile
-!!      print*,'******************************************'
-!!      print*,''
-!!
-!!      do n = 1,nt
-!!      !do n = 1,1
-!!         !print*,'timestep = ',n
-!!         !!advect for one time step
-!!         call waveadv_weno(h,u,v,dt,bc_opt)
-!!
-!!         !!output initial conditions for reading by matlab/python
-!!         write(cts,'(i3.3)') n
-!!         afile = outdir//outfile//cts//'.a'
-!!         bfile = outdir//outfile//cts//'.b'
-!!         call wrt_bfile(bfile,ii,jj,OPT)
-!!         call wrt_afile_2d(afile,x,ii,jj,stat1,1)
-!!         call wrt_afile_2d(afile,y,ii,jj,stat2,2)
-!!         call wrt_afile_2d(afile,h,ii,jj,stat2,3)
-!!      end do
-!!
-!!      print*,'******************************************'
-!!      print*,'finished writing results to:'
-!!      print*,afile
-!!      print*,bfile
-!!      print*,'******************************************'
-!!      print*,''
 
       end program main
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -581,6 +488,70 @@
       call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
 
       end subroutine check_init
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine check_prog(GRID_OPT,n)
+
+      use mod_gridinfo
+      use mod_common_wim
+      use mod_file_utils
+
+      implicit none
+      integer,intent(in)   :: GRID_OPT,n
+      character(len=80)    :: afile,bfile
+      character(len=10)    :: stat1,stat2
+      character(len=3)     :: cts
+
+      write(cts,'(i3.3)') n
+      afile = 'out/wim_prog'//cts//'.a'
+      bfile = 'out/wim_prog'//cts//'.b'
+      stat1 = 'replace'
+      stat2 = 'old'
+
+ 111  format(i2.2,a)  
+ 112  format(i3.3,a)  
+ 113  format(a)
+
+      !! write .b file (description of stuff in .a file)
+      open(unit=2,file=trim(bfile),status = 'replace')
+
+      write(2,111)                                                      &
+     &  4,          "       Number of records"
+      write(2,112)                                                      &
+     &  ii,          "      Record length in x direction (elements)"
+      write(2,112)                                                      &
+     &  jj,          "      Record length in y direction (elements)"
+      write(2,111)                                                      &
+     &  GRID_OPT,   "       Option number for initial conditions"
+      write(2,113) ""
+
+      write(2,113)    "Record number and name:"
+      write(2,111)                                                      &
+     &  1,    "       Dmax"
+      write(2,111)                                                      &
+     &  2,    "       tau_x"
+      write(2,111)                                                      &
+     &  3,    "       tau_y"
+      write(2,111)                                                      &
+     &  4,    "       Hs"
+!     write(2,111)                                                      &
+!    &  5,    "       Tp"
+!     write(2,111)                                                      &
+!    &  6,    "       mwd"
+
+      close(2)
+
+      !! dump arrays to .a file
+      !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
+      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,stat1,3)
+      call wrt_afile_2d(afile ,tau_x   ,ii,jj  ,stat2,3)
+      call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,stat2,3)
+      call wrt_afile_2d(afile ,Hs      ,ii,jj  ,stat2,4)
+!     call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)
+!     call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
+
+      end subroutine check_prog
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

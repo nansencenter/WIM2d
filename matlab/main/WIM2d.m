@@ -597,11 +597,8 @@ for n = 2:nt
             wlng_crest  = ...
                GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young);
 
-            Dc = wlng_crest/2;
-            % {Dc, Dmin, Dmax(i,j)}
-            if Dc >= Dmin & Dmax(i,j)>Dc
-               Dmax(i,j)   = Dc;
-            end
+            Dc = max(Dmin,wlng_crest/2);
+            Dmax(i,j)   = min(Dc,Dmax(i,j));
          end%% end breaking action;
 
          if 0%i==11 & j==1
