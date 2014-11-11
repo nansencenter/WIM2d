@@ -14,12 +14,12 @@
       real,dimension(idm,jdm) :: tau_x,tau_y
       !!
       real,parameter          :: unif_c            = .7
-      real,parameter          :: unif_h            = 1.5
+      real,parameter          :: unif_h            = 2.0
       real,parameter          :: dfloe_pack_init   = 300.0
       
       !!wave directions and frequencies
-      integer,parameter             :: n_wavdir    = 1
-      integer,parameter             :: n_wave_freq = 1!should be odd (Simpson's rule)
+      integer,parameter             :: n_wavdir    = 16
+      integer,parameter             :: n_wave_freq = 25!should be odd (Simpson's rule)
       real,dimension(n_wave_freq)   :: freq_vec !set in waves_init
       real,dimension(n_wavdir)      :: wavdir   !set in waves_init
 

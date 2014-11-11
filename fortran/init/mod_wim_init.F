@@ -23,8 +23,8 @@
       real     :: xm,ym
       logical  :: critter
 
-      integer,parameter :: nw    = n_wavdir
-      integer,parameter :: ndir  = n_wave_freq
+      integer,parameter :: nw    = n_wave_freq
+      integer,parameter :: ndir  = n_wavdir
 
       real,parameter :: Tmin  = 2.5
       real,parameter :: Tmax  = 25.0
@@ -36,16 +36,24 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set frequency grid
+      print*,'***************************************'
+      print*,'In waves_init,n_wave_freq=',nw
       if (nw.eq.1) then
          freq_vec(1) = 1.0/Tp_inc
+         print*,'freq,T',freq_vec(1),1.0/freq_vec(1)
       else
          fmin  = 1/Tmax
          fmax  = 1/Tmin
          df    = (fmax-fmin)/(n_wave_freq-1.0)
+         print*,'T range',Tmin,Tmax
+         print*,'freq range',fmin,fmax
          do w=1,nw
             freq_vec(w) = fmin+(w-1)*df
+            !print*,freq_vec(w)
          end do
       end if
+      print*,'***************************************'
+      print*,' '
 
       !!set directional grid
       if (GRID_OPT.eq.0) then
@@ -119,17 +127,16 @@
 
       implicit none
 
-      integer,parameter :: nw    = n_wavdir
-      integer,parameter :: ndir  = n_wave_freq
+      integer,parameter :: nw    = n_wave_freq
+      integer,parameter :: ndir  = n_wavdir
       integer           :: i,j,w,wth
       !!
       real,dimension(nw)   :: Sfreq(nw)
       real,dimension(ndir) :: theta_fac
-      real  :: PI,om,chi
+      real  :: PI,om,chi,adv_dir
 
       PI       = 4.0*atan(1.0)
       sdf_inc  = 0.0
-      sdf_dir  = 0.0
 
       do j=1,jj
       do i=1,ii
@@ -144,34 +151,48 @@
                om = 2*PI*freq_vec(w)
                call SDF_Bretschneider(                                  &
      &                  Sfreq(w),om,Tp(i,j),Hs(i,j))
+               if (i*j.eq.1) then
+                  print*,'T,S_B',2*PI/om,Sfreq(w)
+               end if
             end do
          else
             Sfreq(1) = (Hs(i,j)/4.0)**2!!Hs=4*sqrt(Sfreq*wt_om), wt_om=1
+            if (i*j.eq.1) then
+               print*,'T,S_inc',1.0/freq_vec(1),Sfreq(1)
+            end if
          end if
 
          !!direcional spreading
          if (ndir.eq.1) then
             theta_fac   = 1.0
          else
-            theta_fac   = 0.0
+            !theta_fac   = 0.0
             do wth=1,ndir
                chi   = PI/180.0*(wavdir(wth)-mwd(i,j))
                if (cos(chi).gt.0.0) then
                   theta_fac(wth) = 2.0/PI*cos(chi)**2
+               else
+                  theta_fac(wth) = 0.0
                end if
             end do
+!           print*,'test dir spreading factor'
+!           print*,2*PI/(1.0*ndir)*sum(theta_fac),1
          end if
 
          !!combine freq & dir
          do w=1,nw
          do wth=1,ndir
             sdf_inc(i,j,wth,w)   = Sfreq(w)*theta_fac(wth)
+            if (i*j.eq.1) then
+               adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+               print*,adv_dir,sdf_inc(i,j,wth,w),Sfreq(w),theta_fac(wth)
+            end if
          end do
          end do
 
-      end if
-      end do
-      end do
+      end if!WAVE_MASK==1
+      end do!j - spatial loop (x)
+      end do!j - spatial loop (y)
 
       end subroutine set_inc_waves
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -228,20 +249,20 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine SDF_Bretschneider(S,T,T_peak,H_sig)
+      subroutine SDF_Bretschneider(S,omega,T_peak,H_sig)
 
       implicit none
 
       real,intent(out)  :: S
-      real,intent(in)   :: T,T_peak,H_sig
-      real              :: PI,omega,om_m,f1,f2,f3
+      real,intent(in)   :: omega,T_peak,H_sig
+      real              :: PI,T,om_m,f1,f2,f3
 
       PI    = 4.0*atan(1.0)
-      omega = 2*PI/T
+      T     = 2*PI/omega
       om_m  = 2*PI/T_peak
       !!
       f1 = 5.0/16.0*H_sig**2*om_m**4
-      f2 = 1.0/omega**4
+      f2 = 1.0/omega**5
       f3 = exp(-1.25*(T/T_peak)**4)
       !!
       S  = f1*f2*f3

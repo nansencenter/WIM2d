@@ -21,12 +21,24 @@ end
 D  = dir('../out/wim_prog*.a');
 nm = D(end).name;
 nt = str2num(nm(9:11))
-for n=2:nt
+
+nvec  = (2:40:nt);
+if (max(nvec)<nt)
+   nvec  = [nvec,nt];
+end
+
+for r = 1:length(nvec)
+   n  = nvec(r)
+   [n,nt]
+   %%
    figure(3),clf;
    fn_fullscreen;
    out_fields  = plot_prog(grid_prams,n);
-   GEN_pause;
+   drawnow;
+   %GEN_pause;
 end
+
+saveas(gcf,'out/wim2d_F.png');
 
 return;
 
@@ -131,9 +143,9 @@ fmt   = 'float32';
 aid   = fopen(afile);
 %%
 s1.Dmax  = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
-s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.tau_x = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.tau_y = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 %%
 fclose(aid);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

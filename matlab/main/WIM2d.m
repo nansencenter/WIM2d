@@ -129,7 +129,7 @@ Y        = grid_prams.Y;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Ice/water;
 if HAVE_ICE==0
-   h           = 2;
+   h           = 1.5;
    c           = 0.75;
    bc_opt      = 0;%%breaking condition (0=beam;1=Marchenko)
    young_opt   = 0;%%young's modulus option
@@ -281,7 +281,23 @@ for j = 1:ny
       end
 
       wlng_ice(i,j,:)   = 2*pi./kice;
-      disp_ratio(i,j,:) = wlng.*(kice/2/pi).*modT;
+      disp_ratio(i,j,:) = (kice./kwtr).*modT;
+      %%
+      itest = 75;
+      jtest = 25;
+      if (i==itest)&(j==jtest)
+         disp('om,T,h')
+         disp([om(1),T(1),hice(i,j)])
+         disp('atten')
+         disp([atten_nond(i,j,1),damping(i,j,1)])
+         disp('ki,kw,2pi/wlng_wtr')
+         disp([kice,kwtr,2*pi./wlng])
+         disp('lam,|T|,disp_rat')
+         disp([wlng_ice(i,j,1),modT,disp_ratio(i,j,1)])
+         disp('argRT,s')
+         disp([argR,argT,int_adm])
+         return
+      end
    else
       ag_eff(i,j,:)     = ag;
       ap_eff(i,j,:)     = ap;

@@ -19,33 +19,24 @@
       real   :: H_nd = 4.0d0!!infinite depth used in scattering calculation;
       !!
       real   :: ki,kw,avc,BG1,BG2
-      real   :: E,g,rhow,rhoi,nu,rho
-      real   :: D
+      !real   :: E,g,rhow,rhoi,nu
+      real   :: D,rho
       
-      !E     = params(1)
-      !g     = params(2)
-      !rhow  = params(3)
-      !rhoi  = params(4)
-      !nu    = params(5)
-      !rho   = rhoi/rhow
-      E     = youngs
-      g     = gravity
-      rhow  = rho_wtr
-      rhoi  = rho_ice
-      nu    = poisson
-      rho   = rhoi/rhow
-      !!
-      D        = E*(h*h*h)/12.0/(1.0-nu*nu)
-      L        = exp( 0.2*log(D/rhow/om/om) )
-      alp_nd   = om*om/g*L
-      hnd     = h/L
+      rho      = rhoice/rhowtr
+      D        = young*(h*h*h)/12.0/(1.0-poisson*poisson)
+      L        = exp( 0.2*log(D/rhowtr/om/om) )
+      alp_nd   = om*om/gravity*L
+      hnd      = h/L
       zeta_nd  = rho*hnd
       
       !!get wavenumber for ice;
       varpi = 1/alp_nd-zeta_nd
+      !print*,'DLvH',D,L,varpi,H_nd
+
       !![ki,BG2,avc]   = gen_root_ice(varpi,H_nd,guess*L);
       call gen_root_ice(ki,BG2,avc,varpi,H_nd,guess*L)
       kice = ki/L
+      !print*,'vHkGB_i',varpi,H_nd,kice,guess*L,BG1
          
       !!get wavenumber for water;
       varpi = 1.0/alp_nd
@@ -53,6 +44,7 @@
       !![kw,BG1] = gen_root_wtr(varpi,Hw_nd,alp_nd);
       call gen_root_wtr(kw,BG1,varpi,Hw_nd,alp_nd)
       kwtr  = kw/L
+      !print*,'vHkGB_w',varpi,Hw_nd,kwtr,alp_nd,BG1
          
       !!get intrinsic admittance;
       !!|R|^2+int_adm*|T|^2=1
@@ -61,14 +53,14 @@
       int_adm  = BG1/BG2
          
       !!get viscous attenuation;
-      visc_rp_nd  = visc_rp/rhow/om/L
+      visc_rp_nd  = visc_rp/rhowtr/om/L
       damping_nd  = avc*visc_rp_nd
       damping     = damping_nd/L
       
       !!get interpolated attenuation coefficient;
       call RTparam_fast(ac,modT,argR,argT,
      &             alp_nd,hnd,int_adm)
-      
+
       end subroutine RTparam_outer
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
@@ -77,35 +69,38 @@
       subroutine gen_root_ice(ki,BG2,avc,
      &                 del, H,guess)
 
-      real,intent(out)   :: ki,BG2,avc
-      real,intent(in)    :: del,H,guess
+      real,intent(out)  :: ki,BG2,avc
+      real,intent(in)   :: del,H,guess
       
-      real   :: fac,k0,dk,tol
-      real   :: res,Lam,Lampr,denom
+      real     :: fac,k0,dk,tol
+      real     :: res,Lam,Lampr,denom
+      integer  :: its,MAXITS
       
-      fac   = 1.0d0
+      fac   = 1.0
       k0    = guess
-      tol   = 1.0d-12
+      tol   = 1.0e-7!relative tolerance
       
       !!Call dispersion relation function;
       !!dk    = NR_corr_term(k0,del,H,fac);
       call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
       ki = k0-dk
-        
-      do while(abs(dk) > tol)
+      MAXITS   = 15
+      its   = 1
+      do while((abs(dk/ki).ge.tol).and.(its.lt.MAXITS))
          k0 = ki
         
          !!Call dispersion relation function;
          !!dk = NR_corr_term(k0,del,H,fac);
          call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
-         ki = k0-dk
+         ki    = k0-dk
+         its   = its+1
       end do
         
       !!Call dispersion relation function;
       !![dk,Lam,Lampr] = NR_corr_term(ki,del,H,fac);
       call NR_corr_term(dk,Lam,Lampr,ki,del,H,fac)
       !!
-      denom = H*(Lam*Lam*ki*ki-1.0d0)+Lampr
+      denom = H*(Lam*Lam*ki*ki-1.0)+Lampr
       res   = -ki/denom
       
       !!Outputs;
@@ -122,31 +117,36 @@
       real,intent(out)   :: kw,BG1
       real,intent(in)    :: del,H,guess
       !!
-      real   :: fac,k0,dk,tol
-      real   :: res,Lam,Lampr,denom
+      real     :: fac,k0,dk,tol
+      real     :: res,Lam,Lampr,denom
+      integer  :: its,MAXITS
       
-      tol   = 1.0d-12
-      fac   = 0.0d0
+      tol   = 1.0e-7!relative tolerance
+      fac   = 0.0
       k0    = guess
       
       !!Call dispersion relation function;
       !!dk    = NR_corr_term(k0,del,H,fac);
       call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
       kw = k0-dk
+
+      MAXITS   = 15
+      its      = 1
       
-      do while(abs(dk) > tol)
+      do while((abs(dk/kw).gt.tol).and.(its.le.MAXITS))
          k0 = kw
       
          !!Call dispersion relation function;
          !!dk       = NR_corr_term(k0,del,H,fac);
          call NR_corr_term(dk,Lam,Lampr,k0,del,H,fac)
-         kw = k0-dk
+         kw    = k0-dk
+         its   = its+1
       end do
       
       !!Call dispersion relation function;
       !![dk,Lam,Lampr] = NR_corr_term(kw,del,H,fac);
       call NR_corr_term(dk,Lam,Lampr,kw,del,H,fac)
-      denom          = H*(Lam*Lam*kw*kw-1.0d0)+Lampr
+      denom          = H*(Lam*Lam*kw*kw-1.0)+Lampr
       res            = -kw/denom
       !!printf("(denom,res,Bg2)=(%.9e,%.9e,%.9e)",res,denom,Lam*Lam*res);
       

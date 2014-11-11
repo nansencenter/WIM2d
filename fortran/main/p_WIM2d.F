@@ -14,7 +14,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer           :: SOLVER
-      integer,parameter :: STEADY      = 0
+      integer,parameter :: STEADY      = 1
       integer,parameter :: DO_ATTEN    = 1
       integer,parameter :: DO_BREAKING = 1
       integer,parameter :: USE_ICE_VEL = 0
@@ -30,14 +30,16 @@
       !!
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
-     &   ,taux_om,tauy_om,tmp1
+     &   ,taux_om,tauy_om,tmp1,WAVE_MASK2
       real,dimension(idm,jdm,nw) ::                                     &
      &   ag_eff,ap_eff,wlng_ice,atten_nond,damping,disp_ratio
 
       real     :: PI,tmp
+      real     :: dom_width,amin,amax,u_ref
       real     :: adv_dir,dt,dtheta,om,dom,guess
       real     :: kwtr,kice,modT,int_adm,argT,argR,F,Dave,c1d
       real,dimension(nw)   :: wt_om,wt_simp,T,wlng,ag,ap
+      real     :: wt,Hs_test1,Hs_test2
       integer  :: nt,n,i,j,w,wth
 
       !!for breaking
@@ -45,6 +47,7 @@
       real     :: ommin,ommax,om1,lam1,lam2
       integer  :: jcrest
       logical  :: BREAK_CRIT
+
 
       character(len=*),parameter :: outfile = "init"
       character(len=*),parameter :: outdir = "out/"
@@ -72,13 +75,23 @@
       call waves_init(GRID_OPT)
       call set_inc_waves()
 
-      do w=1,nw
-      do wth=1,ndir
-         where (WAVE_MASK.eq.1.0)
-            sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
-         end where
-      end do
-      end do
+      sdf_dir  = sdf_inc
+      !sdf_dir  = 0.0
+      !do w=1,nw
+      !do wth=1,ndir
+      !   where (WAVE_MASK.eq.1.0)
+      !      sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+      !   end where
+      !end do
+      !end do
+
+      WAVE_MASK2  = 0.0
+      if (STEADY.eq.1) then
+         if (GRID_OPT.eq.1) then
+            WAVE_MASK2(1:3,:) = 1.0
+         end if
+         print*,'steady test',maxval(WAVE_MASK2),sum(WAVE_MASK2)
+      end if
 
       if (.true.) then
          !!check initialisation
@@ -131,23 +144,46 @@
       atten_nond  = 0.0
       damping     = 0.0
 
+      om    = 2*PI*freq_vec(1)
+
       do w=1,nw
          
-         om    = 2*PI*freq_vec(1)
-         guess = om**2/gravity!guess for root
-
          do j=1,jj
          do i=1,ii
          if (ICE_MASK(i,j).eq.1.0) then
 
             om = 2*PI*freq_vec(w)
+            if (w.eq.1) then
+               guess = om**2/gravity!guess for root
+            else
+               guess = 2*PI/wlng_ice(i,j,w-1)
+!              if ((i.eq.24).and.(j.eq.1)) then
+!                 print*,'previous wavelengths/nos'
+!                 do wth=1,w-1
+!                    print*,wlng_ice(i,j,wth),2*PI/wlng_ice(i,j,wth)
+!                 end do
+!              end if
+            end if
+
             call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
      &                  atten_nond(i,j,w),modT,argR,argT,               &
      &                  iceh(i,j),om,guess)
 
-            guess             = kice
             disp_ratio(i,j,w) = kice/kwtr*modT
             wlng_ice(i,j,w)   = 2*PI/kice
+
+            !!check attenuation coeff's, wavenumbers
+!           if ((i.eq.24).and.(j.eq.1)) then
+!              print*,'***********************************************'
+!              print*,'check outputs from RTparam_outer, (i,j,w)=',i,j,w
+!              print*,'atten',atten_nond(i,j,w),damping(i,j,w)
+!              print*,'ki,kw,2pi/wlng_wtr',kice,kwtr,2*PI/wlng(w)
+!              print*,'lam,|T|,disp_rat',                               &
+!    &            wlng_ice(i,j,w),modT,disp_ratio(i,j,w)
+!              print*,'argRT_s',argR,argT,int_adm
+!              print*,'***********************************************'
+!              print*,' '
+!           end if
 
             if (USE_ICE_VEL.eq.0) then
                !!use water group and phase velocity
@@ -155,29 +191,45 @@
                ap_eff(i,j,w)  = ap(w)
             end if
 
-         else
+         else!end check for ice
 
             !!no ice
             wlng_ice(i,j,w)   = wlng(w)
             ag_eff(i,j,w)     = ag(w)
             ap_eff(i,j,w)     = ap(w)
 
-         end if
-         end do
-         end do
-      end do
+         end if!check for no ice
+
+         end do!i - spatial (x) loop
+         end do!j - spatial (y) loop
+      end do!w - spectral loop
 
       if (DO_ATTEN.eq.0) then
          atten_nond  = 0.0
          damping     = 0.0
       end if
 
-      nt = 3
+      amax        = maxval(ag_eff(:,:,1 ))!lowest freq is fastest
+      amin        = minval(ag_eff(:,:,nw))!highest freq is slowest
+      u_ref       = amin+.7*(amax-amin);
+      dt          = CFL*dx/amax
+      dom_width   = maxval(X)-minval(X)
+      nt          = aint( dom_width/u_ref/dt )
+      
       print*,' '
       print*,'******************************************************'
-      print*,'Number of time steps:       ',nt
-      print*,'Number of wave frequencies: ',nw
-      print*,'Number of wave directions:  ',ndir
+      print*,'CFL number:                       '  ,CFL
+      print*,'Spatial resolution (km):          '  ,dx/1.0e3,dy/1.0e3
+      print*,'Maximum wave group velocity (m/s):'  ,amax
+      print*,'Width of domain (km):             '  ,dom_width/1.0e3
+      print*,'Number of time steps:             '  ,nt
+      print*,'Time step (s):                    '  ,dt
+      print*,'Time interval (h):                '  ,(nt*dt)/60.0/60.0
+      print*,'Number of wave frequencies:       '  ,nw
+      print*,'Minimum period (s):               '  ,1.0/freq_vec(nw)
+      print*,'Maximum period (s):               '  ,1.0/freq_vec(1)
+      print*,'Number of wave directions:        '  ,ndir
+      print*,'Directional resolution (degrees): '  ,360.0/(1.0*ndir)
       print*,'******************************************************'
       print*,' '
       
@@ -200,12 +252,44 @@
          !! variance of strain;
          var_strain     = 0.0
 
-         !!top-up waves in wave mask if STEADY==1
-         !!(steady-state solution);
-         if ((WAVE_MASK(i,j).ge.0).and.(STEADY.eq.1)) then
-            !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
-            sdf_dir(i,j,:,:)  = sdf_inc(i,j,:,:)
-         end if
+         !! top-up waves (with directions that correspond to incident
+         !! waves) in appropriate area if STEADY==1
+         !! (steady-state solution);
+         do w=1,nw
+         do wth=1,n_wavdir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+
+         i        = 2
+         j        = 25
+         Hs_test1 = 0.0
+         Hs_test2 = 0.0
+         do w=1,nw
+            if (n_wavdir.eq.1) then
+               Hs_test1 = Hs_test1+wt_om(w)*sdf_dir(i,j,1,w)
+               Hs_test2 = Hs_test2+wt_om(w)*sdf_inc(i,j,1,w)
+            else
+               do wth=1,n_wavdir
+                  wt       = (2*PI/(1.0*n_wavdir))*wt_om(w)
+                  Hs_test1 = Hs_test1+wt*sdf_dir(i,j,wth,w)
+                  Hs_test2 = Hs_test2+wt*sdf_inc(i,j,wth,w)
+                  !!
+                  adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+!                 print*,sdf_dir(i,j,wth,w),sdf_inc(i,j,wth,w)          &
+!    &                  ,adv_dir,(cos(adv_dir).ge.0.0)
+               end do
+            end if
+         end do
+         Hs_test1 = 4*sqrt(Hs_test1)
+         Hs_test2 = 4*sqrt(Hs_test2)
+         print*,'Hs_test inc',Hs_test1,Hs_test2
 
          do w=1,nw
 
@@ -352,8 +436,8 @@
          end do!!end spatial loop i in x;
          
          !!dump fields to binary
-         print*,'dfloe  lims',maxval(dfloe),minval(dfloe)
-         print*,'Hs     lims',maxval(Hs   ),minval(Hs   )
+         !print*,'dfloe  lims',maxval(dfloe),minval(dfloe)
+         !print*,'Hs     lims',maxval(Hs   ),minval(Hs   )
          call check_prog(GRID_OPT,n)
 
       end do!! n - finish time stepping
@@ -362,7 +446,8 @@
       print*,' '
       print*,'******************************************************'
       print*,'p_WIM2d.F finished'
-      print *,'Elapsed time (s):',et                                    &
+      !print *,'Elapsed time (s):',et                                    !&
+      print *,'Elapsed time (min):',et/60.0                             !&
 !    &       ,', user:', tictoc(1),                                     &
 !    &       ,', sys:' ,tictoc(2)
       print*,'******************************************************'
@@ -552,8 +637,8 @@
 
       !! dump arrays to .a file
       !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,stat1,3)
-      call wrt_afile_2d(afile ,tau_x   ,ii,jj  ,stat2,3)
+      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,stat1,1)
+      call wrt_afile_2d(afile ,tau_x   ,ii,jj  ,stat2,2)
       call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,stat2,3)
       call wrt_afile_2d(afile ,Hs      ,ii,jj  ,stat2,4)
 !     call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)

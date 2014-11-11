@@ -4,7 +4,7 @@
 function wave_stuff = set_incident_waves(grid_prams,wave_fields)
 
 
-SHARP_DIST  = 0;%%Single direction
+SHARP_DIST  = 1;%%Single direction
 SING_FREQ   = 1;%%Single frequency
 
 %%frequency grid:
