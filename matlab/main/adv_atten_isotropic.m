@@ -63,51 +63,90 @@ for j = 1:ny
       q_scat   = atten_dim(i,j);
       %%absorbed energy:
       q_abs    = damp_dim(i,j);
-      %%
-      %M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id )/dth;% [m^{-1}]
-      M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id );% [m^{-1}] - dth shouldn't be here
+
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       if 1
-         %% get eigenvalues analytically
-         %% eigenvalues are -q_scat*[1/dth,1/dth,...,1/dth,0]-q_abs/dth
-         %% - should be the same as solving in Fourier space
-         %% - TODO: check this
-         % dd       = -q_scat./wt_theta;
-         % dd(end)  = 0;
-         % dd       = dd-q_abs/dth;
-         dd       = -q_scat*wt_theta/(2*pi);
-         dd(end)  = 0;
-         dd       = dd-q_abs;
+         %%use Fourier method
 
-         %% last eigenvector corresponds to same scattering in all directions
-         uu = oo(:,1)/sqrt(ndir);
+         %%fourier coeff's of Boltzmann kernel
+         K_fou = q_scat*eye(ndir,1);%%K(theta)=q_scat/2/pi: isotropic scattering
 
-         %% rest of eigenvectors are in the orthogonal hyper-plane
-         %% - can find wih null
-         U  = [null(uu'),uu];
+         %%fourier coeff's of directional spectrum
+         S_th  = squeeze(S(i,j,:));
+         S_fou = 2*pi*ifft(S_th);
+
+         %%do attenuation
+         dd    = K_fou-q_scat-q_abs;
+         S_fou = S_fou.*exp(dd*ag_eff(i,j)*dt);
+
+         %%transform back to get attenuated directional spectrum
+         S(i,j,:) = 1/2/pi*fft(S_fou);
+
+         %%stresses
+         jp1      = 2;
+         jm1      = 2+ndir/2;
+         src_p1   = - (q_scat+q_abs)*S_fou(jp1) + q_scat*K_fou(jp1)*S_fou(jp1);%%n=+1 coefficient of source term
+         src_m1   = - (q_scat+q_abs)*S_fou(jm1) + q_scat*K_fou(jm1)*S_fou(jm1);%%n=-1 coefficient of source term
+         tau_x    = -  .5*ag_eff(i,j)*(src_p1+src_m1);%%-c_g*\int.src*cos(\theta).d\theta
+         tau_y    = - .5i*ag_eff(i,j)*(src_p1-src_m1);%%-c_g*\int.src*sin(\theta).d\theta
+            %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
+            %%  and integrated over frequency as well;
+            %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
+            %%         = kg/m/s^2 = Pa
+
+            %% NB take '-' because here we have calc'd the stress
+            %% ON the waves (cf Donelan et al, 2012, JGR)
+            %% - we want the stress on the ice
+
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       else
-         [U,D]    = eig(M_bolt);
-         dd       = diag(D);
-         %GEN_pause;
-      end
-      S_th        = squeeze(S(i,j,:));
-      source      = ag_eff(i,j)*M_bolt*squeeze(S_th);%% m^{-1}*[m/s]*[m^2s] = m^2
-      tau_x(i,j)  = -(cos(theta).*wt_theta)'*source;      %% [m^2]
-      tau_y(i,j)  = -(sin(theta).*wt_theta)'*source;      %% [m^2]
-         %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
-         %%  and integrated over frequency as well;
-         %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
-         %%         = kg/m/s^2 = Pa
+         %M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id )/dth;% [m^{-1}]
+         M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id );% [m^{-1}] - dth shouldn't be here
+         if 1
+            %% get eigenvalues analytically
+            %% eigenvalues are -q_scat*[1/dth,1/dth,...,1/dth,0]-q_abs/dth
+            %% - should be the same as solving in Fourier space
+            %% - TODO: check this
+            % dd       = -q_scat./wt_theta;
+            % dd(end)  = 0;
+            % dd       = dd-q_abs/dth;
+            dd       = -q_scat*wt_theta/(2*pi);
+            dd(end)  = 0;
+            dd       = dd-q_abs;
 
-         %% NB take '-' because here we have calc'd the stress
-         %% ON the waves (cf Donelan et al, 2012, JGR)
-         %% - we want the stress on the ice
+            %% last eigenvector corresponds to same scattering in all directions
+            uu = oo(:,1)/sqrt(ndir);
 
-      cc       = U'*squeeze(S(i,j,:));                %%expand in terms of eigenvectors
-      S(i,j,:) = U*diag(exp(dd*ag_eff(i,j)*dt))*cc;   %%exponential attenuation
-   end
+            %% rest of eigenvectors are in the orthogonal hyper-plane
+            %% - can find wih null
+            U  = [null(uu'),uu];
+         else
+            [U,D]    = eig(M_bolt);
+            dd       = diag(D);
+            %GEN_pause;
+         end
+         S_th        = squeeze(S(i,j,:));
+         source      = ag_eff(i,j)*M_bolt*squeeze(S_th);%% m^{-1}*[m/s]*[m^2s] = m^2
+         tau_x(i,j)  = -(cos(theta).*wt_theta)'*source;      %% [m^2]
+         tau_y(i,j)  = -(sin(theta).*wt_theta)'*source;      %% [m^2]
+            %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
+            %%  and integrated over frequency as well;
+            %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
+            %%         = kg/m/s^2 = Pa
+
+            %% NB take '-' because here we have calc'd the stress
+            %% ON the waves (cf Donelan et al, 2012, JGR)
+            %% - we want the stress on the ice
+
+         cc       = U'*squeeze(S(i,j,:));                %%expand in terms of eigenvectors
+         S(i,j,:) = U*diag(exp(dd*ag_eff(i,j)*dt))*cc;   %%exponential attenuation
+      end%%choice of method
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   end%%ice present
 
    %% INTEGRATE SPECTRUM OVER DIRECTION;
-   %% TODO: add stress calculation here;
+   %% (need this even if only water)
    S_freq(i,j) = wt_theta'*squeeze(S(i,j,:));
 end
 end
