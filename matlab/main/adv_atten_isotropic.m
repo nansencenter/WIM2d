@@ -62,10 +62,10 @@ for j = 1:ny
       %%scattered energy
       q_scat   = atten_dim(i,j);
       %%absorbed energy:
-      q_abs    = damp_dim(i,j);
+      q_tot    = q_scat + damp_dim(i,j);
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      if 1
+      if 0
          %%use Fourier method
 
          %%fourier coeff's of Boltzmann kernel
@@ -76,8 +76,9 @@ for j = 1:ny
          S_fou = 2*pi*ifft(S_th);
 
          %%do attenuation
-         dd    = K_fou-q_scat-q_abs;
+         dd    = K_fou-q_tot;
          S_fou = S_fou.*exp(dd*ag_eff(i,j)*dt);
+         %S_freq(i,j) = S_fou(1);
 
          %%transform back to get attenuated directional spectrum
          S(i,j,:) = 1/2/pi*fft(S_fou);
@@ -85,10 +86,10 @@ for j = 1:ny
          %%stresses
          jp1      = 2;
          jm1      = 2+ndir/2;
-         src_p1   = - (q_scat+q_abs)*S_fou(jp1) + q_scat*K_fou(jp1)*S_fou(jp1);%%n=+1 coefficient of source term
-         src_m1   = - (q_scat+q_abs)*S_fou(jm1) + q_scat*K_fou(jm1)*S_fou(jm1);%%n=-1 coefficient of source term
-         tau_x    = -  .5*ag_eff(i,j)*(src_p1+src_m1);%%-c_g*\int.src*cos(\theta).d\theta
-         tau_y    = - .5i*ag_eff(i,j)*(src_p1-src_m1);%%-c_g*\int.src*sin(\theta).d\theta
+         src_p1   = - q_tot*S_fou(jp1) + q_scat*K_fou(jp1)*S_fou(jp1);%%n=+1 coefficient of source term
+         src_m1   = - q_tot*S_fou(jm1) + q_scat*K_fou(jm1)*S_fou(jm1);%%n=-1 coefficient of source term
+         tau_x    = -  .5*ag_eff(i,j)*(src_p1+src_m1);%%-c_g*\int[src*cos(\theta)]d\theta
+         tau_y    = - .5i*ag_eff(i,j)*(src_p1-src_m1);%%-c_g*\int[src*sin(\theta)]d\theta
             %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
             %%  and integrated over frequency as well;
             %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
@@ -100,26 +101,22 @@ for j = 1:ny
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       else
-         %M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id )/dth;% [m^{-1}]
-         M_bolt   = ( q_scat*(oo/ndir-id)-q_abs*id );% [m^{-1}] - dth shouldn't be here
+         M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
          if 1
-            %% get eigenvalues analytically
+            %% get eigenvalues by inspection
             %% eigenvalues are -q_scat*[1/dth,1/dth,...,1/dth,0]-q_abs/dth
             %% - should be the same as solving in Fourier space
             %% - TODO: check this
-            % dd       = -q_scat./wt_theta;
-            % dd(end)  = 0;
-            % dd       = dd-q_abs/dth;
-            dd       = -q_scat*wt_theta/(2*pi);
-            dd(end)  = 0;
-            dd       = dd-q_abs;
+            %%   (have same eigenvalues, & 1st eigenvector is the same)
+            dd    = -q_tot*oo(:,1);
+            dd(1) = dd(1)+q_scat;
 
-            %% last eigenvector corresponds to same scattering in all directions
+            %% 1st eigenvector corresponds to same scattering in all directions
             uu = oo(:,1)/sqrt(ndir);
 
             %% rest of eigenvectors are in the orthogonal hyper-plane
-            %% - can find wih null
-            U  = [null(uu'),uu];
+            %% - can find with null
+            U  = [uu,null(uu')];
          else
             [U,D]    = eig(M_bolt);
             dd       = diag(D);

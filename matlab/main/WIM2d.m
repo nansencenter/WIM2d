@@ -30,7 +30,7 @@ CHK_ATTEN   = 0;%%check by running with old attenuation
 %% set attenuation model;
 %% also give progress report every 'reps' time
 %%  steps;
-reps  = 1;
+reps  = 40;
 format long
 
 disp('Initialization')
@@ -283,21 +283,21 @@ for j = 1:ny
       wlng_ice(i,j,:)   = 2*pi./kice;
       disp_ratio(i,j,:) = (kice./kwtr).*modT;
       %%
-      itest = 75;
-      jtest = 25;
-      if (i==itest)&(j==jtest)
-         disp('om,T,h')
-         disp([om(1),T(1),hice(i,j)])
-         disp('atten')
-         disp([atten_nond(i,j,1),damping(i,j,1)])
-         disp('ki,kw,2pi/wlng_wtr')
-         disp([kice,kwtr,2*pi./wlng])
-         disp('lam,|T|,disp_rat')
-         disp([wlng_ice(i,j,1),modT,disp_ratio(i,j,1)])
-         disp('argRT,s')
-         disp([argR,argT,int_adm])
-         return
-      end
+      %itest = 75;
+      %jtest = 25;
+      %if (i==itest)&(j==jtest)
+      %   disp('om,T,h')
+      %   disp([om(1),T(1),hice(i,j)])
+      %   disp('atten')
+      %   disp([atten_nond(i,j,1),damping(i,j,1)])
+      %   disp('ki,kw,2pi/wlng_wtr')
+      %   disp([kice,kwtr,2*pi./wlng])
+      %   disp('lam,|T|,disp_rat')
+      %   disp([wlng_ice(i,j,1),modT,disp_ratio(i,j,1)])
+      %   disp('argRT,s')
+      %   disp([argR,argT,int_adm])
+      %   return
+      %end
    else
       ag_eff(i,j,:)     = ag;
       ap_eff(i,j,:)     = ap;
@@ -386,12 +386,12 @@ end
 if DO_PLOT
    %%
    figure(1),clf;
-   fn_full_screen;
+   fn_fullscreen;
    fn_plot_ice(grid_prams,ice_fields);
    pause(0.1);
    %%
    figure(2),clf;
-   fn_full_screen;
+   fn_fullscreen;
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(ndir/2);
