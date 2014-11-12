@@ -239,6 +239,12 @@ damping     = zeros(nx,ny,nw);
 
 for i = 1:nx
 for j = 1:ny
+
+   if j==1
+      %%progress report - can be slow
+      disp([' - initialised ',num2str(i),' rows out of ',num2str(nx)])
+   end
+
    if ICE_MASK(i,j)==1
       %% if ice is present:
       %% get ice wavelengths, group velocities,

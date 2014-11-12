@@ -76,21 +76,14 @@ for j_=1:length(om)
    %%get intrinsic admittance;
    %%|R|^2+int_adm*|T|^2=1
    int_adm(j)  = BG1/BG2;
+
+   if 0
+      period   = 2*pi/om(j)
+      h
+      wn_ice   = kice(j)
+      wn_wtr   = kwtr(j)
+   end
 end
-
-%if 0
-%   period   = 2*pi/om
-%   h        = h_nd*L
-%   Hw       = Hw_nd*L
-%   ahl      = {alp_nd,h_nd,L}
-%   kw2      = 2*pi*L/GEN_get_wtr_wavelength(period,Hw);
-%   kkaa     = {kw,kw2,alp_nd,kw*tanh(kw*Hw_nd)}
-%   kw/kw2
-%   %%
-%   kk_ice   = {ki,2*pi*L/GEN_get_ice_wavelength(h,period,H_nd*L,E)}
-%   pause
-%end
-
 
 %%get viscous attenuation;
 visc_rp_nd  = visc_rp/rhow./(om.*L);
