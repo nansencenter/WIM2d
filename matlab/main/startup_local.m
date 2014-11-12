@@ -10,6 +10,7 @@ feval(fxn,'../init');
 feval(fxn,'../attenuation_youngs');
 feval(fxn,'../misc');
 feval(fxn,'../numerics');
+feval(fxn,'../numerics/testing');
 feval(fxn,'../other_deps');
 
 %gitdir   = '~/GITHUB-REPOSITORIES/';

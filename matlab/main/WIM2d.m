@@ -10,7 +10,7 @@ DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
 DO_BREAKING = 1   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
-SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
+SOLVER      = 0   %% 0: old way; 1: scatter E isotropically
 
 OPT      = 1;%%ice-water-land configuration;
 PLOT_OPT = 2;%%plot option
@@ -411,7 +411,8 @@ end
 disp('beginning main integration...');
 %% also give progress report every 'reps' time
 %%  steps;
-reps  = nt+1;
+%reps  = nt+1;%%go straight through without reporting back or plotting
+reps  = 50;
 GET_OUT  = 1;
 if GET_OUT
    Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
@@ -709,10 +710,17 @@ if DO_PLOT%%check exponential attenuation
    if SV_FIG%%save figures
 
       if nw==1
-         %fig_dir  = 'test_B';  %%use this for monochromatic wave
-         fig_dir  = 'test_B_fou';  %%use this for monochromatic wave
+         if SOLVER==1
+            fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
+         elseif SOLVER==0
+            fig_dir  = 'out/simple_1freq';  %%use this for monochromatic wave
+         end
       else
-         fig_dir  = 'test_B2'; %%use this for full freq spec
+         if SOLVER==1
+            fig_dir  = 'out/isotropic_spec';  %%use this for spectrum
+         elseif SOLVER==0
+            fig_dir  = 'out/simple_spec';  %%use this for spectrum
+         end
       end
 
       if ~exist(fig_dir)

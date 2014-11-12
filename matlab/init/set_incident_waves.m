@@ -5,7 +5,7 @@ function wave_stuff = set_incident_waves(grid_prams,wave_fields)
 
 
 SHARP_DIST  = 0;%%Single direction
-SING_FREQ   = 1;%%Single frequency
+SING_FREQ   = 0;%%Single frequency
 
 %%frequency grid:
 if SING_FREQ==1%%single freq
@@ -15,7 +15,7 @@ if SING_FREQ==1%%single freq
 else
    f      = 1/25;%0.042;% min freq/ resolution
    f1     = 1/2.5;%0.4;% max freq
-   nw     = 21;% NB needs to be odd for Simpson's rule;
+   nw     = 25;% NB needs to be odd for Simpson's rule;
    freq   = linspace(f,f1,nw)';
    om     = 2*pi*freq;
 end
@@ -29,10 +29,10 @@ else
    ndir     = 2^r;
    wavdir   = linspace(90,-270,ndir+1)';
    %%
-   if mod(ndir,2)==0
-      %%make symmtric
-      wavdir   = wavdir+(wavdir(2)-wavdir(1))/2;
-   end
+   %if mod(ndir,2)==0
+   %   %%make symmetric
+   %   wavdir   = wavdir+(wavdir(2)-wavdir(1))/2;
+   %end
    wavdir(end) = [];
 end
 wave_stuff  = struct('nfreq',nw,...
