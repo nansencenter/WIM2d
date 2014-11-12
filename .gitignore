@@ -7,4 +7,3 @@ fortran/main/test/out/*
 fortran/numerics/test_advection/out/*
 fortran/numerics/test_advection/test_out/*
 matlab/main/test_B2
-matlab/main/test_B

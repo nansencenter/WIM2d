@@ -2,7 +2,7 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
    WIM_2D(grid_prams,wave_prams,ice_prams)
 % clear;
 
-DO_SAVE     = 0;
+%DO_SAVE     = 0;
 DO_PLOT     = 1;  %% change this to 0
                   %% if graphics aren't supported;
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
@@ -17,6 +17,7 @@ PLOT_OPT = 2;%%plot option
 
 CHK_ATTEN   = 0;%%check by running with old attenuation
 
+SV_FIG   = 1;
 %if DO_SAVE
 %   filename=['wim2d_out',num2str(Tm),...
 %            's_',num2str(mwd_dim),...
@@ -27,10 +28,6 @@ CHK_ATTEN   = 0;%%check by running with old attenuation
 %   %pause;
 %end
 
-%% set attenuation model;
-%% also give progress report every 'reps' time
-%%  steps;
-reps  = 40;
 format long
 
 disp('Initialization')
@@ -367,21 +364,7 @@ if nw>1%% weights for integral over frequency
 else
    wt_om = 1;
 end
-
-% %% weights for integral over directions
-% %% NB using radians for mwd;
-% if ndir>1
-%    wt_theta = ones(ndir,1)*(2*pi/ndir);
-% else
-%    wt_theta = 1;
-% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-GET_OUT  = 1;
-if GET_OUT
-   Dmax_all         = zeros(nx,ny,floor(nt/reps));
-   Dmax_all(:,:,1)  = Dmax;
-end
 
 if DO_PLOT
    %%
@@ -427,6 +410,14 @@ if DO_PLOT
 end
 
 disp('beginning main integration...');
+%% also give progress report every 'reps' time
+%%  steps;
+reps  = nt+1;
+GET_OUT  = 1;
+if GET_OUT
+   Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
+   Dmax_all(:,:,1)  = Dmax;
+end
 
 for n = 2:nt
    disp([n nt])
@@ -716,17 +707,25 @@ if DO_PLOT%%check exponential attenuation
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
 
-   if 1%%save figures
-      fig_dir  = 'test_B/B';  %%use this for monochromatic wave
-      %fig_dir  = 'test_B2/B'; %%use this for full freq spec
+   if SV_FIG%%save figures
+
+      if nw==1
+         fig_dir  = 'test_B';  %%use this for monochromatic wave
+      else
+         fig_dir  = 'test_B2'; %%use this for full freq spec
+      end
+
+      if ~exist(fig_dir)
+         mkdir(fig_dir)
+      end
 
       figure(3);
-      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'_atten.fig']);
-      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'_atten.png']);
+      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'_atten.fig']);
+      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'_atten.png']);
       %%
       figure(2);
-      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'.fig']);
-      saveas(gcf,[fig_dir,num2str(ndir,'%3.3d'),'.png']);
+      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'.fig']);
+      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'.png']);
    end
 end
 
@@ -734,9 +733,9 @@ end
 disp(strvcat(Info));
 
 %% save time-stepped Dmax;
-if DO_SAVE
-   save(filename,'out');
-end
+%if DO_SAVE
+%   save(filename,'out');
+%end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function fn_plot_spec(X,Y,Hs,Tw,Dmax,s1)
