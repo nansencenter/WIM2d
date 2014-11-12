@@ -378,7 +378,6 @@ if DO_PLOT
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(ndir/2);
-   {jdir,wave_stuff.dirs,Sdir}
    s1 = struct('dir',wave_stuff.dirs(jdir),...
                'period',Tc,...
                'Sdir',Sdir(:,:,jdir,jchq));
@@ -710,7 +709,8 @@ if DO_PLOT%%check exponential attenuation
    if SV_FIG%%save figures
 
       if nw==1
-         fig_dir  = 'test_B';  %%use this for monochromatic wave
+         %fig_dir  = 'test_B';  %%use this for monochromatic wave
+         fig_dir  = 'test_B_fou';  %%use this for monochromatic wave
       else
          fig_dir  = 'test_B2'; %%use this for full freq spec
       end

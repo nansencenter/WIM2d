@@ -65,31 +65,30 @@ for j = 1:ny
       q_tot    = q_scat + damp_dim(i,j);
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      if 0
+      if 1
          %%use Fourier method
 
          %%fourier coeff's of Boltzmann kernel
          K_fou = q_scat*eye(ndir,1);%%K(theta)=q_scat/2/pi: isotropic scattering
 
          %%fourier coeff's of directional spectrum
-         S_th  = squeeze(S(i,j,:));
-         S_fou = 2*pi*ifft(S_th);
+         S_th     = squeeze(S(i,j,:));
+         S_fou    = 2*pi*ifft(S_th);
 
-         %%do attenuation
-         dd    = K_fou-q_tot;
-         S_fou = S_fou.*exp(dd*ag_eff(i,j)*dt);
-         %S_freq(i,j) = S_fou(1);
-
-         %%transform back to get attenuated directional spectrum
-         S(i,j,:) = 1/2/pi*fft(S_fou);
+         %% get eigenvalues to do attenuation,
+         %% & transform back to get attenuated directional spectrum
+         dd       = K_fou-q_tot;
+         S(i,j,:) = 1/2/pi*fft(S_fou.*exp(dd*ag_eff(i,j)*dt));
 
          %%stresses
-         jp1      = 2;
-         jm1      = 2+ndir/2;
-         src_p1   = - q_tot*S_fou(jp1) + q_scat*K_fou(jp1)*S_fou(jp1);%%n=+1 coefficient of source term
-         src_m1   = - q_tot*S_fou(jm1) + q_scat*K_fou(jm1)*S_fou(jm1);%%n=-1 coefficient of source term
-         tau_x    = -  .5*ag_eff(i,j)*(src_p1+src_m1);%%-c_g*\int[src*cos(\theta)]d\theta
-         tau_y    = - .5i*ag_eff(i,j)*(src_p1-src_m1);%%-c_g*\int[src*sin(\theta)]d\theta
+         jp1         = 2;
+         jm1         = ndir;
+         src_p1      = - q_tot*S_fou(jp1) + K_fou(jp1)*S_fou(jp1);%%n=+1 coefficient of source term
+         src_m1      = - q_tot*S_fou(jm1) + K_fou(jm1)*S_fou(jm1);%%n=-1 coefficient of source term
+         src_cos     = (src_p1+src_m1)/2;
+         src_sin     = (src_p1-src_m1)/2i;
+         tau_x(i,j)  = -ag_eff(i,j)*src_cos;%%-c_g*\int[src*cos(\theta)]d\theta
+         tau_y(i,j)  = -ag_eff(i,j)*src_sin;%%-c_g*\int[src*sin(\theta)]d\theta
             %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
             %%  and integrated over frequency as well;
             %% units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
@@ -98,6 +97,26 @@ for j = 1:ny
             %% NB take '-' because here we have calc'd the stress
             %% ON the waves (cf Donelan et al, 2012, JGR)
             %% - we want the stress on the ice
+         if abs(S_fou(1))>1e-4
+            M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
+
+            K_fou
+            q_tot
+            S_fou
+            src_p1,src_m1,tau_x,tau_y
+            %%
+            K_fou(jp1)*S_fou(jp1)
+            K_fou(jm1)*S_fou(jm1)
+            %%
+            src_cos,src_sin
+            S1_cos   = (2*pi/ndir)*sum(S_th.*cos(theta)),(S_fou(jp1)+S_fou(jm1))/2
+            S1_sin   = (2*pi/ndir)*sum(S_th.*sin(theta)),(S_fou(jp1)-S_fou(jm1))/2i
+            src_cos_ = -q_tot*S1_cos
+            src_sin_ = -q_tot*S1_sin
+            taux_ = -ag_eff(i,j)*src_cos_
+            tauy_ = -ag_eff(i,j)*src_sin_
+            GEN_pause
+         end
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       else
@@ -123,7 +142,7 @@ for j = 1:ny
             %GEN_pause;
          end
          S_th        = squeeze(S(i,j,:));
-         source      = ag_eff(i,j)*M_bolt*squeeze(S_th);%% m^{-1}*[m/s]*[m^2s] = m^2
+         source      = ag_eff(i,j)*M_bolt*S_th;%% m^{-1}*[m/s]*[m^2s] = m^2
          tau_x(i,j)  = -(cos(theta).*wt_theta)'*source;      %% [m^2]
          tau_y(i,j)  = -(sin(theta).*wt_theta)'*source;      %% [m^2]
             %% tau_x,tau_y need to be multiplied by rho_wtr*g/phase_vel
