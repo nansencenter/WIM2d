@@ -23,7 +23,7 @@
       integer,parameter :: bc_opt   = 2
          !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       integer,parameter :: GRID_OPT = 1!option for land/ice/water config
-      real,parameter    :: CFL      = 0.4
+      real,parameter    :: CFL      = 0.7
       !!
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
@@ -238,6 +238,7 @@
 
       print*,'Beginning main integration...'
 
+      nt = 7!stop at a certain point for testing
       do n=2,nt
          print*,'n/nt',n,nt
 

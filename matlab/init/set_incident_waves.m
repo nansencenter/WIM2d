@@ -5,7 +5,7 @@ function wave_stuff = set_incident_waves(grid_prams,wave_fields)
 
 
 SHARP_DIST  = 0;%%Single direction
-SING_FREQ   = 0;%%Single frequency
+SING_FREQ   = 1;%%Single frequency
 
 %%frequency grid:
 if SING_FREQ==1%%single freq
@@ -25,7 +25,7 @@ if SHARP_DIST==1
    ndir     = 1;
    wavdir   = -90;
 else
-   r        = 5;%%5->32 points
+   r        = 4;%%5->32 points
    ndir     = 2^r;
    wavdir   = linspace(90,-270,ndir+1)';
    %%

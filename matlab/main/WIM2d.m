@@ -126,7 +126,7 @@ Y        = grid_prams.Y;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Ice/water;
 if HAVE_ICE==0
-   h           = 1.5;
+   h           = 2;
    c           = 0.75;
    bc_opt      = 0;%%breaking condition (0=beam;1=Marchenko)
    young_opt   = 0;%%young's modulus option
@@ -643,6 +643,8 @@ for n = 2:nt
       t1    = now;
       disp(['time taken (mins): ',...
             num2str(t0_fac*(t1-t0))]);
+
+      disp(strvcat(Info));
 
       if DO_PLOT
          figure(2),clf;
