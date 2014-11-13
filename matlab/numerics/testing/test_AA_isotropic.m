@@ -9,6 +9,8 @@ id = eye(ndir);
 %%
 dtheta   = 2*pi/ndir;
 wt_theta = dtheta*oo(:,1);
+Hs0   = 4*sqrt(sum(S_th.*wt_theta))
+S_th
 
 %% old way
 cg       = ag_eff(i,j);
@@ -19,6 +21,10 @@ tau_y1   = -(sin(theta).*wt_theta)'*source1%% [m^2]
 %%compare to results computed the new way
 [tau_x1,tau_x(i,j)]
 [tau_y1,tau_y(i,j)]
+
+S_th2,dd
+
+Hs2   = 4*sqrt(sum(wt_theta.*S_th2))
 return
 
 %%new way

@@ -105,29 +105,36 @@ for j = 1:ny
             %% ON the waves (cf Donelan et al, 2012, JGR)
             %% - we want the stress on the ice
 
-         % %%uncomment below to give a test
-         % %%(also save results to ../numerics/test_fou.mat
-         % %% and test with test_AA_isotropic.m)
-         % if abs(S_fou(1))>1e-4
-         %    %%old way
-         %    M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
-         %    source1  = cg*M_bolt*S_th;
-         %    tau_x1   = -(cos(theta).*wt_theta)'*source1%% [m^2]
-         %    tau_y1   = -(sin(theta).*wt_theta)'*source1%% [m^2]
-
-         %    %%compare to results computed the new way
-         %    tst_taux = [tau_x1,tau_x(i,j)]
-         %    tst_tauy = [tau_y1,tau_y(i,j)]
-
-         %    %%check attenuation also
-         %    S_th2       = squeeze(S(i,j,:));
-         %    [U,DD]      = eig(M_bolt);
-         %    dd2         = diag(DD);
-         %    cc          = U'*S_th;                          %%expand in terms of eigenvectors
-         %    tst_atten   = [S_th2,U*diag(exp(dd2*cg*dt))*cc] %%exponential attenuation
-         %    save ../numerics/testing/test_fou S_th S_fou K_fou M_bolt q_scat q_tot ndir ag_eff i j tau_x tau_y theta
-         %    GEN_pause
-         % end
+%        %%uncomment below to give a test
+%        %%(also save results to ../numerics/test_fou.mat
+%        %% and test with test_AA_isotropic.m)
+%        if abs(S_fou(1))>1e-4
+%           %%"inputs"
+%           theta
+%           S_th
+%           S_fou
+%
+%           %%old way
+%           M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
+%           source1  = cg*M_bolt*S_th;
+%           tau_x1   = -(cos(theta).*wt_theta)'*source1%% [m^2]
+%           tau_y1   = -(sin(theta).*wt_theta)'*source1%% [m^2]
+%
+%           %%compare to results computed the new way
+%           tst_taux = [tau_x1,tau_x(i,j)]
+%           tst_tauy = [tau_y1,tau_y(i,j)]
+%
+%           %%check attenuation also
+%           S_th2       = squeeze(S(i,j,:));
+%           [U,DD]      = eig(M_bolt);
+%           dd2         = diag(DD);
+%           cc          = U'*S_th;                          %%expand in terms of eigenvectors
+%           tst_atten   = [S_th2,U*diag(exp(dd2*cg*dt))*cc] %%exponential attenuation
+%           save('../numerics/testing/test_fou.mat','S_th2','dd','S_th','S_fou',...
+%                'K_fou','M_bolt','q_scat','q_tot','ndir','ag_eff','i','j',...
+%                'tau_x','tau_y','theta');
+%           GEN_pause
+%        end
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       else

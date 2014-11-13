@@ -126,7 +126,7 @@
      &   ,intent(in)     :: ag_eff,atten_dim,damp_dim
       real,intent(in)   :: dt
       !!
-      integer                 :: i,j,wth,nth,n
+      integer                 :: i,j,wth,nth,n,jp1,jm1
       integer,dimension(ndir) :: nvec
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
      &   uwave,vwave
@@ -134,13 +134,16 @@
 
       real,dimension(ndir)    :: K_fou,S_th,theta_vec,wt_theta,         &
      &                              tmp1,dd
-      complex,dimension(ndir) :: S_fou,src_fou
-      complex                 :: zi
+      complex,dimension(ndir) :: S_fou
+      complex                 :: zi,src_fou_p1,src_fou_m1
       real,dimension(ncs)     :: S_cos,S_sin
-      real  :: cg,q_scat,q_abs,q_tot,src_cos,src_sin
+      real  :: cg,q_scat,q_abs,q_tot,src_cos_1,src_sin_1
 
       PI = 4.0*atan(1.0)
-      zi = cmplx(1,0)
+      zi = cmplx(1,0)!sqrt(-1)
+
+      !!weights for integral over direction
+      wt_theta = 2*PI/(1.0*ndir)
 
       !!do advection
       !print*,'Spectrum at',itest,jtest
@@ -164,13 +167,6 @@
 !     print*,'Attenuation     ',atten_dim(itest,jtest)                  &
 !    &                         ,damp_dim(itest,jtest)
 
-      !!weights for integral over direction
-      if (ndir.eq.1) then
-         wt_theta = 1.0
-      else
-         wt_theta = 2*PI/(1.0*ndir)
-      end if
-
       Sfreq    = 0.0
       taux_om  = 0.0
       tauy_om  = 0.0
@@ -191,20 +187,56 @@
             q_abs    = damp_dim(i,j)
             q_tot    = q_scat+q_abs
             cg       = ag_eff(i,j)
+
+!           !!uncomment below for testing against WIM2d.m
+!           !!NB !!DANGER!! !!overwriting actual values!!
+!           !!test case = waves(12s,2m),ice(2m,70%),1 freq, 16 dirs
+!           if ((i.eq.24).and.(j.eq.1)) then
+!              print*,'NB !!DANGER!! !!'//
+!    &                'overwriting actual values for testing!!'
+!              q_scat   = 8.041601e-06 
+!              q_tot    = 2.736895e-05
+!              q_abs    = q_tot-q_scat
+!              !!
+!              S_th(1 ) = 1.348636e-07
+!              S_th(2 ) = 1.443994e-07
+!              S_th(3 ) = 1.650405e-07
+!              S_th(4 ) = 1.985781e-07
+!              S_th(5 ) = 2.397257e-07
+!              S_th(6 ) = 2.287021e-07
+!              S_th(7 ) = 1.746545e-05
+!              S_th(8 ) = 2.584725e-04
+!              S_th(9 ) = 5.674894e-04
+!              S_th(10) = 2.584722e-04
+!              S_th(11) = 1.746496e-05
+!              S_th(12) = 2.276650e-07
+!              S_th(13) = 2.384907e-07
+!              S_th(14) = 1.976913e-07
+!              S_th(15) = 1.645170e-07
+!              S_th(16) = 1.439858e-07
+!              !!
+!              S_fou(1) = cmplx( sum(wt_theta*S_th) )
+!           end if
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            !! - kernel of Boltzmann eqn
+            !! - eigenvalues
+
+            !! In general K_fou will be a cosine series
+            !! (with coefficients K_cos)
+            !! since K will be of the form K(\theta-\theta')
+            !! => K_fou will be real (with K_fou(1) = K_cos(1),
+            !! &  K_fou(n)=K_fou(ndir+1-n)=K_cos(n)/2.0, n>1 )
+            !! For Meylan & Masson (2006) model, pass in K_cos
             K_fou    = 0.0
             K_fou(1) = q_scat
-               !! In general K_fou will be a cosine series
-               !! (with coefficients K_cos)
-               !! since K will be of the form K(\theta-\theta')
-               !! => K_fou will be real (with K_fou(1) = K_cos(1),
-               !! &  K_fou(n)=K_fou(ndir+1-n)=K_cos(n)/2.0, n>1 )
-               !! For Meylan & Masson (2006) model, pass in K_cos
 
             !! dd  = K_fou-q_tot
             !! possibly need to be careful to avoid rounding errors
             !! making eigenvalues go >0
             dd       = -q_tot
             dd(1)    = -q_abs
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             do nth=1,ncs
                S_cos(nth)     = sum(wt_theta*S_th*cos(nth*theta_vec))
@@ -217,20 +249,46 @@
             end do
 
             !!stresses
-            src_fou  = cg*( -q_tot*S_fou+K_fou*S_fou )
-            src_cos  = real(     .5*(src_fou(2)+src_fou(ndir)) )
-            src_sin  = real( -zi*.5*(src_fou(2)-src_fou(ndir)) )
-            tau_x(i,j)  = -src_cos
-            tau_y(i,j)  = -src_sin
+            jp1   = 2
+            jm1   = ndir
+            src_fou_p1  = cg*( -q_tot*S_fou(jp1)+K_fou(jp1)*S_fou(jp1) )
+            src_fou_m1  = cg*( -q_tot*S_fou(jm1)+K_fou(jm1)*S_fou(jm1) )
+            src_cos_1   = real(     .5*(src_fou_p1+src_fou_m1) )
+            src_sin_1   = real( -zi*.5*(src_fou_p1-src_fou_m1) )
+            tau_x(i,j)  = -src_cos_1
+            tau_y(i,j)  = -src_sin_1
+
+!           !!uncomment below for testing against WIM2d.m
+!           if ((i.eq.24).and.(j.eq.1)) then
+!              print*,'Hs',4.0*sqrt(real(S_fou(1)))                     &
+!    &               ,4.0*sqrt(sum(wt_theta*S_th))
+!              print*,'q_scat,q_abs,q_tot',q_scat,q_abs,q_tot
+!              print*,'theta,S_th,S_fou,K_fou'
+!              do wth=1,ndir
+!                 print*,theta_vec(wth),S_th(wth),S_fou(wth),K_fou(wth)
+!              end do
+!              print*,'tau_x,tau_y',tau_x(i,j),tau_y(i,j)
+!           end if
 
             !!do attenuation and transform back
             S_fou = S_fou*exp(dd*cg*dt)
             do wth=1,ndir
-               tmp1  = real(S_fou    )*cos(nvec*theta_vec(wth))         &
+               tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
      &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
                !!
                Sdir(i,j,wth)  = 1.0/(2*PI)*sum(tmp1)
+               S_th(wth)      = Sdir(i,j,wth)
             end do
+
+!           !!uncomment below for testing against WIM2d.m
+!           if ((i.eq.24).and.(j.eq.1)) then
+!              print*,'Hs after',4.0*sqrt(real(S_fou(1)))               &
+!    &                          ,4.0*sqrt(sum(wt_theta*S_th))
+!              print*,'eigenvalues, S_th, S_fou after atten'
+!              do wth=1,ndir
+!                 print*,dd(wth),S_th(wth),S_fou(wth)
+!              end do
+!           end if
 
          end if!!end ice check (attenuation and stress calc)
       
