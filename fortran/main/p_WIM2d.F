@@ -56,7 +56,7 @@
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = 0
+      SOLVER   = 1
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
 
@@ -86,12 +86,12 @@
       !end do
 
       WAVE_MASK2  = 0.0
-      if (STEADY.eq.1) then
-         if (GRID_OPT.eq.1) then
-            WAVE_MASK2(1:3,:) = 1.0
-         end if
-         print*,'steady test',maxval(WAVE_MASK2),sum(WAVE_MASK2)
-      end if
+!     if (STEADY.eq.1) then
+!        if (GRID_OPT.eq.1) then
+!           WAVE_MASK2(1:3,:) = 1.0
+!        end if
+!        print*,'steady test',maxval(WAVE_MASK2),sum(WAVE_MASK2)
+!     end if
 
       if (.true.) then
          !!check initialisation
@@ -339,9 +339,9 @@
             elseif (SOLVER.eq.1) then
                !! same as SOLVER==0, but scattered energy
                !! is distributed isotropically
-!              call adv_atten_isotropic(S_freq,sdf_dir(:,:,:,w)         &
-!    &            ,tau_x_om,tau_y_om,                                   &
-!    &            ,atten_dim,damp_dim,ag_eff(:,:,w),wavdir,dt)
+               call adv_atten_isotropic(sdf_dir(:,:,:,w)                &
+     &            ,S_freq,taux_om,tauy_om                               &
+     &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
             end if
 
             !! integrate stress densities over frequency

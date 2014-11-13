@@ -151,15 +151,15 @@
                om = 2*PI*freq_vec(w)
                call SDF_Bretschneider(                                  &
      &                  Sfreq(w),om,Tp(i,j),Hs(i,j))
-               if (i*j.eq.1) then
-                  print*,'T,S_B',2*PI/om,Sfreq(w)
-               end if
+!              if (i*j.eq.1) then
+!                 print*,'T,S_B',2*PI/om,Sfreq(w)
+!              end if
             end do
          else
             Sfreq(1) = (Hs(i,j)/4.0)**2!!Hs=4*sqrt(Sfreq*wt_om), wt_om=1
-            if (i*j.eq.1) then
-               print*,'T,S_inc',1.0/freq_vec(1),Sfreq(1)
-            end if
+!           if (i*j.eq.1) then
+!              print*,'T,S_inc',1.0/freq_vec(1),Sfreq(1)
+!           end if
          end if
 
          !!direcional spreading
@@ -185,7 +185,7 @@
             sdf_inc(i,j,wth,w)   = Sfreq(w)*theta_fac(wth)
             if (i*j.eq.1) then
                adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
-               print*,adv_dir,sdf_inc(i,j,wth,w),Sfreq(w),theta_fac(wth)
+!              print*,adv_dir,sdf_inc(i,j,wth,w),Sfreq(w),theta_fac(wth)
             end if
          end do
          end do

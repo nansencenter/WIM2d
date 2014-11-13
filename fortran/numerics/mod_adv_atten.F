@@ -2,6 +2,7 @@
       implicit none
       contains
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_simple(Sdir                                  &
      &   ,Sfreq,taux_om,tauy_om                                         &
      &   ,atten_dim,damp_dim,ag_eff,dt)
@@ -99,4 +100,147 @@
       end do!j
       
       end subroutine adv_atten_simple
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine adv_atten_isotropic(Sdir                               &
+     &   ,Sfreq,taux_om,tauy_om                                         &
+     &   ,atten_dim,damp_dim,ag_eff,dt)
+
+      use mod_gridinfo
+      use mod_common_wim
+      use mod_advect
+
+      implicit none
+
+      integer,parameter :: ndir     = n_wavdir
+      integer,parameter :: ncs      = nint(ndir/2.0)!!number of sine/cosine coeff's
+      integer,parameter :: ADV_OPT  = 2
+         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
+      !!
+      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
+     &   ,intent(inout)  :: Sdir
+      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
+     &   ,intent(out)    :: Sfreq,taux_om,tauy_om
+      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
+     &   ,intent(in)     :: ag_eff,atten_dim,damp_dim
+      real,intent(in)   :: dt
+      !!
+      integer                 :: i,j,wth,nth,n
+      integer,dimension(ndir) :: nvec
+      real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
+     &   uwave,vwave
+      real  :: PI,adv_dir,tmp,alp_dim,source
+
+      real,dimension(ndir)    :: K_fou,S_th,theta_vec,wt_theta,         &
+     &                              tmp1,dd
+      complex,dimension(ndir) :: S_fou,src_fou
+      complex                 :: zi
+      real,dimension(ncs)     :: S_cos,S_sin
+      real  :: cg,q_scat,q_abs,q_tot,src_cos,src_sin
+
+      PI = 4.0*atan(1.0)
+      zi = cmplx(1,0)
+
+      !!do advection
+      !print*,'Spectrum at',itest,jtest
+      !print*,'Before advection',Sdir(itest,jtest,1)
+      do wth  = 1,ndir
+         !!define wave direction & speeds
+         adv_dir  = -PI/180.0*(90.0+wavdir(wth))
+         uwave    = ag_eff*cos(adv_dir)
+         vwave    = ag_eff*sin(adv_dir)
+
+         !!advect
+         call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
+
+         !!useful later
+         theta_vec(wth) = adv_dir
+         nvec(wth)      = wth-1
+      end do
+!     print*,'ag,adv_dir      ',ag_eff(itest,jtest),adv_dir
+!     print*,'u,v of wave     ',uwave(itest,jtest),vwave(itest,jtest)
+!     print*,'After  advection',Sdir(itest,jtest,1)
+!     print*,'Attenuation     ',atten_dim(itest,jtest)                  &
+!    &                         ,damp_dim(itest,jtest)
+
+      !!weights for integral over direction
+      if (ndir.eq.1) then
+         wt_theta = 1.0
+      else
+         wt_theta = 2*PI/(1.0*ndir)
+      end if
+
+      Sfreq    = 0.0
+      taux_om  = 0.0
+      tauy_om  = 0.0
+
+      do j = 1,jj
+      do i = 1,ii
+
+         do wth=1,ndir
+            S_th(wth)      = Sdir(i,j,wth)
+         end do
+         S_fou    = zi
+         S_fou(1) = cmplx( sum(wt_theta*S_th) )
+
+         if (ICE_MASK(i,j).gt.0.0) then
+
+            !! atten_dim = ENERGY attenuation coeff [m^{-1}]
+            q_scat   = atten_dim(i,j)
+            q_abs    = damp_dim(i,j)
+            q_tot    = q_scat+q_abs
+            cg       = ag_eff(i,j)
+            K_fou    = 0.0
+            K_fou(1) = q_scat
+               !! In general K_fou will be a cosine series
+               !! (with coefficients K_cos)
+               !! since K will be of the form K(\theta-\theta')
+               !! => K_fou will be real (with K_fou(1) = K_cos(1),
+               !! &  K_fou(n)=K_fou(ndir+1-n)=K_cos(n)/2.0, n>1 )
+               !! For Meylan & Masson (2006) model, pass in K_cos
+
+            !! dd  = K_fou-q_tot
+            !! possibly need to be careful to avoid rounding errors
+            !! making eigenvalues go >0
+            dd       = -q_tot
+            dd(1)    = -q_abs
+
+            do nth=1,ncs
+               S_cos(nth)     = sum(wt_theta*S_th*cos(nth*theta_vec))
+               S_sin(nth)     = sum(wt_theta*S_th*sin(nth*theta_vec))
+               S_fou(nth+1)   = cmplx(S_cos(nth),S_sin(nth))
+
+               !!also need n=-nth index
+               n           = ndir+1-nth
+               S_fou(n)    = cmplx(S_cos(nth),-S_sin(nth))
+            end do
+
+            !!stresses
+            src_fou  = cg*( -q_tot*S_fou+K_fou*S_fou )
+            src_cos  = real(     .5*(src_fou(2)+src_fou(ndir)) )
+            src_sin  = real( -zi*.5*(src_fou(2)-src_fou(ndir)) )
+            tau_x(i,j)  = -src_cos
+            tau_y(i,j)  = -src_sin
+
+            !!do attenuation and transform back
+            S_fou = S_fou*exp(dd*cg*dt)
+            do wth=1,ndir
+               tmp1  = real(S_fou    )*cos(nvec*theta_vec(wth))         &
+     &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
+               !!
+               Sdir(i,j,wth)  = 1.0/(2*PI)*sum(tmp1)
+            end do
+
+         end if!!end ice check (attenuation and stress calc)
+      
+         !! INTEGRATE SPECTRUM OVER DIRECTION;
+         !! already when getting the Fourier transform
+         !! NB do this in water also
+         Sfreq(i,j)  = real(S_fou(1))
+      end do!i
+      end do!j
+      
+      end subroutine adv_atten_isotropic
+
       end module mod_adv_atten

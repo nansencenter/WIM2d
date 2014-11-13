@@ -10,7 +10,7 @@ DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
 DO_BREAKING = 1   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
-SOLVER      = 0   %% 0: old way; 1: scatter E isotropically
+SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
 OPT      = 1;%%ice-water-land configuration;
 PLOT_OPT = 2;%%plot option
@@ -424,6 +424,7 @@ if GET_OUT
    Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
    Dmax_all(:,:,1)  = Dmax;
 end
+%nt = 2%%stop straight away for testing
 
 for n = 2:nt
    disp([n nt])
@@ -708,7 +709,7 @@ if DO_PLOT%%check exponential attenuation
          Dmax,ice_fields.tau_y);
    end
    %%
-   figure(3);
+   figure(3),clf;
    plot(X(:,1)/1e3,wave_fields.Hs(:,1),'-k');
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
@@ -733,13 +734,23 @@ if DO_PLOT%%check exponential attenuation
          mkdir(fig_dir)
       end
 
-      figure(3);
-      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'_atten.fig']);
-      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'_atten.png']);
-      %%
+      if ~exist([fig_dir,'/att_fig'])
+         mkdir([fig_dir,'/att_fig']);
+         mkdir([fig_dir,'/att_png']);
+         mkdir([fig_dir,'/fig']);
+         mkdir([fig_dir,'/png']);
+      end
+
       figure(2);
-      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'.fig']);
-      saveas(gcf,[fig_dir,'/B',num2str(ndir,'%3.3d'),'.png']);
+      saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
+      saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
+
+      %%fix position so that comparison is easier
+      figure(3);
+      pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
+      set(gca,'position',pos);
+      saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
+      saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
    end
 end
 
@@ -799,7 +810,14 @@ function fn_plot_spec_2(X,Y,Hs,tau_x,Dmax,tau_y)
 %% plot Hs, Dmax, Tw &
 %% S for 1 particular freq and dir
 
-subplot(2,2,1);
+%%fix positions so figures can be compared more easily between computers
+pos1  = [0.130000000000000   0.583837209302326   0.334659090909091   0.341162790697674];
+pos2  = [0.570340909090909   0.583837209302326   0.334659090909091   0.341162790697674];
+pos3  = [0.130000000000000   0.110000000000000   0.334659090909091   0.341162790697674];
+pos4  = [0.570340909090909   0.110000000000000   0.334659090909091   0.341162790697674];
+
+%subplot(2,2,1);
+subplot('position',pos1);
 H  = pcolor(X/1e3,Y/1e3,Hs);
 set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
@@ -809,7 +827,8 @@ GEN_font(gca);
 ttl   = title('{\itH}_{\rm s}, m');
 GEN_font(ttl);
 
-subplot(2,2,2);
+%subplot(2,2,2);
+subplot('position',pos2);
 H  = pcolor(X/1e3,Y/1e3,Dmax);
 caxis([0 250]);
 set(H,'EdgeColor', 'none');
@@ -820,7 +839,8 @@ GEN_font(gca);
 ttl   = title('{\itD}_{\rm max}, m');
 GEN_font(ttl);
 
-subplot(2,2,3);
+%subplot(2,2,3);
+subplot('position',pos3);
 H  = pcolor(X/1e3,Y/1e3,tau_x);
 set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
@@ -830,7 +850,8 @@ GEN_font(gca);
 ttl   = title('{\tau}_{x}, Pa');
 GEN_font(ttl);
 
-subplot(2,2,4);
+%subplot(2,2,4);
+subplot('position',pos4);
 H  = pcolor(X/1e3,Y/1e3,tau_y);
 set(H,'EdgeColor', 'none');
 daspect([1 1 1]);
