@@ -90,8 +90,8 @@ for j = 1:ny
          %%stresses
          jp1         = 2;
          jm1         = ndir;
-         src_p1      = -cg*( q_tot*S_fou(jp1) + K_fou(jp1)*S_fou(jp1) );%%n=+1 coefficient of source term
-         src_m1      = -cg*( q_tot*S_fou(jm1) + K_fou(jm1)*S_fou(jm1) );%%n=-1 coefficient of source term
+         src_p1      = cg*( -q_tot*S_fou(jp1) + K_fou(jp1)*S_fou(jp1) );%%n=+1 coefficient of source term
+         src_m1      = cg*( -q_tot*S_fou(jm1) + K_fou(jm1)*S_fou(jm1) );%%n=-1 coefficient of source term
          src_cos     = real(   src_p1+src_m1 )/2;
          src_sin     = real( ( src_p1-src_m1 )/2i );
          tau_x(i,j)  = -src_cos;%%-\int[src*cos(\theta)]d\theta
