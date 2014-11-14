@@ -49,7 +49,7 @@ end
 
 if SV_FIG
    SOLVER   = 1;
-   nw       = 25;
+   nw       = 1;
    ndir     = 16;
 
    if nw==1

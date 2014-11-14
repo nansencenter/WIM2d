@@ -5,17 +5,17 @@
 
       implicit none
 
-      integer,parameter :: itest = 75
-      integer,parameter :: jtest = 25
+      integer,parameter :: itest = 24
+      integer,parameter :: jtest = 1
 
       real,dimension(ii,jj)   :: icec,iceh,dfloe,ICE_MASK
       real,dimension(ii,jj)   :: WTR_MASK
       real,dimension(idm,jdm) :: Hs,Tp,mwd,WAVE_MASK  !set in waves_init
       real,dimension(idm,jdm) :: tau_x,tau_y
       !!
-      real,parameter          :: unif_c            = .7
+      real,parameter          :: unif_c            = .75
       real,parameter          :: unif_h            = 2.0
-      real,parameter          :: dfloe_pack_init   = 300.0
+      real,parameter          :: dfloe_pack_init   = 250.0
       
       !!wave directions and frequencies
       integer,parameter             :: n_wavdir    = 16

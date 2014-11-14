@@ -28,6 +28,11 @@ SV_FIG   = 1;
 %   %pause;
 %end
 
+%%important settings
+CFL   = .7;
+itest = 24;
+jtest = 1;
+
 format long
 
 disp('Initialization')
@@ -237,13 +242,26 @@ disp_ratio  = ones (nx,ny,nw);
 atten_nond  = zeros(nx,ny,nw);
 damping     = zeros(nx,ny,nw);
 
+% Display some parameters here (since initialisation can be slow)
+Info  = { '------------------------------------';
+         ['h          = ' num2str(ice_prams.h) ' m const'];
+         ['Tp         = ' num2str(wave_prams.Tp) ' s'];
+         ['Hs         = ' num2str(wave_prams.Hs) ' m'];
+         ['CFL        = ' num2str(CFL)];
+         ['nfreq      = ' num2str(nw)];
+         ['ndir       = ' num2str(ndir)];
+         ['SOLVER     = ' num2str(SOLVER)];
+         '------------------------------------';
+         ' '};
+disp(strvcat(Info));
+
 for i = 1:nx
 for j = 1:ny
 
-   if j==1
-      %%progress report - can be slow
-      disp([' - initialised ',num2str(i),' rows out of ',num2str(nx)])
-   end
+%  if j==1
+%     %%progress report - can be slow
+%     disp([' - initialised ',num2str(i),' rows out of ',num2str(nx)])
+%  end
 
    if ICE_MASK(i,j)==1
       %% if ice is present:
@@ -286,21 +304,30 @@ for j = 1:ny
       wlng_ice(i,j,:)   = 2*pi./kice;
       disp_ratio(i,j,:) = (kice./kwtr).*modT;
       %%
-      %itest = 75;
-      %jtest = 25;
-      %if (i==itest)&(j==jtest)
-      %   disp('om,T,h')
-      %   disp([om(1),T(1),hice(i,j)])
-      %   disp('atten')
-      %   disp([atten_nond(i,j,1),damping(i,j,1)])
-      %   disp('ki,kw,2pi/wlng_wtr')
-      %   disp([kice,kwtr,2*pi./wlng])
-      %   disp('lam,|T|,disp_rat')
-      %   disp([wlng_ice(i,j,1),modT,disp_ratio(i,j,1)])
-      %   disp('argRT,s')
-      %   disp([argR,argT,int_adm])
-      %   return
-      %end
+%     if (i==itest)&(j==jtest)
+%        disp('om,T,h')
+%        disp([om(1),T(1),hice(i,j)])
+%        disp('atten')
+%        ss = [num2str(atten_nond(i,j,1),'%7.7e'),'   ',...
+%              num2str(damping(i,j,1),'%7.7e')];
+%        disp(ss);
+%        disp('ki,kw,2pi/wlng_wtr')
+%        ss = [num2str(kice,'%7.7e'),'   ',...
+%              num2str(kwtr,'%7.7e'),'   '  ,...
+%              num2str(2*pi./wlng,'%7.7e')];
+%        disp(ss);
+%        disp('lam,|T|,disp_rat')
+%        ss = [num2str(wlng_ice(i,j,1),'%4.4f'),'   ',...
+%              num2str(modT,'%7.7f'),'   ',...
+%              num2str(disp_ratio(i,j,1),'%7.7f')];
+%        disp(ss);
+%        disp('argRT,s')
+%        ss = [num2str(argR,'%7.7e'),'   ',...
+%              num2str(argT,'%7.7e'),'   ',...
+%              num2str(int_adm,'%7.7e')];
+%        disp(ss);
+%        %return
+%     end
    else
       ag_eff(i,j,:)     = ag;
       ap_eff(i,j,:)     = ap;
@@ -310,7 +337,6 @@ end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-CFL   = .7;
 amax  = max(ag_eff(:))
 dt    = CFL*dx/max(ag_eff(:)); 
 
@@ -327,18 +353,30 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display parameters
 Info  = { '------------------------------------';
-         ['sigma_c    = ' num2str(ice_prams.sigma_c) ' Pa'];
-         ['fragility  = ' num2str(fragility)];
-         ['strain_c   = ' num2str(strain_c)];
-         ['h          = ' num2str(ice_prams.h) ' m const'];
-         ['Tp         = ' num2str(wave_prams.Tp) ' s'];
-         ['Hs         = ' num2str(wave_prams.Hs) ' m'];
-         ['CFL        = ' num2str(CFL)];
-         ['dt         = ' num2str(dt)];
-         ['nt         = ' num2str(nt)];
-         ['nfreq      = ' num2str(nw)];
-         ['ndir       = ' num2str(ndir)];
-         ['SOLVER     = ' num2str(SOLVER)];
+         ['Young''s modulus    = ' num2str(ice_prams.young,'%5.5e') ' Pa'];
+         ['sigma_c            = '  num2str(ice_prams.sigma_c,'%5.5e') ' Pa'];
+         ['fragility          = '  num2str(fragility)];
+         ['strain_c           = '  num2str(strain_c,'%5.5e')];
+         ['h                  = '  num2str(ice_prams.h) ' m const'];
+         ['c                  = '  num2str(ice_prams.c) ' const'];
+         [' '];
+         ['Tp                 = '  num2str(wave_prams.Tp) ' s'];
+         ['Hs                 = '  num2str(wave_prams.Hs) ' m'];
+         ['nfreq              = '  num2str(nw)];
+         ['ndir               = '  num2str(ndir)];
+         ['SOLVER             = '  num2str(SOLVER)];
+         [' '];
+         ['CFL                = '  num2str(CFL)];
+         ['dt                 = '  num2str(dt,'%1.1f')];
+         ['nt                 = '  num2str(nt)];
+         ['Time interval      = '  num2str(nt*dt/3600,'%1.1f') 'h'];
+         [' '];
+         ['nx                 = '  num2str(nx)];
+         ['ny                 = '  num2str(ny)];
+         ['dx                 = '  num2str(dx/1e3) ' km'];
+         ['dy                 = '  num2str(dy/1e3) ' km'];
+         ['x extent           = '  num2str(nx*dx/1e3) ' km'];
+         ['y extent           = '  num2str(ny*dy/1e3) ' km'];
          '------------------------------------';
          ' '};
 
@@ -424,8 +462,8 @@ if GET_OUT
    Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
    Dmax_all(:,:,1)  = Dmax;
 end
-%nt = 2%%stop straight away for testing
 
+%nt = 7%%stop straight away for testing
 for n = 2:nt
    disp([n nt])
 
@@ -479,6 +517,15 @@ for n = 2:nt
             %% ENERGY attenuation coeff;
             atten_dim(i,j) = atten_nond(i,j,jw)*c1d;%%scattering
             damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j);%%damping
+
+%           if (i==itest)&(j==jtest)
+%              disp(['Dmax    = ',num2str(Dmax(i,j))]);
+%              disp(['Dave    = ',num2str(Dave)]);
+%              disp(['c1d     = ',num2str(c1d)]);
+%              disp(['q_scat  = ',num2str(atten_dim(i,j),'%7.7e')]);
+%              disp(['q_abs   = ',num2str(damp_dim(i,j),'%7.7e')]);
+%           end
+
          end
       end% j
       end% i
