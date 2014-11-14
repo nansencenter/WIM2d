@@ -359,6 +359,7 @@ Info  = { '------------------------------------';
          ['strain_c           = '  num2str(strain_c,'%5.5e')];
          ['h                  = '  num2str(ice_prams.h) ' m const'];
          ['c                  = '  num2str(ice_prams.c) ' const'];
+         ['Damping            = '  num2str(visc_rp) ' Pa.s/m'];
          [' '];
          ['Tp                 = '  num2str(wave_prams.Tp) ' s'];
          ['Hs                 = '  num2str(wave_prams.Hs) ' m'];
