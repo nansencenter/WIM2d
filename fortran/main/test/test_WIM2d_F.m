@@ -45,6 +45,11 @@ if 1
    plot(grid_prams.X(:,1)/1e3,out_fields.Hs(:,1),'-k');
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   %%
+   xmin  = min(grid_prams.X(:))/1e3;%%km
+   xmax  = max(grid_prams.X(:))/1e3;%%km
+   ymax  = max(grid_prams.Y(:))/1e3;%%km
+   axis([xmin,xmax,1e-3,1e1]);
 end
 
 if SV_FIG
