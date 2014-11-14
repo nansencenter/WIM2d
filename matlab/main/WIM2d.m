@@ -211,7 +211,7 @@ if HAVE_WAVES==0
 end
 
 nw       = wave_stuff.nfreq;     %% number of frequencies
-om       = 2*pi*wave_stuff.freq; %% radial freq
+om_vec       = 2*pi*wave_stuff.freq; %% radial freq
 ndir     = wave_stuff.ndir;      %% number of directions
 wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
@@ -224,7 +224,7 @@ if STEADY==1
    % GEN_pause;
 end
 %%
-T  = 2*pi./om;
+T  = 2*pi./om_vec;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -271,7 +271,7 @@ for j = 1:ny
       if DO_ATTEN==1
          [damping_rp,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
-               RT_param_outer(hice(i,j),om,young,visc_rp);
+               RT_param_outer(hice(i,j),om_vec,young,visc_rp);
          %%
          if CHK_ATTEN==1
             %%check with old version
@@ -280,7 +280,7 @@ for j = 1:ny
          damping(i,j,:)    = damping_rp;
       else
          [damping_rp,kice,kwtr,int_adm,NDprams] =...
-            RT_param_outer(hice(i,j),om,young,visc_rp);
+            RT_param_outer(hice(i,j),om_vec,young,visc_rp);
          modT  = 1;
       end
 
@@ -296,7 +296,7 @@ for j = 1:ny
                            +(1-cice(i,j))*ag;
 
          %%weighted avg of ice and wtr phase vel;
-         ap_ice         = om./k_ice;
+         ap_ice         = om_vec./k_ice;
          ap_eff(i,j,:)  = cice(i,j)*ap_ice+...
                            +(1-cice(i,j))*ap;
       end
@@ -305,8 +305,8 @@ for j = 1:ny
       disp_ratio(i,j,:) = (kice./kwtr).*modT;
       %%
 %     if (i==itest)&(j==jtest)
-%        disp('om,T,h')
-%        disp([om(1),T(1),hice(i,j)])
+%        disp('om_vec,T,h')
+%        disp([om_vec(1),T(1),hice(i,j)])
 %        disp('atten')
 %        ss = [num2str(atten_nond(i,j,1),'%7.7e'),'   ',...
 %              num2str(damping(i,j,1),'%7.7e')];
@@ -393,12 +393,12 @@ brkcrt  = zeros(nx,ny,nt);
 %% define weights for numerical quadrature;
 if nw>1%% weights for integral over frequency
    %% (Simpson's rule);
-   wt_simp            = 2+0*om;
+   wt_simp            = 2+0*om_vec;
    wt_simp([1 end])   = 1;
    wt_simp(2:2:end-1) = 4;
 
-   %%NB om needs to be equally spaced;
-   dom    = abs(om(2)-om(1));
+   %%NB om_vec needs to be equally spaced;
+   dom    = abs(om_vec(2)-om_vec(1));
    wt_om  = dom/3*wt_simp;
 
    %if 0
@@ -464,7 +464,7 @@ if GET_OUT
    Dmax_all(:,:,1)  = Dmax;
 end
 
-%nt = 7%%stop straight away for testing
+%nt = 13%%stop straight away for testing
 for n = 2:nt
    disp([n nt])
 
@@ -502,29 +502,31 @@ for n = 2:nt
          end
          
          if ICE_MASK(i,j)>0 & DO_ATTEN==1
-            Dave  = floe_scaling(fragility,xi,...
-                     Dmin,Dmax(i,j));
 
             %% get expected no of floes met per unit
             %%  distance if travelling in a line;
             if Dmax(i,j) < 200
-               c1d = cice(i,j)/Dave;
-               %% floes per unit length;
+               %%power law distribution
+               Dave  = floe_scaling(fragility,xi,...
+                        Dmin,Dmax(i,j));
             else
-               c1d = cice(i)/Dmax(i,j);
                %% uniform lengths
+               Dave  = Dmax(i,j);
             end
+            c1d = cice(i,j)/Dave;%% floes per unit length;
 
             %% ENERGY attenuation coeff;
             atten_dim(i,j) = atten_nond(i,j,jw)*c1d;%%scattering
             damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j);%%damping
 
 %           if (i==itest)&(j==jtest)
-%              disp(['Dmax    = ',num2str(Dmax(i,j))]);
-%              disp(['Dave    = ',num2str(Dave)]);
-%              disp(['c1d     = ',num2str(c1d)]);
-%              disp(['q_scat  = ',num2str(atten_dim(i,j),'%7.7e')]);
-%              disp(['q_abs   = ',num2str(damp_dim(i,j),'%7.7e')]);
+%              disp(['Hs (pre)   = ',num2str(wave_fields.Hs(i,j)),' m']);
+%              disp(['Tp (pre)   = ',num2str(wave_fields.Tp(i,j)),' s']);
+%              disp(['Dmax       = ',num2str(Dmax(i,j)),' m']);
+%              disp(['Dave       = ',num2str(Dave),' m']);
+%              disp(['c1d        = ',num2str(c1d)]);
+%              disp(['q_scat     = ',num2str(atten_dim(i,j),'%7.7e'),' /m']);
+%              disp(['q_abs      = ',num2str(damp_dim(i,j),'%7.7e'),' /m']);
 %           end
 
          end
@@ -589,7 +591,7 @@ for n = 2:nt
          %% SPECTRAL MOMENTS;
          %%take abs as small errors can make S_freq negative
          mom0(i,j)   = mom0(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2 );
-         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*om(jw)^2*S_freq(i,j)*F^2 );
+         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*om_vec(jw)^2*S_freq(i,j)*F^2 );
 
          if ICE_MASK(i,j)==1
             %% VARIANCE OF STRAIN;
@@ -603,25 +605,6 @@ for n = 2:nt
 
    end%% end spectral loop;
    %mom0,mom2,wlng_ice,return
-
-   % if 1%%plot sig wave height in each cell;
-   %    for r = []%1:length(Jy_boundary)
-   %       Hs
-   %       [4*sqrt(var_boundary0{r});4*sqrt(var_boundary{r})]
-   %    end
-   %    %%
-   %    Hs_all   = sqrt(mom0)*4;
-   %    sig_eps  = sqrt(var_strain)*2;
-   %    Tc       = 2*pi*sqrt(mom0./mom2);
-   %    %%
-   %    chq_Hs   = Hs_all(1:10,1:8)
-   %    chq_Tc   = Tc(1:10,1:8)
-   %    chq_eps  = sig_eps(1:10,1:8)
-   %    chq_Dmax = Dmax(1:10,1:8)
-   %    %%
-   %    pcolor(X,Y,Dmax);
-   %    pause;
-   % end
 
    %%calc Hs, Tw (into wave_fields.Tp)
    wave_fields.Hs       = 4*sqrt(mom0);
@@ -655,11 +638,35 @@ for n = 2:nt
          if BREAK_CRIT
             %% use crest period to work out wavelength
             %% - half this is max poss floe length;
-            T_crit      = wave_fields.Tp(i,j);
-            wlng_crest  = ...
-               GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young);
+            T_crit   = wave_fields.Tp(i,j);
+            if 0
+               %%get wavelength directly
+               wlng_crest  = ...
+                  GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young);
+            else
+               %% interpolate (to check fortran code)
+               %% NB slight difference due to RT_param_outer
+               %% using finite depth wavelength approx to
+               %% inifinit depth one
+               om       = 2*pi/T_crit;
+               om_min   = om_vec(1);
+               om_max   = om_vec(end);
+               if (om<=om_min)
+                  wlng_crest  = wlng_ice(i,j,1);
+                  %tst_crest   = [wlng_crest,...
+                  %   GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young)]
+               elseif (om>=om_max)
+                  wlng_crest  = wlng_ice(i,j,nw);
+               else
+                  jcrest      = floor((om-om_min+dom)/dom);
+                  om1         = 2*PI*freq_vec(jcrest);
+                  lam1        = wlng_ice(i,j,jcrest);
+                  lam2        = wlng_ice(i,j,jcrest+1);
+                  wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom;
+               end
+            end
 
-            Dc = max(Dmin,wlng_crest/2);
+            Dc          = max(Dmin,wlng_crest/2);
             Dmax(i,j)   = min(Dc,Dmax(i,j));
          end%% end breaking action;
 
@@ -746,6 +753,20 @@ for n = 2:nt
    end
 
 end%% end time loop
+
+if OPT==1
+   Dmax_j   = Dmax(:,1);
+   jmiz     = find((Dmax_j>0)&(Dmax_j<250))
+   Wmiz     = dx/1e3*length(jmiz);
+   disp(' ');
+   disp(['MIZ width = ',num2str(Wmiz),' km']);
+end
+
+taux_max = max(ice_fields.tau_x(:))
+tauy_max = max(ice_fields.tau_y(:))
+disp(['max tau_x = ',num2str(taux_max),' Pa']);
+disp(['max tau_y = ',num2str(tauy_max),' Pa']);
+disp(' ');
 
 if DO_PLOT%%check exponential attenuation
    figure(2),clf;
