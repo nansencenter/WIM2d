@@ -9,9 +9,9 @@ function Dave = floe_scaling(f,xi,Dmin,Dmax)
 M  = floor(log2(Dmax/Dmin));
 
 if isfinite(M) && M > 0
-    m = 0:M;
-    N = (1 - f).*(xi.^2.*f).^m;
-    ND = N.*Dmax./(xi.^m);
+    m    = 0:M;
+    N    = (1 - f).*(xi.^2.*f).^m;
+    ND   = N.*Dmax./(xi.^m);
     Dave = sum(ND)./sum(N);
 else
     Dave = Dmin;
