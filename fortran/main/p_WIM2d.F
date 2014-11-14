@@ -48,6 +48,11 @@
       integer  :: jcrest
       logical  :: BREAK_CRIT
 
+      !!test outputs
+      real,dimension(idm,jdm) :: MIZ_MASK
+      real                    :: W_MIZ,taux_max,tauy_max
+      integer                 :: nMIZ
+
 
       character(len=*),parameter :: outfile = "init"
       character(len=*),parameter :: outdir = "out/"
@@ -245,7 +250,7 @@
 
       print*,'Beginning main integration...'
 
-!     nt = 7!stop at a certain point for testing
+      !nt = 13!stop at a certain point for testing
       do n=2,nt
          print*,'n/nt',n,nt
 
@@ -308,31 +313,32 @@
             do i = 1,ii
 
                if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
-                  call floe_scaling(Dave,dfloe(i,j))
 
                   !! get expected no of floes met per unit
                   !!  distance if travelling in a line;
                   if (dfloe(i,j).lt.200.0) then
-                     c1d = icec(i,j)/Dave
-                     !! floes per unit length;
+                     call floe_scaling(Dave,dfloe(i,j))
                   else
-                     c1d = icec(i,j)/dfloe(i,j)
+                     Dave  = dfloe(i,j)
                      !! uniform lengths
                   end if
+                  c1d = icec(i,j)/Dave!! floes per unit length;
 
                   !! ENERGY attenuation coeff;
                   atten_dim(i,j) = atten_nond(i,j,w)*c1d      !!scattering
                   damp_dim(i,j)  = 2*damping(i,j,w)*icec(i,j) !!damping
 
-!                 if ((i.eq.itest).and.(j.eq.jtest)) then
-!                    print*,' '
-!                    print*,'Dmax   = ',dfloe(i,j)
-!                    print*,'Dave   = ',Dave
-!                    print*,'c1d    = ',c1d
-!                    print*,'q_scat = ',atten_dim(i,j)
-!                    print*,'q_abs  = ',damp_dim(i,j)
-!                    print*,' '
-!                 end if
+                 if ((i.eq.itest).and.(j.eq.jtest)) then
+                    print*,' '
+                    print*,'Hs (pre) (m)  = ',Hs(i,j)
+                    print*,'Tp (pre) (m)  = ',Tp(i,j)
+                    print*,'Dmax (m)      = ',dfloe(i,j)
+                    print*,'Dave (m)      = ',Dave
+                    print*,'c1d           = ',c1d
+                    print*,'q_scat (1/m)  = ',atten_dim(i,j)
+                    print*,'q_abs  (1/m)  = ',damp_dim(i,j)
+                    print*,' '
+                 end if
                   
                end if
             end do!! j
@@ -425,7 +431,7 @@
                   !! use crest period to work out wavelength
                   !! - interpolate using pre-calc'd wavelengths
                   !! - half this is max poss floe length;
-                  om    = 2*pi/Tp(i,j)
+                  om    = 2*PI/Tp(i,j)
                   ommin = 2*PI*freq_vec(1)
                   ommax = 2*PI*freq_vec(nw)
                   if (om.le.ommin) then
@@ -434,6 +440,7 @@
                      wlng_crest  = wlng_ice(i,j,nw)
                   else
                      jcrest      = floor((om-ommin+dom)/dom)
+                     print*,'crest lam',jcrest,nw
                      om1         = 2*PI*freq_vec(jcrest)
                      lam1        = wlng_ice(i,j,jcrest)
                      lam2        = wlng_ice(i,j,jcrest+1)
@@ -460,6 +467,24 @@
          call check_prog(GRID_OPT,n)
 
       end do!! n - finish time stepping
+
+      MIZ_MASK = 0.0
+      where ((dfloe.gt.0.0).and.(dfloe.lt.dfloe_pack_init))
+         MIZ_MASK = 1.0
+      end where
+      if (GRID_OPT.eq.1) then
+         nMIZ  = sum(MIZ_MASK(:,1))
+         W_MIZ = nMIZ*dx/1.0e3
+         !!
+         print*,' '
+         print*,'MIZ width (km)',W_MIZ
+      end if
+      !!
+      taux_max = maxval(tau_x)
+      tauy_max = maxval(tau_y)
+      print*,'max tau_x (Pa)',taux_max
+      print*,'max tau_y (Pa)',tauy_max
+      print*,' '
 
       et = etime(tictoc)!!finish etime
       print*,' '
@@ -679,29 +704,39 @@
 
       mm    = 0  
       r     = dmax/dmin
+
+      !print*,' '
+      !print*,'dmax,dmin',dmax,dmin
+      !print*,'r,mm',r,mm
+
       do while ( r .gt. xi ) 
          r  = r/xi 
          mm = mm+1 
+         !print*,'r,mm',r,mm
+         !print*,' '
       end do
 
       if ( mm .gt. 0 ) then 
-      n     = 0.0
-      nsum  = 0.0
-      nd    = 0.0
-      ndsum = 0.0
+         n     = 0.0
+         nsum  = 0.0
+         nd    = 0.0
+         ndsum = 0.0
 
-         do m = 0,1,mm
+         do m = 0,mm
             n     = (1.0-fragility)*(fragility*xi**2)**m
             nd    = n/(xi**m)
             nsum  = nsum +n
             ndsum = ndsum+nd
             dfac  = ndsum/nsum
+            !print*,'n,nd,dfac',n,nd,dfac
          end do
+
          Dave  = dfac*dmax
 
       else
          Dave = dmin
       end if
+      !print*,'dave (in f-s)',Dave
 
       end subroutine floe_scaling
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

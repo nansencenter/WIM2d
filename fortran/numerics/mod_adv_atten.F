@@ -251,12 +251,14 @@
             !!stresses
             jp1   = 2
             jm1   = ndir
+            !!
             src_fou_p1  = cg*( -q_tot*S_fou(jp1)+K_fou(jp1)*S_fou(jp1) )
             src_fou_m1  = cg*( -q_tot*S_fou(jm1)+K_fou(jm1)*S_fou(jm1) )
             src_cos_1   = real(     .5*(src_fou_p1+src_fou_m1) )
             src_sin_1   = real( -zi*.5*(src_fou_p1-src_fou_m1) )
-            tau_x(i,j)  = -src_cos_1
-            tau_y(i,j)  = -src_sin_1
+            !!
+            taux_om(i,j)   = -src_cos_1
+            tauy_om(i,j)   = -src_sin_1
 
 !           !!uncomment below for testing against WIM2d.m
 !           if ((i.eq.24).and.(j.eq.1)) then
@@ -267,7 +269,7 @@
 !              do wth=1,ndir
 !                 print*,theta_vec(wth),S_th(wth),S_fou(wth),K_fou(wth)
 !              end do
-!              print*,'tau_x,tau_y',tau_x(i,j),tau_y(i,j)
+!              print*,'tau_x,tau_y',taux_om(i,j),tauy_om(i,j)
 !           end if
 
             !!do attenuation and transform back
