@@ -6,6 +6,11 @@ function test_WIM2d_F()
 %clear;
 
 SV_FIG   = 1;
+if SV_FIG==1
+   SOLVER   = 1;
+   nw       = 1;
+   ndir     = 16;
+end
 
 %%check initialisation
 [grid_prams,ice_fields,wave_fields] = check_init();
@@ -53,9 +58,6 @@ if 1
 end
 
 if SV_FIG
-   SOLVER   = 1;
-   nw       = 1;
-   ndir     = 16;
 
    if nw==1
       if SOLVER==1

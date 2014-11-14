@@ -221,9 +221,9 @@
       amin  = minval(ag_eff(:,:,nw))!highest freq is slowest
       u_ref = amin+.7*(amax-amin);
       dt    = CFL*dx/amax
-      x_ext = idm*dx
-      y_ext = jdm*dy
-      nt    = nint( x_ext/u_ref/dt )
+      x_ext = idm*dx/1.0e3!km
+      y_ext = jdm*dy/1.0e3!km
+      nt    = nint( 1.0e3*x_ext/u_ref/dt )
       
       print*,' '
       print*,'******************************************************'
@@ -235,7 +235,7 @@
       print*,' '
       print*,'Grid dimensions:                  ' ,idm,jdm
       print*,'Spatial resolution (km):          ' ,dx/1.0e3,dy/1.0e3
-      print*,'Extent of domain (km):            ' ,x_ext/1.0e3,y_ext/1.0e3
+      print*,'Extent of domain (km):            ' ,x_ext,y_ext
       print*,' '
       print*,'Minimum period (s):               ' ,1.0/freq_vec(nw)
       print*,'Maximum period (s):               ' ,1.0/freq_vec(1)
@@ -328,17 +328,17 @@
                   atten_dim(i,j) = atten_nond(i,j,w)*c1d      !!scattering
                   damp_dim(i,j)  = 2*damping(i,j,w)*icec(i,j) !!damping
 
-                 if ((i.eq.itest).and.(j.eq.jtest)) then
-                    print*,' '
-                    print*,'Hs (pre) (m)  = ',Hs(i,j)
-                    print*,'Tp (pre) (m)  = ',Tp(i,j)
-                    print*,'Dmax (m)      = ',dfloe(i,j)
-                    print*,'Dave (m)      = ',Dave
-                    print*,'c1d           = ',c1d
-                    print*,'q_scat (1/m)  = ',atten_dim(i,j)
-                    print*,'q_abs  (1/m)  = ',damp_dim(i,j)
-                    print*,' '
-                 end if
+!                if ((i.eq.itest).and.(j.eq.jtest)) then
+!                   print*,' '
+!                   print*,'Hs (pre) (m)  = ',Hs(i,j)
+!                   print*,'Tp (pre) (m)  = ',Tp(i,j)
+!                   print*,'Dmax (m)      = ',dfloe(i,j)
+!                   print*,'Dave (m)      = ',Dave
+!                   print*,'c1d           = ',c1d
+!                   print*,'q_scat (1/m)  = ',atten_dim(i,j)
+!                   print*,'q_abs  (1/m)  = ',damp_dim(i,j)
+!                   print*,' '
+!                end if
                   
                end if
             end do!! j
@@ -440,7 +440,7 @@
                      wlng_crest  = wlng_ice(i,j,nw)
                   else
                      jcrest      = floor((om-ommin+dom)/dom)
-                     print*,'crest lam',jcrest,nw
+                     !print*,'crest lam',jcrest,nw
                      om1         = 2*PI*freq_vec(jcrest)
                      lam1        = wlng_ice(i,j,jcrest)
                      lam2        = wlng_ice(i,j,jcrest+1)
