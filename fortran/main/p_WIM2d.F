@@ -464,7 +464,7 @@
          !!dump fields to binary
          !print*,'dfloe  lims',maxval(dfloe),minval(dfloe)
          !print*,'Hs     lims',maxval(Hs   ),minval(Hs   )
-         call check_prog(GRID_OPT,n)
+         call check_prog(SOLVER,GRID_OPT,n)
 
       end do!! n - finish time stepping
 
@@ -628,14 +628,14 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(GRID_OPT,n)
+      subroutine check_prog(SOLVER,GRID_OPT,n)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)   :: GRID_OPT,n
+      integer,intent(in)   :: SOLVER,GRID_OPT,n
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
       character(len=3)     :: cts
@@ -654,13 +654,19 @@
       open(unit=2,file=trim(bfile),status = 'replace')
 
       write(2,111)                                                      &
-     &  4,          "       Number of records"
-      write(2,112)                                                      &
-     &  ii,          "      Record length in x direction (elements)"
-      write(2,112)                                                      &
-     &  jj,          "      Record length in y direction (elements)"
-      write(2,111)                                                      &
-     &  GRID_OPT,   "       Option number for initial conditions"
+     &  4,           "       Number of records"
+      write(2,112)                                                       &
+     &  ii,           "      Record length in x direction (elements)"
+      write(2,112)                                                       &
+     &  jj,           "      Record length in y direction (elements)"
+      write(2,111)                                                       &
+     &  GRID_OPT,    "       Option number for initial conditions"
+      write(2,111)                                                       &
+     &  SOLVER,      "       Option number for solver"
+      write(2,111)                                                       &
+     &  n_wave_freq, "       Number of wave frequencies"
+      write(2,112)                                                       &
+     &  n_wavdir,     "      Number of wave directions"
       write(2,113) ""
 
       write(2,113)    "Record number and name:"

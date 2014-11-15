@@ -6,11 +6,6 @@ function test_WIM2d_F()
 %clear;
 
 SV_FIG   = 1;
-if SV_FIG==1
-   SOLVER   = 1;
-   nw       = 1;
-   ndir     = 16;
-end
 
 %%check initialisation
 [grid_prams,ice_fields,wave_fields] = check_init();
@@ -57,7 +52,25 @@ if 1
    axis([xmin,xmax,1e-3,1e1]);
 end
 
+SOLVER   = out_fields.SOLVER;
+nw       = out_fields.n_wave_freq;
+ndir     = out_fields.n_wavdir;
+GRID_OPT = out_fields.GRID_OPT;
+disp(out_fields);
+
+if GRID_OPT==1
+   dx       = grid_prams.dx;
+   D_j      = out_fields.Dmax(:,1);
+   MIZ_MASK = ((D_j>0)&(D_j<250));
+   Wmiz     = sum(MIZ_MASK)*dx/1e3
+   %%
+   disp(' ');
+   disp(['MIZ width = ',num2str(Wmiz),' km']);
+   disp(' ');
+end
+
 if SV_FIG
+   %%these parameters determine where to save figure
 
    if nw==1
       if SOLVER==1
@@ -183,8 +196,28 @@ cts   = num2str(n,'%3.3d');
 afile = ['../out/wim_prog',cts,'.a'];
 bfile = ['../out/wim_prog',cts,'.b'];
 
-nx = grid_prams.nx;
-ny = grid_prams.ny;
+%% get basic info from bfile
+bid   = fopen(bfile);
+C     = textscan(bid,'%2.2d %s %s %s',1);
+nrec  = C{1};
+%%
+C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
+nx = C{1};
+%%
+C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
+ny = C{1};
+%%
+C        = textscan(bid,'%2.2d %s %s %s %s %s',1);
+GRID_OPT = C{1};
+%%
+C        = textscan(bid,'%2.2d %s %s %s %s',2);
+SOLVER   = C{1}(1);
+nw       = C{1}(2);
+%%
+C     = textscan(bid,'%3.3d %s %s %s %s',1);
+ndir  = C{1};
+fclose(bid);
+
 X  = grid_prams.X;
 Y  = grid_prams.Y;
 
@@ -201,6 +234,11 @@ s1.Dmax  = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.tau_x = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.tau_y = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+%%
+s1.SOLVER      = SOLVER;
+s1.n_wave_freq = nw;
+s1.n_wavdir    = ndir;
+s1.GRID_OPT    = GRID_OPT;
 %%
 fclose(aid);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
