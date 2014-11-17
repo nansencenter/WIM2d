@@ -3,7 +3,6 @@
 *.mod
 *.exe
 fortran/main/out/*
-fortran/main/test/out/*
 fortran/numerics/test_advection/out/*
 fortran/numerics/test_advection/test_out/*
 matlab/main/test_B2
