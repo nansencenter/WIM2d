@@ -7,9 +7,12 @@ VPATH 	:=	.:../main:../misc:../init:../numerics:../attenuation_youngs
 # directory where modules are put into
 MDIR	:=	mods
 
+# header files for "include" statements
+HDIR	:=	../header_files
+
 # include modules from $(MDIR), and put them in $(MDIR) when they are created
 # FCFLAGS=-O -I$(MDIR)
-FCFLAGS=-g -I$(MDIR)
+FCFLAGS=-g -I$(MDIR) -I$(HDIR)
 FCFLAGS2=-J$(MDIR)
 
 PROG=p_WIM2d.o 
@@ -37,8 +40,6 @@ default: $(PROG) $(OBJS)
 	$(FC) -o $(TARGET) $^ $(FCFLAGS)
 
 # DEPENDENCIES
-# mod_waveadv_weno.o:	mod_gridinfo.o \
-# 			mod_file_utils.o
 mod_wim_init.o:		mod_gridinfo.o mod_common_wim.o
 mod_common_wim.o:	mod_gridinfo.o
 mod_advect.o:		mod_gridinfo.o mod_common_wim.o
