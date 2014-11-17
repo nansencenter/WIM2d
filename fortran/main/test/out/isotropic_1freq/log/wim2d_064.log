@@ -23,15 +23,19 @@ Extent of domain (km):             600.0  200.0
 Minimum period (s):               12.00
 Maximum period (s):               12.00
 Number of wave frequencies:       01
-Number of wave directions:        008
-Directional resolution (degrees): 45.00
+Number of wave directions:        064
+Directional resolution (degrees):  5.62
 *************************************************
  
 *************************************************
 Diagnostics:
 MIZ width (km):   52.0
 Dmax range in MIZ (m):  114.3  114.3
-tau_x range (Pa):  0.000E+00  0.510E-01
+tau_x range (Pa):  0.000E+00  0.503E-01
 tau_y range (Pa):  0.000E+00  0.000E+00
+*************************************************
+ 
+*************************************************
+Elapsed time (min):    4.7
 *************************************************
  

@@ -484,9 +484,6 @@
       print*,'tau_y range (Pa)',tauy_min,tauy_max
       print*,' '
 
-      !!print  some outputs to log file
-      include "print_log_info.h"
-
       et = etime(tictoc)!!finish etime
       print*,' '
       print*,'******************************************************'
@@ -497,6 +494,9 @@
 !    &       ,', sys:' ,tictoc(2)
       print*,'******************************************************'
       print*,' '
+
+      !!print  some outputs to log file
+      include "print_log_info.h"
 
       end program main
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
