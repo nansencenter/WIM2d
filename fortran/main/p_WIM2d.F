@@ -61,7 +61,7 @@
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = 1
+      SOLVER   = 0
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
 
@@ -462,8 +462,6 @@
          end do!!end spatial loop i in x;
          
          !!dump fields to binary
-         !print*,'dfloe  lims',maxval(dfloe),minval(dfloe)
-         !print*,'Hs     lims',maxval(Hs   ),minval(Hs   )
          call check_prog(SOLVER,GRID_OPT,n)
 
       end do!! n - finish time stepping

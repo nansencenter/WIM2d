@@ -20,9 +20,12 @@ if 1
    fn_plot_waves(grid_prams,wave_fields,ice_fields);
 end
 
-D  = dir('../out/wim_prog*.a');
-nm = D(end).name;
-nt = str2num(nm(9:11))
+outdir         = '../out/';
+D              = dir([outdir,'wim_prog*.a']);
+nm             = D(end).name;
+nt             = nm(9:11)
+binary_final   = [outdir,'wim_prog',nt];
+nt             = str2num(nt);
 
 nvec  = (2:80:nt);
 if (max(nvec)<nt)
@@ -30,8 +33,8 @@ if (max(nvec)<nt)
 end
 
 for r = 1:length(nvec)
-   n  = nvec(r)
-   [n,nt]
+   n  = nvec(r);
+   disp([n,nt]);
    %%
    figure(3),clf;
    fn_fullscreen;
@@ -52,6 +55,7 @@ if 1
    axis([xmin,xmax,1e-3,1e1]);
 end
 
+%%these parameters determine where to save figure
 SOLVER   = out_fields.SOLVER;
 nw       = out_fields.n_wave_freq;
 ndir     = out_fields.n_wavdir;
@@ -66,12 +70,17 @@ if GRID_OPT==1
    %%
    disp(' ');
    disp(['MIZ width = ',num2str(Wmiz),' km']);
-   disp(' ');
 end
 
-if SV_FIG
-   %%these parameters determine where to save figure
+taux_max = max(out_fields.tau_x(:));
+tauy_max = max(out_fields.tau_y(:));
+disp(['max tau_x = ',num2str(taux_max),' Pa']);
+disp(['max tau_y = ',num2str(tauy_max),' Pa']);
+disp(' ');
 
+if SV_FIG
+
+   %%determine where to save files from parameters
    if nw==1
       if SOLVER==1
          fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
@@ -85,31 +94,44 @@ if SV_FIG
          fig_dir  = 'out/simple_spec';  %%use this for spectrum
       end
    end
-
    if ~exist(fig_dir)
       mkdir(fig_dir)
    end
 
-   if ~exist([fig_dir,'/att_png'])
-      mkdir([fig_dir,'/fig']);
-      mkdir([fig_dir,'/png']);
-      mkdir([fig_dir,'/att_fig']);
-      mkdir([fig_dir,'/att_png']);
+   %%make subdirectories to separate file types
+   Dirs  = {[fig_dir,'/binary/'],
+            [fig_dir,'/fig/'],
+            [fig_dir,'/png/'],
+            [fig_dir,'/att_fig/'],
+            [fig_dir,'/att_png/']};
+   for j=1:5
+      if ~exist(Dirs{j})
+         mkdir(Dirs{j});
+      end
    end
 
-   figure(3);
-   saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
-   saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
+   %%save binary file
+   nd3   = num2str(ndir,'%3.3d');
+   fn3   = [Dirs{1},'wim_final',nd3];
+   cmd   = ['!cp ',binary_final,'.a ',fn3,'.a'];
+   eval(cmd);
+   cmd   = ['!cp ',binary_final,'.b ',fn3,'.b'];
+   eval(cmd);
 
+   %%save main figures
+   figure(3);
+   saveas(gcf,[Dirs{2},'wim_final',nd3,'.fig']);
+   saveas(gcf,[Dirs{3},'wim_final',nd3,'.png']);
+
+   %%save plots of Hs
    figure(4);
    pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
    set(gca,'position',pos);
-   saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
-   saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
+   saveas(gcf,[Dirs{4},'wim_final',nd3,'_atten.fig']);
+   saveas(gcf,[Dirs{5},'wim_final',nd3,'_atten.png']);
 end
 
-return;
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [grid_prams,ice_fields,wave_fields] = check_init()
 
 afile = '../out/wim_grid.a';
