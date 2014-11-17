@@ -100,6 +100,7 @@ if SV_FIG
 
    %%make subdirectories to separate file types
    Dirs  = {[fig_dir,'/binary/'],
+            [fig_dir,'/log/'],
             [fig_dir,'/fig/'],
             [fig_dir,'/png/'],
             [fig_dir,'/att_fig/'],
@@ -118,17 +119,22 @@ if SV_FIG
    cmd   = ['!cp ',binary_final,'.b ',fn3,'.b'];
    eval(cmd);
 
+   %%save log file
+   fil   = [Dirs{2},'wim2d_',nd3,'.log'];
+   cmd   = ['!cp ../log/wim2d.log ',fil];
+   eval(cmd);
+
    %%save main figures
    figure(3);
-   saveas(gcf,[Dirs{2},'wim_final',nd3,'.fig']);
-   saveas(gcf,[Dirs{3},'wim_final',nd3,'.png']);
+   saveas(gcf,[Dirs{3},'wim_final',nd3,'.fig']);
+   saveas(gcf,[Dirs{4},'wim_final',nd3,'.png']);
 
    %%save plots of Hs
    figure(4);
    pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
    set(gca,'position',pos);
-   saveas(gcf,[Dirs{4},'wim_final',nd3,'_atten.fig']);
-   saveas(gcf,[Dirs{5},'wim_final',nd3,'_atten.png']);
+   saveas(gcf,[Dirs{5},'wim_final',nd3,'_atten.fig']);
+   saveas(gcf,[Dirs{6},'wim_final',nd3,'_atten.png']);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -55,6 +55,7 @@
       integer                 :: nMIZ
 
 
+      character(len=*),parameter :: log_file = "log/wim2d.log"
       character(len=*),parameter :: outfile = "init"
       character(len=*),parameter :: outdir = "out/"
       !character(len=80)          :: afile,bfile,stat1,stat2
@@ -463,6 +464,7 @@
       tmp1     = dfloe+1.0e4*(1.0-MIZ_MASK)
       Dmax_min = minval(tmp1)
 
+      W_MIZ = 0.0
       if (GRID_OPT.eq.1) then
          nMIZ  = sum(MIZ_MASK(:,1))
          W_MIZ = nMIZ*dx/1.0e3
@@ -481,6 +483,9 @@
       print*,'tau_x range (Pa)',taux_min,taux_max
       print*,'tau_y range (Pa)',tauy_min,tauy_max
       print*,' '
+
+      !!print  some outputs to log file
+      include "print_log_info.h"
 
       et = etime(tictoc)!!finish etime
       print*,' '
