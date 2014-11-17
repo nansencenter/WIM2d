@@ -2,8 +2,11 @@
 *.o
 *.mod
 *.exe
+*.so
 fortran/main/out/*
 fortran/main/log/*
+fortran/main_py/out/*
+fortran/main_py/log/*
 fortran/numerics/test_advection/out/*
 fortran/numerics/test_advection/test_out/*
 matlab/main/out
