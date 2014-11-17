@@ -1,0 +1,41 @@
+ 
+*************************************************
+Main parameters:
+SOLVER:                           00
+GRID_OPT:                         01
+*************************************************
+ 
+*************************************************
+Other Parameters:
+Time step (s):                     143.5
+CFL number:                       .700
+Maximum wave group velocity (m/s):19.52
+Time step (s):                     143.5
+Number of time steps:             0294
+Time interval (h):                11.72
+*************************************************
+ 
+*************************************************
+Grid dimensions:                  0150 0050
+Spatial resolution (km):           4.0  4.0
+Extent of domain (km):             600.0  200.0
+ 
+Minimum period (s):                2.50
+Maximum period (s):               25.00
+Number of wave frequencies:       25
+Number of wave directions:        016
+Directional resolution (degrees): 22.50
+*************************************************
+ 
+*************************************************
+Diagnostics:
+MIZ width (km):   20.0
+Dmax range in MIZ (m):  118.2  135.4
+tau_x range (Pa):  0.000E+00  0.382E+00
+tau_y range (Pa): -0.341E-02  0.341E-02
+*************************************************
+ 
+*************************************************
+Elapsed time (min):    5.3
+*************************************************
+ 
