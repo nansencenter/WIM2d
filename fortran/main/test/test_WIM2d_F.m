@@ -105,7 +105,7 @@ if SV_FIG
             [fig_dir,'/png/'],
             [fig_dir,'/att_fig/'],
             [fig_dir,'/att_png/']};
-   for j=1:5
+   for j=1:length(Dirs)
       if ~exist(Dirs{j})
          mkdir(Dirs{j});
       end

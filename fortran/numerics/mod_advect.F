@@ -210,8 +210,8 @@
       subroutine weno3pd_v2(g,sao,u,v,scuy,scvx,scp2i,scp2,dt)
 !
 ! --- ------------------------------------------------------------------
-! --- By a weighted essentially non-oscillatory scheme with up to 3th
-! --- order accuracy, obtain the spatial advective operator of a
+! --- By a weighted essentially non-oscillatory scheme with up to 3rd
+! --- order accuracy (2/3 in time/space), obtain the spatial advective operator of a
 ! --- 2-dimensional field defined at the scalar points of a C-grid. The
 ! --- fluxes are limited to make the scheme positive definite.
 ! --- Advective velocities in the i- and j-direction are defined at u-
