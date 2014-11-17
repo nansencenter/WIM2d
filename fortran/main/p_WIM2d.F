@@ -50,7 +50,8 @@
 
       !!test outputs
       real,dimension(idm,jdm) :: MIZ_MASK
-      real                    :: W_MIZ,taux_max,tauy_max
+      real                    :: W_MIZ,taux_max,tauy_max                &
+     &   ,taux_min,tauy_min,Dmax_min,Dmax_max
       integer                 :: nMIZ
 
 
@@ -61,7 +62,7 @@
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = 0
+      SOLVER   = 1
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
 
@@ -466,10 +467,37 @@
 
       end do!! n - finish time stepping
 
+      !!print info again
+      print*,' '
+      print*,'******************************************************'
+      print*,'CFL number:                       ' ,CFL
+      print*,'Maximum wave group velocity (m/s):' ,amax
+      print*,'Time step (s):                    ' ,dt
+      print*,'Number of time steps:             ' ,nt
+      print*,'Time interval (h):                ' ,(nt*dt)/60.0/60.0
+      print*,' '
+      print*,'Grid dimensions:                  ' ,idm,jdm
+      print*,'Spatial resolution (km):          ' ,dx/1.0e3,dy/1.0e3
+      print*,'Extent of domain (km):            ' ,x_ext,y_ext
+      print*,' '
+      print*,'Minimum period (s):               ' ,1.0/freq_vec(nw)
+      print*,'Maximum period (s):               ' ,1.0/freq_vec(1)
+      print*,'Number of wave frequencies:       ' ,nw
+      print*,'Number of wave directions:        ' ,ndir
+      print*,'Directional resolution (degrees): ' ,360.0/(1.0*ndir)
+      print*,'******************************************************'
+      print*,' '
+
       MIZ_MASK = 0.0
       where ((dfloe.gt.0.0).and.(dfloe.lt.dfloe_pack_init))
          MIZ_MASK = 1.0
       end where
+
+      !!Dmax range in MIZ
+      Dmax_max = maxval(MIZ_MASK*dfloe)
+      tmp1     = dfloe+1.0e4*(1.0-MIZ_MASK)
+      Dmax_min = minval(tmp1)
+
       if (GRID_OPT.eq.1) then
          nMIZ  = sum(MIZ_MASK(:,1))
          W_MIZ = nMIZ*dx/1.0e3
@@ -478,10 +506,15 @@
          print*,'MIZ width (km)',W_MIZ
       end if
       !!
+      print*,'Dmax range in MIZ (m): ',Dmax_min,Dmax_max
+
+      !!range of stresses
       taux_max = maxval(tau_x)
+      taux_min = minval(tau_x)
       tauy_max = maxval(tau_y)
-      print*,'max tau_x (Pa)',taux_max
-      print*,'max tau_y (Pa)',tauy_max
+      tauy_min = minval(tau_y)
+      print*,'tau_x range (Pa)',taux_min,taux_max
+      print*,'tau_y range (Pa)',tauy_min,tauy_max
       print*,' '
 
       et = etime(tictoc)!!finish etime
@@ -644,8 +677,8 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)  
- 112  format(i3.3,a)  
+ 111  format(i2.2,a)
+ 112  format(i3.3,a)
  113  format(a)
 
       !! write .b file (description of stuff in .a file)
