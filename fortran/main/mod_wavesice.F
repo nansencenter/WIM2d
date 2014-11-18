@@ -1,13 +1,13 @@
       !! test_waveadv_weno.F
       !! Author: Timothy Williams
       !! Date:   20140821, 12:22:17 CEST
-      program main
+      module mod_wavesice
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams    !! ice parameters
-      use mod_wim_init     !! initial wave fields
+!     use mod_wim_prams    !! ice parameters
+!     use mod_wim_init     !! initial wave fields
       use mod_common_wim   !! initial ice fields
-      use mod_adv_atten    !! advection routine
+!     use mod_adv_atten    !! advection routine
 
       implicit none
 
@@ -24,72 +24,43 @@
       !!
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
-      !!
-      real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
-     &   ,S_freq,atten_dim,damp_dim                                     &
-     &   ,taux_om,tauy_om,tmp1,WAVE_MASK2
+
+      !!common to all subroutines
+      real,dimension(idm,jdm)    :: WAVE_MASK2
       real,dimension(idm,jdm,nw) ::                                     &
      &   ag_eff,ap_eff,wlng_ice,atten_nond,damping,disp_ratio
+      real,dimension(nw)   :: wt_om,T
+
+      !!needed by outer routine
+      real     :: amin,amax,dt
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      contains
+
+      subroutine wim_init(GRID_OPT)
+      !! set initial waves
+      !! set attenuation coefficients
+      !! - need to do this each time ice is updated
+
+      use mod_gridinfo     !! grid info
+      use mod_wim_prams    !! ice parameters
+      use mod_wim_init     !! initial wave fields
+      use mod_common_wim   !! initial ice fields
+!     use mod_adv_atten    !! advection routine
+
+      implicit none
+
+      integer,intent(in)   :: GRID_OPT
 
       real     :: PI,tmp
-      real     :: x_ext,y_ext,amin,amax,u_ref
-      real     :: adv_dir,dt,dtheta,om,dom,guess
-      real     :: kwtr,kice,modT,int_adm,argT,argR,F,Dave,c1d
-      real,dimension(nw)   :: wt_om,wt_simp,T,wlng,ag,ap
-      real     :: wt,Hs_test1,Hs_test2
-      integer  :: nt,n,i,j,w,wth
+      real     :: kwtr,kice,modT,int_adm,argT,argR
+      real,dimension(nw)   :: wt_simp,wlng,ag,ap
+      integer  :: i,j,w
+      real     :: adv_dir,dtheta,om,dom,guess
+!     integer  :: wth
+!     real     :: wt,Hs_test1,Hs_test2
 
-      !!for breaking
-      real     :: sig_strain,Pstrain,P_crit,wlng_crest,Dc
-      real     :: ommin,ommax,om1,lam1,lam2
-      integer  :: jcrest
-      logical  :: BREAK_CRIT
-
-      !!test outputs
-      real,dimension(idm,jdm) :: MIZ_MASK
-      real                    :: W_MIZ,taux_max,tauy_max                &
-     &   ,taux_min,tauy_min,Dmax_min,Dmax_max
-      integer                 :: nMIZ
-
-
-      character(len=*),parameter :: log_file = "log/wim2d.log"
-      character(len=*),parameter :: outfile = "init"
-      character(len=*),parameter :: outdir = "out/"
-      !character(len=80)          :: afile,bfile,stat1,stat2
-
-      real :: et,etime,tictoc(2) !!print time
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      SOLVER   = 1
       PI       = 4.0*atan(1.0)
-      et       = etime(tictoc)!!startup etime
-
-      print*,'****************************************'
-      print*,'Initialising...'
-      print*,'****************************************'
-      print*,' '
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!initialisation
-      call set_wim_prams()
-      call get_grid(GRID_OPT)
-      call ice_init(GRID_OPT)
-
-      !!incident waves
-      call waves_init(GRID_OPT)
-      call set_inc_waves()
-
-      !! could just set sdf_dir = sdf_inc,
-      !! but this way lets us retain any waves
-      !! that are outside the incident wave mask
-      sdf_dir  = 0.0
-      do w=1,nw
-      do wth=1,ndir
-         where (WAVE_MASK.eq.1.0)
-            sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
-         end where
-      end do
-      end do
 
       WAVE_MASK2  = 0.0
       if (STEADY.eq.1) then
@@ -218,97 +189,119 @@
 
       amax  = maxval(ag_eff(:,:,1 ))!lowest freq is fastest
       amin  = minval(ag_eff(:,:,nw))!highest freq is slowest
-      u_ref = amin+.7*(amax-amin);
       dt    = CFL*dx/amax
-      x_ext = idm*dx/1.0e3!km
-      y_ext = jdm*dy/1.0e3!km
-      nt    = nint( 1.0e3*x_ext/u_ref/dt )
-      
-      !!print info to screen
-      include "print_screen_info.h"
 
+      end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
 
-      print*,'Beginning main integration...'
+      subroutine wim_step(SOLVER)
+      !! do 1 time step
 
-      !nt = 13!stop at a certain point for testing
-      do n=2,nt
-         print*,'n/nt',n,nt
+      use mod_gridinfo     !! grid info
+      use mod_wim_prams    !! ice parameters
+!     use mod_wim_init     !! initial wave fields
+      use mod_common_wim   !! initial ice fields
+      use mod_adv_atten    !! advection routine
 
-         !! spectral moments;
-         mom0  = 0.0
-         mom2  = 0.0
+      implicit none
 
-         !! wave stresses;
-         tau_x = 0.0
-         tau_y = 0.0
+      integer,intent(in)   :: SOLVER
 
-         !! variance of strain;
-         var_strain     = 0.0
+      real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
+     &   ,S_freq,atten_dim,damp_dim                                     &
+     &   ,taux_om,tauy_om,tmp1
+      integer  :: i,j,w
 
-         !! top-up waves (with directions that correspond to incident
-         !! waves) in appropriate area if STEADY==1
-         !! (steady-state solution);
-         do w=1,nw
-         do wth=1,n_wavdir
-            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
-            if (cos(adv_dir).ge.0.0) then
-               where (WAVE_MASK2.gt.0.0)
-                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
-                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
-               end where
-            end if
-         end do
-         end do
-!        !!test incident waves
-!        i        = 2
-!        j        = 25
-!        Hs_test1 = 0.0
-!        Hs_test2 = 0.0
-!        do w=1,nw
-!           if (n_wavdir.eq.1) then
-!              Hs_test1 = Hs_test1+wt_om(w)*sdf_dir(i,j,1,w)
-!              Hs_test2 = Hs_test2+wt_om(w)*sdf_inc(i,j,1,w)
-!           else
-!              do wth=1,n_wavdir
-!                 wt       = (2*PI/(1.0*n_wavdir))*wt_om(w)
-!                 Hs_test1 = Hs_test1+wt*sdf_dir(i,j,wth,w)
-!                 Hs_test2 = Hs_test2+wt*sdf_inc(i,j,wth,w)
-!                 !!
-!                 adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
-!                 !print*,sdf_dir(i,j,wth,w),sdf_inc(i,j,wth,w)          &
-!    &            !     ,adv_dir,(cos(adv_dir).ge.0.0)
-!              end do
-!           end if
-!        end do
-!        Hs_test1 = 4*sqrt(Hs_test1)
-!        Hs_test2 = 4*sqrt(Hs_test2)
-!        print*,'Hs_test inc',Hs_test1,Hs_test2
+      !!to top up waves
+      integer  :: wth
+      real  :: adv_dir,PI
 
-         do w=1,nw
+!     !!for testing
+!     real     :: wt,Hs_test1,Hs_test2
 
-            !! CALC DIMENSIONAL ATTEN COEFF;
-            atten_dim   = 0.0
-            damp_dim    = 0.0
-            do j = 1,jj
-            do i = 1,ii
+      !!for breaking
+      real     :: sig_strain,Pstrain,P_crit,wlng_crest,Dc
+      real     :: om,ommin,ommax,om1,lam1,lam2,dom
+      real     :: F,Dave,c1d,kice,tmp
+      integer  :: jcrest
+      logical  :: BREAK_CRIT
 
-               if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
+      PI    = 4*atan(1.0)
+      dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
 
-                  !! get expected no of floes met per unit
-                  !!  distance if travelling in a line;
-                  if (dfloe(i,j).lt.200.0) then
-                     call floe_scaling(Dave,dfloe(i,j))
-                  else
-                     Dave  = dfloe(i,j)
-                     !! uniform lengths
-                  end if
-                  c1d = icec(i,j)/Dave!! floes per unit length;
+      !! spectral moments;
+      mom0  = 0.0
+      mom2  = 0.0
 
-                  !! ENERGY attenuation coeff;
-                  atten_dim(i,j) = atten_nond(i,j,w)*c1d      !!scattering
-                  damp_dim(i,j)  = 2*damping(i,j,w)*icec(i,j) !!damping
+      !! wave stresses;
+      tau_x = 0.0
+      tau_y = 0.0
+
+      !! variance of strain;
+      var_strain     = 0.0
+
+      !! top-up waves (with directions that correspond to incident
+      !! waves) in appropriate area if STEADY==1
+      !! (steady-state solution);
+      do w=1,nw
+      do wth=1,n_wavdir
+         adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+         if (cos(adv_dir).ge.0.0) then
+            where (WAVE_MASK2.gt.0.0)
+               !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
+                sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+            end where
+         end if
+      end do
+      end do
+!     !!test incident waves
+!     i        = 2
+!     j        = 25
+!     Hs_test1 = 0.0
+!     Hs_test2 = 0.0
+!     do w=1,nw
+!        if (n_wavdir.eq.1) then
+!           Hs_test1 = Hs_test1+wt_om(w)*sdf_dir(i,j,1,w)
+!           Hs_test2 = Hs_test2+wt_om(w)*sdf_inc(i,j,1,w)
+!        else
+!           do wth=1,n_wavdir
+!              wt       = (2*PI/(1.0*n_wavdir))*wt_om(w)
+!              Hs_test1 = Hs_test1+wt*sdf_dir(i,j,wth,w)
+!              Hs_test2 = Hs_test2+wt*sdf_inc(i,j,wth,w)
+!              !!
+!              adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+!              !print*,sdf_dir(i,j,wth,w),sdf_inc(i,j,wth,w)          &
+!    &         !     ,adv_dir,(cos(adv_dir).ge.0.0)
+!           end do
+!        end if
+!     end do
+!     Hs_test1 = 4*sqrt(Hs_test1)
+!     Hs_test2 = 4*sqrt(Hs_test2)
+!     print*,'Hs_test inc',Hs_test1,Hs_test2
+
+      do w=1,nw
+
+         !! CALC DIMENSIONAL ATTEN COEFF;
+         atten_dim   = 0.0
+         damp_dim    = 0.0
+         do j = 1,jj
+         do i = 1,ii
+
+            if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
+
+               !! get expected no of floes met per unit
+               !!  distance if travelling in a line;
+               if (dfloe(i,j).lt.200.0) then
+                  call floe_scaling(Dave,dfloe(i,j))
+               else
+                  Dave  = dfloe(i,j)
+                  !! uniform lengths
+               end if
+               c1d = icec(i,j)/Dave!! floes per unit length;
+
+               !! ENERGY attenuation coeff;
+               atten_dim(i,j) = atten_nond(i,j,w)*c1d      !!scattering
+               damp_dim(i,j)  = 2*damping(i,j,w)*icec(i,j) !!damping
 
 !                if ((i.eq.itest).and.(j.eq.jtest)) then
 !                   print*,' '
@@ -321,181 +314,134 @@
 !                   print*,'q_abs  (1/m)  = ',damp_dim(i,j)
 !                   print*,' '
 !                end if
-                  
-               end if
-            end do!! j
-            end do!! i
-
-            if (ndir==1) then
-               if (SOLVER.ne.0) then
-                  print*,'warning: changing SOLVER option'
-     &                  ,'as not enough directions'
-                  print*,'(ndir = ',ndir,')'
-               end if
-               SOLVER   = 0
+               
             end if
+         end do!! j
+         end do!! i
 
-            if (SOLVER.eq.0) then
-               !! Simple attenuation scheme - doesn't conserve scattered energy
-               call adv_atten_simple(sdf_dir(:,:,:,w)                   &
-     &            ,S_freq,taux_om,tauy_om                               &
-     &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
-               !print*,'Spectrum at',itest,jtest
-               !print*,S_freq(itest,jtest)
-               !print*,sdf_dir(itest,jtest,:,w)
-            elseif (SOLVER.eq.1) then
-               !! same as SOLVER==0, but scattered energy
-               !! is distributed isotropically
-               call adv_atten_isotropic(sdf_dir(:,:,:,w)                &
-     &            ,S_freq,taux_om,tauy_om                               &
-     &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!stop if ndir/SOLVER combo not OK
+         if (ndir==1) then
+            if (SOLVER.ne.0) then
+               print*,'warning: not enough directions'
+               print*,'  for SOLVER option:'
+               print*,'  ndir   = ',ndir
+               print*,'  SOLVER = ',SOLVER
+               STOP
             end if
+         end if
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-            !! integrate stress densities over frequency
-            !! TODO: check if this is correct for ice-covered water
-            tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)   !![Pa*s]
-            tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
-            tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
-            tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
+         if (SOLVER.eq.0) then
+            !! Simple attenuation scheme - doesn't conserve scattered energy
+            call adv_atten_simple(sdf_dir(:,:,:,w)                      &
+     &         ,S_freq,taux_om,tauy_om                                  &
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+            !print*,'Spectrum at',itest,jtest
+            !print*,S_freq(itest,jtest)
+            !print*,sdf_dir(itest,jtest,:,w)
+         elseif (SOLVER.eq.1) then
+            !! same as SOLVER==0, but scattered energy
+            !! is distributed isotropically
+            call adv_atten_isotropic(sdf_dir(:,:,:,w)                   &
+     &         ,S_freq,taux_om,tauy_om                                  &
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+         end if
 
-            !! INTEGRALS FOR BREAKING PROB:
-            do j=1,jj
-            do i=1,ii
+         !! integrate stress densities over frequency
+         !! TODO: check if this is correct for ice-covered water
+         tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)   !![Pa*s]
+         tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
+         tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
+         tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
 
-               !! convert from water amp's to ice amp's;
-               F     = disp_ratio(i,j,w)
-               kice  = 2*PI/wlng_ice(i,j,w)
-
-               !! SPECTRAL MOMENTS;
-               !!take abs as small errors can make S_freq negative
-               om          = 2*PI*freq_vec(w)
-               tmp         = wt_om(w)*S_freq(i,j)*F**2
-               mom0(i,j)   = mom0(i,j)+abs( tmp )!!variance of displacement
-               tmp         = wt_om(w)*om**2*S_freq(i,j)*F**2
-               mom2(i,j)   = mom2(i,j)+abs( tmp )!!variance of speed
-
-               if (ICE_MASK(i,j).eq.1.0) then
-                  !! VARIANCE OF STRAIN;
-                  tmp   = F*kice**2*iceh(i,j)/2.0    !!strain conversion factor
-                  tmp   = wt_om(w)*S_freq(i,j)*tmp**2 !!strain density
-                  var_strain(i,j)   = var_strain(i,j)+abs( tmp )
-               end if
-            end do!! i, end spatial loop x;
-            end do!! j, end spatial loop y;
-
-         end do!! end spectral loop;
-
-         Hs = 4*sqrt(mom0)
-         Tp = 0.0
-         where (mom2.gt.0.0)
-            Tp = 2*PI*sqrt(mom0/mom2)
-         end where
-
-         !! FINALLY DO FLOE BREAKING;
+         !! INTEGRALS FOR BREAKING PROB:
          do j=1,jj
          do i=1,ii
-            if ((ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
-               !! only try breaking if ice is present
-               !!  & some waves have arrived;
-      
-               !! significant strain amp
-               sig_strain  = 2*sqrt(var_strain(i,j))
-      
-               !! probability of critical strain
-               !! being exceeded from Rayleigh distribution;
-               Pstrain  = exp( -epsc**2/(2*var_strain(i,j)) )
-               P_crit   = (1-DO_BREAKING)+exp(-1.0)!!this is critical prob if monochromatic wave
-      
-               !! FLOE BREAKING:
-               BREAK_CRIT  = ( Pstrain.ge.P_crit )!!breaks if larger than this
-      
-               if (BREAK_CRIT) then
-                  !! use crest period to work out wavelength
-                  !! - interpolate using pre-calc'd wavelengths
-                  !! - half this is max poss floe length;
-                  om    = 2*PI/Tp(i,j)
-                  ommin = 2*PI*freq_vec(1)
-                  ommax = 2*PI*freq_vec(nw)
-                  if (om.le.ommin) then
-                     wlng_crest  = wlng_ice(i,j,1)
-                  elseif (om.ge.ommax) then
-                     wlng_crest  = wlng_ice(i,j,nw)
-                  else
-                     jcrest      = floor((om-ommin+dom)/dom)
-                     !print*,'crest lam',jcrest,nw
-                     om1         = 2*PI*freq_vec(jcrest)
-                     lam1        = wlng_ice(i,j,jcrest)
-                     lam2        = wlng_ice(i,j,jcrest+1)
-                     wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom
-                  end if
-      
-                  !!change dfloe if wavelength/2 is shorter than it
-                  !!(keeping it bigger than Dmin)
-                  Dc          = max(Dmin,wlng_crest/2.0)
-                  dfloe(i,j)  = min(Dc,dfloe(i,j))
 
-               end if!! end breaking action;
-      
-            elseif (WTR_MASK(i,j).eq.1.0) then!! only water present
-               dfloe(i,j)  = 0.0
+            !! convert from water amp's to ice amp's;
+            F     = disp_ratio(i,j,w)
+            kice  = 2*PI/wlng_ice(i,j,w)
+
+            !! SPECTRAL MOMENTS;
+            !!take abs as small errors can make S_freq negative
+            om          = 2*PI*freq_vec(w)
+            tmp         = wt_om(w)*S_freq(i,j)*F**2
+            mom0(i,j)   = mom0(i,j)+abs( tmp )!!variance of displacement
+            tmp         = wt_om(w)*om**2*S_freq(i,j)*F**2
+            mom2(i,j)   = mom2(i,j)+abs( tmp )!!variance of speed
+
+            if (ICE_MASK(i,j).eq.1.0) then
+               !! VARIANCE OF STRAIN;
+               tmp   = F*kice**2*iceh(i,j)/2.0    !!strain conversion factor
+               tmp   = wt_om(w)*S_freq(i,j)*tmp**2 !!strain density
+               var_strain(i,j)   = var_strain(i,j)+abs( tmp )
             end if
-            
-         end do!! end spatial loop j in y;
-         end do!!end spatial loop i in x;
-         
-         !!dump fields to binary
-         call check_prog(SOLVER,GRID_OPT,n)
+         end do!! i, end spatial loop x;
+         end do!! j, end spatial loop y;
 
-      end do!! n - finish time stepping
+      end do!! end spectral loop;
 
-      !!print info again
-      include "print_screen_info.h"
-
-      MIZ_MASK = 0.0
-      where ((dfloe.gt.0.0).and.(dfloe.lt.dfloe_pack_init))
-         MIZ_MASK = 1.0
+      Hs = 4*sqrt(mom0)
+      Tp = 0.0
+      where (mom2.gt.0.0)
+         Tp = 2*PI*sqrt(mom0/mom2)
       end where
 
-      !!Dmax range in MIZ
-      Dmax_max = maxval(MIZ_MASK*dfloe)
-      tmp1     = dfloe+1.0e4*(1.0-MIZ_MASK)
-      Dmax_min = minval(tmp1)
+      !! FINALLY DO FLOE BREAKING;
+      do j=1,jj
+      do i=1,ii
+         if ((ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
+            !! only try breaking if ice is present
+            !!  & some waves have arrived;
+   
+            !! significant strain amp
+            sig_strain  = 2*sqrt(var_strain(i,j))
+   
+            !! probability of critical strain
+            !! being exceeded from Rayleigh distribution;
+            Pstrain  = exp( -epsc**2/(2*var_strain(i,j)) )
+            P_crit   = (1-DO_BREAKING)+exp(-1.0)
+               !!this is critical prob if monochromatic wave
+   
+            !! FLOE BREAKING:
+            BREAK_CRIT  = ( Pstrain.ge.P_crit )!!breaks if larger than this
+   
+            if (BREAK_CRIT) then
+               !! use crest period to work out wavelength
+               !! - interpolate using pre-calc'd wavelengths
+               !! - half this is max poss floe length;
+               om    = 2*PI/Tp(i,j)
+               ommin = 2*PI*freq_vec(1)
+               ommax = 2*PI*freq_vec(nw)
+               if (om.le.ommin) then
+                  wlng_crest  = wlng_ice(i,j,1)
+               elseif (om.ge.ommax) then
+                  wlng_crest  = wlng_ice(i,j,nw)
+               else
+                  jcrest      = floor((om-ommin+dom)/dom)
+                  !print*,'crest lam',jcrest,nw
+                  om1         = 2*PI*freq_vec(jcrest)
+                  lam1        = wlng_ice(i,j,jcrest)
+                  lam2        = wlng_ice(i,j,jcrest+1)
+                  wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom
+               end if
+   
+               !!change dfloe if wavelength/2 is shorter than it
+               !!(keeping it bigger than Dmin)
+               Dc          = max(Dmin,wlng_crest/2.0)
+               dfloe(i,j)  = min(Dc,dfloe(i,j))
 
-      W_MIZ = 0.0
-      if (GRID_OPT.eq.1) then
-         nMIZ  = sum(MIZ_MASK(:,1))
-         W_MIZ = nMIZ*dx/1.0e3
-         !!
-         print*,' '
-         print*,'MIZ width (km)',W_MIZ
-      end if
-      !!
-      print*,'Dmax range in MIZ (m): ',Dmax_min,Dmax_max
-
-      !!range of stresses
-      taux_max = maxval(tau_x)
-      taux_min = minval(tau_x)
-      tauy_max = maxval(tau_y)
-      tauy_min = minval(tau_y)
-      print*,'tau_x range (Pa)',taux_min,taux_max
-      print*,'tau_y range (Pa)',tauy_min,tauy_max
-      print*,' '
-
-      et = etime(tictoc)!!finish etime
-      print*,' '
-      print*,'******************************************************'
-      print*,'p_WIM2d.F finished'
-      !print *,'Elapsed time (s):',et                                    !&
-      print *,'Elapsed time (min):',et/60.0                             !&
-!    &       ,', user:', tictoc(1),                                     &
-!    &       ,', sys:' ,tictoc(2)
-      print*,'******************************************************'
-      print*,' '
-
-      !!print  some outputs to log file
-      include "print_log_info.h"
-
-      end program main
+            end if!! end breaking action;
+   
+         elseif (WTR_MASK(i,j).eq.1.0) then!! only water present
+            dfloe(i,j)  = 0.0
+         end if
+         
+      end do!! end spatial loop j in y;
+      end do!!end spatial loop i in x;
+         
+      end subroutine wim_step
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -744,3 +690,5 @@
 
       end subroutine floe_scaling
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      end module mod_wavesice

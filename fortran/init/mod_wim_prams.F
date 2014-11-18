@@ -17,6 +17,7 @@
       !! parameters that still need to be set
       !! in set_wim_prams
       real  :: young,epsc!!young's modulus,breaking strain
+      real  :: sigma_c,vbf!!flex strength,brine volume fraction
 
       contains
 
@@ -28,10 +29,10 @@
       integer,parameter :: BRK_OPT     = 1
       integer,parameter :: YOUNG_OPT   = 1
 
-      real  :: sigma_c,stress_c,flex_rig_coeff
+      real  :: stress_c,flex_rig_coeff
          !! flex strength
          !! critical stress (for Marcheko criterion)
-      real  :: vbf,vb,salt,temp
+      real  :: vb,salt,temp
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!Brine vol fraction -> Young's modulus and flexural strength

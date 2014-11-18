@@ -5,8 +5,8 @@ import sys
 dd   = os.path.abspath("..")
 sys.path.append(dd+"/Build")
 
-import WIM2d_py
-wim   = WIM2d_py.wim2d_py
+import WIM2d_f2py
+wim   = WIM2d_f2py.wim2d_f2py
 
 dirs  = ['out','log']
 for j in [0,1]:

@@ -12,6 +12,17 @@
 
       write(3,'(a)'),' '
       write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'WIM parameters:'
+      write(3,'(a,f4.2)'),'Brine volume fraction:      ',vbf
+      write(3,'(a,e10.3)'),'Youngs modulus (Pa):        ',young
+      write(3,'(a,e10.3)'),'Flexural strength (Pa):     ',sigma_c
+      write(3,'(a,e10.3)'),'Breaking strain:            ',epsc
+      write(3,'(a,f5.2)'),'Damping (Pa.s/m):           ',visc_rp
+      write(3,'(a)'),'*************************************************'
+      print*,' '
+
+      write(3,'(a)'),' '
+      write(3,'(a)'),'*************************************************'
       write(3,'(a)'),'Other Parameters:'
       write(3,'(a,f6.1)'),'Time step (s):                    ' ,dt
       write(3,'(a,f4.3)'),'CFL number:                       ' ,CFL

@@ -31,8 +31,8 @@ TARGET_F=WIM2d.exe
 # fortran interface program to run WIM in ipython
 # - called by run_WIM2d.py
 #   (cd ../run; ipython run_WIM2d.py)
-PROG_PY=../main/WIM2d_py.F
-TARGET_PY=WIM2d_py
+PROG_PY=../main/WIM2d_f2py.F
+TARGET_PY=WIM2d_f2py
 
 OBJS=mod_gridinfo.o \
      mod_wim_init.o \
@@ -44,7 +44,8 @@ OBJS=mod_gridinfo.o \
      RTparam_hardcoded_v2.o \
      RTparam_utilities.o \
      mod_adv_atten.o \
-     mod_advect.o
+     mod_advect.o \
+     mod_wavesice.o
 
 DEPS=print_screen_info.h \
      print_log_info.h
@@ -63,10 +64,13 @@ py:	$(PROG_PY) $(OBJS)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 
 # DEPENDENCIES
-mod_wim_init.o:		mod_gridinfo.o mod_common_wim.o
+mod_wim_init.o:		mod_gridinfo.o  mod_common_wim.o
 mod_common_wim.o:	mod_gridinfo.o
-mod_advect.o:		mod_gridinfo.o mod_common_wim.o
-mod_adv_atten.o:	mod_gridinfo.o mod_common_wim.o mod_advect.o
+mod_advect.o:		mod_gridinfo.o  mod_common_wim.o
+mod_adv_atten.o:	mod_gridinfo.o  mod_common_wim.o \
+   			mod_advect.o
+mod_wavesice.o:		mod_gridinfo.o	mod_common_wim.o \
+   			mod_advect.o 	mod_adv_atten.o
 #
 RTparam_outer.o:        RTparam_fast.o
 RTparam_fast.o:         RTparam_hardcoded_v2.o
