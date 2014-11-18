@@ -35,7 +35,7 @@ else:
 
    # set ice conc/thickness
    ICE_MASK = np.zeros((nx,ny))
-   ICE_MASK[np.logical_and(X>0,LANDMASK is 0)]  = 1
+   ICE_MASK[np.logical_and(X>0,LANDMASK<1)]  = 1
    icec  = 0.7*ICE_MASK
    iceh  = 1.5*ICE_MASK
    dfloe = 250*ICE_MASK
