@@ -31,7 +31,7 @@ TARGET_F=WIM2d.exe
 # fortran interface program to run WIM in ipython
 # - called by run_WIM2d.py
 #   (cd ../run; ipython run_WIM2d.py)
-PROG_PY=../main_py/WIM2d_py.F
+PROG_PY=../main/WIM2d_py.F
 TARGET_PY=WIM2d_py
 
 OBJS=mod_gridinfo.o \
@@ -83,7 +83,7 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(TARGET) *.o $(MDIR)/*
+	rm $(TARGET_F) $(TARGET_PY).so *.o $(MDIR)/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
