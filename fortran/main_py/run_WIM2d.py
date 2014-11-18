@@ -3,7 +3,7 @@ import os
 import sys
 
 dd   = os.path.abspath("..")
-sys.path.append(dd+"/Build_f2py")
+sys.path.append(dd+"/Build")
 
 import WIM2d_py
 wim   = WIM2d_py.wim2d_py

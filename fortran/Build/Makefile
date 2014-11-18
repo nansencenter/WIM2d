@@ -1,5 +1,7 @@
+# c, fortran, and fortran-to-python linker compiler
 CC	:=	gcc
 FC	:=	gfortran
+F2PY	:=	f2py
 
 # set path for compiler
 VPATH 	:=	.:../main:../misc:../init:../numerics:../attenuation_youngs:../header_files
@@ -18,8 +20,19 @@ FCFLAGS=-g
 IFLAGS=-I$(MDIR) -I$(HDIR)
 # Put modules in $(MDIR) when they are created
 OFLAGS=-J$(MDIR)
+F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 
-PROG=p_WIM2d.o 
+# fortran program to run WIM
+# - executable called by run_WIM2d.sh
+#   (cd ../run; ./run_WIM2d.sh)
+PROG_F=p_WIM2d.o
+TARGET_F=WIM2d.exe
+
+# fortran interface program to run WIM in ipython
+# - called by run_WIM2d.py
+#   (cd ../run; ipython run_WIM2d.py)
+PROG_PY=../main_py/WIM2d_py.F
+TARGET_PY=WIM2d_py
 
 OBJS=mod_gridinfo.o \
      mod_wim_init.o \
@@ -36,16 +49,18 @@ OBJS=mod_gridinfo.o \
 DEPS=print_screen_info.h \
      print_log_info.h
 
-TARGET=WIM2d.exe
 
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
 %.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
-# Link objects to make executable $(TARGET)
-default: $(PROG) $(OBJS)
-	$(FC) -o $(TARGET) $^ $(FCFLAGS) $(IFLAGS)
+# Link objects to make executable $(TARGET_F)
+default: $(PROG_F) $(OBJS)
+	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
+
+py:	$(PROG_PY) $(OBJS)
+	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 
 # DEPENDENCIES
 mod_wim_init.o:		mod_gridinfo.o mod_common_wim.o
@@ -57,7 +72,8 @@ RTparam_outer.o:        RTparam_fast.o
 RTparam_fast.o:         RTparam_hardcoded_v2.o
 RTparam_hardcoded_v2.o: RTparam_utilities.o
 #
-$(PROG): 		$(OBJS) $(DEPS)
+$(PROG_F): 		$(OBJS) $(DEPS)
+$(PROG_PY): 		$(OBJS) $(DEPS)
 
 .PHONY: clean
 
