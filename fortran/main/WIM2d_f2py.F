@@ -15,6 +15,18 @@
      &   ,wim_init,wim_step   !main subroutines
      &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! import main code for WIM
+      use mod_wavesice, only:
+     &    amax,amin,CFL,dt                                              &
+     &   ,wim_init,wim_step                                             &
+     &   ,check_grid,check_init,check_prog
+            !! need these to:
+            !! - determine number of time steps
+            !! - get main subroutines
+            !! - get subroutines for dumping fields
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       implicit none
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -150,8 +162,8 @@
       et = etime(tictoc)!!finish etime
       print*,' '
       print*,'******************************************************'
-      print*,'p_WIM2d.F finished'
-      !print *,'Elapsed time (s):',et                                    !&
+      print*,'run of 2d WIM2d finished'
+      !print *,'Elapsed time (s):',et
       print *,'Elapsed time (min):',et/60.0                             !&
 !    &       ,', user:', tictoc(1),                                     &
 !    &       ,', sys:' ,tictoc(2)
