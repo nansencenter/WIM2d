@@ -19,9 +19,6 @@
       integer,parameter :: DO_BREAKING = 1
       integer,parameter :: USE_ICE_VEL = 0
       !!
-      integer,parameter :: OPT      = 1
-      integer,parameter :: bc_opt   = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       integer,parameter :: GRID_OPT = 1!option for land/ice/water config
       real,parameter    :: CFL      = 0.7
       !!
