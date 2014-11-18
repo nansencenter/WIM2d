@@ -12,7 +12,7 @@ cice(jL) = NaN;
 hice(jL) = NaN;
 Dmax(jL) = NaN;
 
-subplot(1,3,1);
+subplot(3,1,1);
 %GEN_plot_matrix(X/1e3,Y/1e3,cice,[-1 1]);
 H  = pcolor(X/1e3,Y/1e3,cice);
 set(H,'EdgeColor', 'none');
@@ -24,7 +24,7 @@ GEN_font(ttl);
 colorbar;
 GEN_font(gca);
 %%
-subplot(1,3,3);
+subplot(3,1,3);
 %GEN_plot_matrix(X/1e3,Y/1e3,Dmax,[-1 500]);
 H  = pcolor(X/1e3,Y/1e3,Dmax);
 set(H,'EdgeColor', 'none');
@@ -35,7 +35,7 @@ GEN_font(ttl);
 colorbar;
 GEN_font(gca);
 %%
-subplot(1,3,2);
+subplot(3,1,2);
 %GEN_plot_matrix(X/1e3,Y/1e3,S(:,:,jpp,jmwd));
 H  = pcolor(X/1e3,Y/1e3,hice);
 set(H,'EdgeColor', 'none');

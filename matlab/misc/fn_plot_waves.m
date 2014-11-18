@@ -15,7 +15,7 @@ Hs_mat(jL)  = NaN;
 Tp_mat(jL)  = NaN;
 mwd_mat(jL) = NaN;
 
-subplot(1,3,1);
+subplot(3,1,1);
 %GEN_plot_matrix(X/1e3,Y/1e3,cice,[-1 1]);
 H  = pcolor(X/1e3,Y/1e3,Hs_mat);
 set(H,'EdgeColor', 'none');
@@ -27,7 +27,7 @@ GEN_font(ttl);
 colorbar;
 GEN_font(gca);
 %%
-subplot(1,3,2);
+subplot(3,1,2);
 %GEN_plot_matrix(X/1e3,Y/1e3,Dmax,[-1 500]);
 H  = pcolor(X/1e3,Y/1e3,Tp_mat);
 set(H,'EdgeColor', 'none');
@@ -38,7 +38,7 @@ GEN_font(ttl);
 colorbar;
 GEN_font(gca);
 %%
-subplot(1,3,3);
+subplot(3,1,3);
 %GEN_plot_matrix(X/1e3,Y/1e3,S(:,:,jpp,jmwd));
 H  = pcolor(X/1e3,Y/1e3,mwd_mat);
 set(H,'EdgeColor', 'none');

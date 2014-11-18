@@ -1,2 +1,3 @@
-(Tp,Hs) = (12,2)
-(c,h) = (.75,2)
+See init_cons folder for initial conditions,
+and see log files for more info in each of
+the other subfolders.

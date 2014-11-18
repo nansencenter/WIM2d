@@ -10,14 +10,23 @@ SV_FIG   = 1;
 %%check initialisation
 [grid_prams,ice_fields,wave_fields] = check_init();
 
-if 1
+if 1%%plot and save initial conditions
+   fig_dir  = 'out/init_cons/';
+   if ~exist(fig_dir)
+      mkdir(fig_dir);
+   end
    figure(1),clf;
    fn_fullscreen;
    fn_plot_ice(grid_prams,ice_fields);
+   saveas(gcf,[fig_dir,'ice.png']);
    %%
    figure(2),clf;
    fn_fullscreen;
    fn_plot_waves(grid_prams,wave_fields,ice_fields);
+   saveas(gcf,[fig_dir,'waves.png']);
+   %%
+   eval(['!cp ../out/wim_grid.* ',fig_dir]);
+   eval(['!cp ../out/wim_init.* ',fig_dir]);
 end
 
 outdir         = '../out/';
