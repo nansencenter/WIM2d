@@ -31,8 +31,10 @@ TARGET_F=WIM2d.exe
 # fortran interface program to run WIM in ipython
 # - called by run_WIM2d.py
 #   (cd ../run; ipython run_WIM2d.py)
-PROG_PY=../main/WIM2d_f2py.F
+PROG_PY=../main/WIM2d_run.F
 TARGET_PY=WIM2d_f2py
+
+OBJ_MAIN=WIM2d_run.o
 
 OBJS=mod_gridinfo.o \
      mod_wim_init.o \
@@ -57,7 +59,7 @@ DEPS=print_screen_info.h \
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
-default: $(PROG_F) $(OBJS)
+default: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 
 py:	$(PROG_PY) $(OBJS)
@@ -76,7 +78,8 @@ RTparam_outer.o:        RTparam_fast.o
 RTparam_fast.o:         RTparam_hardcoded_v2.o
 RTparam_hardcoded_v2.o: RTparam_utilities.o
 #
-$(PROG_F): 		$(OBJS) $(DEPS)
+$(OBJ_MAIN):		$(OBJS) $(DEPS)
+$(PROG_F): 		$(OBJ_MAIN) mod_gridinfo.o
 $(PROG_PY): 		$(OBJS) $(DEPS)
 
 .PHONY: clean
