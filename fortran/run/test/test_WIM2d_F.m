@@ -9,6 +9,10 @@ SV_FIG   = 1;
 
 %%check initialisation
 [grid_prams,ice_fields,wave_fields] = check_init();
+if 0
+   nn = 1:26;
+   tst_masks   = [nn',wave_fields.WAVE_MASK(nn,1)+ice_fields.ICE_MASK(nn,1)]
+end
 
 if 1%%plot and save initial conditions
    fig_dir  = 'out/init_cons/';
@@ -87,7 +91,7 @@ if GRID_OPT==1
    dx       = grid_prams.dx;
    D_j      = out_fields.Dmax(:,1);
    MIZ_MASK = ((D_j>0)&(D_j<250));
-   Wmiz     = sum(MIZ_MASK)*dx/1e3
+   Wmiz     = sum(MIZ_MASK)*dx/1e3;
    %%
    disp(' ');
    disp(['MIZ width = ',num2str(Wmiz),' km']);

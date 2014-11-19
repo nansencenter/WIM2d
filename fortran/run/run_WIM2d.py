@@ -28,7 +28,9 @@ if 0:
    print("Running WIM without input/output")
    print("###################################################")
    print(" ")
+
    Mwim.wim2d_run()
+   
    print(" ")
    print("###################################################")
    print("Finished call to wim2d_run:")
@@ -44,14 +46,14 @@ else:
 
    # set ice conc/thickness
    ICE_MASK = np.zeros((nx,ny))
-   ICE_MASK[np.logical_and(X>0.69*xmin,LANDMASK<1)]  = 1 # i>=24
+   ICE_MASK[np.logical_and(X>0.7*xmin,LANDMASK<1)]  = 1 # i>=24
    icec  = 0.7*ICE_MASK
    iceh  = 2.0*ICE_MASK
    dfloe = 250*ICE_MASK
 
    # set wave fields
    WAVE_MASK   = np.zeros((nx,ny))
-   WAVE_MASK[X<xmin*0.8]   = 1   # i<=14
+   WAVE_MASK[X<xmin*0.8]   = 1   # i<=15
    Hs    = 2.0*WAVE_MASK
    Tp    = 12.0*WAVE_MASK
    mwd   = -90.0*WAVE_MASK
@@ -70,7 +72,9 @@ else:
    print("Running WIM with input/output")
    print("###################################################")
    print(" ")
+   
    out_arrays  = Mwim.wim2d_run_io(in_arrays)
+
    print(" ")
    print("###################################################")
    print("Finished call to wim2d_run_io:")
