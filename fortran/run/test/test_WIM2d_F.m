@@ -26,7 +26,7 @@ if 1%%plot and save initial conditions
    %%
    figure(2),clf;
    fn_fullscreen;
-   fn_plot_waves(grid_prams,wave_fields,ice_fields);
+   fn_plot_waves(grid_prams,wave_fields);
    saveas(gcf,[fig_dir,'waves.png']);
    %%
    eval(['!cp ../out/wim_grid.* ',fig_dir]);
@@ -46,9 +46,6 @@ outdir         = '../out/';
 binary_final   = [outdir,'wim_out'];
 
 nvec  = (n0:nstep:nt);
-if (max(nvec)<nt)
-   nvec  = [nvec,nt];
-end
 
 %%further reduce freq of plotting
 nstep_   = 50;

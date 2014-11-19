@@ -1,15 +1,19 @@
 import numpy as np
 import os
 import sys
-import matplotlib.pyplot as plt
+import struct
+# import matplotlib.rcsetup as rc
 
 dd   = os.path.abspath("..")
 sys.path.append(dd+"/Build")
+sys.path.append(dd+"/misc_py")
 
 import WIM2d_f2py as Mwim
+import fns_get_data as Fdat
+import fns_plot_data as Fplt
 
 # check directories for outputs exist
-dirs  = ['out','log','prog']
+dirs  = ['out','log','prog','out_py','out_py/init','out_py/final']
 for j in range(0,len(dirs)):
    dirj  = dirs[j]
    if not os.path.exists(dirj):
@@ -36,7 +40,7 @@ if 0:
    print("Finished call to wim2d_run:")
    print("###################################################")
    print(" ")
-else:
+elif 1:
    # run it with inputs and outputs
    GRID_OPT       = 1
    nx,ny          = Mwim.get_grid_size()
@@ -81,8 +85,20 @@ else:
    print("###################################################")
    print(" ")
 
-   Dmax  = out_arrays[:,:,0]
-   Hs    = out_arrays[:,:,1]
-   Tp    = out_arrays[:,:,2]
-   tau_x = out_arrays[:,:,3]
-   tau_y = out_arrays[:,:,4]
+   # Dmax  = out_arrays[:,:,0]
+   # Hs    = out_arrays[:,:,1]
+   # Tp    = out_arrays[:,:,2]
+   # tau_x = out_arrays[:,:,3]
+   # tau_y = out_arrays[:,:,4]
+
+## look at initial fields:
+print("Plotting initial conditions...")
+grid_prams,ice_fields,wave_fields  = Fdat.fn_check_init()
+Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields)
+print("Plots in out_py/init")
+print(" ")
+
+## look at results:
+print("Plotting results...")
+Fplt.fn_plot_final(grid_prams,out_arrays)
+print("Plots in out_py/final")

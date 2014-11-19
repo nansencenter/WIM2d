@@ -2,7 +2,7 @@
 %% Author: Timothy Williams
 %% Date: 20141016, 18:13:51 CEST
 
-function fn_plot_waves(grid_prams,wave_fields,ice_fields);
+function fn_plot_waves(grid_prams,wave_fields);
 
 X        = grid_prams.X;
 Y        = grid_prams.Y;

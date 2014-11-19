@@ -3,6 +3,7 @@
 *.mod
 *.exe
 *.so
+*.pyc
 fortran/run/out/*
 fortran/run/prog/*
 fortran/run/out_py/*
