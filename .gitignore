@@ -4,6 +4,8 @@
 *.exe
 *.so
 fortran/run/out/*
+fortran/run/prog/*
+fortran/run/out_py/*
 fortran/run/log/*
 fortran/run/test/out/*
 fortran/numerics/test_advection/out/*

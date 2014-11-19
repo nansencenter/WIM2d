@@ -1,6 +1,6 @@
-      !! test_waveadv_weno.F
-      !! Author: Timothy Williams
-      !! Date:   20140821, 12:22:17 CEST
+      !mod_wavesice.F
+      !Author: Timothy Williams
+      !Date: 20141119, 05:22:32 CET
       module mod_wavesice
 
       use mod_gridinfo     !! grid info
@@ -572,21 +572,28 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(SOLVER,GRID_OPT,n)
+      subroutine check_prog(SOLVER,GRID_OPT,n,OPT)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)   :: SOLVER,GRID_OPT,n
+      integer,intent(in)   :: SOLVER,GRID_OPT,n,OPT
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
       character(len=3)     :: cts
 
-      write(cts,'(i3.3)') n
-      afile = 'out/wim_prog'//cts//'.a'
-      bfile = 'out/wim_prog'//cts//'.b'
+      if (OPT.eq.0) then
+         !!dump only for progress report
+         write(cts,'(i3.3)') n
+         afile = 'prog/wim_prog'//cts//'.a'
+         bfile = 'prog/wim_prog'//cts//'.b'
+      else
+         !!final output
+         afile = 'out/wim_out.a'
+         bfile = 'out/wim_out.b'
+      end if
       stat1 = 'replace'
       stat2 = 'old'
 
@@ -622,8 +629,8 @@
      &  3,    "       tau_y"
       write(2,111)                                                      &
      &  4,    "       Hs"
-!     write(2,111)                                                      &
-!    &  5,    "       Tp"
+      write(2,111)                                                      &
+     &  5,    "       Tp"
 !     write(2,111)                                                      &
 !    &  6,    "       mwd"
 
@@ -635,7 +642,7 @@
       call wrt_afile_2d(afile ,tau_x   ,ii,jj  ,stat2,2)
       call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,stat2,3)
       call wrt_afile_2d(afile ,Hs      ,ii,jj  ,stat2,4)
-!     call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)
+      call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)
 !     call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
 
       end subroutine check_prog

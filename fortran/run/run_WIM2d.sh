@@ -1,7 +1,7 @@
 # place to put results
 mkdir -p out
 mkdir -p log
-rm out/*
+rm prog/*
 
 ../Build/WIM2d.exe
 

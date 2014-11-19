@@ -39,7 +39,8 @@
       !!
       real     :: PI
       real     :: x_ext,y_ext,u_ref
-      integer  :: nt,n,w,wth
+      integer  :: nt,n,w,wth,reps
+      logical  :: critter
 
       integer,parameter :: DO_CHECK_PROG  = 1
       integer,parameter :: DO_CHECK_INIT  = 1
@@ -119,16 +120,24 @@
       print*,'Beginning main integration...'
 
       !nt = 13!stop at a certain point for testing
-      do n=2,nt
+      reps  = 10!frequency of dumping
+
+      do n=1,nt
+
+         critter  = (DO_CHECK_PROG.eq.1).and.(mod(n-1,reps).eq.0)
+
+         if (critter) then
+            !!dump fields to binary
+            call check_prog(SOLVER,GRID_OPT,n-1,0)
+         end if
+
          print*,'n/nt',n,nt
          call wim_step(SOLVER)
 
-         if (DO_CHECK_PROG.eq.1) then
-            !!dump fields to binary
-            call check_prog(SOLVER,GRID_OPT,n)
-         end if
-
       end do!! n - finish time stepping
+
+      !!dump final output
+      call check_prog(SOLVER,GRID_OPT,n-1,1)
 
       !!print info again
       include "print_screen_info.h"
@@ -221,7 +230,8 @@
       !!
       real     :: PI
       real     :: x_ext,y_ext,u_ref
-      integer  :: nt,n,w,wth
+      integer  :: nt,n,w,wth,reps
+      logical  :: critter
 
       integer,parameter :: DO_CHECK_PROG  = 1
       integer,parameter :: DO_CHECK_INIT  = 1
@@ -265,7 +275,10 @@
          ICE_MASK = 1.0
       end where
 
-      !!incident waves from inputs
+      call waves_init(GRID_OPT)
+
+      !! override incident waves from inputs
+      !! - still need waves_init to set freq_vec
       Hs          = in_arrays(:,:,4)
       Tp          = in_arrays(:,:,5)
       mwd         = in_arrays(:,:,6)
@@ -274,6 +287,12 @@
          !!kill waves inside ice and propagate them in ourselves
          WAVE_MASK   = 1.0
       end where
+
+      if (nw.eq.1) then
+         !!single frequency:
+         !!-set it to mean over the wave mask
+         freq_vec(1) = sum(WAVE_MASK)/sum(WAVE_MASK*Tp)
+      end if
 
       call set_inc_waves()       ! - fill in the incident wave spectrum
                                  !   with a Bretschneider spectrum
@@ -319,16 +338,24 @@
       print*,'Beginning main integration...'
 
       !nt = 13!stop at a certain point for testing
-      do n=2,nt
+      reps  = 10!frequency of dumping
+
+      do n=1,nt
+
+         critter  = (DO_CHECK_PROG.eq.1).and.(mod(n-1,reps).eq.0)
+
+         if (critter) then
+            !!dump fields to binary
+            call check_prog(SOLVER,GRID_OPT,n-1,0)
+         end if
+
          print*,'n/nt',n,nt
          call wim_step(SOLVER)
 
-         if (DO_CHECK_PROG.eq.1) then
-            !!dump fields to binary
-            call check_prog(SOLVER,GRID_OPT,n)
-         end if
-
       end do!! n - finish time stepping
+
+      !!final output
+      call check_prog(SOLVER,GRID_OPT,n,1)
 
       !!print info again
       include "print_screen_info.h"

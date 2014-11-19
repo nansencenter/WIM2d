@@ -29,17 +29,27 @@ if 1%%plot and save initial conditions
    eval(['!cp ../out/wim_init.* ',fig_dir]);
 end
 
-outdir         = '../out/';
-D              = dir([outdir,'wim_prog*.a']);
+progdir        = '../prog/';
+D              = dir([progdir,'wim_prog*.a']);
+nm             = D(1).name;
+n0             = str2num(nm(9:11));
+nm             = D(2).name;
+nstep          = str2num(nm(9:11))-n0;
 nm             = D(end).name;
-nt             = nm(9:11)
-binary_final   = [outdir,'wim_prog',nt];
-nt             = str2num(nt);
+nt             = str2num(nm(9:11))
+%%
+outdir         = '../out/';
+binary_final   = [outdir,'wim_out'];
 
-nvec  = (2:80:nt);
+nvec  = (n0:nstep:nt);
 if (max(nvec)<nt)
    nvec  = [nvec,nt];
 end
+
+%%further reduce freq of plotting
+nstep_   = 50;
+nf       = floor(nstep_/nstep);
+nvec     = nvec(1:nf:end);
 
 for r = 1:length(nvec)
    n  = nvec(r);
@@ -51,6 +61,8 @@ for r = 1:length(nvec)
    drawnow;
    %GEN_pause;
 end
+
+out_fields  = plot_final(grid_prams);
 
 if 1
    figure(4),clf;
@@ -122,7 +134,7 @@ if SV_FIG
 
    %%save binary file
    nd3   = num2str(ndir,'%3.3d');
-   fn3   = [Dirs{1},'wim_final',nd3];
+   fn3   = [Dirs{1},'wim_out',nd3];
    cmd   = ['!cp ',binary_final,'.a ',fn3,'.a'];
    eval(cmd);
    cmd   = ['!cp ',binary_final,'.b ',fn3,'.b'];
@@ -230,8 +242,119 @@ fclose(aid);
 function s1 = plot_prog(grid_prams,n)
 
 cts   = num2str(n,'%3.3d');
-afile = ['../out/wim_prog',cts,'.a'];
-bfile = ['../out/wim_prog',cts,'.b'];
+afile = ['../prog/wim_prog',cts,'.a'];
+bfile = ['../prog/wim_prog',cts,'.b'];
+
+%% get basic info from bfile
+bid   = fopen(bfile);
+C     = textscan(bid,'%2.2d %s %s %s',1);
+nrec  = C{1};
+%%
+C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
+nx = C{1};
+%%
+C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
+ny = C{1};
+%%
+C        = textscan(bid,'%2.2d %s %s %s %s %s',1);
+GRID_OPT = C{1};
+%%
+C        = textscan(bid,'%2.2d %s %s %s %s',2);
+SOLVER   = C{1}(1);
+nw       = C{1}(2);
+%%
+C     = textscan(bid,'%3.3d %s %s %s %s',1);
+ndir  = C{1};
+fclose(bid);
+
+X  = grid_prams.X;
+Y  = grid_prams.Y;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%read afile
+s1    = struct('Dmax'   ,[],...
+               'Hs'     ,[],...
+               'tau_x'  ,[],...
+               'tau_y'  ,[]);
+fmt   = 'float32';
+aid   = fopen(afile);
+%%
+s1.Dmax  = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+s1.tau_x = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+s1.tau_y = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
+%%
+s1.SOLVER      = SOLVER;
+s1.n_wave_freq = nw;
+s1.n_wavdir    = ndir;
+s1.GRID_OPT    = GRID_OPT;
+%%
+fclose(aid);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Hs = s1.Hs,GEN_pause
+%Dm = s1.Dmax,GEN_pause
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%do plots
+
+%%fix positions so figures can be compared more easily between computers
+pos1  = [0.130000000000000   0.583837209302326   0.334659090909091   0.341162790697674];
+pos2  = [0.570340909090909   0.583837209302326   0.334659090909091   0.341162790697674];
+pos3  = [0.130000000000000   0.110000000000000   0.334659090909091   0.341162790697674];
+pos4  = [0.570340909090909   0.110000000000000   0.334659090909091   0.341162790697674];
+
+%subplot(2,2,1);
+subplot('position',pos1);
+H  = pcolor(X/1e3,Y/1e3,s1.Hs);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+GEN_font(gca);
+ttl   = title('{\itH}_{\rm s}, m');
+GEN_font(ttl);
+
+%subplot(2,2,2);
+subplot('position',pos2);
+H  = pcolor(X/1e3,Y/1e3,s1.Dmax);
+%caxis([0 250]);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+GEN_font(gca);
+ttl   = title('{\itD}_{\rm max}, m');
+GEN_font(ttl);
+
+%subplot(2,2,3);
+subplot('position',pos3);
+H  = pcolor(X/1e3,Y/1e3,s1.tau_x);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+GEN_font(gca);
+ttl   = title('{\tau}_{x}, Pa');
+GEN_font(ttl);
+
+%subplot(2,2,4);
+subplot('position',pos4);
+H  = pcolor(X/1e3,Y/1e3,s1.tau_y);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+GEN_font(gca);
+ttl   = title('{\tau}_{y}, Pa');
+GEN_font(ttl);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function s1 = plot_final(grid_prams)
+
+afile = ['../out/wim_out.a'];
+bfile = ['../out/wim_out.b'];
 
 %% get basic info from bfile
 bid   = fopen(bfile);
