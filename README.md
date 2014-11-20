@@ -2,17 +2,43 @@ WIM2d
 =====
 
 2d waves-in-ice module
-Want to have (a) stand-alone version(s) for use on a laptop/server.
+Stand-alone version for use on a single computer.
 
-In progress.
-So far, just have WENO advection scheme imported from NERSC-HYCOM.
+Versions:
+- 1. matlab
+- 2. fortran
+- 3. ipython interface for fortran code
 
-PLANS:
-- matlab -> good for initial testing but memory is
-  limited (ie might not be able to use many
-  directions/frequencies)
-- version in c -> Elasto-brittle rheology
-- fortran -> testing features to go into NERSC-HYCOM or Wavewatch/WAM
-- python? very easy to set up parallisation with that (on
-  a server) so could be quite efficient. Also can use
-  more memory than matlab.
+SETUP:
+1. Go to matlab/main
+   * run startup_local.m (set paths)
+   * run WIM2d.m
+   To test/look at results, go to matlab/main/test
+   In matlab:
+   * run startup_local.m (set paths)
+   * run test_WIM2d.m
+
+2. Go to fortran/Build
+   * compile with "make"
+   Go to fortran/run
+   * run ./run_WIM2d.sh
+   To test/look at results, go to fortran/run/test
+   In matlab:
+   * run startup_local.m (set paths)
+   * run test_WIM2d_F.m
+   TODO:
+   Enable looking at results in ipython.
+
+3. Go to fortran/Build
+   * compile with "make py"
+   Go to fortran/run
+   In ipython:
+   * run ./run_WIM2d.py
+     - This has some plotting to look at results,
+       but it is not as sophisticated/organised
+       as the matlab test code yet.
+
+   Can still go to fortran/run/test, and
+   in matlab:
+   * run startup_local.m (set paths)
+   * run test_WIM2d_F.m
