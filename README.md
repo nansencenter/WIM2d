@@ -2,7 +2,8 @@ WIM2d
 =====
 
 2d waves-in-ice module
-Stand-alone version for use on a single computer.
+Stand-alone version(s) for use on a single computer.
+NB! All versions still being tested
 
 Versions:
 - 1. matlab
