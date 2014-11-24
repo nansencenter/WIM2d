@@ -13,15 +13,19 @@ import fns_get_data as Fdat
 import fns_plot_data as Fplt
 
 # check directories for outputs exist
-dirs  = ['out','log','prog','out_py','out_py/init','out_py/final']
+outdir   = 'out_io'
+figdir   = outdir+'/figs'
+dirs  = [outdir,outdir+'/log',
+         outdir+'/binaries',outdir+'/binaries/prog',
+         figdir,figdir+'/init',figdir+'/final']
 for j in range(0,len(dirs)):
    dirj  = dirs[j]
    if not os.path.exists(dirj):
       os.makedirs(dirj)
 
 # clear out old progress files
-dd    = os.path.abspath("prog")
-files = os.listdir("prog")
+dd    = os.path.abspath(outdir+"/binaries/prog")
+files = os.listdir(dd)
 for f in files:
    os.remove(dd+"/"+f)
 
@@ -92,13 +96,16 @@ elif 1:
    # tau_y = out_arrays[:,:,4]
 
 ## look at initial fields:
+outdir   = "out_io"
+figdir   = outdir+"/figs"
+
 print("Plotting initial conditions...")
-grid_prams,ice_fields,wave_fields  = Fdat.fn_check_init()
-Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields)
-print("Plots in out_py/init")
+grid_prams,ice_fields,wave_fields  = Fdat.fn_check_init(outdir)
+Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir)
+print("Plots in "+figdir+"/init")
 print(" ")
 
 ## look at results:
 print("Plotting results...")
-Fplt.fn_plot_final(grid_prams,out_arrays)
-print("Plots in out_py/final")
+Fplt.fn_plot_final(grid_prams,out_arrays,figdir)
+print("Plots in "+figdir+"/final")

@@ -7,8 +7,11 @@ function test_WIM2d_F()
 
 SV_FIG   = 1;
 
+outdir   = '../out';
+% outdir   = '../out_io';
+
 %%check initialisation
-[grid_prams,ice_fields,wave_fields] = check_init();
+[grid_prams,ice_fields,wave_fields] = check_init(outdir);
 if 0
    nn = 1:26;
    tst_masks   = [nn',wave_fields.WAVE_MASK(nn,1)+ice_fields.ICE_MASK(nn,1)]
@@ -29,11 +32,13 @@ if 1%%plot and save initial conditions
    fn_plot_waves(grid_prams,wave_fields);
    saveas(gcf,[fig_dir,'waves.png']);
    %%
-   eval(['!cp ../out/wim_grid.* ',fig_dir]);
-   eval(['!cp ../out/wim_init.* ',fig_dir]);
+   cmd   = ['!cp ',outdir,'/binaries/wim_grid.* ',fig_dir]
+   eval(cmd);
+   cmd   = ['!cp ',outdir,'/binaries/wim_init.* ',fig_dir]
+   eval(cmd);
 end
 
-progdir        = '../prog/';
+progdir        = [outdir,'/binaries/prog/'];
 D              = dir([progdir,'wim_prog*.a']);
 nm             = D(1).name;
 n0             = str2num(nm(9:11));
@@ -42,8 +47,7 @@ nstep          = str2num(nm(9:11))-n0;
 nm             = D(end).name;
 nt             = str2num(nm(9:11))
 %%
-outdir         = '../out/';
-binary_final   = [outdir,'wim_out'];
+binary_final   = [outdir,'/binaries/wim_out'];
 
 nvec  = (n0:nstep:nt);
 
@@ -58,12 +62,12 @@ for r = 1:length(nvec)
    %%
    figure(3),clf;
    fn_fullscreen;
-   out_fields  = plot_prog(grid_prams,n);
+   out_fields  = plot_prog(grid_prams,n,outdir);
    drawnow;
    %GEN_pause;
 end
 
-out_fields  = plot_final(grid_prams);
+out_fields  = plot_final(grid_prams,outdir);
 
 if 1
    figure(4),clf;
@@ -136,14 +140,14 @@ if SV_FIG
    %%save binary file
    nd3   = num2str(ndir,'%3.3d');
    fn3   = [Dirs{1},'wim_out',nd3];
-   cmd   = ['!cp ',binary_final,'.a ',fn3,'.a'];
+   cmd   = ['!cp ',binary_final,'.a ',fn3,'.a']
    eval(cmd);
-   cmd   = ['!cp ',binary_final,'.b ',fn3,'.b'];
+   cmd   = ['!cp ',binary_final,'.b ',fn3,'.b']
    eval(cmd);
 
    %%save log file
    fil   = [Dirs{2},'wim2d_',nd3,'.log'];
-   cmd   = ['!cp ../log/wim2d.log ',fil];
+   cmd   = ['!cp ',outdir,'/log/wim2d.log ',fil];
    eval(cmd);
 
    %%save main figures
@@ -160,10 +164,11 @@ if SV_FIG
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [grid_prams,ice_fields,wave_fields] = check_init()
+function [grid_prams,ice_fields,wave_fields] = check_init(outdir)
 
-afile = '../out/wim_grid.a';
-bfile = '../out/wim_grid.b';
+afile    = [outdir,'/binaries/wim_grid.a'];
+bfile    = [outdir,'/binaries/wim_grid.b'];
+afile2   = [outdir,'/binaries/wim_init.a'];
 
 grid_prams  = struct('nx'        ,[],...
                      'ny'        ,[],...
@@ -223,8 +228,7 @@ wave_fields = struct('Hs'        ,[],...
                      'mwd'       ,[],...
                      'WAVE_MASK' ,[]);
 
-afile       = '../out/wim_init.a';
-aid         = fopen(afile);
+aid         = fopen(afile2);
 %%
 ice_fields.cice      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 ice_fields.hice      = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
@@ -240,11 +244,11 @@ fclose(aid);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function s1 = plot_prog(grid_prams,n)
+function s1 = plot_prog(grid_prams,n,outdir)
 
 cts   = num2str(n,'%3.3d');
-afile = ['../prog/wim_prog',cts,'.a'];
-bfile = ['../prog/wim_prog',cts,'.b'];
+afile = [outdir,'/binaries/prog/wim_prog',cts,'.a'];
+bfile = [outdir,'/binaries/prog/wim_prog',cts,'.b'];
 
 %% get basic info from bfile
 bid   = fopen(bfile);
@@ -352,10 +356,10 @@ GEN_font(ttl);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function s1 = plot_final(grid_prams)
+function s1 = plot_final(grid_prams,outdir)
 
-afile = ['../out/wim_out.a'];
-bfile = ['../out/wim_out.b'];
+afile = [outdir,'/binaries/wim_out.a'];
+bfile = [outdir,'/binaries/wim_out.b'];
 
 %% get basic info from bfile
 bid   = fopen(bfile);
@@ -385,9 +389,9 @@ Y  = grid_prams.Y;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%read afile
 s1    = struct('Dmax'   ,[],...
-               'Hs'     ,[],...
                'tau_x'  ,[],...
-               'tau_y'  ,[]);
+               'tau_y'  ,[],...
+               'Hs'     ,[]);
 fmt   = 'float32';
 aid   = fopen(afile);
 %%

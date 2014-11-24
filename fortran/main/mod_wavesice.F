@@ -70,12 +70,12 @@
          print*,'steady test',maxval(WAVE_MASK2),sum(WAVE_MASK2)
       end if
 
-      if (.true.) then
-         !!check initialisation
-         !!(dump binaries to look at with test_WIM2d_F.m)
-         call check_grid(GRID_OPT)
-         call check_init(GRID_OPT)
-      end if
+!     if (.true.) then
+!        !!check initialisation
+!        !!(dump binaries to look at with test_WIM2d_F.m)
+!        call check_grid(GRID_OPT)
+!        call check_init(GRID_OPT)
+!     end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -445,19 +445,20 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_grid(GRID_OPT)
+      subroutine check_grid(GRID_OPT,outdir)
 
       use mod_gridinfo
       !use mod_common_wim
       use mod_file_utils
 
       implicit none
+      character(len=80),intent(in)   :: outdir
       integer,intent(in)   :: GRID_OPT
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
 
-      afile = 'out/wim_grid.a'
-      bfile = 'out/wim_grid.b'
+      afile = trim(outdir)//'/binaries/wim_grid.a'
+      bfile = trim(outdir)//'/binaries/wim_grid.b'
       stat1 = 'replace'
       stat2 = 'old'
 
@@ -510,19 +511,20 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_init(GRID_OPT)
+      subroutine check_init(GRID_OPT,outdir)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
+      character(len=80),intent(in)   :: outdir
       integer,intent(in)   :: GRID_OPT
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
 
-      afile = 'out/wim_init.a'
-      bfile = 'out/wim_init.b'
+      afile = trim(outdir)//'/binaries/wim_init.a'
+      bfile = trim(outdir)//'/binaries/wim_init.b'
       stat1 = 'replace'
       stat2 = 'old'
 
@@ -572,14 +574,15 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(SOLVER,GRID_OPT,n,OPT)
+      subroutine check_prog(SOLVER,GRID_OPT,n,OPT,outdir)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)   :: SOLVER,GRID_OPT,n,OPT
+      integer,intent(in)            :: SOLVER,GRID_OPT,n,OPT
+      character(len=80),intent(in)  :: outdir
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
       character(len=3)     :: cts
@@ -587,12 +590,12 @@
       if (OPT.eq.0) then
          !!dump only for progress report
          write(cts,'(i3.3)') n
-         afile = 'prog/wim_prog'//cts//'.a'
-         bfile = 'prog/wim_prog'//cts//'.b'
+         afile = trim(outdir)//'/binaries/prog/wim_prog'//cts//'.a'
+         bfile = trim(outdir)//'/binaries/prog/wim_prog'//cts//'.b'
       else
          !!final output
-         afile = 'out/wim_out.a'
-         bfile = 'out/wim_out.b'
+         afile = trim(outdir)//'/binaries/wim_out.a'
+         bfile = trim(outdir)//'/binaries/wim_out.b'
       end if
       stat1 = 'replace'
       stat2 = 'old'

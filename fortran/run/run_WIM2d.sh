@@ -1,6 +1,10 @@
 # place to put results
-mkdir -p out
-mkdir -p log
+outdir="out"
+mkdir -p $outdir
+mkdir -p $outdir/log
+mkdir -p $outdir/prog
+mkdir -p $outdir/binaries
+mkdir -p $outdir/binaries/prog
 rm prog/*
 
 ../Build/WIM2d.exe

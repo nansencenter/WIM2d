@@ -46,9 +46,9 @@ def cmap_3d(x,y,z,labs):
 #######################################################################
 
 #######################################################################
-def fn_plot_init(grid_prams,ice_fields,wave_fields):
+def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
-   fdir  = 'out_py/init/'
+   fdir  = figdir+'/init/'
 
    fig   = fdir+'icec.png'
    f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,ice_fields.icec,
@@ -94,9 +94,9 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields):
 ############################################################################
 
 #######################################################################
-def fn_plot_final(grid_prams,out_arrays):
+def fn_plot_final(grid_prams,out_arrays,figdir):
 
-   fdir  = 'out_py/final/'
+   fdir  = figdir+'/final/'
 
    figs  = ['Dmax.png','Hs.png','Tp.png','taux.png','tauy.png']
    labs  = ['$D_{max}$','$H_s$','$T_p$','Stress (x dir.), Pa','Stress (y dir.), Pa']

@@ -54,14 +54,16 @@
       integer                 :: nMIZ
 
       !!
-      character(len=*),parameter :: log_file = "log/wim2d.log"
-      character(len=*),parameter :: outdir   = "out/"
+      character(len=80) :: outdir
+      character(len=80) :: log_file
 
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
+      outdir   = 'out'
+      log_file = trim(outdir)//"/log/wim2d.log"
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -85,8 +87,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
-         call check_grid(GRID_OPT)
-         call check_init(GRID_OPT)
+         call check_grid(GRID_OPT,outdir)
+         call check_init(GRID_OPT,outdir)
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -128,7 +130,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SOLVER,GRID_OPT,n-1,0)
+            call check_prog(SOLVER,GRID_OPT,n-1,0,outdir)
          end if
 
          print*,'n/nt',n,nt
@@ -137,7 +139,7 @@
       end do!! n - finish time stepping
 
       !!dump final output
-      call check_prog(SOLVER,GRID_OPT,n-1,1)
+      call check_prog(SOLVER,GRID_OPT,n-1,1,outdir)
 
       !!print info again
       include "print_screen_info.h"
@@ -247,14 +249,16 @@
       integer                 :: nMIZ
 
       !!
-      character(len=*),parameter :: log_file = "log/wim2d.log"
-      character(len=*),parameter :: outdir   = "out/"
+      character(len=80) :: outdir
+      character(len=80) :: log_file
 
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
+      outdir   = "out_io/"
+      log_file = trim(outdir)//'/log/wim2d.log'
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -303,8 +307,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
-         call check_grid(GRID_OPT)
-         call check_init(GRID_OPT)
+         call check_grid(GRID_OPT,outdir)
+         call check_init(GRID_OPT,outdir)
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -346,7 +350,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SOLVER,GRID_OPT,n-1,0)
+            call check_prog(SOLVER,GRID_OPT,n-1,0,outdir)
          end if
 
          print*,'n/nt',n,nt
@@ -355,7 +359,7 @@
       end do!! n - finish time stepping
 
       !!final output
-      call check_prog(SOLVER,GRID_OPT,n,1)
+      call check_prog(SOLVER,GRID_OPT,n,1,outdir)
 
       !!print info again
       include "print_screen_info.h"

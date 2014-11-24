@@ -4,7 +4,7 @@ import sys
 import struct
 
 ##############################################################
-def fn_check_init():
+def fn_check_init(outdir):
    # routine to get initial fields from binary files:
 
    ###########################################################
@@ -62,8 +62,8 @@ def fn_check_init():
 
    ###########################################################
    # get dimensions from .b file
-   afile = 'out/wim_grid.a'
-   bfile = 'out/wim_grid.b'
+   afile = outdir+'/binaries/wim_grid.a'
+   bfile = outdir+'/binaries/wim_grid.b'
    bid   = open(bfile,'r')
    lines = bid.readlines()
    bid.close()
@@ -94,7 +94,7 @@ def fn_check_init():
 
    ###########################################################
    # can now read data from .a file
-   afile = 'out/wim_init.a'
+   afile = outdir+'/binaries/wim_init.a'
    aid   = open(afile,'rb')
    ##
    ice_fields  = Ice_Fields()

@@ -1,6 +1,6 @@
       !!print text to log file during run
 
-      print*,'Printing info to log file: ',log_file
+      print*,'Printing info to log file: ',trim(log_file)
       open(unit=3,file=trim(log_file),status = 'replace')
 
       write(3,'(a)'),' '

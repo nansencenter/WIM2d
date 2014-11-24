@@ -6,7 +6,7 @@
 *.pyc
 fortran/run/out/*
 fortran/run/prog/*
-fortran/run/out_py/*
+fortran/run/out_io/*
 fortran/run/log/*
 fortran/run/test/out/*
 fortran/numerics/test_advection/out/*
