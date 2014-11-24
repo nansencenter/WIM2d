@@ -62,8 +62,10 @@ def fn_check_init(outdir):
 
    ###########################################################
    # get dimensions from .b file
-   afile = outdir+'/binaries/wim_grid.a'
-   bfile = outdir+'/binaries/wim_grid.b'
+   afile    = outdir+'/binaries/wim_grid.a'
+   bfile    = outdir+'/binaries/wim_grid.b'
+   afile2   = outdir+'/binaries/wim_init.a'
+   #
    bid   = open(bfile,'r')
    lines = bid.readlines()
    bid.close()
@@ -94,8 +96,7 @@ def fn_check_init(outdir):
 
    ###########################################################
    # can now read data from .a file
-   afile = outdir+'/binaries/wim_init.a'
-   aid   = open(afile,'rb')
+   aid   = open(afile2,'rb')
    ##
    ice_fields  = Ice_Fields()
    wave_fields = Wave_Fields()

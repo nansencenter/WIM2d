@@ -12,8 +12,17 @@ import WIM2d_f2py as Mwim
 import fns_get_data as Fdat
 import fns_plot_data as Fplt
 
+RUN_OPT  = 1   # 0: old version (no in/out)
+               # 1: look at saved results of no in/out run
+               # 2: in/out
+               # 3: look at saved results of in/out run
+
 # check directories for outputs exist
-outdir   = 'out_io'
+if (RUN_OPT < 2):
+   outdir   = 'out'
+else:
+   outdir   = 'out_io'
+
 figdir   = outdir+'/figs'
 dirs  = [outdir,outdir+'/log',
          outdir+'/binaries',outdir+'/binaries/prog',
@@ -29,7 +38,7 @@ files = os.listdir(dd)
 for f in files:
    os.remove(dd+"/"+f)
 
-if 0:
+if RUN_OPT is 0:
    # run the "dumb" WIM
    print(" ")
    print("###################################################")
@@ -44,7 +53,7 @@ if 0:
    print("Finished call to wim2d_run:")
    print("###################################################")
    print(" ")
-elif 1:
+elif RUN_OPT is 2:
    # run it with inputs and outputs
    GRID_OPT       = 1
    nx,ny          = Mwim.get_grid_size()
@@ -96,16 +105,14 @@ elif 1:
    # tau_y = out_arrays[:,:,4]
 
 ## look at initial fields:
-outdir   = "out_io"
-figdir   = outdir+"/figs"
-
 print("Plotting initial conditions...")
-grid_prams,ice_fields,wave_fields  = Fdat.fn_check_init(outdir)
-Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir)
+grid_prams,ice_fields,wave_fields  = Fdat.fn_check_init(outdir) # load binaries
+##
+Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot
 print("Plots in "+figdir+"/init")
 print(" ")
 
 ## look at results:
 print("Plotting results...")
-Fplt.fn_plot_final(grid_prams,out_arrays,figdir)
+Fplt.fn_plot_final(grid_prams,out_arrays,figdir) # plot
 print("Plots in "+figdir+"/final")
