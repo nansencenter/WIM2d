@@ -104,15 +104,20 @@ elif RUN_OPT is 2:
    # tau_x = out_arrays[:,:,3]
    # tau_y = out_arrays[:,:,4]
 
+   # convert out_arrays to Out_Fields object
+   out_fields  = check_out_arr(out_arrays)
+   del out_arrays
+
 ## look at initial fields:
 print("Plotting initial conditions...")
-grid_prams,ice_fields,wave_fields  = Fdat.fn_check_init(outdir) # load binaries
+grid_prams              = Fdat.fn_check_grid(outdir) # load grid from binaries
+ice_fields,wave_fields  = Fdat.fn_check_init(outdir) # load initial conditions from binaries
 ##
-Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot
+Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot initial conditions
 print("Plots in "+figdir+"/init")
 print(" ")
 
-## look at results:
-print("Plotting results...")
-Fplt.fn_plot_final(grid_prams,out_arrays,figdir) # plot
-print("Plots in "+figdir+"/final")
+# ## look at results:
+# print("Plotting results...")
+# Fplt.fn_plot_final(grid_prams,out_arrays,figdir) # plot TODO - change fn from out_arrays to out_fields
+# print("Plots in "+figdir+"/final")
