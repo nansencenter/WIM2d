@@ -14,7 +14,7 @@ import fns_plot_data as Fplt
 
 
 ################################################################
-def do_run(RUN_OPT):
+def do_run(RUN_OPT=0,in_fields=None):
    run_dict = {0: 'old version (no in/out)',
                1: 'look at saved results of no in/out run',
                2: 'in/out',
@@ -76,34 +76,78 @@ def do_run(RUN_OPT):
 
    #############################################################
    elif RUN_OPT is 2:
-      # run it with inputs and outputs
-      GRID_OPT       = 1
-      nx,ny          = Mwim.get_grid_size()
-      X,Y,LANDMASK   = Mwim.retrieve_grid(GRID_OPT,nx,ny)
-      xmin           = X.min()
-      xmax           = X.max()
+      # run wim2d with inputs and outputs
 
-      # set ice conc/thickness
-      ICE_MASK = np.zeros((nx,ny))
-      ICE_MASK[np.logical_and(X>0.7*xmin,LANDMASK<1)]  = 1 # i>=24
-      icec  = 0.75*ICE_MASK
-      iceh  = 2.0*ICE_MASK
-      dfloe = 250*ICE_MASK
+      if not (in_fields is None):
+         # 'in_fields' is given as input
+         # - put data into 'in_arrays':
+         keys  = ['icec','iceh','dfloe','Hs','Tp','mwd']
 
-      # set wave fields
-      WAVE_MASK   = np.zeros((nx,ny))
-      WAVE_MASK[X<xmin*0.8]   = 1   # i<=15
-      Hs    = 2.0*WAVE_MASK
-      Tp    = 12.0*WAVE_MASK
-      mwd   = -90.0*WAVE_MASK
+         nx,ny       = in_fields[keys[0]].shape
+         in_arrays   = np.zeros((nx,ny,6))
 
-      in_arrays         = np.zeros((nx,ny,6))
-      in_arrays[:,:,0]  = icec
-      in_arrays[:,:,1]  = iceh
-      in_arrays[:,:,2]  = dfloe
-      in_arrays[:,:,3]  = Hs
-      in_arrays[:,:,4]  = Tp
-      in_arrays[:,:,5]  = mwd
+         n  = 0
+         for key in keys:
+            in_arrays[:,:,n]  = in_fields[key]
+            n                 = n+1
+
+         del in_fields
+
+      elif 1:
+         # 'in_fields' not given as input
+         # - read in inputs from saved files:
+         in_dir                  = 'out'
+         grid_prams              = Fdat.fn_check_grid(in_dir)
+         ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
+
+         # merge ice and wave fields:
+         ice_fields.update(wave_fields)
+         in_fields   = ice_fields
+         del wave_fields
+
+         # put data into 'in_arrays':
+         keys  = ['icec','iceh','dfloe','Hs','Tp','mwd']
+
+         nx,ny       = in_fields[keys[0]].shape
+         in_arrays   = np.zeros((nx,ny,6))
+
+         n  = 0
+         for key in keys:
+            in_arrays[:,:,n]  = in_fields[key]
+            n                 = n+1
+
+         del in_fields,ice_fields
+
+      elif 1:
+         # 'in_fields' not given as input
+         # - specify 'in_arrays' manually
+
+         GRID_OPT       = 1
+         nx,ny          = Mwim.get_grid_size()
+         X,Y,LANDMASK   = Mwim.retrieve_grid(GRID_OPT,nx,ny)
+         xmin           = X.min()
+         xmax           = X.max()
+
+         # set ice conc/thickness
+         ICE_MASK = np.zeros((nx,ny))
+         ICE_MASK[np.logical_and(X>0.7*xmin,LANDMASK<1)]  = 1 # i>=24
+         icec  = 0.75*ICE_MASK
+         iceh  = 2.0*ICE_MASK
+         dfloe = 250*ICE_MASK
+
+         # set wave fields
+         WAVE_MASK   = np.zeros((nx,ny))
+         WAVE_MASK[X<xmin*0.8]   = 1   # i<=15
+         Hs    = 2.0*WAVE_MASK
+         Tp    = 12.0*WAVE_MASK
+         mwd   = -90.0*WAVE_MASK
+
+         in_arrays[:,:,0]  = icec
+         in_arrays[:,:,1]  = iceh
+         in_arrays[:,:,2]  = dfloe
+         in_arrays[:,:,3]  = Hs
+         in_arrays[:,:,4]  = Tp
+         in_arrays[:,:,5]  = mwd
 
       # run the WIM
       print(" ")
@@ -135,8 +179,20 @@ def do_run(RUN_OPT):
 ################################################################
 
 if 0:
-   RUN_OPT  = 2
+   RUN_OPT     = 2
    out_fields  = do_run(RUN_OPT)
+elif 1:
+   # check passing in of 'in_fields'
+   # - read in inputs from saved files:
+   in_dir                  = 'out'
+   grid_prams              = Fdat.fn_check_grid(in_dir)
+   ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
+
+   # merge ice and wave fields:
+   ice_fields.update(wave_fields)
+   in_fields   = ice_fields
+
+   out_fields  = do_run(RUN_OPT=2,in_fields=in_fields)
 elif 0:
    out_fields  = do_run(0)
    out_fields2 = do_run(2)
