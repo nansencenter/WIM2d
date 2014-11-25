@@ -408,11 +408,12 @@
       !!print  some outputs to log file
       include "print_log_info.h"
 
+      !! put in same order as binary outputs:
       out_arrays(:,:,1) = dfloe
-      out_arrays(:,:,2) = Hs
-      out_arrays(:,:,3) = Tp
-      out_arrays(:,:,4) = tau_x
-      out_arrays(:,:,5) = tau_y
+      out_arrays(:,:,2) = tau_x
+      out_arrays(:,:,3) = tau_y
+      out_arrays(:,:,4) = Hs
+      out_arrays(:,:,5) = Tp
 
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
