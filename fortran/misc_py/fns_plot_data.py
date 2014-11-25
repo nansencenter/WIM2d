@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import ticker
 
+import fns_get_data as Mdat
+
 #######################################################################
 def cmap_3d(x,y,z,labs):
    # f  = plt.figure(figsize=[6,6],dpi=50)
@@ -49,61 +51,55 @@ def cmap_3d(x,y,z,labs):
 def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
    fdir  = figdir+'/init/'
+   x     = grid_prams['X']/1.0e3
+   y     = grid_prams['Y']/1.0e3
 
-   fig   = fdir+'icec.png'
-   f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,ice_fields.icec,
-            ['$x$, km','$y$, km','$c$'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
+   # ice fields
+   figs   = Mdat.Ice_Fields(icec='icec.png',iceh='iceh.png',dfloe='Dmax0.png')
+   labs   = Mdat.Ice_Fields(icec='$c$',iceh='$h$, m',dfloe='$D_{max}$, m')
+   keys   = ['icec','iceh','dfloe']
 
-   fig   = fdir+'iceh.png'
-   f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,ice_fields.iceh,
-                   ['$x$, km','$y$, km','$h$, m'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
+   for key in keys:
+      fig   = fdir+figs[key]
+      f     = cmap_3d(x,y,ice_fields[key],
+                      ['$x$, km','$y$, km','$c$'])
+      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      f.clf()
 
-   fig   = fdir+'Dmax0.png'
-   f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,ice_fields.dfloe,
-                   ['$x$, km','$y$, km','$h$, m'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
+   # wave fields
+   figs  = Mdat.Wave_Fields(Hs='Hs0.png',Tp='Tp0.png',mwd='mwd0.png')
+   labs  = Mdat.Wave_Fields('$H_{s}$, m','$T_p$, s','mwd, degrees')
+   keys   = ['Hs','Tp','mwd']
 
-   fig   = fdir+'Hs0.png'
-   f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,wave_fields.Hs,
-            ['$x$, km','$y$, km','$H_s$, m'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
-
-   fig   = fdir+'Tp0.png'
-   f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,wave_fields.Tp,
-                   ['$x$, km','$y$, km','$T_p$, s'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
-
-   fig   = fdir+'mwd0.png'
-   f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,wave_fields.mwd,
-                   ['$x$, km','$y$, km','mwd$, degrees'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
+   for key in keys:
+      fig   = fdir+figs[key]
+      f     = cmap_3d(x,y,wave_fields[key],
+                      ['$x$, km','$y$, km',labs[key]])
+      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      f.clf()
 ############################################################################
 
-#######################################################################
-def fn_plot_final(grid_prams,out_arrays,figdir):
+############################################################################
+def fn_plot_final(grid_prams,out_fields,figdir):
 
    fdir  = figdir+'/final/'
+   keys  = out_fields.keys()
+   x     = grid_prams['X']/1.0e3
+   y     = grid_prams['Y']/1.0e3
 
-   figs  = ['Dmax.png','Hs.png','Tp.png','taux.png','tauy.png']
-   labs  = ['$D_{max}$','$H_s$','$T_p$','Stress (x dir.), Pa','Stress (y dir.), Pa']
-   for j in range(0,5):
-      fig   = fdir+figs[j]
-      f     = cmap_3d(grid_prams.X/1.0e3,grid_prams.Y/1.0e3,out_arrays[:,:,j],
-               ['$x$, km','$y$, km',labs[j]])
+   # dictionary of figure names
+   figs  = Mdat.Out_Fields('Dmax.png','taux.png','tauy.png',
+                           'Hs.png','Tp.png',)
+   # dictionary of labels for colorbars
+   labs  = Mdat.Out_Fields('$D_{max}$, m',
+                           'Stress (x dir.), Pa','Stress (y dir.), Pa',
+                           '$H_s$, m','$T_p$, s')
+   for key in keys:
+      fig   = fdir+figs[key]
+      f     = cmap_3d(x,y,out_fields[key],
+               ['$x$, km','$y$, km',labs[key]])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close()
       f.clf()

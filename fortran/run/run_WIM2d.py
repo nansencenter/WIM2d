@@ -12,10 +12,15 @@ import WIM2d_f2py as Mwim
 import fns_get_data as Fdat
 import fns_plot_data as Fplt
 
-RUN_OPT  = 1   # 0: old version (no in/out)
-               # 1: look at saved results of no in/out run
-               # 2: in/out
-               # 3: look at saved results of in/out run
+RUN_OPT  = 2
+run_dict = {0: 'old version (no in/out)',
+            1: 'look at saved results of no in/out run',
+            2: 'in/out',
+            3: 'look at saved results of in/out run'}
+print("###################################################")
+print("Run option:")
+print(" "+str(RUN_OPT)+' : '+run_dict[RUN_OPT])
+print("###################################################")
 
 # check directories for outputs exist
 if (RUN_OPT < 2):
@@ -32,11 +37,20 @@ for j in range(0,len(dirs)):
    if not os.path.exists(dirj):
       os.makedirs(dirj)
 
-# clear out old progress files
-dd    = os.path.abspath(outdir+"/binaries/prog")
-files = os.listdir(dd)
-for f in files:
-   os.remove(dd+"/"+f)
+if RUN_OPT%2 is 0:
+   # clear out old progress files
+   dd    = os.path.abspath(outdir+"/binaries/prog")
+   files = os.listdir(dd)
+   for f in files:
+      os.remove(dd+"/"+f)
+else:
+   # load out_fields
+   print(" ")
+   print("###################################################")
+   print("Reading results from: "+outdir)
+   print("###################################################")
+   print(" ")
+   out_fields  = Fdat.fn_check_out_bin(outdir)
 
 if RUN_OPT is 0:
    # run the "dumb" WIM
@@ -53,6 +67,10 @@ if RUN_OPT is 0:
    print("Finished call to wim2d_run:")
    print("###################################################")
    print(" ")
+
+   # load results from binary files
+   out_fields  = Fdat.fn_check_out_bin(outdir)
+
 elif RUN_OPT is 2:
    # run it with inputs and outputs
    GRID_OPT       = 1
@@ -75,7 +93,7 @@ elif RUN_OPT is 2:
    Tp    = 12.0*WAVE_MASK
    mwd   = -90.0*WAVE_MASK
 
-   in_arrays   = np.zeros((nx,ny,6))
+   in_arrays         = np.zeros((nx,ny,6))
    in_arrays[:,:,0]  = icec
    in_arrays[:,:,1]  = iceh
    in_arrays[:,:,2]  = dfloe
@@ -105,7 +123,7 @@ elif RUN_OPT is 2:
    # tau_y = out_arrays[:,:,4]
 
    # convert out_arrays to Out_Fields object
-   out_fields  = check_out_arr(out_arrays)
+   out_fields  = Fdat.fn_check_out_arr(out_arrays)
    del out_arrays
 
 ## look at initial fields:
@@ -117,7 +135,7 @@ Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot initial condi
 print("Plots in "+figdir+"/init")
 print(" ")
 
-# ## look at results:
-# print("Plotting results...")
-# Fplt.fn_plot_final(grid_prams,out_arrays,figdir) # plot TODO - change fn from out_arrays to out_fields
-# print("Plots in "+figdir+"/final")
+## look at results:
+print("Plotting results...")
+Fplt.fn_plot_final(grid_prams,out_fields,figdir) # plot TODO - change fn from out_arrays to out_fields
+print("Plots in "+figdir+"/final")
