@@ -13,7 +13,7 @@ import fns_get_data as Fdat
 import fns_plot_data as Fplt
 
 ################################################################
-def do_run(RUN_OPT=0,in_fields=None):
+def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
    run_dict = {0: 'old version (no in/out)',
                1: 'look at saved results of no in/out run',
                2: 'in/out',
@@ -77,6 +77,14 @@ def do_run(RUN_OPT=0,in_fields=None):
    elif RUN_OPT is 2:
       # run wim2d with inputs and outputs
 
+      ##########################################################
+      if int_prams is None:
+         SOLVER      = 1
+         ADV_DIM     = 2
+         int_prams   = np.array([SOLVER,ADV_DIM])
+      ##########################################################
+
+      ##########################################################
       if not (in_fields is None):
          # 'in_fields' is given as input
          # - put data into 'in_arrays':
@@ -92,6 +100,7 @@ def do_run(RUN_OPT=0,in_fields=None):
 
          del in_fields
 
+      ##########################################################
       elif 1:
          # 'in_fields' not given as input
          # - read in inputs from saved files:
@@ -117,6 +126,7 @@ def do_run(RUN_OPT=0,in_fields=None):
 
          del in_fields,ice_fields
 
+      ##########################################################
       elif 1:
          # 'in_fields' not given as input
          # - specify 'in_arrays' manually
@@ -147,6 +157,7 @@ def do_run(RUN_OPT=0,in_fields=None):
          in_arrays[:,:,3]  = Hs
          in_arrays[:,:,4]  = Tp
          in_arrays[:,:,5]  = mwd
+      ##########################################################
 
       # run the WIM
       print(" ")
@@ -155,7 +166,7 @@ def do_run(RUN_OPT=0,in_fields=None):
       print("###################################################")
       print(" ")
       
-      out_arrays  = Mwim.wim2d_run_io(in_arrays)
+      out_arrays  = Mwim.wim2d_run_io(in_arrays,int_prams)
 
       print(" ")
       print("###################################################")

@@ -5,7 +5,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_simple(Sdir                                  &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,atten_dim,damp_dim,ag_eff,dt)
+     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
 
       use mod_gridinfo
       use mod_common_wim
@@ -18,12 +18,13 @@
          !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
-     &   ,intent(inout)  :: Sdir
+     &   ,intent(inout)    :: Sdir
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
-     &   ,intent(out)    :: Sfreq,taux_om,tauy_om
+     &   ,intent(out)      :: Sfreq,taux_om,tauy_om
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
-     &   ,intent(in)     :: ag_eff,atten_dim,damp_dim
-      real,intent(in)   :: dt
+     &   ,intent(in)       :: ag_eff,atten_dim,damp_dim
+      real,intent(in)      :: dt
+      integer,intent(in)   :: ADV_DIM
       !!
       integer  :: i,j,wth
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
@@ -35,11 +36,24 @@
       !!do advection
       !print*,'Spectrum at',itest,jtest
       !print*,'Before advection',Sdir(itest,jtest,1)
+      uwave = 0.0
+      vwave = 0.0
       do wth  = 1,ndir
          !!define wave direction & speeds
          adv_dir  = -PI/180.0*(90.0+wavdir(wth))
          uwave    = ag_eff*cos(adv_dir)
-         vwave    = ag_eff*sin(adv_dir)
+
+         if (ADV_DIM.eq.2) then
+            !! normal 2d advection
+            vwave = ag_eff*sin(adv_dir)
+         else
+            !! * in some situations where no variation is expected
+            !! in the 'y' dirn, we can ignore the speed in this
+            !! dirn
+            !! * this can also be used to do multiple 1d results at once
+            !!   - ie each row can be a different 1d expt
+            vwave = 0.0
+         end if
 
          !!advect
          call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
@@ -105,7 +119,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_isotropic(Sdir                               &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,atten_dim,damp_dim,ag_eff,dt)
+     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
 
       use mod_gridinfo
       use mod_common_wim
@@ -119,12 +133,13 @@
          !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
-     &   ,intent(inout)  :: Sdir
+     &   ,intent(inout)    :: Sdir
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
-     &   ,intent(out)    :: Sfreq,taux_om,tauy_om
+     &   ,intent(out)      :: Sfreq,taux_om,tauy_om
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
-     &   ,intent(in)     :: ag_eff,atten_dim,damp_dim
-      real,intent(in)   :: dt
+     &   ,intent(in)       :: ag_eff,atten_dim,damp_dim
+      real,intent(in)      :: dt
+      integer,intent(in)   :: ADV_DIM
       !!
       integer                 :: i,j,wth,nth,n,jp1,jm1
       integer,dimension(ndir) :: nvec
@@ -148,11 +163,24 @@
       !!do advection
       !print*,'Spectrum at',itest,jtest
       !print*,'Before advection',Sdir(itest,jtest,1)
+      uwave = 0.0
+      vwave = 0.0
       do wth  = 1,ndir
          !!define wave direction & speeds
          adv_dir  = -PI/180.0*(90.0+wavdir(wth))
          uwave    = ag_eff*cos(adv_dir)
-         vwave    = ag_eff*sin(adv_dir)
+
+         if (ADV_DIM.eq.2) then
+            !! normal 2d advection
+            vwave = ag_eff*sin(adv_dir)
+         else
+            !! * in some situations where no variation is expected
+            !! in the 'y' dirn, we can ignore the speed in this
+            !! dirn
+            !! * this can also be used to do multiple 1d results at once
+            !!   - ie each row can be a different 1d expt
+            vwave = 0.0
+         end if
 
          !!advect
          call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)

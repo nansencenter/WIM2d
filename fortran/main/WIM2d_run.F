@@ -35,6 +35,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,parameter :: SOLVER   = 1
+      integer,parameter :: ADV_DIM  = 2
       integer,parameter :: GRID_OPT = 1!option for land/ice/water config
       !!
       real     :: PI
@@ -134,7 +135,7 @@
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SOLVER)
+         call wim_step(SOLVER,ADV_DIM)
 
       end do!! n - finish time stepping
 
@@ -192,7 +193,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_io(in_arrays,out_arrays,nx,ny)
+      subroutine wim2d_run_io(in_arrays,out_arrays,int_prams,nx,ny)
 
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
@@ -222,12 +223,12 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,intent(in)                  :: nx,ny
+      integer,intent(in)                  :: nx,ny,int_prams(2)
       real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,Dmax
       real,dimension(nx,ny,5),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy
 !f2py intent(hide)   :: nx,ny
 
-      integer,parameter :: SOLVER   = 1
+      integer   :: SOLVER,ADV_DIM
       integer,parameter :: GRID_OPT = 1!option for land/ice/water config
       !!
       real     :: PI
@@ -245,7 +246,8 @@
       !!test outputs
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
       real                    :: W_MIZ,taux_max,tauy_max                &
-     &   ,taux_min,tauy_min,Dmax_min,Dmax_max
+     &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
+     &   ,Tmean,Tvar,Tstdev
       integer                 :: nMIZ
 
       !!
@@ -254,6 +256,13 @@
 
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      SOLVER   = int_prams(1) ! solver to use for advection/attenuation
+      ADV_DIM  = int_prams(2) ! 1d advection option can be useful for checking
+                              ! and also testing many parameters at once
+                              ! ie each 'y' row can be a different experiment
+                              !    if we use this option
+                              !    - in practice we set speed in 'y' dirn to 0.
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -295,7 +304,21 @@
       if (nw.eq.1) then
          !!single frequency:
          !!-set it to mean over the wave mask
-         freq_vec(1) = sum(WAVE_MASK)/sum(WAVE_MASK*Tp)
+         Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
+         freq_vec(1) = 1.0/Tmean
+         !!
+         Tvar  = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
+         Tstdev   = sqrt(Tvar)
+         print*,'std dev of peak periods : ',Tstdev
+         !!
+         if (abs(Tstdev).gt.1.0e-2) then
+            print*,'***********************************************'
+            print*,'warning: trying to run multiple frequencies'
+            print*,'  with n_wave_freq = 1'
+            print*,'***********************************************'
+            print*,' '
+            STOP
+         end if
       end if
 
       call set_inc_waves()       ! - fill in the incident wave spectrum
@@ -354,7 +377,7 @@
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SOLVER)
+         call wim_step(SOLVER,ADV_DIM)
 
       end do!! n - finish time stepping
 

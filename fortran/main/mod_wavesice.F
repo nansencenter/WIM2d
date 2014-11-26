@@ -194,7 +194,7 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(SOLVER)
+      subroutine wim_step(SOLVER,ADV_DIM)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -205,7 +205,7 @@
 
       implicit none
 
-      integer,intent(in)   :: SOLVER
+      integer,intent(in)   :: SOLVER,ADV_DIM
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
@@ -336,7 +336,7 @@
             !! Simple attenuation scheme - doesn't conserve scattered energy
             call adv_atten_simple(sdf_dir(:,:,:,w)                      &
      &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM)
             !print*,'Spectrum at',itest,jtest
             !print*,S_freq(itest,jtest)
             !print*,sdf_dir(itest,jtest,:,w)
@@ -345,7 +345,7 @@
             !! is distributed isotropically
             call adv_atten_isotropic(sdf_dir(:,:,:,w)                   &
      &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM)
          end if
 
          !! integrate stress densities over frequency
