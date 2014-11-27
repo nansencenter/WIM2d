@@ -5,15 +5,14 @@ F2PY	:=	f2py
 
 # root directory for source code
 # (relative to this one)
-src	:=	..
+src	:=	../..
 
 # keep binaries here
 bin	:=	$(src)/bin
 
 # set path for compiler
 # NB relative to this directory
-VPATH 	:=	$(src)/main:$(src)/misc:$(src)/init:$(src)/numerics
-VPATH 	:=	$(VPATH):$(src)/attenuation_youngs:$(src)/header_files
+VPATH 	:=	.:$(src)/init:$(src)/attenuation_youngs
 
 # directory where objects are kept
 ODIR	:=	objs
@@ -42,34 +41,25 @@ F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh
 #   (cd ../run; ./run_WIM2d.sh)
-PROG_F		:=	$(ODIR)/p_WIM2d.o
-TARGET_F	:=	WIM2d.exe
+PROG_F		:=	$(ODIR)/test_atten.o
+TARGET_F	:=	test_atten.exe
 
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path
-# - called by run_WIM2d.py
-#   (cd ../run; ipython run_WIM2d.py)
-PROG_PY		:=	$(src)/main/WIM2d_run.F
-TARGET_PY	:=	WIM2d_f2py
+# - enable access to attenuation coeffiicents in python
+PROG_PY		:=	$(src)/attenuation_youngs/RTparam_outer.F
+TARGET_PY	:=	RTparam_outer
 
-OBJ_MAIN	:=	$(ODIR)/WIM2d_run.o
+OBJ_MAIN	:=	$(ODIR)/RTparam_outer.o
 
-OBJS		:=      \
-                        $(ODIR)/mod_gridinfo.o \
-			$(ODIR)/mod_wim_init.o \
-			$(ODIR)/mod_common_wim.o \
-			$(ODIR)/mod_file_utils.o \
+OBJS		:=	\
 			$(ODIR)/mod_wim_prams.o \
-			$(ODIR)/RTparam_outer.o \
 			$(ODIR)/RTparam_fast.o \
 			$(ODIR)/RTparam_hardcoded_v2.o \
-			$(ODIR)/mod_RTparam_utilities.o \
-			$(ODIR)/mod_adv_atten.o \
-			$(ODIR)/mod_advect.o \
-			$(ODIR)/mod_wavesice.o
+			$(ODIR)/mod_RTparam_utilities.o
 
-DEPS=print_screen_info.h \
-     print_log_info.h
+# DEPS=print_screen_info.h \
+#      print_log_info.h
 
 
 # Create objects by compiling their respective .F files
@@ -88,21 +78,13 @@ py:	$(PROG_PY) $(OBJS)
 	cp $(TARGET_PY).so $(bin)
 
 # DEPENDENCIES
-$(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  $(ODIR)/mod_common_wim.o
-$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o
-$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  $(ODIR)/mod_common_wim.o
-$(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  $(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o
-$(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o	$(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o 	$(ODIR)/mod_adv_atten.o
 #
-$(ODIR)/RTparam_outer.o:        $(ODIR)/RTparam_fast.o
 $(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o
 $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 #
-$(OBJ_MAIN):		$(OBJS) $(DEPS)
-$(PROG_F): 		$(OBJ_MAIN) $(ODIR)/mod_gridinfo.o
-$(PROG_PY): 		$(OBJS) $(DEPS)
+$(OBJ_MAIN):		$(OBJS)
+$(PROG_F): 		$(OBJ_MAIN) $(ODIR)/mod_wim_prams.o
+$(PROG_PY): 		$(OBJS)
 
 .PHONY: clean
 

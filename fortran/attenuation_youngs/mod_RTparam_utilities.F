@@ -1,7 +1,13 @@
-      !! RTparam_utilities.F
+      !! mod_RTparam_utilities.F
       !! Author: Timothy Williams
       !! Date:   20141009, 10:28:05 CEST
       !! Contains utility functions like chebyshev interpolation (1-3d)
+
+      module mod_RTparam_utilities
+
+      implicit none
+
+      contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine OP_chebinterp1d(z,tx,chebys,Ncx)
@@ -147,3 +153,5 @@
 
       end subroutine OP_chebinterp3d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      end module mod_RTparam_utilities

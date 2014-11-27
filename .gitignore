@@ -10,5 +10,6 @@ fortran/run/out_io/*
 fortran/run/log/*
 fortran/run/test/out/*
 fortran/numerics/test_advection/out/*
+fortran/bin/*
 fortran/numerics/test_advection/test_out/*
 matlab/main/out

@@ -8,7 +8,7 @@ import struct
 ## NB run from 'run' directory !!
 ##
 dd   = os.path.abspath("..")
-sys.path.append(dd+"/Build")
+sys.path.append(dd+"/bin")
 sys.path.append(dd+"/misc_py")
 
 import run_WIM2d     as Rwim
@@ -16,7 +16,7 @@ import WIM2d_f2py    as Mwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-if 0:
+if 1:
    RUN_OPT     = 2
    out_fields  = Rwim.do_run(RUN_OPT)
 elif 1:
@@ -53,7 +53,7 @@ if 0:
    print("Plotting results...")
    Fplt.fn_plot_final(grid_prams,out_fields,figdir)
    print("Plots in "+figdir+"/final")
-elif 1:
+elif 0:
    # compare binaries from different runs (wim2d_run & wim2d_io)
    # NB need same grid & initial conditions
    outdir1  = 'out'
@@ -113,3 +113,7 @@ elif 1:
          #
          ss = ' max/min |difference|: %f %f' % (diff_max,diff_min)
          print(' '+key+Key[len(key):]+ss)
+
+# elif 1:
+#    # compare exponential decay of Hs for SOLVER = 1,0
+# 

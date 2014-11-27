@@ -3,15 +3,16 @@
       !!               RT_param_outer(h,om,E,visc_rp,guess)
       subroutine RTparam_outer(damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT,
-     &                  h,om,guess)
+     &                  inputs,guess)
 !    &                  h,om,visc_rp,guess,params)
 
-      use mod_wim_prams
+      use mod_wim_prams, only: poisson,rhowtr,rhoice,gravity            &
+!    &   ,young,visc_rp
 
       real,intent(out)   :: damping,kice,kwtr,int_adm,
      &                           ac,modT,argR,argT
-      real,intent(in)    :: h,om,guess
-      !real,intent(in)    :: h,om,visc_rp,guess,params(5)
+      real,intent(in)    :: inputs(4),guess
+      real               :: h,om,visc_rp,young
       
       real   :: alp_nd,hnd,zeta_nd
       real   :: Hw_nd,varpi,L
@@ -21,6 +22,11 @@
       real   :: ki,kw,avc,BG1,BG2
       !real   :: E,g,rhow,rhoi,nu
       real   :: D,rho
+
+      h        = inputs(1)
+      om       = inputs(2)
+      young    = inputs(3)
+      visc_rp  = inputs(4)
       
       rho      = rhoice/rhowtr
       D        = young*(h*h*h)/12.0/(1.0-poisson*poisson)

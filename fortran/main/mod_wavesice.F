@@ -56,7 +56,7 @@
       real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
       integer  :: i,j,w
-      real     :: adv_dir,dtheta,om,dom,guess
+      real     :: adv_dir,dtheta,om,dom,guess,inputs(4)
 !     integer  :: wth
 !     real     :: wt,Hs_test1,Hs_test2
 
@@ -142,9 +142,14 @@
 !              end if
             end if
 
+            inputs(1)   = iceh(i,j)
+            inputs(2)   = om
+            inputs(3)   = young
+            inputs(4)   = visc_rp
+
             call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
      &                  atten_nond(i,j,w),modT,argR,argT,               &
-     &                  iceh(i,j),om,guess)
+     &                  inputs,guess)
 
             disp_ratio(i,j,w) = kice/kwtr*modT
             wlng_ice(i,j,w)   = 2*PI/kice

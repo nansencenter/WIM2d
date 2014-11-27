@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 ## NB run from 'run' directory !!
 ##
 dd    = os.path.abspath("..")
-dirs  = [dd+"/Build",dd+"/run",dd+"/misc_py"]
+dirs  = [dd+"/bin",dd+"/run",dd+"/misc_py"]
 for n in range(0,len(dirs)):
    dd2   = dirs[n]
    print('adding path : '+dd2)

@@ -5,7 +5,7 @@ import struct
 # import matplotlib.rcsetup as rc
 
 dd   = os.path.abspath("..")
-sys.path.append(dd+"/Build")
+sys.path.append(dd+"/bin")
 sys.path.append(dd+"/misc_py")
 
 import WIM2d_f2py as Mwim

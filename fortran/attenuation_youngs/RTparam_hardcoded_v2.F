@@ -5,6 +5,8 @@
       subroutine get_Zthings(Zthings,tx,ty,Nthings,Ncx,Ncy,LOW,OPT)
       !!uses OP_chebinterp2d subroutine in RTparam_utilities.F
 
+      use mod_RTparam_utilities, only: OP_chebinterp2d
+
       real, intent(in)   :: tx,ty
       integer, intent(in)  :: Nthings,Ncx,Ncy,LOW,OPT
       real,intent(out)   :: Zthings(4)
