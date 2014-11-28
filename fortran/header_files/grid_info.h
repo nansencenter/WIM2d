@@ -1,5 +1,8 @@
-      !!header file with grid dimensions and resolution
-      integer,parameter :: ii = 150
-      integer,parameter :: jj = 50
-      real,parameter    :: dx = 4e3!m
-      real,parameter    :: dy = 4e3!m
+      !! header file with grid dimensions and resolution
+      !! - file generated automatically with setup_grid.sh/p_save_grid.F
+      !! - do not edit !!
+
+      150          !! Record length in x direction (elements)
+      050          !! Record length in y direction (elements)
+      0.4000E+04   !! Resolution in x direction
+      0.4000E+04   !! Resolution in y direction
