@@ -74,7 +74,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams()       ! - ice properties like Young's modulus
-      call get_grid(GRID_OPT)    ! - grid: X,Y,LAND_MASK
+      !call get_grid(GRID_OPT)    ! - grid: X,Y,LAND_MASK
+      call get_grid_file()    ! - grid: X,Y,LAND_MASK
       call ice_init(GRID_OPT)    ! - initial icec,iceh,dfloe
 
       !!incident waves

@@ -19,7 +19,7 @@
       
       !!wave directions and frequencies
       integer,parameter             :: n_wavdir    = 16
-      integer,parameter             :: n_wave_freq = 25!should be odd (Simpson's rule)
+      integer,parameter             :: n_wave_freq = 1!should be odd (Simpson's rule)
       real,dimension(n_wave_freq)   :: freq_vec !set in waves_init
       real,dimension(n_wavdir)      :: wavdir   !set in waves_init
 

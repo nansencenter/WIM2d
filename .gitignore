@@ -4,6 +4,7 @@
 *.exe
 *.so
 *.pyc
+fortran/run/inputs/*
 fortran/run/out/*
 fortran/run/prog/*
 fortran/run/out_io/*

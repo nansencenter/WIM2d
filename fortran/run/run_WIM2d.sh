@@ -7,7 +7,7 @@ mkdir -p $outdir/binaries
 mkdir -p $outdir/binaries/prog
 rm prog/*
 
-../Build/WIM2d.exe
+../bin/WIM2d.exe
 
 echo " ******************************************"
 echo " Now to check results, do:"

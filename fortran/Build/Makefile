@@ -55,10 +55,10 @@ TARGET_PY	:=	WIM2d_f2py
 OBJ_MAIN	:=	$(ODIR)/WIM2d_run.o
 
 OBJS		:=      \
+			$(ODIR)/mod_file_utils.o \
                         $(ODIR)/mod_gridinfo.o \
 			$(ODIR)/mod_wim_init.o \
 			$(ODIR)/mod_common_wim.o \
-			$(ODIR)/mod_file_utils.o \
 			$(ODIR)/mod_wim_prams.o \
 			$(ODIR)/RTparam_outer.o \
 			$(ODIR)/RTparam_fast.o \
@@ -67,10 +67,6 @@ OBJS		:=      \
 			$(ODIR)/mod_adv_atten.o \
 			$(ODIR)/mod_advect.o \
 			$(ODIR)/mod_wavesice.o
-
-DEPS=print_screen_info.h \
-     print_log_info.h
-
 
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
@@ -88,21 +84,24 @@ py:	$(PROG_PY) $(OBJS)
 	cp $(TARGET_PY).so $(bin)
 
 # DEPENDENCIES
-$(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  $(ODIR)/mod_common_wim.o
+$(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
+$(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
 $(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o
-$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  $(ODIR)/mod_common_wim.o
-$(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  $(ODIR)/mod_common_wim.o \
+$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
+$(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
 				$(ODIR)/mod_advect.o
-$(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o	$(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o 	$(ODIR)/mod_adv_atten.o
+$(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o		$(ODIR)/mod_common_wim.o \
+				$(ODIR)/mod_advect.o 		$(ODIR)/mod_adv_atten.o
 #
 $(ODIR)/RTparam_outer.o:        $(ODIR)/RTparam_fast.o
 $(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o
 $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 #
-$(OBJ_MAIN):		$(OBJS) $(DEPS)
-$(PROG_F): 		$(OBJ_MAIN) $(ODIR)/mod_gridinfo.o
-$(PROG_PY): 		$(OBJS) $(DEPS)
+$(OBJ_MAIN):			$(OBJS)	print_screen_info.h	print_log_info.h
+
+
+$(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
+$(PROG_PY): 		$(OBJS) 	$(DEPS)
 
 .PHONY: clean
 

@@ -59,4 +59,31 @@
       end subroutine wrt_afile_2d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine rd_afile_2d(infile,x,nx,ny,recno)
+
+      implicit none
+
+      character(len=80), intent(in)       :: infile
+      real, dimension(nx,ny), intent(out) :: x     !!2d array to write in
+      integer, intent(in)                 :: nx,ny !!size of x
+      integer, intent(in)                 :: recno !!record no
+      !! stat can be:
+      !! 'replace' - overwrite file
+      !! 'new'     - file doesn't exist already
+      !! 'old'     - append
+
+      integer  :: rec_len
+
+      x  = 0.0
+      inquire(IOLENGTH=rec_len) x   !should be 4*nx*ny
+
+      open(unit=1,file=trim(infile),status = 'old',                     &
+     &   form='unformatted', access='direct',recl=rec_len)
+      read(1,rec=recno) x
+      close(1)
+
+      end subroutine rd_afile_2d
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       end module mod_file_utils
