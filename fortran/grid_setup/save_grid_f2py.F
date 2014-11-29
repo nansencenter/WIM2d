@@ -1,0 +1,119 @@
+      !save_grid_f2py.F
+      !Author: Timothy Williams
+      !Date:   20141128, 16:06:18 CET
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine save_grid_info_hdr(outdir,ii,jj,dx,dy,nc)
+
+      implicit none
+
+      integer, intent(in)           :: ii,jj,nc
+      real, intent(in)              :: dx,dy
+      character(len=nc),intent(in)  :: outdir
+      character(len=*),parameter    :: blk   = '      '
+      !!
+      character(len=80) :: hfile,ss
+      character(len=10) :: ssi,ssj
+
+      !! write .h file
+      hfile = trim(outdir)//'/grid_info.h'
+      print*,'Making header file : ',hfile
+
+      open(unit=2,file=trim(hfile),status = 'replace')
+
+      ss = blk//"!! header file with grid dimensions and resolution"
+      write(2,'(a)') trim(ss)
+      ss = blk//"!! - file generated automatically with setup_grid.py"  &
+     &        //"/save_grid_f2py.F"
+      write(2,'(a)') trim(ss)
+      ss = blk//"!! - do not edit !!"
+      write(2,'(a)') trim(ss)
+      write(2,'(a)') ''
+
+      write(ssi,'(i3.3)'),ii
+      write(ssj,'(i3.3)'),jj
+      write(2,'(a,a,a)')                                                &
+     &  blk,ssi,   "   !! Record length in x direction (elements)"
+      write(2,'(a,a,a)')                                                &
+     &  blk,ssj,   "   !! Record length in y direction (elements)"
+      write(2,'(a,e10.4,a)')                                            &
+     &  blk,dx,   "   !! Resolution in x direction"
+      write(2,'(a,e10.4,a)')                                            &
+     &  blk,dy,   "   !! Resolution in y direction"
+
+      close(2)
+
+      end subroutine save_grid_info_hdr
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine save_grid(outdir,grid_arrays,nc,ii,jj)
+
+      use mod_file_utils
+
+      implicit none
+      integer,parameter                   :: nz = 7
+      integer,intent(in)                  :: ii,jj,nc
+      character(len=nc),intent(in)        :: outdir
+      real,dimension(ii,jj,nz),intent(in) :: grid_arrays
+      character(len=80)    :: afile,bfile
+      character(len=10)    :: stat1,stat2
+
+      !comments for f2py
+      !don't need to pass these inputs in with python
+!f2py intent(hide)   :: ii,jj
+
+      afile = trim(outdir)//'/wim_grid.a'
+      bfile = trim(outdir)//'/wim_grid.b'
+      stat1 = 'replace'
+      stat2 = 'old'
+
+ 111  format(i2.2,a)  
+ 112  format(i3.3,a)  
+ 113  format(a)
+
+      !! write .b file (description of stuff in .a file)
+      print*,'Making .b file     : ',bfile
+      open(unit=2,file=trim(bfile),status = 'replace')
+
+      write(2,111)                                                      &
+     &  7,          "       Number of records"
+      write(2,112)                                                      &
+     &  ii,          "      Record length in x direction (elements)"
+      write(2,112)                                                      &
+     &  jj,          "      Record length in y direction (elements)"
+      write(2,113) ""
+
+      write(2,113)    "Record number and name:"
+      write(2,111)                                                      &
+     &  1,    "       X"
+      write(2,111)                                                      &
+     &  2,    "       Y"
+      write(2,111)                                                      &
+     &  3,    "       scuy"
+      write(2,111)                                                      &
+     &  4,    "       scvx"
+      write(2,111)                                                      &
+     &  5,    "       scp2"
+      write(2,111)                                                      &
+     &  6,    "       scp2i"
+      write(2,111)                                                      &
+     &  7,    "       LANDMASK"
+
+      close(2)
+
+      !! dump arrays to .a file
+      !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
+      print*,'Making .a file     : ',afile
+      call wrt_afile_3d(afile,grid_arrays,ii,jj,nz,stat1,1)
+
+!     call wrt_afile_2d(afile ,X          ,ii,jj  ,stat1,1)
+!     call wrt_afile_2d(afile ,Y          ,ii,jj  ,stat2,2)
+!     call wrt_afile_2d(afile ,scuy       ,ii,jj  ,stat2,3)
+!     call wrt_afile_2d(afile ,scvx       ,ii,jj  ,stat2,4)
+!     call wrt_afile_2d(afile ,scp2       ,ii,jj  ,stat2,5)
+!     call wrt_afile_2d(afile ,scp2i      ,ii,jj  ,stat2,6)
+!     call wrt_afile_2d(afile ,LANDMASK   ,ii,jj  ,stat2,7)
+
+      end subroutine save_grid
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

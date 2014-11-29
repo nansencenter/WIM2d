@@ -11,6 +11,8 @@ fortran/run/out_io/*
 fortran/run/log/*
 fortran/run/test/out/*
 fortran/numerics/test_advection/out/*
+fortran/grid_setup/test/out/*
+fortran/grid_setup/test/out_py/*
 fortran/bin/*
 fortran/numerics/test_advection/test_out/*
 matlab/main/out

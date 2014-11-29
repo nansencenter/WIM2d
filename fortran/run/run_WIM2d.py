@@ -1,8 +1,6 @@
 import numpy as np
 import os
 import sys
-import struct
-# import matplotlib.rcsetup as rc
 
 dd   = os.path.abspath("..")
 sys.path.append(dd+"/bin")

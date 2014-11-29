@@ -45,12 +45,10 @@ F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 PROG_F		:=	$(ODIR)/p_save_grid.o
 TARGET_F	:=	grid_setup.exe
 
-# # fortran interface program to run WIM in ipython
-# # - NB f2py needs the full path
-# # - called by run_WIM2d.py
-# #   (cd ../run; ipython run_WIM2d.py)
-# PROG_PY		:=	$(src)/main/WIM2d_run.F
-# TARGET_PY	:=	WIM2d_f2py
+# fortran interface program to run WIM in ipython
+# - NB f2py needs the full path
+PROG_PY		:=	save_grid_f2py.F
+TARGET_PY	:=	save_grid_f2py
 
 # OBJ_MAIN	:=	$(ODIR)/WIM2d_run.o
 
@@ -60,8 +58,7 @@ OBJS		:=      \
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
 $(ODIR)/%.o:	%.F
-	mkdir -p $(MDIR)
-	mkdir -p $(ODIR)
+	mkdir -p $(MDIR) $(ODIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
@@ -70,11 +67,11 @@ default: $(PROG_F) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
 
-# # Link objects to make python module $(TARGET_PY).so
-# py:	$(PROG_PY) $(OBJS)
-#	mkdir -p $(bin)
-# 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
-# 	cp $(TARGET_PY).so $(bin)
+# Link objects to make python module $(TARGET_PY).so
+py:	$(PROG_PY) $(OBJS)
+	mkdir -p $(bin)
+	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
+	mv $(TARGET_PY).so $(bin)
 
 # DEPENDENCIES
 $(PROG_F): 		$(OBJS)
@@ -84,11 +81,11 @@ $(PROG_F): 		$(OBJS)
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/* $(MDIR)/*
+	rm $(ODIR)/*	$(MDIR)/*
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F) $(ODIR)/* $(MDIR)/*
+	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY)	$(ODIR)/*	$(MDIR)/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

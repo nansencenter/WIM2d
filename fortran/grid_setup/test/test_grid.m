@@ -2,7 +2,7 @@
 %% Author: Timothy Williams
 %% Date:   20141128, 18:18:43 CET
 
-function test_grid()
+function grid_prams  = test_grid()
 %clear;
 
 SV_FIG   = 1;

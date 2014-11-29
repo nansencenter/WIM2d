@@ -1,4 +1,4 @@
-      !mod_gridinfo.F
+      !p_save_grid.F
       !Author: Timothy Williams
       !Date:   20141128, 16:06:18 CET
 
@@ -8,11 +8,12 @@
       implicit none
 
       character(len=80) :: outdir,outdir2
+      integer,parameter :: testing  = 1
 
-      if (.false.) then
+      if (testing.eq.1) then
          !!for testing
-         outdir   = 'test'
-         outdir2  = 'test'
+         outdir   = 'test/out'
+         outdir2  = 'test/out'
       else
          !!proper locations of outputs:
          outdir   = '../run/inputs'    !.a,.b
