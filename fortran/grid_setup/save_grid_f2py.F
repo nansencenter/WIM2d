@@ -105,15 +105,18 @@
       !! dump arrays to .a file
       !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
       print*,'Making .a file     : ',afile
-      call wrt_afile_3d(afile,grid_arrays,ii,jj,nz,stat1,1)
 
-!     call wrt_afile_2d(afile ,X          ,ii,jj  ,stat1,1)
-!     call wrt_afile_2d(afile ,Y          ,ii,jj  ,stat2,2)
-!     call wrt_afile_2d(afile ,scuy       ,ii,jj  ,stat2,3)
-!     call wrt_afile_2d(afile ,scvx       ,ii,jj  ,stat2,4)
-!     call wrt_afile_2d(afile ,scp2       ,ii,jj  ,stat2,5)
-!     call wrt_afile_2d(afile ,scp2i      ,ii,jj  ,stat2,6)
-!     call wrt_afile_2d(afile ,LANDMASK   ,ii,jj  ,stat2,7)
+      if (.false.) then
+         !! write 3d array directly
+         call wrt_afile_3d(afile,grid_arrays,ii,jj,nz,stat1,1)
+      else
+         !! write 7 2d arrays
+         j  = 1
+         call wrt_afile_2d(afile,grid_arrays(:,:,j),ii,jj,stat1,j)
+         do j=2,7
+            call wrt_afile_2d(afile,grid_arrays(:,:,j),ii,jj,stat2,j)
+         end do
+      end if
 
       end subroutine save_grid
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
