@@ -9,6 +9,9 @@ Versions:
 - 1. matlab
 - 2. fortran
 - 3. ipython interface for fortran code
+     - to install ipython and libraries numpy,scipy,matplotlib
+     *see (Ubuntu)   https://github.com/nansencenter/nansat/wiki/Install-libraries-on-Ubuntu
+     *or  (Mac OSX)  https://github.com/nansencenter/nansat/wiki/Install-libraries-on-MacOS
 
 SETUP:
 
