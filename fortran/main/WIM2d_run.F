@@ -36,7 +36,6 @@
       !!variables
       integer,parameter :: SOLVER   = 1
       integer,parameter :: ADV_DIM  = 2
-      integer,parameter :: GRID_OPT = 1!option for land/ice/water config
       !!
       real     :: PI
       real     :: x_ext,y_ext,u_ref
@@ -74,24 +73,23 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams()       ! - ice properties like Young's modulus
-      !call get_grid(GRID_OPT)    ! - grid: X,Y,LAND_MASK
-      call get_grid_file()    ! - grid: X,Y,LAND_MASK
-      call ice_init(GRID_OPT)    ! - initial icec,iceh,dfloe
+      call set_wim_prams() ! - ice properties like Young's modulus
+      call get_grid_file() ! - grid: X,Y,LAND_MASK
+      call ice_init()      ! - initial icec,iceh,dfloe
 
       !!incident waves
-      call waves_init(GRID_OPT)  ! - initial Tp,Hs,mwd
-      call set_inc_waves()       ! - fill in the incident wave spectrum
-                                 !   with a Bretschneider spectrum
+      call waves_init()    ! - initial Tp,Hs,mwd
+      call set_inc_waves() ! - fill in the incident wave spectrum
+                           !   with a Bretschneider spectrum
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(GRID_OPT)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
-         call check_grid(GRID_OPT,outdir)
-         call check_init(GRID_OPT,outdir)
+         call check_grid(outdir)
+         call check_init(outdir)
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -133,7 +131,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SOLVER,GRID_OPT,n-1,0,outdir)
+            call check_prog(SOLVER,n-1,0,outdir)
          end if
 
          print*,'n/nt',n,nt
@@ -142,7 +140,7 @@
       end do!! n - finish time stepping
 
       !!dump final output
-      call check_prog(SOLVER,GRID_OPT,n-1,1,outdir)
+      call check_prog(SOLVER,n-1,1,outdir)
 
       !!print info again
       include "print_screen_info.h"
@@ -158,13 +156,15 @@
       Dmax_min = minval(tmp1)
 
       W_MIZ = 0.0
-      if (GRID_OPT.eq.1) then
+      if (.true.) then
+         !! NB this definition won't always work
+         !! for all configurations
          nMIZ  = sum(MIZ_MASK(:,1))
          W_MIZ = nMIZ*dx/1.0e3
          !!
          print*,' '
          print*,'MIZ width (km)',W_MIZ
-      end if
+      endif
       !!
       print*,'Dmax range in MIZ (m): ',Dmax_min,Dmax_max
 
@@ -231,7 +231,6 @@
 !f2py intent(hide)   :: nx,ny
 
       integer   :: SOLVER,ADV_DIM
-      integer,parameter :: GRID_OPT = 1!option for land/ice/water config
       !!
       real     :: PI
       real     :: x_ext,y_ext,u_ref
@@ -279,8 +278,8 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams()       ! - ice properties like Young's modulus
-      call get_grid(GRID_OPT)    ! - grid: X,Y,LAND_MASK
+      call set_wim_prams() ! - ice properties like Young's modulus
+      call get_grid_file() ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
       icec     = in_arrays(:,:,1)
@@ -291,7 +290,7 @@
          ICE_MASK = 1.0
       end where
 
-      call waves_init(GRID_OPT)
+      call waves_init()
 
       !! override incident waves from inputs
       !! - still need waves_init to set freq_vec
@@ -329,12 +328,12 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(GRID_OPT)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
-         call check_grid(GRID_OPT,outdir)
-         call check_init(GRID_OPT,outdir)
+         call check_grid(outdir)
+         call check_init(outdir)
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -376,7 +375,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SOLVER,GRID_OPT,n-1,0,outdir)
+            call check_prog(SOLVER,n-1,0,outdir)
          end if
 
          print*,'n/nt',n,nt
@@ -385,7 +384,7 @@
       end do!! n - finish time stepping
 
       !!final output
-      call check_prog(SOLVER,GRID_OPT,n,1,outdir)
+      call check_prog(SOLVER,n,1,outdir)
 
       !!print info again
       include "print_screen_info.h"
@@ -401,7 +400,9 @@
       Dmax_min = minval(tmp1)
 
       W_MIZ = 0.0
-      if (GRID_OPT.eq.1) then
+      if (.true.) then
+         !! NB this definition won't always work
+         !! for all configurations
          nMIZ  = sum(MIZ_MASK(:,1))
          W_MIZ = nMIZ*dx/1.0e3
          !!
@@ -442,48 +443,4 @@
       out_arrays(:,:,5) = Tp
 
       end subroutine wim2d_run_io
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine retrieve_grid(X_,Y_,LM_,GRID_OPT,nx,ny)
-      !subroutine dump_grid(GRID_OPT)
-      !! - passes grid to python
-      !! - unfortunately need to know size of grid in advance
-      !! => do nx,ny =  get_grid_size() first
-
-      use mod_gridinfo
-      !use mod_wavesice, only: check_grid
-
-      implicit none
-      
-      integer,intent(in)      :: GRID_OPT,nx,ny
-      real,dimension(nx,ny) :: X_,Y_,LM_
-!f2py intent(in)     :: GRID_OPT,nx,ny
-!f2py intent(out)    :: X_,Y_,LM_
-
-      call get_grid(GRID_OPT)
-      X_    = X
-      Y_    = Y
-      LM_   = LANDMASK
-
-      end subroutine retrieve_grid
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine get_grid_size(nx,ny)
-      !subroutine dump_grid(GRID_OPT)
-      !! - passes grid to python
-
-      use mod_gridinfo
-      !use mod_wavesice, only: check_grid
-
-      implicit none
-      
-      integer,intent(out)   :: nx,ny
-!f2py intent(out)    :: X_,Y_
-
-      nx = ii
-      ny = jj
-
-      end subroutine get_grid_size
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

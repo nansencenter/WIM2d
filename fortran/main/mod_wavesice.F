@@ -19,7 +19,6 @@
       integer,parameter :: DO_BREAKING = 1
       integer,parameter :: USE_ICE_VEL = 0
       !!
-      integer,parameter :: GRID_OPT = 1!option for land/ice/water config
       real,parameter    :: CFL      = 0.7
       !!
       integer,parameter :: nw    = n_wave_freq
@@ -37,7 +36,7 @@
 
       contains
 
-      subroutine wim_init(GRID_OPT)
+      subroutine wim_init()
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
@@ -50,7 +49,6 @@
 
       implicit none
 
-      integer,intent(in)   :: GRID_OPT
 
       real     :: PI,tmp
       real     :: kwtr,kice,modT,int_adm,argT,argR
@@ -62,19 +60,18 @@
 
       PI       = 4.0*atan(1.0)
 
+      !! TODO: pass in WAVE_MASK@ as an input??
       WAVE_MASK2  = 0.0
       if (STEADY.eq.1) then
-         if (GRID_OPT.eq.1) then
-            WAVE_MASK2(1:3,:) = 1.0
-         end if
+         WAVE_MASK2(1:3,:) = 1.0
          print*,'steady test',maxval(WAVE_MASK2),sum(WAVE_MASK2)
       end if
 
 !     if (.true.) then
 !        !!check initialisation
 !        !!(dump binaries to look at with test_WIM2d_F.m)
-!        call check_grid(GRID_OPT)
-!        call check_init(GRID_OPT)
+!        call check_grid()
+!        call check_init()
 !     end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -450,7 +447,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_grid(GRID_OPT,outdir)
+      subroutine check_grid(outdir)
 
       use mod_gridinfo
       !use mod_common_wim
@@ -458,7 +455,6 @@
 
       implicit none
       character(len=80),intent(in)   :: outdir
-      integer,intent(in)   :: GRID_OPT
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
 
@@ -480,8 +476,6 @@
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
      &  jj,          "      Record length in y direction (elements)"
-      write(2,111)                                                      &
-     &  GRID_OPT,   "       Option number for initial conditions"
       write(2,113) ""
 
       write(2,113)    "Record number and name:"
@@ -516,7 +510,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_init(GRID_OPT,outdir)
+      subroutine check_init(outdir)
 
       use mod_gridinfo
       use mod_common_wim
@@ -524,7 +518,6 @@
 
       implicit none
       character(len=80),intent(in)   :: outdir
-      integer,intent(in)   :: GRID_OPT
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
 
@@ -546,8 +539,6 @@
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
      &  jj,          "      Record length in y direction (elements)"
-      write(2,111)                                                      &
-     &  GRID_OPT,   "       Option number for initial conditions"
       write(2,113) ""
 
       write(2,113)    "Record number and name:"
@@ -579,14 +570,14 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(SOLVER,GRID_OPT,n,OPT,outdir)
+      subroutine check_prog(SOLVER,n,OPT,outdir)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)            :: SOLVER,GRID_OPT,n,OPT
+      integer,intent(in)            :: SOLVER,n,OPT
       character(len=80),intent(in)  :: outdir
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
@@ -618,8 +609,6 @@
      &  ii,           "      Record length in x direction (elements)"
       write(2,112)                                                       &
      &  jj,           "      Record length in y direction (elements)"
-      write(2,111)                                                       &
-     &  GRID_OPT,    "       Option number for initial conditions"
       write(2,111)                                                       &
      &  SOLVER,      "       Option number for solver"
       write(2,111)                                                       &

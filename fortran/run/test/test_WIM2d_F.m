@@ -6,9 +6,21 @@ function test_WIM2d_F()
 %clear;
 
 SV_FIG   = 1;
+IO_OPT   = 0;
 
-outdir   = '../out';
-% outdir   = '../out_io';
+if IO_OPT==0
+   %% outputs from 'dumb' code with no in/out
+   outdir   = '../out';
+   matdir   = 'out';%%where to put outputs from this program
+else
+   %% outputs from code with in/out
+   %% - called from python
+   outdir   = '../out_io';
+   matdir   = 'out_io';%%where to put outputs from this program
+end
+if ~exist(matdir)
+   mkdir(matdir);
+end
 
 %%check initialisation
 [grid_prams,ice_fields,wave_fields] = check_init(outdir);
@@ -18,7 +30,7 @@ if 0
 end
 
 if 1%%plot and save initial conditions
-   fig_dir  = 'out/init_cons/';
+   fig_dir  = [matdir,'/init_cons/'];
    if ~exist(fig_dir)
       mkdir(fig_dir);
    end
@@ -85,10 +97,11 @@ end
 SOLVER   = out_fields.SOLVER;
 nw       = out_fields.n_wave_freq;
 ndir     = out_fields.n_wavdir;
-GRID_OPT = out_fields.GRID_OPT;
 disp(out_fields);
 
-if GRID_OPT==1
+if 1
+   %% NB this definition won't
+   %% work for all configurations
    dx       = grid_prams.dx;
    D_j      = out_fields.Dmax(:,1);
    MIZ_MASK = ((D_j>0)&(D_j<250));
@@ -109,15 +122,15 @@ if SV_FIG
    %%determine where to save files from parameters
    if nw==1
       if SOLVER==1
-         fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
+         fig_dir  = [matdir,'/isotropic_1freq'];  %%use this for monochromatic wave
       elseif SOLVER==0
-         fig_dir  = 'out/simple_1freq';  %%use this for monochromatic wave
+         fig_dir  = [matdir,'out/simple_1freq'];  %%use this for monochromatic wave
       end
    else
       if SOLVER==1
-         fig_dir  = 'out/isotropic_spec';  %%use this for spectrum
+         fig_dir  = [matdir,'out/isotropic_spec'];  %%use this for spectrum
       elseif SOLVER==0
-         fig_dir  = 'out/simple_spec';  %%use this for spectrum
+         fig_dir  = [matdir,'out/simple_spec'];  %%use this for spectrum
       end
    end
    if ~exist(fig_dir)
@@ -261,9 +274,6 @@ nx = C{1};
 C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
 ny = C{1};
 %%
-C        = textscan(bid,'%2.2d %s %s %s %s %s',1);
-GRID_OPT = C{1};
-%%
 C        = textscan(bid,'%2.2d %s %s %s %s',2);
 SOLVER   = C{1}(1);
 nw       = C{1}(2);
@@ -292,7 +302,6 @@ s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.SOLVER      = SOLVER;
 s1.n_wave_freq = nw;
 s1.n_wavdir    = ndir;
-s1.GRID_OPT    = GRID_OPT;
 %%
 fclose(aid);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -372,9 +381,6 @@ nx = C{1};
 C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
 ny = C{1};
 %%
-C        = textscan(bid,'%2.2d %s %s %s %s %s',1);
-GRID_OPT = C{1};
-%%
 C        = textscan(bid,'%2.2d %s %s %s %s',2);
 SOLVER   = C{1}(1);
 nw       = C{1}(2);
@@ -403,7 +409,6 @@ s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
 s1.SOLVER      = SOLVER;
 s1.n_wave_freq = nw;
 s1.n_wavdir    = ndir;
-s1.GRID_OPT    = GRID_OPT;
 %%
 fclose(aid);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

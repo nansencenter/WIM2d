@@ -12,13 +12,12 @@
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine waves_init(GRID_OPT)
+      subroutine waves_init()
 
       use mod_common_wim
 
       implicit none
 
-      integer,intent(in)   :: GRID_OPT
       integer  :: i,j,w,wth
       real     :: xm,ym
       logical  :: critter
@@ -56,13 +55,7 @@
       print*,' '
 
       !!set directional grid
-      if (GRID_OPT.eq.0) then
-         mwd_inc  = 135.0!!waves-from direction
-      elseif (GRID_OPT.eq.1) then
-         mwd_inc  = -90.0!!waves-from direction
-      elseif (GRID_OPT.eq.2) then
-         mwd_inc  = 135.0!!waves-from direction
-      end if
+      mwd_inc  = -90.0!!waves-from direction
 
       if (ndir.eq.1) then
          wavdir(1)   = mwd_inc
@@ -77,7 +70,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Set WAVEMASK
+      !! Set WAVEMASK & wave info
+      !! TODO: enable reading this in from file?
 
       xm = maxval(X)
       ym = maxval(Y)
@@ -87,33 +81,12 @@
       Tp          = 0.0
       mwd         = 0.0
 
-      if (GRID_OPT.eq.0) then
-
-         !!island in corner, with some ice around it
-         where ((X.lt.-0.4*xm).or.(Y.gt.0.4*ym))
-            WAVE_MASK   = 1.0
-         end where
-
-      elseif (GRID_OPT.eq.1) then
-
-         !!column of land on right
-         where (X.lt.-.8*xm)
-            WAVE_MASK   = 1.0
-         end where
-
-      elseif (GRID_OPT.eq.2) then
-
-         !!land in southeast corner
-         where ((X.lt.-0.25*xm).or.(Y.gt.0.25*ym))
-            WAVE_MASK   = 1.0
-         end where
-
-      end if
-
-      where (WAVE_MASK.eq.1.0)
-         Hs    = Hs_inc
-         Tp    = Tp_inc
-         mwd   = mwd_inc
+      !!column of land on right
+      where (X.lt.-.8*xm)
+         WAVE_MASK   = 1.0
+         Hs          = Hs_inc
+         Tp          = Tp_inc
+         mwd         = mwd_inc
       end where
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
@@ -198,47 +171,22 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine ice_init(GRID_OPT)
+      subroutine ice_init()
 
       use mod_common_wim
       use mod_gridinfo
 
       implicit none
 
-      integer, intent(in)     :: GRID_OPT
       real,dimension(ii,jj)   :: Rsq
       real     :: x0,y0,NL,R0,xm
       
       WTR_MASK = 0.0
-      if (GRID_OPT.eq.0) then
-
-         !!island in corner, with some ice around it
-         NL = sum(LANDMASK)        !!number of land cells
-         x0 = sum(LANDMASK*X)/NL   !!mean x value of land cells
-         y0 = sum(LANDMASK*Y)/NL   !!mean y value of land cells
-         !!
-         R0    = 70e3       !!radius
-         Rsq   = (X-x0)**2+(Y-y0)**2
-         where (Rsq.ge.R0**2)
-            WTR_MASK = 1.0
-         end where
-
-      elseif (GRID_OPT.eq.1) then
-
-         !!column of land on right
-         xm       = maxval(X)
-         where (X.lt.-.7*xm)
-            WTR_MASK = 1.0
-         end where
-
-      elseif (GRID_OPT.eq.2) then
-
-         !!land in southeast corner
-         where ((X.lt.0.0).or.(Y.gt.0.0))
-            WTR_MASK = 1.0
-         end where
-
-      end if
+      !!column of land on right
+      xm       = maxval(X)
+      where (X.lt.-.7*xm)
+         WTR_MASK = 1.0
+      end where
 
       ICE_MASK = (1-WTR_MASK)*(1-LANDMASK)!!0 on land & water
       icec     = unif_c*ICE_MASK
