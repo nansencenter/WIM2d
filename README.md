@@ -21,7 +21,7 @@ SETUP:
    * run test_WIM2d.m    (NB edit 1st to set IO_OPT=1)
 
 2. Grid setup:
-   Go to fortran/grid_setup
+   - Go to fortran/grid_setup
    *compile with make or make py
    *run grid_setup.sh or grid_setup.py respectively
    - ipython script is easier to change (no need to recompile after changing grid)
