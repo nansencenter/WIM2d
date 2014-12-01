@@ -58,6 +58,7 @@
       real,dimension(ii,jj,nz),intent(in) :: grid_arrays
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
+      integer              :: j
 
       !comments for f2py
       !don't need to pass these inputs in with python

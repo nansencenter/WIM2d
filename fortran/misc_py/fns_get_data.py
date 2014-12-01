@@ -21,18 +21,20 @@ def get_array(fid,nx,ny):
 
 ##############################################################
 #initialise grid_prams dictionary:
-def Grid_Prams():
-   grid_prams  = {'nx'        :0,
-                  'ny'        :0,
-                  'dx'        :0.0,
-                  'dy'        :0.0,
-                  'X'         :0.0,
-                  'Y'         :0.0,
-                  'scuy'      :0.0,
-                  'scvx'      :0.0,
-                  'scp2'      :0.0,
-                  'scp2i'     :0.0,
-                  'LANDMASK'  :0.0}
+def Grid_Prams(nx=0,ny=0,dx=0,dy=0,
+      X=0,Y=0,scuy=0,scvx=0,scp2=0,
+      scp2i=0,LANDMASK=0):
+   grid_prams  = {'nx'        :nx,
+                  'ny'        :ny,
+                  'dx'        :dx,
+                  'dy'        :dy,
+                  'X'         :X,
+                  'Y'         :Y,
+                  'scuy'      :scuy,
+                  'scvx'      :scvx,
+                  'scp2'      :scp2,
+                  'scp2i'     :scp2i,
+                  'LANDMASK'  :LANDMASK}
    return grid_prams
 ##############################################################
 
@@ -80,8 +82,8 @@ def fn_check_grid(outdir):
 
    ###########################################################
    # get dimensions from .b file
-   afile    = outdir+'/binaries/wim_grid.a'
-   bfile    = outdir+'/binaries/wim_grid.b'
+   afile    = outdir+'/wim_grid.a'
+   bfile    = outdir+'/wim_grid.b'
    #
    bid   = open(bfile,'r')
    lines = bid.readlines()
@@ -114,8 +116,8 @@ def fn_check_grid(outdir):
 ##############################################################
 def fn_check_init(outdir):
    # routine to get initial fields from binary files:
-   afile    = outdir+'/binaries/wim_init.a'
-   bfile    = outdir+'/binaries/wim_init.b'
+   afile    = outdir+'/wim_init.a'
+   bfile    = outdir+'/wim_init.b'
 
    ###########################################################
    # get dimensions from .b file
@@ -163,8 +165,8 @@ def fn_check_init(outdir):
 ##############################################################
 def fn_check_out_bin(outdir):
    # routine to get output fields from binary files:
-   afile    = outdir+'/binaries/wim_out.a'
-   bfile    = outdir+'/binaries/wim_out.b'
+   afile    = outdir+'/wim_out.a'
+   bfile    = outdir+'/wim_out.b'
 
    ###########################################################
    # get dimensions from .b file
