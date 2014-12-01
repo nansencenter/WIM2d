@@ -5,6 +5,7 @@
       module mod_gridinfo
 
       implicit none
+
       include "grid_info.h"   !ii,jj,dx,dy (grid dimensions and resolution)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!global variables

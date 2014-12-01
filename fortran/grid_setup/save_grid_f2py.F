@@ -13,7 +13,7 @@
       character(len=*),parameter    :: blk   = '      '
       !!
       character(len=80) :: hfile,ss
-      character(len=10) :: ssi,ssj
+      character(len=80) :: ssi,ssj,ssx,ssy
 
       !! write .h file
       hfile = trim(outdir)//'/grid_info.h'
@@ -30,16 +30,20 @@
       write(2,'(a)') trim(ss)
       write(2,'(a)') ''
 
-      write(ssi,'(i3.3)'),ii
-      write(ssj,'(i3.3)'),jj
+      write(ssi,'(a,i3.3)'),  'integer,parameter   :: ii = ',ii
+      write(ssj,'(a,i3.3)'),  'integer,parameter   :: jj = ',jj
+      write(ssx,'(a,e10.4)'), 'real,parameter   :: dx = ',dx
+      write(ssy,'(a,e10.4)'), 'real,parameter   :: dy = ',dy
+
       write(2,'(a,a,a)')                                                &
-     &  blk,ssi,   "   !! Record length in x direction (elements)"
+     &  blk,trim(ssi),   "   !! Record length in x direction (elements)"
       write(2,'(a,a,a)')                                                &
-     &  blk,ssj,   "   !! Record length in y direction (elements)"
-      write(2,'(a,e10.4,a)')                                            &
-     &  blk,dx,   "   !! Resolution in x direction"
-      write(2,'(a,e10.4,a)')                                            &
-     &  blk,dy,   "   !! Resolution in y direction"
+     &  blk,trim(ssj),   "   !! Record length in y direction (elements)"
+      write(2,'(a)') " "
+      write(2,'(a,a,a)')                                                &
+     &  blk,trim(ssx),   "   !! Resolution in x direction"
+      write(2,'(a,a,a)')                                                &
+     &  blk,trim(ssy),   "   !! Resolution in y direction"
 
       close(2)
 

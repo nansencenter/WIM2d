@@ -16,17 +16,22 @@ import WIM2d_f2py    as Mwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-if 1:
-   RUN_OPT     = 2
-   out_fields  = Rwim.do_run(RUN_OPT)
-elif 1:
+testing  = 3
+
+##########################################################################
+if testing is 1:
+   # run and plot figs later
+   RUN_OPT           = 2
+   out_fields,outdir = Rwim.do_run(RUN_OPT)
+
+##########################################################################
+elif testing is 2:
    # check passing in of 'in_fields'
-   if 1:
-      # - read in inputs from saved files:
+   # - read in inputs from saved files:
+   if 0:
       in_dir                  = 'out/binaries'
    else:
-      # - read in inputs from saved files:
-      in_dir                  = 'inputs'
+      in_dir                  = 'out_io/binaries'
 
    grid_prams              = Fdat.fn_check_grid(in_dir)
    ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
@@ -35,23 +40,37 @@ elif 1:
    ice_fields.update(wave_fields)
    in_fields   = ice_fields
 
-   out_fields  = Rwim.do_run(RUN_OPT=2,in_fields=in_fields)
-elif 0:
-   out_fields  = Rwim.do_run(0)
-   out_fields2 = Rwim.do_run(2)
-elif 0:
-   out_fields  = Rwim.do_run(1)
-   out_fields2 = Rwim.do_run(3)
+   out_fields,outdir = Rwim.do_run(RUN_OPT=2,in_fields=in_fields)
 
-if 0:
-   outdir   = 'out/binaries'
-   outdir   = 'out/figs'
+##########################################################################
+elif testing is 3:
+   # compare runs with and without input/output:
+   if 0:
+      # need to rerun:
+      out_fields,outdir    = Rwim.do_run(RUN_OPT=0)
+   else:
+      # use saved results:
+      out_fields,outdir    = Rwim.do_run(RUN_OPT=1)
+
+   if 0:
+      # need to rerun:
+      out_fields,outdir    = Rwim.do_run(RUN_OPT=2)
+   else:
+      # use saved results:
+      out_fields2,outdir3  = Rwim.do_run(RUN_OPT=3)
+
+##########################################################################
+
+##########################################################################
+if (testing is 1) or (testing is 2):
+   bindir   = outdir+'/binaries'
+   figdir   = outdir+'/figs'
 
    # plot results
    ## look at initial fields:
    print("Plotting initial conditions...")
-   grid_prams              = Fdat.fn_check_grid(outdir) # load grid from binaries
-   ice_fields,wave_fields  = Fdat.fn_check_init(outdir) # load initial conditions from binaries
+   grid_prams              = Fdat.fn_check_grid(bindir) # load grid from binaries
+   ice_fields,wave_fields  = Fdat.fn_check_init(bindir) # load initial conditions from binaries
    ##
    Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot initial conditions
    print("Plots in "+figdir+"/init")
@@ -61,14 +80,16 @@ if 0:
    print("Plotting results...")
    Fplt.fn_plot_final(grid_prams,out_fields,figdir)
    print("Plots in "+figdir+"/final")
-elif 0:
+
+##########################################################################
+elif testing is 3:
    # compare binaries from different runs (wim2d_run & wim2d_io)
    # NB need same grid & initial conditions
-   outdir1  = 'out/binaries'
-   outdir2  = 'out_io/binaries'
+   bindir1  = outdir+'/binaries'
+   bindir2  = outdir3+'/binaries'
 
-   gp1   = Fdat.fn_check_grid(outdir1)
-   gp2   = Fdat.fn_check_grid(outdir2)
+   gp1   = Fdat.fn_check_grid(bindir1)
+   gp2   = Fdat.fn_check_grid(bindir2)
    if 0:
       # check grids are the same
       print('Checking grids are the same...')
@@ -86,8 +107,8 @@ elif 0:
       # check initial fields are the same
       print('Checking initial fields are the same...')
       ##
-      if1,wf1  = Fdat.fn_check_init(outdir1)
-      if2,wf2  = Fdat.fn_check_init(outdir2)
+      if1,wf1  = Fdat.fn_check_init(bindir1)
+      if2,wf2  = Fdat.fn_check_init(bindir2)
 
       Key   = '         '
       for key in if1.keys():
@@ -110,8 +131,8 @@ elif 0:
       # check out fields are the same
       print('Checking final fields are the same...')
       ##
-      of1   = Fdat.fn_check_out_bin(outdir1)
-      of2   = Fdat.fn_check_out_bin(outdir2)
+      of1   = Fdat.fn_check_out_bin(bindir1)
+      of2   = Fdat.fn_check_out_bin(bindir2)
 
       Key   = '         '
       for key in of1.keys():
@@ -121,6 +142,7 @@ elif 0:
          #
          ss = ' max/min |difference|: %f %f' % (diff_max,diff_min)
          print(' '+key+Key[len(key):]+ss)
+##########################################################################
 
 # elif 1:
 #    # compare exponential decay of Hs for SOLVER = 1,0

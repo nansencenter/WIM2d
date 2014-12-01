@@ -1,4 +1,5 @@
 bin="../bin"
+mkdir -p ../run/inputs
 
 echo " " 
 echo ${bin}/grid_setup.exe
