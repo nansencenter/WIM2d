@@ -55,8 +55,9 @@
       integer                 :: nMIZ
 
       !!
-      character(len=80) :: outdir
-      character(len=80) :: log_file
+      character(len=80)          :: outdir
+      character(len=80)          :: log_file
+      character(len=*),parameter :: this_subr   = 'wim2d_run'
 
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -252,8 +253,9 @@
       integer                 :: nMIZ
 
       !!
-      character(len=80) :: outdir
-      character(len=80) :: log_file
+      character(len=80)          :: outdir
+      character(len=80)          :: log_file
+      character(len=*),parameter :: this_subr   = 'wim2d_run_io'
 
       real :: et,etime,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

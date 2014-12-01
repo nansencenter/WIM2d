@@ -3,6 +3,11 @@
       print*,'Printing info to log file: ',trim(log_file)
       open(unit=3,file=trim(log_file),status = 'replace')
 
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'Outer subroutine:'
+      write(3,'(a,a)'),'>> ',this_subr
+      write(3,'(a)'),'*************************************************'
+
       write(3,'(a)'),' '
       write(3,'(a)'),'*************************************************'
       write(3,'(a)'),'Main parameters:'
@@ -19,7 +24,6 @@
       write(3,'(a,e10.3)'),'Breaking strain:            ',epsc
       write(3,'(a,f5.2)'),'Damping (Pa.s/m):           ',visc_rp
       write(3,'(a)'),'*************************************************'
-      print*,' '
 
       write(3,'(a)'),' '
       write(3,'(a)'),'*************************************************'

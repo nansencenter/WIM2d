@@ -45,16 +45,16 @@ elif testing is 2:
 ##########################################################################
 elif testing is 3:
    # compare runs with and without input/output:
-   if 0:
+   if 1:
       # need to rerun:
       out_fields,outdir    = Rwim.do_run(RUN_OPT=0)
    else:
       # use saved results:
       out_fields,outdir    = Rwim.do_run(RUN_OPT=1)
 
-   if 0:
+   if 1:
       # need to rerun:
-      out_fields,outdir    = Rwim.do_run(RUN_OPT=2)
+      out_fields,outdir3   = Rwim.do_run(RUN_OPT=2)
    else:
       # use saved results:
       out_fields2,outdir3  = Rwim.do_run(RUN_OPT=3)
