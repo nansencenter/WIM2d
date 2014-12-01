@@ -66,7 +66,7 @@ def cmap_3d_V1d(x,y,z,labs,ADD_CONTS=1,fmt='%4.1f'):
       # add contours:
       levels0  = cbar.ax.get_yticklabels()
       levels   = []
-      for j in range(2,len(levels0)-1,2):
+      for j in range(1,len(levels0)-2,2):
       # for j in range(1,len(levels0),1):
          lev   = levels0[j]
          levels.append(float(lev.get_text()))
