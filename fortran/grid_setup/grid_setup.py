@@ -15,7 +15,7 @@ import save_grid_f2py   as gs
 import fns_get_data     as Fdat
 import fns_plot_data    as Fplt
 
-if 1:
+if 0:
    # test
    outdir   = 'test/out_py'
    outdir2  = 'test/out_py'
@@ -27,6 +27,13 @@ else:
    outdir2  = '../header_files'
    nc       = len(outdir)
    nc2      = len(outdir2)
+
+
+dd    = os.path.abspath(".")
+dd2   = dd+'/'+outdir
+print(dd2)
+if not (os.path.exists(dd2)):
+   os.makedirs(dd2)
 
 ###########################################################
 # grid size
@@ -111,12 +118,14 @@ print(' ')
 ###########################################################
 
 ###########################################################
-if 1:
+if 0:
    # check difference between binaries
    # saved by pure fortran and python:
-   outdir1  = 'test/out'# fortran binaries here
+   outdir1  = 'test/out'   # fortran binaries here
+                           # run grid_setup.sh with
+                           # testing=1 in p_save_grid.F (recompile)
    gf1      = Fdat.fn_check_grid(outdir1)
-   gf2      = Fdat.fn_check_grid(outdir2)
+   gf2      = Fdat.fn_check_grid(outdir)
    keys     = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
 
    print('Comparing fortran to python:\n')
@@ -128,9 +137,9 @@ if 1:
       print('min difference in : '+key+' = '+str(diff_min)+'\n')
 elif 1:
    # check difference between binaries
-   # saved by pure fortran and python:
+   # saved by python and the input fields:
    gf    = grid_fields
-   gf2   = Fdat.fn_check_grid(outdir2)
+   gf2   = Fdat.fn_check_grid(outdir)
    keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
 
    print('Comparing python in to python out:\n')
@@ -145,7 +154,7 @@ elif 1:
 ###########################################################
 if 1:
    # save test figure:
-   fig   = 'test/out/land.png'
+   fig   = 'test/out_py/land.png'
    print('Saving test figure : '+fig)
    #
    gf = grid_fields

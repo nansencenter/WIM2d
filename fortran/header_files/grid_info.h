@@ -1,5 +1,5 @@
       !! header file with grid dimensions and resolution
-      !! - file generated automatically with setup_grid.sh/p_save_grid.F
+      !! - file generated automatically with setup_grid.py/save_grid_f2py.F
       !! - do not edit !!
 
       150          !! Record length in x direction (elements)

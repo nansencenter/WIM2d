@@ -21,8 +21,13 @@ if 1:
    out_fields  = Rwim.do_run(RUN_OPT)
 elif 1:
    # check passing in of 'in_fields'
-   # - read in inputs from saved files:
-   in_dir                  = 'out'
+   if 1:
+      # - read in inputs from saved files:
+      in_dir                  = 'out/binaries'
+   else:
+      # - read in inputs from saved files:
+      in_dir                  = 'inputs'
+
    grid_prams              = Fdat.fn_check_grid(in_dir)
    ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
 
@@ -39,6 +44,9 @@ elif 0:
    out_fields2 = Rwim.do_run(3)
 
 if 0:
+   outdir   = 'out/binaries'
+   outdir   = 'out/figs'
+
    # plot results
    ## look at initial fields:
    print("Plotting initial conditions...")
@@ -56,8 +64,8 @@ if 0:
 elif 0:
    # compare binaries from different runs (wim2d_run & wim2d_io)
    # NB need same grid & initial conditions
-   outdir1  = 'out'
-   outdir2  = 'out_io'
+   outdir1  = 'out/binaries'
+   outdir2  = 'out_io/binaries'
 
    gp1   = Fdat.fn_check_grid(outdir1)
    gp2   = Fdat.fn_check_grid(outdir2)

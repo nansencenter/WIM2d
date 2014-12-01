@@ -49,7 +49,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
       print("Reading results from: "+outdir)
       print("###################################################")
       print(" ")
-      out_fields  = Fdat.fn_check_out_bin(outdir)
+      out_fields  = Fdat.fn_check_out_bin(outdir+'/binaries')
 
    #############################################################
    if RUN_OPT is 0:
@@ -69,7 +69,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
       print(" ")
 
       # load results from binary files
-      out_fields  = Fdat.fn_check_out_bin(outdir)
+      out_fields  = Fdat.fn_check_out_bin(outdir+'/binaries')
 
    #############################################################
    elif RUN_OPT is 2:
@@ -102,7 +102,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
       elif 1:
          # 'in_fields' not given as input
          # - read in inputs from saved files:
-         in_dir                  = 'out'
+         in_dir                  = 'out/binaries'
          grid_prams              = Fdat.fn_check_grid(in_dir)
          ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
 
