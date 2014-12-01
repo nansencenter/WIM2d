@@ -11,6 +11,7 @@ Versions:
 - 3. ipython interface for fortran code
 
 SETUP:
+
 1. Go to matlab/main
    * run startup_local.m (set paths)
    * run WIM2d.m
