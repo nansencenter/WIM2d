@@ -7,6 +7,8 @@
 
       contains
 
+      !! --------------------------------------------------------------
+      !! WENO 2d
       subroutine waveadv_weno(h,u,v,dt,bc_opt)
 !
 ! --- ------------------------------------------------------------------
@@ -153,142 +155,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine waveadv_weno_1d(h,u,dt,bc_opt)
-!
-! --- ------------------------------------------------------------------
-! --- Advection is done with flux limited 3rd order WENO in space and
-! --- 2nd order Runge-Kutta in time
-! --- ------------------------------------------------------------------
-!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! modified [TW 28.1.2014] for wave advection
-      !! - iceadv builds up ice (& thus waves) at coast;
-      !! - iceadv_v2 lets waves go into/out of land,
-      !!   then cancels the waves on land at end of routine;
-      !! - just adds the wave cancellation to Luke's original fix
-      !!   for waves on boundaries;
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! ARGUMENTS:
-      !! in/out:  h is qty to be advected;
-      !!
-      !! in:      u,v,dt are speed components and time step;
-      !!
-      !! Now in mod_gridinfo.F
-      !! in: scuy,scvx is mesh size at u (v) points in y (x) direction
-      !!      - see common_blocks.h;
-      !! in: scp2, scp2i are grid box area at p points, and its inverse;
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      use mod_gridinfo
-      use mod_file_utils
-!
-      implicit none
-!
-      integer, parameter   :: n_bdy  = 3
-      real,intent(in),dimension(idm,jdm) :: u
-      !,scuy,scvx,scp2i,scp2,LANDMASK
-      real,intent(inout),dimension(idm,jdm)   :: h
-      real,intent(in)                         :: dt
-      integer,intent(in)                        :: bc_opt
-!
-      real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
-     &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad
-      integer  :: i,j,l
-      character(len=80) :: outfile,stat1,stat2
-
-      sao   = 0.0
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!pad out variables
-      !! - apply boundary conditions via "ghost cells"
-
-      !!make u,v,sc* periodic
-      call pad_var_1d(u_pad      ,u       ,1)
-      call pad_var_1d(scp2_pad   ,scp2    ,1)
-      call pad_var_1d(scp2i_pad  ,scp2i   ,1)
-      call pad_var_1d(scuy_pad   ,scuy    ,1)
-
-      !!bc_opt applies boundary conditions
-      !!0: make h just be zero on boundaries
-      !!1: make h be periodic in x,y
-      !!2: make h be periodic in y only
-      call pad_var_1d(h_pad,h,bc_opt)
-
-      if (.false.) then
-      !if (.true.) then
-         !!test padding with zero on boundaries
-         stat1    = 'replace'
-         outfile  = 'test_out/h.a'
-
-         print*,'******************************************'
-         print*,'testing waveadv_weno:'
-         print*,'check',outfile
-         print*,'******************************************'
-         print*,''
-
-         i        = idm+2*n_bdy
-         j        = jdm
-         call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
-      elseif (.false.) then
-         !!test padding with periodic boundary conditions
-         stat1    = 'replace'
-         stat2    = 'old'
-         outfile  = 'test_out/all.a'
-
-         print*,'******************************************'
-         print*,'testing waveadv_weno:'
-         print*,'check: ',outfile
-         print*,'******************************************'
-         print*,''
-
-         i     = idm+2*n_bdy
-         j     = jdm
-         call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
-         call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,3)
-         call wrt_afile_2d(outfile,scp2i_pad,i,j,stat2,4)
-         call wrt_afile_2d(outfile,scuy_pad, i,j,stat2,5)
-      end if
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
-! --- Prediction step
-      call weno3pd_v2_1d(h_pad,sao,u_pad,                               &
-     &   scuy_pad,scp2i_pad,scp2_pad,dt)
-
-       !margin=n_bdy 
-      do j=1-margin,jj+margin
-        do i=1-margin,ii+margin!![TW 28.1.2014]
-          hp(i,j) = h_pad(i,j)+dt*sao(i,j)
-        enddo
-      enddo
-!
-! --- Correction step
-      call weno3pd_v2_1d(hp,sao,u_pad,                                  &
-     &   scuy_pad,scp2i_pad,scp2_pad,dt)
-!$OMP PARALLEL DO
-      do j=1-margin,jj+margin
-!       do l=1,isp(j)
-!       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
-        do i=1-margin,ii+margin!![TW 28.1.2014]
-           h_pad(i,j)  = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
-        enddo
-!       enddo
-!       enddo
-      enddo
-!$OMP END PARALLEL DO
-
-      h  = h_pad(1:ii,1:jj)
-      !!mask land (no waves on land)
-      h  = h*(1-LANDMASK)
-
-      end subroutine waveadv_weno_1d
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine pad_var(u_pad,u,OPT)
 
       use mod_gridinfo, only: ii,jj,idm,jdm
@@ -334,30 +200,6 @@
       end if
 
       end subroutine pad_var
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine pad_var_1d(u_pad,u,OPT)
-
-      use mod_gridinfo, only: ii,jj,idm,jdm
-
-      implicit none
-
-      real,intent(out),                                                 &
-     &  dimension(1-n_bdy:idm+n_bdy,1:jdm)   :: u_pad
-      real,intent(in),dimension(idm,jdm)     :: u
-      integer,intent(in)                     :: OPT
-
-      u_pad             = 0.0
-      u_pad(1:ii,1:jj)  = u
-
-      if (OPT.eq.1) then
-         !!make it periodic in i
-         u_pad(1-n_bdy:0,1:jj)       = u(ii-n_bdy:ii-1,:)
-         u_pad(ii+1:ii+n_bdy,1:jj)   = u(1:n_bdy,:)
-      end if
-
-      end subroutine pad_var_1d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -564,6 +406,172 @@
       end subroutine weno3pd_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      !! finish WENO 2d
+      !! --------------------------------------------------------------
+
+      !! --------------------------------------------------------------
+      !! WENO 1d
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine waveadv_weno_1d(h,u,dt,bc_opt)
+!
+! --- ------------------------------------------------------------------
+! --- Advection is done with flux limited 3rd order WENO in space and
+! --- 2nd order Runge-Kutta in time
+! --- ------------------------------------------------------------------
+!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! modified [TW 28.1.2014] for wave advection
+      !! - iceadv builds up ice (& thus waves) at coast;
+      !! - iceadv_v2 lets waves go into/out of land,
+      !!   then cancels the waves on land at end of routine;
+      !! - just adds the wave cancellation to Luke's original fix
+      !!   for waves on boundaries;
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! ARGUMENTS:
+      !! in/out:  h is qty to be advected;
+      !!
+      !! in:      u,v,dt are speed components and time step;
+      !!
+      !! Now in mod_gridinfo.F
+      !! in: scuy,scvx is mesh size at u (v) points in y (x) direction
+      !!      - see common_blocks.h;
+      !! in: scp2, scp2i are grid box area at p points, and its inverse;
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      use mod_gridinfo
+      use mod_file_utils
+!
+      implicit none
+!
+      integer, parameter   :: n_bdy  = 3
+      real,intent(in),dimension(idm,jdm) :: u
+      !,scuy,scvx,scp2i,scp2,LANDMASK
+      real,intent(inout),dimension(idm,jdm)   :: h
+      real,intent(in)                         :: dt
+      integer,intent(in)                        :: bc_opt
+!
+      real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
+     &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad
+      integer  :: i,j,l
+      character(len=80) :: outfile,stat1,stat2
+
+      sao   = 0.0
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!pad out variables
+      !! - apply boundary conditions via "ghost cells"
+
+      !!make u,v,sc* periodic
+      call pad_var_1d(u_pad      ,u       ,1)
+      call pad_var_1d(scp2_pad   ,scp2    ,1)
+      call pad_var_1d(scp2i_pad  ,scp2i   ,1)
+      call pad_var_1d(scuy_pad   ,scuy    ,1)
+
+      !!bc_opt applies boundary conditions
+      !!0: make h just be zero on boundaries
+      !!1: make h be periodic in x,y
+      !!2: make h be periodic in y only
+      call pad_var_1d(h_pad,h,bc_opt)
+
+      if (.false.) then
+      !if (.true.) then
+         !!test padding with zero on boundaries
+         stat1    = 'replace'
+         outfile  = 'test_out/h.a'
+
+         print*,'******************************************'
+         print*,'testing waveadv_weno:'
+         print*,'check',outfile
+         print*,'******************************************'
+         print*,''
+
+         i        = idm+2*n_bdy
+         j        = jdm
+         call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
+      elseif (.false.) then
+         !!test padding with periodic boundary conditions
+         stat1    = 'replace'
+         stat2    = 'old'
+         outfile  = 'test_out/all.a'
+
+         print*,'******************************************'
+         print*,'testing waveadv_weno:'
+         print*,'check: ',outfile
+         print*,'******************************************'
+         print*,''
+
+         i     = idm+2*n_bdy
+         j     = jdm
+         call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
+         call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,3)
+         call wrt_afile_2d(outfile,scp2i_pad,i,j,stat2,4)
+         call wrt_afile_2d(outfile,scuy_pad, i,j,stat2,5)
+      end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+! --- Prediction step
+      call weno3pd_v2_1d(h_pad,sao,u_pad,                               &
+     &   scuy_pad,scp2i_pad,scp2_pad,dt)
+
+       !margin=n_bdy 
+      do j=1-margin,jj+margin
+        do i=1-margin,ii+margin!![TW 28.1.2014]
+          hp(i,j) = h_pad(i,j)+dt*sao(i,j)
+        enddo
+      enddo
+!
+! --- Correction step
+      call weno3pd_v2_1d(hp,sao,u_pad,                                  &
+     &   scuy_pad,scp2i_pad,scp2_pad,dt)
+!$OMP PARALLEL DO
+      do j=1-margin,jj+margin
+!       do l=1,isp(j)
+!       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
+        do i=1-margin,ii+margin!![TW 28.1.2014]
+           h_pad(i,j)  = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
+        enddo
+!       enddo
+!       enddo
+      enddo
+!$OMP END PARALLEL DO
+
+      h  = h_pad(1:ii,1:jj)
+      !!mask land (no waves on land)
+      h  = h*(1-LANDMASK)
+
+      end subroutine waveadv_weno_1d
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine pad_var_1d(u_pad,u,OPT)
+
+      use mod_gridinfo, only: ii,jj,idm,jdm
+
+      implicit none
+
+      real,intent(out),                                                 &
+     &  dimension(1-n_bdy:idm+n_bdy,1:jdm)   :: u_pad
+      real,intent(in),dimension(idm,jdm)     :: u
+      integer,intent(in)                     :: OPT
+
+      u_pad             = 0.0
+      u_pad(1:ii,1:jj)  = u
+
+      if (OPT.eq.1) then
+         !!make it periodic in i
+         u_pad(1-n_bdy:0,1:jj)       = u(ii-n_bdy:ii-1,:)
+         u_pad(ii+1:ii+n_bdy,1:jj)   = u(1:n_bdy,:)
+      end if
+
+      end subroutine pad_var_1d
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine weno3pd_v2_1d(g,sao,u,scuy,scp2i,scp2,dt)
 !
@@ -674,4 +682,8 @@
       return
       end subroutine weno3pd_v2_1d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !! finish WENO 1d
+      !! --------------------------------------------------------------
+
       end module mod_advect

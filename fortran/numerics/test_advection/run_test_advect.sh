@@ -1,8 +1,8 @@
 # place to put test results
-mkdir -p out
-mkdir -p test_out
+mkdir -p out test_out
+rm out/* test_out/*
 
-Build/test_advect.exe
+bin/test_advect.exe
 
 echo " "
 echo "**********************************************************"
