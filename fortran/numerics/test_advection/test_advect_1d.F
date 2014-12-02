@@ -15,8 +15,8 @@
       integer, parameter   :: bc_opt   = 1
          !1: periodic in x; 0: not periodic
 
-      integer, parameter :: ADV_METHOD = 1
-      real, parameter    :: CFL        = 0.4
+      integer, parameter :: ADV_METHOD = 0
+      real, parameter    :: CFL        = 0.8
       !!
       real   :: xm,ym
       real   :: xx(ii),yy(jj)
@@ -41,6 +41,8 @@
       print*,' '
       print*,'*****************************************'
       print*,'Grid size : ',ii,jj
+      print*,'Scheme    : ',ADV_METHOD
+      print*,'CFL       : ',CFL
       print*,'*****************************************'
       print*,' '
 

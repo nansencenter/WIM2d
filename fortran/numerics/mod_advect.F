@@ -841,7 +841,7 @@
 !
       real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: flux_ip1
       real     :: q_flux,r_flux,dx_i,dx_ip1,up,um,ful,fuh
-      integer  :: i,j,im1,im2,ip1
+      integer  :: i,j,im1,im2,ip1,ip2
 !
 ! --- Compute grid cell boundary fluxes. Split in a low order flux
 ! --- (donor cell) and a high order correction flux.
@@ -859,6 +859,7 @@
       do i=0,ii+2!![TW 28.1.2014]
 
          ip1   = i+1
+         ip2   = i+2
          im1   = i-1
          im2   = i-2
          !!
@@ -882,7 +883,7 @@
          if (u(i,j).gt.0.0) then
             r_flux   = (g(i,j)-g(im1,j))/(g(ip1,j)-g(i,j))
          else
-            r_flux   = (g(ip1,j)-g(i,j))/(g(ip1,j)-g(i,j))
+            r_flux   = (g(ip2,j)-g(ip1,j))/(g(ip1,j)-g(i,j))
          end if
          !!
          call flux_limiter(q_flux,r_flux)

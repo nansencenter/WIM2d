@@ -10,7 +10,7 @@ fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
 ADV_DIM  = 1;
-CFL      = .4;
+CFL      = .8;
 nbdy     = 3;
 
 ii = 150;
@@ -233,7 +233,8 @@ end
 
 shot  = 1;
 for n = 1:20:nt
-   if shot==20
+   if shot==10 %%good for CFL=.8
+   %if shot==20 %%good for CFL=.4
       saveas(gcf,'figs/test_fig.png')
       GEN_pause;
    end
