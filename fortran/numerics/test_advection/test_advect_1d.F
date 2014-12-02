@@ -12,13 +12,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer, parameter   :: OPT      = 1
-      integer, parameter   :: bc_opt   = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
+      integer, parameter   :: bc_opt   = 1
+         !1: periodic in x; 0: not periodic
       real, parameter    :: CFL      = 0.4
       !!
       real   :: xm,ym
       real   :: xx(ii),yy(jj)
-      real,dimension(idm,jdm)   :: R,Theta,u,v,h
+      real,dimension(idm,jdm)   :: R,Theta,u,h,v
 
       real   :: adv_dir,xc,yc,uc,Rc,angrot,dt,dtheta,PI
       integer  :: nt,n,i,j
@@ -31,9 +31,16 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       PI = 4.0*atan(1.0)
+      v  = 0.0 !!place holder for test functions
 
       xm = (ii+1)/2.0*dx
       ym = (jj+1)/2.0*dy
+
+      print*,' '
+      print*,'*****************************************'
+      print*,'Grid size : ',ii,jj
+      print*,'*****************************************'
+      print*,' '
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set grid here
@@ -79,7 +86,6 @@
          !adv_dir = 180.0!deg straight across
          adv_dir  = 135.0!deg
          u        = uc*cos(pi/180.0*adv_dir)
-         v        = uc*sin(pi/180.0*adv_dir)
          dt       = CFL*dx/uc
          if (bc_opt.eq.1) then
             nt = 2*aint(2*xm/(uc*dt))  !test periodic boundary condition
@@ -103,7 +109,6 @@
          uc = 30!max speed m/s
          xc = 2*xm/3.0
          u  = -uc*X/xm!speed variable with x
-         v  = 0.0
          dt = CFL*dx/uc
          nt = 2*xm/(uc*dt)
          !!
@@ -115,40 +120,6 @@
             end if
          end do
          end do
-
-      elseif (OPT.eq.3) then
-         !!pacman
-         Rc       = xm/3.0
-         Yc       = ym/12.0
-         angrot   = (1/20.0)*pi/180.0!!radian/s
-         u        = 0.0
-         v        = 0.0
-         !!
-         h  = 0.0
-         do j=1,jj
-         do i=1,ii
-            critter  = ((R(i,j).lt.Rc).and.(X(i,j).le.0))
-            if (critter) then
-               h(i,j)   = 1.0
-            end if
-            critter  = ((R(i,j).lt.Rc).and.(X(i,j).ge.0)                &
-     &                  .and.(abs(Y(i,j)).ge.Yc))
-            if (critter) then
-               h(i,j)   = 1.0
-            end if
-            critter  = (R(i,j).lt.(1.45*Rc))
-            if (critter) then
-               u(i,j)   = -Y(i,j)*angrot
-               v(i,j)   =  X(i,j)*angrot
-            end if
-         end do
-         end do
-         !!
-         uc       = Rc*angrot!max speed
-         dt       = CFL*dx/uc
-         nt       = aint(2*pi/(angrot*dt))
-         print*,angrot,dt,CFL
-         dtheta   = dt*angrot
       end if
 
       !if (.false.) then
@@ -193,9 +164,10 @@
 
       do n = 1,nt
       !do n = 1,1
-         !print*,'timestep = ',n
+         !print*,'timestep = ',n,' out of ',nt
+
          !!advect for one time step
-         call waveadv_weno(h,u,v,dt,bc_opt)
+         call waveadv_weno_1d(h,u,dt,bc_opt)
 
          !!output initial conditions for reading by matlab/python
          write(cts,'(i3.3)') n

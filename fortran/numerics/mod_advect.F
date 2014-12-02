@@ -467,34 +467,38 @@
       !! - apply boundary conditions via "ghost cells"
 
       !!make u,v,sc* periodic
-      call pad_var_1d(u_pad      ,u       ,1)
-      call pad_var_1d(scp2_pad   ,scp2    ,1)
-      call pad_var_1d(scp2i_pad  ,scp2i   ,1)
-      call pad_var_1d(scuy_pad   ,scuy    ,1)
+      call pad_var_1d(u_pad    ,u    ,1)
+      call pad_var_1d(scp2_pad ,scp2 ,1)
+      call pad_var_1d(scp2i_pad,scp2i,1)
+      call pad_var_1d(scuy_pad ,scuy ,1)
 
       !!bc_opt applies boundary conditions
       !!0: make h just be zero on boundaries
-      !!1: make h be periodic in x,y
-      !!2: make h be periodic in y only
+      !!1: make h be periodic in x
       call pad_var_1d(h_pad,h,bc_opt)
 
       if (.false.) then
       !if (.true.) then
-         !!test padding with zero on boundaries
+         !!test padding of h
          stat1    = 'replace'
          outfile  = 'test_out/h.a'
 
          print*,'******************************************'
          print*,'testing waveadv_weno:'
          print*,'check',outfile
+
+         i  = idm+2*n_bdy
+         j  = jdm
+         call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
+
          print*,'******************************************'
          print*,''
+      end if
 
-         i        = idm+2*n_bdy
-         j        = jdm
-         call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
-      elseif (.false.) then
-         !!test padding with periodic boundary conditions
+      if (.false.) then
+      !if (.true.) then
+         !!test padding of other things
+         !!(periodic bc's)
          stat1    = 'replace'
          stat2    = 'old'
          outfile  = 'test_out/all.a'
@@ -502,15 +506,16 @@
          print*,'******************************************'
          print*,'testing waveadv_weno:'
          print*,'check: ',outfile
+
+         i  = idm+2*n_bdy
+         j  = jdm
+         call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
+         call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,2)
+         call wrt_afile_2d(outfile,scp2i_pad,i,j,stat2,3)
+         call wrt_afile_2d(outfile,scuy_pad, i,j,stat2,4)
+
          print*,'******************************************'
          print*,''
-
-         i     = idm+2*n_bdy
-         j     = jdm
-         call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
-         call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,3)
-         call wrt_afile_2d(outfile,scp2i_pad,i,j,stat2,4)
-         call wrt_afile_2d(outfile,scuy_pad, i,j,stat2,5)
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -520,24 +525,20 @@
      &   scuy_pad,scp2i_pad,scp2_pad,dt)
 
        !margin=n_bdy 
-      do j=1-margin,jj+margin
-        do i=1-margin,ii+margin!![TW 28.1.2014]
+      do j=1,jj
+      do i=1-margin,ii+margin!![TW 28.1.2014]
           hp(i,j) = h_pad(i,j)+dt*sao(i,j)
-        enddo
+      enddo
       enddo
 !
 ! --- Correction step
       call weno3pd_v2_1d(hp,sao,u_pad,                                  &
      &   scuy_pad,scp2i_pad,scp2_pad,dt)
 !$OMP PARALLEL DO
-      do j=1-margin,jj+margin
-!       do l=1,isp(j)
-!       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
-        do i=1-margin,ii+margin!![TW 28.1.2014]
+      do j=1,jj
+      do i=1-margin,ii+margin!![TW 28.1.2014]
            h_pad(i,j)  = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
-        enddo
-!       enddo
-!       enddo
+      enddo
       enddo
 !$OMP END PARALLEL DO
 
@@ -610,7 +611,7 @@
 ! --- Compute grid cell boundary fluxes. Split in a low order flux
 ! --- (donor cell) and a high order correction flux.
 !
-      do j=0,jj+2
+      do j=1,jj
         do i=0,ii+2
           ful(i,j)=0.
           fuh(i,j)=0.

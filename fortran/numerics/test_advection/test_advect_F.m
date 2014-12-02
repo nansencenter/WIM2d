@@ -9,6 +9,9 @@ clear;
 fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
+ADV_DIM  = 1;
+nbdy     = 3;
+
 ii = 150;
 jj = 50;
 dx = 4e3;%m
@@ -72,42 +75,57 @@ if 0%%test outputs from mod_waveadv_weno.F
    %afile       = 'test_out/scp2i.a';
    afile       = 'test_out/h.a';
    aid         = fopen(afile,'rb');
-   test_pad   = reshape( fread(aid,fmt), ii+6,jj+6 );
+   fad         = ADV_DIM-1;
+   test_pad    = reshape( fread(aid,fmt), ii+2*nbdy,jj+2*nbdy*fad );
    fclose(aid);
    %%
-   nbdy  = 3;
    ip = (1-nbdy:ii+nbdy);
-   jp = (1-nbdy:jj+nbdy);
+   jp = (1-nbdy*fad:jj+nbdy*fad);
    [J,I] = meshgrid(jp,ip);
    ax    = pcolor(I,J,test_pad);
    set(ax, 'EdgeColor', 'none');
+   colorbar;
    GEN_proc_fig('I','J');
    return;
-elseif 0%%test outputs from mod_waveadv_weno.F
-   nbdy  = 3;
+end
+
+if 0%%test outputs from mod_waveadv_weno.F
+
+   fad   = ADV_DIM-1;
+   Nf    = 4+2*fad;
+
    if 1
       afile    = 'test_out/all.a';
       aid      = fopen(afile,'rb');
       test_pad = fread(aid,fmt);
       fclose(aid);
-      test_pad = reshape( test_pad, ii+6,jj+6,6 );
+      test_pad = reshape( test_pad, ii+2*nbdy,jj+2*nbdy*fad,Nf );
       ip       = (1-nbdy:ii+nbdy);
-      jp       = (1-nbdy:jj+nbdy);
+      jp       = (1-nbdy*fad:jj+nbdy*fad);
    else
       afile    = 'test_out/all0.a';
       aid      = fopen(afile,'rb');
       test_pad = fread(aid,fmt);
       fclose(aid);
-      test_pad = reshape( test_pad, ii,jj,6 );
+      test_pad = reshape( test_pad, ii,jj,Nf );
       ip       = (1:ii);
       jp       = (1:jj);
    end
    %%
    [J,I] = meshgrid(jp,ip);
-   ttls  = {'u','v','scp2','scp2i','scuy','scvx'};
+   if ADV_DIM==2
+      ttls  = {'u','v','scp2','scp2i','scuy','scvx'};
+      tst   = [NaN,NaN,dx*dy,1/dx/dy,dy,dx];
+   else
+      ttls  = {'u','scp2','scp2i','scuy'};
+      tst   = [NaN,dx*dy,1/dx/dy,dy];
+   end
    %%
-   for j=1:6
-      ax = pcolor(I,J,test_pad(:,:,j));
+   for j=1:Nf
+      tp    = test_pad(:,:,j);
+      disp([ttls{j},' : ',num2str(tst(j))]);
+      rng   = [min(tp(:)),max(tp(:))]
+      ax    = pcolor(I,J,tp);
       set(ax, 'EdgeColor', 'none');
       GEN_proc_fig('I','J');
       ttl   = title(ttls{j});
@@ -213,7 +231,8 @@ if strcmp(fmt,'float32')
 elseif strcmp(fmt,'float64')
    element_size   = 8;
 end
-for n = 1:nt
+
+for n = 1:20:nt
    %% open output file
    nnn      = num2str(n,'%3.3d');
    afile    = [outfile,nnn,'.a'];
@@ -239,7 +258,7 @@ for n = 1:nt
    %%add test plots
    if OPT==1
       x1 = xc+uc*cos(pi*theta/180)*n*dt;
-      y1 = -ym+uc*sin(pi*theta/180)*n*dt
+      y1 = -ym+uc*sin(pi*theta/180)*n*dt;
       x2 = xm+uc*cos(pi*theta/180)*n*dt;
       hold on;
       plot(x1/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
