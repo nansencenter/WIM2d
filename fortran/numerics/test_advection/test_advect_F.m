@@ -10,6 +10,7 @@ fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
 ADV_DIM  = 1;
+CFL      = .4;
 nbdy     = 3;
 
 ii = 150;
@@ -33,7 +34,6 @@ scp2i    = 1./scp2;
 LANDMASK = 0*X;
 
 OPT   = 1;
-CFL   = .4;
 
 if OPT==1
    uc    = 30;%const speed m/s
@@ -222,7 +222,6 @@ if 1%%plot u,v,h
       plot(x2/1e3,y2/1e3,'m');
       hold off;
    end
-   GEN_pause;
 end
 
 nt = length(dir('out/*.a'))-1;
@@ -232,7 +231,12 @@ elseif strcmp(fmt,'float64')
    element_size   = 8;
 end
 
+shot  = 1;
 for n = 1:20:nt
+   if shot==20
+      saveas(gcf,'figs/test_fig.png')
+      GEN_pause;
+   end
    %% open output file
    nnn      = num2str(n,'%3.3d');
    afile    = [outfile,nnn,'.a'];
@@ -282,6 +286,8 @@ for n = 1:20:nt
       plot(x4/1e3,y4/1e3,'m');
       hold off;
    end
+
+   shot  = shot+1;
    pause(.1);
    %GEN_pause
 end

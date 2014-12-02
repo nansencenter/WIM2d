@@ -687,4 +687,282 @@
       !! finish WENO 1d
       !! --------------------------------------------------------------
 
+      !! --------------------------------------------------------------
+      !! Lax-Wendroff 1d
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine waveadv_lax_1d(h,u,dt,bc_opt)
+!
+! --- ------------------------------------------------------------------
+! --- Advection is done with flux limited 3rd order WENO in space and
+! --- 2nd order Runge-Kutta in time
+! --- ------------------------------------------------------------------
+!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! modified [TW 28.1.2014] for wave advection
+      !! - iceadv builds up ice (& thus waves) at coast;
+      !! - iceadv_v2 lets waves go into/out of land,
+      !!   then cancels the waves on land at end of routine;
+      !! - just adds the wave cancellation to Luke's original fix
+      !!   for waves on boundaries;
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! ARGUMENTS:
+      !! in/out:  h is qty to be advected;
+      !!
+      !! in:      u,v,dt are speed components and time step;
+      !!
+      !! Now in mod_gridinfo.F
+      !! in: scuy,scvx is mesh size at u (v) points in y (x) direction
+      !!      - see common_blocks.h;
+      !! in: scp2, scp2i are grid box area at p points, and its inverse;
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      use mod_gridinfo
+      use mod_file_utils
+!
+      implicit none
+!
+      integer, parameter   :: n_bdy  = 3
+      real,intent(in),dimension(idm,jdm) :: u
+      !,scuy,scvx,scp2i,scp2,LANDMASK
+      real,intent(inout),dimension(idm,jdm)   :: h
+      real,intent(in)                         :: dt
+      integer,intent(in)                        :: bc_opt
+!
+      real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
+     &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad
+      integer  :: i,j,l
+      character(len=80) :: outfile,stat1,stat2
+
+      sao   = 0.0
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!pad out variables
+      !! - apply boundary conditions via "ghost cells"
+
+      !!make u,v,sc* periodic
+      call pad_var_1d(u_pad    ,u    ,1)
+      call pad_var_1d(scp2_pad ,scp2 ,1)
+      call pad_var_1d(scp2i_pad,scp2i,1)
+      call pad_var_1d(scuy_pad ,scuy ,1)
+
+      !!bc_opt applies boundary conditions
+      !!0: make h just be zero on boundaries
+      !!1: make h be periodic in x
+      call pad_var_1d(h_pad,h,bc_opt)
+
+      if (.false.) then
+      !if (.true.) then
+         !!test padding of h
+         stat1    = 'replace'
+         outfile  = 'test_out/h.a'
+
+         print*,'******************************************'
+         print*,'testing waveadv_weno:'
+         print*,'check',outfile
+
+         i  = idm+2*n_bdy
+         j  = jdm
+         call wrt_afile_2d(outfile,h_pad,i,j,stat1,1)
+
+         print*,'******************************************'
+         print*,''
+      end if
+
+      if (.false.) then
+      !if (.true.) then
+         !!test padding of other things
+         !!(periodic bc's)
+         stat1    = 'replace'
+         stat2    = 'old'
+         outfile  = 'test_out/all.a'
+
+         print*,'******************************************'
+         print*,'testing waveadv_weno:'
+         print*,'check: ',outfile
+
+         i  = idm+2*n_bdy
+         j  = jdm
+         call wrt_afile_2d(outfile,u_pad,    i,j,stat1,1)
+         call wrt_afile_2d(outfile,scp2_pad, i,j,stat2,2)
+         call wrt_afile_2d(outfile,scp2i_pad,i,j,stat2,3)
+         call wrt_afile_2d(outfile,scuy_pad, i,j,stat2,4)
+
+         print*,'******************************************'
+         print*,''
+      end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+! --- Single call to get Lax-Wendroff spatial advection operator
+      call sao_lax_1d(h_pad,sao,u_pad,                                  &
+     &   scuy_pad,scp2i_pad,scp2_pad,dt)
+
+      do j=1,jj
+      do i=1,ii
+          h(i,j)  = h_pad(i,j)+dt*sao(i,j)
+      enddo
+      enddo
+
+      !!mask land (no waves on land)
+      h  = h*(1-LANDMASK)
+
+      end subroutine waveadv_lax_1d
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine sao_lax_1d(g,sao,u,scuy,scp2i,scp2,dt)
+!
+! --- ------------------------------------------------------------------
+! --- By a weighted essentially non-oscillatory scheme with up to 3rd
+! --- order accuracy (2/3 in time/space), obtain the spatial advective operator of a
+! --- 2-dimensional field defined at the scalar points of a C-grid. The
+! --- fluxes are limited to make the scheme positive definite.
+! --- Advective velocities in the i- and j-direction are defined at u-
+! --- and v-points, respectively.
+! --- ------------------------------------------------------------------
+!
+
+      use mod_gridinfo, only: ii,jj,idm,jdm
+!
+      implicit none
+!
+      real,intent(in),                                                  &
+     &  dimension(1-n_bdy:idm+n_bdy,1:jdm) :: g,u                       &
+     &    ,scp2,scp2i,scuy
+      real,intent(out),                                                 &
+     &  dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao
+      real,intent(in) :: dt
+!
+!
+      real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: flux_ip1
+      real     :: q_flux,r_flux,dx_i,dx_ip1,up,um,ful,fuh
+      integer  :: i,j,im1,im2,ip1
+!
+! --- Compute grid cell boundary fluxes. Split in a low order flux
+! --- (donor cell) and a high order correction flux.
+!
+      do j=1,jj
+      do i=0,ii+2
+         flux_ip1(i,j)  = 0.0 !!F_{i+1/2,j}
+      enddo
+      enddo
+
+      !!fluxes in x dirn:
+
+
+      do j=1,jj
+      do i=0,ii+2!![TW 28.1.2014]
+
+         ip1   = i+1
+         im1   = i-1
+         im2   = i-2
+         !!
+         up    = ( u(i,j)   + abs(u(i,j))   )/2.0
+         um    = ( u(ip1,j) - abs(u(ip1,j)) )/2.0
+         !!
+         dx_i     = scuy(i,j)*scp2i(i,j)     !!TODO: check this is x(i+1,j)-x(i,j)   ??
+         dx_ip1   = scuy(ip1,j)*scp2i(ip1,j) !!TODO: check this is x(i+2,j)-x(i+1,j) ??
+
+         !! low-order flux
+         !! - 1st-order upwind
+         !! - NB *scuy because *scp2i later
+         ful   = up*g(i,j)+um*g(ip1,j)
+
+         !! 2nd-order flux
+         !! - Lax_Wendroff
+         !! - NB *scuy because *scp2i later
+         fuh   = ful + 0.5*abs(u(ip1,j))*(1-dt*dx_ip1)*g(ip1,j)         &
+     &               - 0.5*abs(u(i,j))*(1-dt*dx_i)*g(i,j)
+
+         if (u(i,j).gt.0.0) then
+            r_flux   = (g(i,j)-g(im1,j))/(g(ip1,j)-g(i,j))
+         else
+            r_flux   = (g(ip1,j)-g(i,j))/(g(ip1,j)-g(i,j))
+         end if
+         !!
+         call flux_limiter(q_flux,r_flux)
+         flux_ip1(i,j)  = ful+q_flux*(fuh-ful)
+      enddo
+      enddo
+
+! --- Compute the spatial advective operator.
+      do j=1,jj
+      do i=1,ii
+         dx_i     = scuy(i,j)*scp2i(i,j)  !!1/dx
+         sao(i,j) = -(flux_ip1(i,j)-flux_ip1(i-1,j))*dx_i
+      enddo
+      enddo
+
+      return
+      end subroutine sao_lax_1d
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine flux_limiter(r,phi)
+      implicit none
+      real, intent(in)  :: r
+      real, intent(out) :: phi
+      integer,parameter :: FL_method   = 2
+      real  :: beta,phi0,phi1
+
+      if (FL_method.eq.1) then
+         phi   = (abs(r)+r)/(abs(r)+1.0)                 !!van Leer
+      elseif (FL_method.eq.2) then
+         phi   = max(0.0,max(min(1.0,2*r),min(r,2.0)))   !!Superbee
+      elseif (FL_method.eq.3) then
+         phi = (r**2+r)/(r**2+1.0)                       !! van Albada 1
+      elseif (FL_method.eq.4) then
+         beta  = 1.5 !! choose/tune 1<=beta<=2;
+         phi0  = min(beta*r,1.0)
+         phi1  = min(r,beta)
+         phi   = max(0.0,max(phi0,phi1))                 !! Sweby
+      elseif (FL_method.eq.5) then
+         phi = 1.5*(r**2+r)/(r**2+r+1.0)                 !! Ospre
+      elseif (FL_method.eq.6) then
+         beta  = 1.5 !! choose/tune 1<=beta<=2;
+         phi   = max(0.0,min(r,beta))                    !! Osher
+      elseif (FL_method.eq.7) then
+         phi = max(0.0,min(1.0,r))                       !! minmod
+      elseif (FL_method.eq.8) then
+         phi0  = min(2*r,(1+r)/2.0)
+         phi   = max(0.0,min(phi0,2.0))                  !! MC (monotonised central)
+
+      !!Not symmetric:
+      elseif (FL_method.eq.9) then
+         phi0  = min(2*r,(1+2*r)/3.0)
+         phi   = max(0.0,min(phi0,2.0))                  !! Koren
+         !! 3rd order accurate for smooth-enough data
+      elseif (FL_method.eq.10) then
+         phi0  = min(2*r,(1+3*r)/4.0)
+         phi1  = min(2.0,(3+r)/4.0)
+         phi   = max(0.0,min(phi0,phi1))                 !! UMIST
+
+      !! non 2nd order TVD:   
+      elseif (FL_method.eq.11) then
+         phi = (2*r)/(r**2+1.0)                          !! van Albada 2
+      elseif (FL_method.eq.12) then
+         phi0  = min(2*r,(1+3*r)/4.0)
+         phi   = max(0.0,min(phi0,4.0))                  !! smart
+      elseif (FL_method.eq.13) then
+         phi = 2*(r+abs(r))/(r+3.0)                      !! HQUICK
+      elseif (FL_method.eq.14) then
+         phi = 1.5*(r+abs(r))/(r+2.0)                    !! HCUS
+      elseif (FL_method.eq.15) then
+         phi      = 0.0
+         if (r.gt.0.0) then
+            phi   = r*(3*r+1.0)/(r+1.0)**2               !! CHARM
+         end if
+      end if
+
+      end subroutine flux_limiter
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !! finish Lax 1d
+      !! --------------------------------------------------------------
+
       end module mod_advect

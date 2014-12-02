@@ -16,4 +16,5 @@ fortran/grid_setup/test/out/*
 fortran/grid_setup/test/out_py/*
 fortran/bin/*
 fortran/numerics/test_advection/test_out/*
+fortran/numerics/test_advection/figs/*
 matlab/main/out

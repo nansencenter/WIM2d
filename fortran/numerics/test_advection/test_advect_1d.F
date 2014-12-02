@@ -14,7 +14,9 @@
       integer, parameter   :: OPT      = 1
       integer, parameter   :: bc_opt   = 1
          !1: periodic in x; 0: not periodic
-      real, parameter    :: CFL      = 0.4
+
+      integer, parameter :: ADV_METHOD = 1
+      real, parameter    :: CFL        = 0.4
       !!
       real   :: xm,ym
       real   :: xx(ii),yy(jj)
@@ -166,8 +168,13 @@
       !do n = 1,1
          !print*,'timestep = ',n,' out of ',nt
 
-         !!advect for one time step
-         call waveadv_weno_1d(h,u,dt,bc_opt)
+         if (ADV_METHOD.eq.1) then
+            !!advect for one time step
+            call waveadv_weno_1d(h,u,dt,bc_opt)
+         else
+            !!advect for one time step
+            call waveadv_lax_1d(h,u,dt,bc_opt)
+         end if
 
          !!output initial conditions for reading by matlab/python
          write(cts,'(i3.3)') n
