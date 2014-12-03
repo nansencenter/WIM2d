@@ -2,7 +2,7 @@ CC	:=	gcc
 FC	:=	gfortran
 
 # path to numerics directory
-numerics	:=	..
+numerics	:=	../..
 src		:=	$(numerics)/..
 
 # modules here
@@ -12,7 +12,7 @@ ODIR	:=	objs
 # header files
 HDIR	:=	$(src)/header_files
 # put executables here
-bin	:=	bin
+bin	:=	$(numerics)/test_advection/bin
 
 # paths for source files
 VPATH 		:=	..:$(numerics):$(src)/misc:$(src)/init:$(HDIR)
