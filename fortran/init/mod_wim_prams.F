@@ -7,7 +7,7 @@
       real,parameter :: rhoice   = 922.5  ! Ice density      [kg/m^3]
       real,parameter :: gravity  = 9.81   ! Gravity          [m/s^2]
       real,parameter :: poisson  = .3     ! Poisson's ratio
-      real,parameter :: visc_rp  = 13     ! Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+      real,parameter :: visc_rp  = 13.0   ! Robinson-Palmer viscosity coefficient [Pa/(m/s)] (~13)
 
       ! Parameters for the floe size distribution
       real,parameter :: Dmin        = 20   ! min floe size [m]

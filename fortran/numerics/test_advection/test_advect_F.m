@@ -10,13 +10,21 @@ fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
 ADV_DIM  = 1;
-CFL      = .8;
-nbdy     = 3;
+CFL      = .4;
 
-ii = 150;
-jj = 50;
-dx = 4e3;%m
-dy = 4e3;%m
+if 1
+   %% no attenuation
+   alp   = 0;
+else
+   %% attenuation coefficient
+   alp   = 4e-4
+end
+
+nbdy  = 3;
+ii    = 150;
+jj    = 50;
+dx    = 4e3;%m
+dy    = 4e3;%m
 %%
 xm = (ii+1)/2*dx;
 ym = (jj+1)/2*dy;
@@ -232,12 +240,15 @@ elseif strcmp(fmt,'float64')
 end
 
 shot  = 1;
-for n = 1:20:nt
-   if shot==10 %%good for CFL=.8
+step  = 5;
+for n = 1:step:nt
+   %if shot==10 %%good for CFL=.8
    %if shot==20 %%good for CFL=.4
+   if shot==30 %%good for CFL=.4
       saveas(gcf,'figs/test_fig.png')
       GEN_pause;
    end
+
    %% open output file
    nnn      = num2str(n,'%3.3d');
    afile    = [outfile,nnn,'.a'];
@@ -247,14 +258,15 @@ for n = 1:20:nt
    fclose(aid);
    %%
    [n,nt]
-   hmax  = max(hh(:))
+   hmax  = max(hh(:));
+   disp(['hmax (rel): ',num2str(hmax*exp(n*alp*dt))]);
 
    %%plot advected thing
    subplot(2,2,4);
    ax = pcolor(XX/1e3,YY/1e3,hh);
    set(ax, 'EdgeColor', 'none');
    colorbar;
-   caxis([0 2]);
+   %caxis([0 2]);
    daspect([1 1 1]);
    ttl   = title('h(t), m');
    GEN_font(ttl);
@@ -270,10 +282,14 @@ for n = 1:20:nt
       plot(x2/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
       plot([x1,x2]/1e3,y1/1e3*[1 1],'r');
       if 1
-         y3 = 0*xx;
-         y3((xx>=x1)&(xx<=x2))   = ym/2;
+         %%plot section
+         y3       = 0*xx;
+         jc       = find((xx>=x1)&(xx<=x2));
+         y3(jc)   = ym/2;
+         fac      = (ym/2/1e3);
          plot(xx/1e3,y3/1e3,'k');
-         plot(xx/1e3,hh(:,46)*ym/2/1e3,'--k');
+         fac      = fac*exp(n*alp*dt);
+         plot(xx/1e3,hh(:,46)*fac,'--k');
       end
       hold off;
 

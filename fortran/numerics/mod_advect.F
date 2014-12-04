@@ -2,8 +2,13 @@
 
       implicit none
 
+      private
+
       integer, parameter   :: n_bdy     = 3
       integer, parameter   :: margin   = n_bdy
+
+      !!public subroutines:
+      public   :: waveadv_weno,waveadv_weno_1d,waveadv_lax_1d
 
       contains
 
@@ -449,11 +454,10 @@
       implicit none
 !
       integer, parameter   :: n_bdy  = 3
-      real,intent(in),dimension(idm,jdm) :: u
-      !,scuy,scvx,scp2i,scp2,LANDMASK
-      real,intent(inout),dimension(idm,jdm)   :: h
-      real,intent(in)                         :: dt
-      integer,intent(in)                        :: bc_opt
+      real,intent(in),dimension(idm,jdm)     :: u
+      real,intent(inout),dimension(idm,jdm)  :: h
+      real,intent(in)                        :: dt
+      integer,intent(in)                     :: bc_opt
 !
       real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
      &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad
@@ -524,25 +528,25 @@
       call weno3pd_v2_1d(h_pad,sao,u_pad,                               &
      &   scuy_pad,scp2i_pad,scp2_pad,dt)
 
-       !margin=n_bdy 
       do j=1,jj
-      do i=1-margin,ii+margin!![TW 28.1.2014]
+      do i=1-margin,ii+margin
           hp(i,j) = h_pad(i,j)+dt*sao(i,j)
       enddo
       enddo
-!
+
 ! --- Correction step
       call weno3pd_v2_1d(hp,sao,u_pad,                                  &
      &   scuy_pad,scp2i_pad,scp2_pad,dt)
 !$OMP PARALLEL DO
       do j=1,jj
-      do i=1-margin,ii+margin!![TW 28.1.2014]
+      do i=1-margin,ii+margin
            h_pad(i,j)  = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
       enddo
       enddo
 !$OMP END PARALLEL DO
 
       h  = h_pad(1:ii,1:jj)
+
       !!mask land (no waves on land)
       h  = h*(1-LANDMASK)
 
@@ -620,38 +624,35 @@
 
       !!fluxes in x dirn:
       do j=1,jj
-!       do l=1,isu(j)
-!       do i=max(0,ifu(j,l)),min(ii+2,ilu(j,l))
-        do i=0,ii+2!![TW 28.1.2014]
-          im1=i-1
+      do i=0,ii+2!![TW 28.1.2014]
+         im1=i-1
 !
-          if (u(i,j).gt.0.) then
-            im2=im1-1
+         if (u(i,j).gt.0.) then
+            !! lower-order fluxes
+            im2      = im1-1
+            ful(i,j) = u(i,j)*g(im1,j)*scuy(i,j)
 !
-            q0=cq00*g(im2,j)+cq01*g(im1,j)
-            q1=cq10*g(im1,j)+cq11*g(i  ,j)
-!
-            a0=ca0
-            a1=ca1*(abs(g(im2,j)-g(im1,j))+eps)                         &
+            !! coefficents to calc higher-order fluxes
+            q0 = cq00*g(im2,j)+cq01*g(im1,j)
+            q1 = cq10*g(im1,j)+cq11*g(i  ,j)
+            a0 = ca0
+            a1 = ca1*(abs(g(im2,j)-g(im1,j))+eps)                       &
      &            /(abs(g(im1,j)-g(i  ,j))+eps)
 !
-            ful(i,j)=u(i,j)*g(im1,j)*scuy(i,j)
-!
-
           else
-            ip1=i+1
-!
-            q0=cq11*g(im1,j)+cq10*g(i  ,j)
-            q1=cq01*g(i  ,j)+cq00*g(ip1,j)
-!
-            a0=ca1
-            a1=ca0*(abs(g(im1,j)-g(i  ,j))+eps)                         &
+            !! lower-order fluxes
+            ip1      = i+1
+            ful(i,j) = u(i,j)*g(i,j)*scuy(i,j)
+
+            !! coefficents to calc higher-order fluxes
+            q0 = cq11*g(im1,j)+cq10*g(i  ,j)
+            q1 = cq01*g(i  ,j)+cq00*g(ip1,j)
+            a0 = ca1
+            a1 = ca0*(abs(g(im1,j)-g(i  ,j))+eps)                       &
      &            /(abs(g(i  ,j)-g(ip1,j))+eps)
-!
-            ful(i,j)=u(i,j)*g(i  ,j)*scuy(i,j)
-!
           endif
-!
+
+          !! higher-order fluxes
           fuh(i,j)=u(i,j)*(a0*q0+a1*q1)/(a0+a1)*scuy(i,j)-ful(i,j)
 !
         enddo
@@ -659,9 +660,9 @@
 
 ! --- Update field with low order fluxes.
       do j=1,jj
-        do i=0,ii+1!![TW 28.1.2014]
-          gt(i,j)=g(i,j)-dt*(ful(i+1,j)-ful(i,j))*scp2i(i,j)
-        enddo
+      do i=0,ii+1!![TW 28.1.2014]
+         gt(i,j)  = g(i,j)-dt*(ful(i+1,j)-ful(i,j))*scp2i(i,j)
+      enddo
       enddo
 
 ! --- Obtain fluxes with limited high order correction fluxes.

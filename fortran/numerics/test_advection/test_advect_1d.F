@@ -15,12 +15,16 @@
       integer, parameter   :: bc_opt   = 1
          !1: periodic in x; 0: not periodic
 
-      integer, parameter :: ADV_METHOD = 0
-      real, parameter    :: CFL        = 0.8
+      integer, parameter :: ADV_METHOD = 1
+      real, parameter    :: CFL        = 0.4
       !!
       real   :: xm,ym
       real   :: xx(ii),yy(jj)
-      real,dimension(idm,jdm)   :: R,Theta,u,h,v
+      real,dimension(idm,jdm)   :: R,Theta,u,h,v,source
+
+      !! can try to have attenuation (set to 0.0 if don't want it)
+      !real,parameter :: alp   = 4.0e-4 !needs alp*dt<<1
+      real,parameter :: alp   = 0.0
 
       real   :: adv_dir,xc,yc,uc,Rc,angrot,dt,dtheta,PI
       integer  :: nt,n,i,j
@@ -29,7 +33,7 @@
       character(len=*),parameter :: outfile = "ADVweno"
       character(len=*),parameter :: outdir = "out/"
       character(len=3)           :: cts
-      character(len=80)          :: afile,bfile,stat1,stat2
+      character(len=80)          :: afile,bfile,stat1,stat2,ss
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       PI = 4.0*atan(1.0)
@@ -38,13 +42,7 @@
       xm = (ii+1)/2.0*dx
       ym = (jj+1)/2.0*dy
 
-      print*,' '
-      print*,'*****************************************'
-      print*,'Grid size : ',ii,jj
-      print*,'Scheme    : ',ADV_METHOD
-      print*,'CFL       : ',CFL
-      print*,'*****************************************'
-      print*,' '
+      source   = 0.0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set grid here
@@ -126,6 +124,21 @@
          end do
       end if
 
+      !! Print info
+      print*,' '
+      print*,'*****************************************'
+      print*,'Grid size : ',ii,jj
+      if (ADV_METHOD.eq.1) then
+         print*,'Scheme    :   WENO'
+      else
+         print*,'Scheme    :   Lax-Wendroff'
+      end if
+      print*,'CFL       : ',CFL
+      print*,'Time step : ',dt
+      print*,'*****************************************'
+      print*,' '
+
+
       !if (.false.) then
       if (.true.) then
          stat1 = 'replace'
@@ -170,12 +183,38 @@
       !do n = 1,1
          !print*,'timestep = ',n,' out of ',nt
 
+         source   = -alp*h!!attenuation source (sink)
+         if (1.eq.0) then
+            ss = 'Source before advection'
+            h  = h+source*dt
+         end if
+
          if (ADV_METHOD.eq.1) then
             !!advect for one time step
             call waveadv_weno_1d(h,u,dt,bc_opt)
          else
             !!advect for one time step
+            if (.false.) then
+               print*,'min/max source:',minval(source),maxval(source)
+            endif
             call waveadv_lax_1d(h,u,dt,bc_opt)
+         end if
+
+         if (1.eq.1) then
+            if (n.eq.1) ss = '*Split-step attenuation'
+            h  = h*exp(-alp*dt)
+         elseif (1.eq.1) then
+            if (n.eq.1) ss = '*Aprox. split-step attenuation'
+            !! gives an idea of effect of time step
+            h  = h*(1-alp*dt)
+         elseif (1.eq.1) then
+            if (n.eq.1) ss = '*Explicit source in advection scheme'
+            h  = h+source*dt
+         end if
+
+         if (n.eq.1) then
+            print*,ss
+            print*,'Atten. coeff :',alp
          end if
 
          !!output initial conditions for reading by matlab/python
@@ -188,6 +227,7 @@
          call wrt_afile_2d(afile,h,ii,jj,stat2,3)
       end do
 
+      print*,' '
       print*,'******************************************'
       print*,'finished writing results to:'
       print*,afile

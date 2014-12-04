@@ -16,7 +16,7 @@ import WIM2d_f2py    as Mwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-testing  = 3
+testing  = 1
 
 ##########################################################################
 if testing is 1:

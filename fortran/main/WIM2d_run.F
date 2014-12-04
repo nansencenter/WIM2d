@@ -123,6 +123,7 @@
       print*,'Beginning main integration...'
 
       !nt = 13!stop at a certain point for testing
+      !nt = 10*nt!extend to see true steady state
       reps  = 10!frequency of dumping
 
       do n=1,nt
@@ -367,6 +368,7 @@
       print*,'Beginning main integration...'
 
       !nt = 13!stop at a certain point for testing
+      !nt = 10*nt!extend run to see true steady state
       reps  = 10!frequency of dumping
 
       do n=1,nt
