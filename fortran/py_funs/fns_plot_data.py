@@ -7,7 +7,7 @@ from matplotlib import ticker
 import fns_get_data as Fdat
 
 #######################################################################
-def plot_1d(x,y,labs,f=None):
+def plot_1d(x,y,labs=None,f=None,**kwargs):
    # f  = plt.figure(figsize=[6,6],dpi=50)
    # plt.pcolor(grid_prams.X,grid_prams.Y,ice_fields.icec,cmap=cm.jet,vmax=Vmax,vmin=Vmin)
 
@@ -19,11 +19,12 @@ def plot_1d(x,y,labs,f=None):
       # no figure open so open a new one
       f  = plt.figure()
 
-   ax = plt.plot(x,y)
-   xl = plt.xlabel(labs[0], fontsize=16)
-   xl.set_fontname(fontname)
-   yl = plt.ylabel(labs[1], fontsize=16)
-   yl.set_fontname(fontname)
+   ax = plt.plot(x,y,**kwargs)
+   if not(labs is None):
+      xl = plt.xlabel(labs[0], fontsize=16)
+      xl.set_fontname(fontname)
+      yl = plt.ylabel(labs[1], fontsize=16)
+      yl.set_fontname(fontname)
 
 #  # fonts of axes:
 #  for tick in ax.axes.xaxis.get_major_ticks():

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 ## NB run from 'run' directory !!
 ##
 dd    = os.path.abspath("..")
-dirs  = [dd+"/bin",dd+"/run",dd+"/misc_py"]
+dirs  = [dd+"/bin",dd+"/run",dd+"/py_funs"]
 for n in range(0,len(dirs)):
    dd2   = dirs[n]
    if not(dd2 in sys.path):
@@ -98,12 +98,19 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
    # fourier coefficients of kernel:
    # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
    K_fou = alp*np.eye(N)[:,0]
-   if 1:
-      # introduce some directionality
+
+   ##############################################
+   if 0:
+      # introduce some directionality to scattering
       # K->K*(1+a*cos(\theta))
-      a           = .7
+      a  = .7
+
+      print('Warning!! - not isotropic scattering !!')
+      print('Relative amp of cosine = '+str(a)+'\n')
+
       K_fou[1]    = a/2.0*K_fou[0]
       K_fou[N-1]  = a/2.0*K_fou[0]
+   ##############################################
 
    sn    = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
@@ -272,8 +279,8 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
    return out
 ##############################################
 
-alp      = 1.0
 N        = 2**8
+alp      = 1.0e-5
 alp_dis  = 0.0e-5
 cg       = 1.0
 out      = solve_isotropic_ft(
@@ -284,31 +291,46 @@ M_c2ft   = out['M_c2ft']
 M_c2th   = out['M_c2th']
 
 ##############################################
-if 0:
+if 1:
    # test edge conditions
    print('Test edge conditions:')
-   ang   = out['angles'] 
-   print('angles (deg)')
-   print(ang*180/np.pi)
-   print('cosines')
-   print(np.cos(ang))
-   print('Im(E_edge)')
-   print(out['E_edge'].imag)
-   print('Re(E_edge)')
-   print(out['E_edge'].real)
-   print('Incident spectrum')
-   print(out['dirspec_inc'])
 
-   plt.plot(ang*180/np.pi,out['E_edge'].real)
-   plt.plot(ang*180/np.pi,out['dirspec_inc'],'--r')
-   plt.show()
+   ang   = out['angles'] 
+
+   if 0:
+      print('angles (deg)')
+      print(ang*180/np.pi)
+      print('cosines')
+      print(np.cos(ang))
+      print('Im(E_edge)')
+      print(out['E_edge'].imag)
+      print('Re(E_edge)')
+      print(out['E_edge'].real)
+      print('Incident spectrum')
+      print(out['dirspec_inc'])
+
+   if 0:
+      plt.plot(ang*180/np.pi,out['E_edge'].real)
+      plt.plot(ang*180/np.pi,out['dirspec_inc'],'--r')
+      plt.show()
+   elif 1:
+      fig   = Fplt.plot_1d(ang*180/np.pi,out['E_edge'].real,
+               labs=['Angle,  degrees','$E$'],linestyle='-',color='k')
+      Fplt.plot_1d(ang*180/np.pi,out['dirspec_inc'].real,
+               labs=None,f=fig,linestyle='--',color='r')
+
+      fname = 'fig_scripts/figs/SSboltzmann-EdgeCons.png'
+      plt.savefig(fname,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      fig.clf()
+      print('Saving to file : '+fname)
 ##############################################
 
 ##############################################
 if 1:
    # plot energy vs x:
-   npts  = 500
-   xx    = linspace(npts,0.0,1.0e3)
+   npts  = 5000
+   xx    = linspace(npts,0.0,500.0e3)
    E_n   = 0.0j*xx
    lam   = out['eig_vals']
 
@@ -353,159 +375,24 @@ if 1:
       En_x     = Mc2ft_x.dot(cn)
       print('E tot = '+str(En_x[0])+str(Ex_p+Ex_m))
 
-   fig   = plt.figure()
-   ax    = fig.add_subplot(1,1,1)
-   ax.plot(xx,E_n.real)
-   ax.set_yscale('log')
-   plt.show()
+   if 0:
+      fig   = plt.figure()
+      ax    = fig.add_subplot(1,1,1)
+      ax.plot(xx,E_n.real)
+      ax.set_yscale('log')
+      plt.show()
+   elif 1:
+      fig   = plt.figure()
+      ax    = fig.add_subplot(1,1,1)
+      Fplt.plot_1d(xx/1.0e3,E_n.real,f=fig,
+               labs=['$x$, km','$E$'],linestyle='-',color='k')
+
+      if alp_dis>0.0:
+         ax.set_yscale('log')
+
+      fname = 'fig_scripts/figs/SSboltzmann_E'+str(n_test)+'_profile.png'
+      plt.savefig(fname,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      fig.clf()
+      print('Saving to file : '+fname)
 ##############################################
-
-
-
-# return
-# 
-# #########################################################
-# v        = np.arange(0,ny)/float(ny-1) # ny points between 0,1
-# Tp0      = 8.0
-# Tp1      = 18.0
-# Tp_vec   = Tp0+(Tp1-Tp0)*v
-# 
-# if 0:
-#    # do a new calculation:
-# 
-#    ######################################################
-#    # set input ice conc/thickness
-#    ICE_MASK = np.zeros((nx,ny))
-#    ICE_MASK[np.logical_and(X>0.7*xmin,LANDMASK<1)]  = 1 # i>=24
-#    icec  = 0.75*ICE_MASK
-#    iceh  = 2.0*ICE_MASK
-#    dfloe = 250*ICE_MASK
-# 
-#    # set input wave fields
-#    WAVE_MASK   = np.zeros((nx,ny))
-#    WAVE_MASK[X<xmin*0.8]   = 1   # i<=15
-#    Hs    = 2.0*WAVE_MASK
-#    mwd   = -90.0*WAVE_MASK
-# 
-#    if 0:
-#       Tp = 12.0*WAVE_MASK
-#    else:
-#       Tp = np.zeros((nx,ny))
-#       for j in range(0,ny):
-#          Tp[:,j]  = Tp_vec[j]*WAVE_MASK[:,j]
-#    ######################################################
-# 
-#    # set in_fields:
-#    in_fields   = {'icec'   : icec,
-#                   'iceh'   : iceh,
-#                   'dfloe'  : dfloe,
-#                   'Hs'     : Hs,
-#                   'Tp'     : Tp,
-#                   'mwd'    : mwd}
-# 
-#    # parameters for advection/attenuation
-#    SOLVER      = 1
-#    ADV_DIM     = 1
-#    int_prams   = np.array([SOLVER,ADV_DIM])
-# 
-#    # do calculation in fortran:
-#    out_fields,outdir = Rwim.do_run(RUN_OPT=2,
-#                                    in_fields=in_fields,
-#                                    int_prams=int_prams)
-#    ######################################################
-# else:
-#    # load results of previous run:
-#    out_fields,outdir = Rwim.do_run(RUN_OPT=3)
-# #########################################################
-# 
-# #########################################################
-# # calculate maxima of tau_x and get Wmiz:
-# taux_max = np.zeros(ny)
-# Wmiz     = np.zeros(ny)
-# for j in range(0,ny):
-#    Dmax  = out_fields['dfloe'][:,j]
-#    taux  = out_fields['taux'] [:,j]
-#    ##
-#    taux_max[j] = taux.max() # max stress in Pa
-#    ##
-#    miz   = np.zeros(nx)
-#    miz[np.logical_and(Dmax>0.0,Dmax<250.0)]  = 1.0
-#    Wmiz[j]  = sum(miz*dx/1.0e3)  # MIZ width in km
-# #########################################################
-# 
-# #########################################################
-# def plot_diagnostics(Tp_vec,Wmiz,taux_max):
-#    # plot MIZ width and taux max
-# 
-#    figdir   = 'out_io/figs_diag'
-# 
-#    # MIZ width:
-#    fig   = figdir+'/Wmiz.png'
-#    f     = Fplt.plot_1d(Tp_vec,Wmiz,['$T_p$, s','$W_{MIZ}$, km'])
-#    plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-#    plt.close()
-#    f.clf()
-# 
-#    # tau_x
-#    fig   = figdir+'/taux.png'
-#    f     = Fplt.plot_1d(Tp_vec,taux_max,['$T_p$, s','stress ($x$ dir), Pa'])
-#    plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-#    plt.close()
-#    f.clf()
-# #########################################################
-# 
-# if 1:
-#    print("Tp (s) :")
-#    print(Tp_vec)
-# 
-#    print(" ")
-#    print("MIZ midth (km) :")
-#    print(Wmiz)
-# 
-#    print(" ")
-#    print("max tau_x (Pa) :")
-#    print(taux_max)
-# 
-#    print(" ")
-#    print("Plotting diagnostics...")
-#    print(" ")
-#    plot_diagnostics(Tp_vec,Wmiz,taux_max)
-# #########################################################
-# 
-# if 1:
-#    # plot results from binaries:
-#    print(" ")
-#    print("Getting inputs/outputs from binaries...")
-#    print(" ")
-# 
-#    ## look at initial fields:
-#    print("Plotting initial conditions...")
-#    grid_prams              = Fdat.fn_check_grid(outdir) # load grid from binaries
-#    ice_fields,wave_fields  = Fdat.fn_check_init(outdir) # load initial conditions from binaries
-#    ##
-#    figdir   = outdir+'/figs/'
-#    Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot initial conditions
-#    print("Plots in "+figdir+"/init")
-#    print(" ")
-# 
-#    ## look at results:
-#    print("Plotting results...")
-#    out_fields  = Fdat.fn_check_out_bin(outdir)
-#    # Fplt.fn_plot_final(grid_prams,out_fields,figdir)
-#    Fplt.fn_plot_final_V1d(grid_prams,Tp_vec,out_fields,figdir)
-#    print("Plots in "+figdir+"/final")
-# elif 0:
-#    # plot results from outputs:
-# 
-#    ## look at initial fields:
-#    print("Plotting initial conditions...")
-#    figdir   = outdir+'/figs/'
-#    Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir) # plot initial conditions
-#    print("Plots in "+figdir+"/init")
-#    print(" ")
-# 
-#    ## look at results:
-#    print("Plotting results...")
-#    # Fplt.fn_plot_final(grid_prams,out_fields,figdir)
-#    Fplt.fn_plot_final_V1d(grid_prams,Tp_vec,out_fields,figdir)
-#    print("Plots in "+figdir+"/final")
