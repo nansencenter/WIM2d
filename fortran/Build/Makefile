@@ -2,6 +2,7 @@
 CC	:=	gcc
 FC	:=	gfortran
 F2PY	:=	f2py
+MXC	:=	mex
 
 # root directory for source code
 # (relative to this one)
@@ -39,6 +40,9 @@ OFLAGS=-J$(MDIR)
 # Flags for f2py
 F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 
+# Flags for mex
+MEX_FLAGS=-largeArrayDims $(IFLAGS)
+
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh
 #   (cd ../run; ./run_WIM2d.sh)
@@ -51,6 +55,10 @@ TARGET_F	:=	WIM2d.exe
 #   (cd ../run; ipython run_WIM2d.py)
 PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
+
+# mex function to run non-interactive WIM in matlab
+MEX1		:=	$(src)/interfaces/WIM2d_run_mex.F
+TARGET_MEX1	:=	WIM2d_run_mex.mexmaci64
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
@@ -73,15 +81,22 @@ OBJS		:=      \
 $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
+all:	sh py mex1
+
 # Link objects to make executable $(TARGET_F)
-default: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+sh: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
-	cp $(TARGET_F) $(bin)
+	mv $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
-	cp $(TARGET_PY).so $(bin)
+	mv $(TARGET_PY).so $(bin)
+
+# Link objects to make python module $(TARGET_PY).so
+mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
+	$(MXC) $(MEX_FLAGS) $^
+	mv $(TARGET_MEX1) $(bin)
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
@@ -109,7 +124,7 @@ $(PROG_PY): 		$(OBJS) \
 				print_log_info.h \
 				WIM2d_run.h
 
-.PHONY: clean
+.PHONY: clean vclean mex1
 
 # clean: keep executable, but delete modules and objects
 clean:
@@ -117,7 +132,10 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F) $(bin)/$(TARGET_PY).so $(ODIR)/* $(MDIR)/*
+	rm $(bin)/$(TARGET_F)
+	rm $(bin)/$(TARGET_PY).so
+	rm $(bin)/$(TARGET_MEX1)
+	rm $(ODIR)/* $(MDIR)/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
