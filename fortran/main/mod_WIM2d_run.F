@@ -3,6 +3,12 @@
       !Author: Timothy Williams
       !Date:   20141118, 17:20:34 CET
 
+      module mod_wim2d_run
+
+      implicit none
+      
+      contains
+      
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wim2d_run
 
@@ -334,3 +340,5 @@
 
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      end module mod_wim2d_run

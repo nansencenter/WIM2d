@@ -52,7 +52,7 @@ TARGET_F	:=	WIM2d.exe
 PROG_PY		:=	$(src)/main/WIM2d_run.F
 TARGET_PY	:=	WIM2d_f2py
 
-OBJ_MAIN	:=	$(ODIR)/WIM2d_run.o
+OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
 OBJS		:=      \
 			$(ODIR)/mod_file_utils.o \
