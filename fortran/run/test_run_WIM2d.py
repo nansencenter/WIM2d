@@ -9,14 +9,14 @@ import struct
 ##
 dd   = os.path.abspath("..")
 sys.path.append(dd+"/bin")
-sys.path.append(dd+"/misc_py")
+sys.path.append(dd+"/py_funs")
 
 import run_WIM2d     as Rwim
 import WIM2d_f2py    as Mwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-testing  = 1
+testing  = 3
 
 ##########################################################################
 if testing is 1:

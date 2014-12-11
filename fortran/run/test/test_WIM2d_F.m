@@ -264,6 +264,14 @@ afile = [outdir,'/binaries/prog/wim_prog',cts,'.a'];
 bfile = [outdir,'/binaries/prog/wim_prog',cts,'.b'];
 
 %% get basic info from bfile
+%% - eg:
+%% > 04       Number of records
+%% > 150      Record length in x direction (elements)
+%% > 050      Record length in y direction (elements)
+%% > 01       Option number for solver
+%% > 01       Number of wave frequencies
+%% > 016      Number of wave directions
+
 bid   = fopen(bfile);
 C     = textscan(bid,'%2.2d %s %s %s',1);
 nrec  = C{1};
@@ -274,9 +282,11 @@ nx = C{1};
 C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
 ny = C{1};
 %%
-C        = textscan(bid,'%2.2d %s %s %s %s',2);
-SOLVER   = C{1}(1);
-nw       = C{1}(2);
+C        = textscan(bid,'%2.2d %s %s %s %s',1);
+SOLVER   = C{1};
+%%
+C        = textscan(bid,'%2.2d %s %s %s %s',1);
+nw       = C{1};
 %%
 C     = textscan(bid,'%3.3d %s %s %s %s',1);
 ndir  = C{1};
@@ -371,6 +381,13 @@ afile = [outdir,'/binaries/wim_out.a'];
 bfile = [outdir,'/binaries/wim_out.b'];
 
 %% get basic info from bfile
+%% - eg:
+%% > 04       Number of records
+%% > 150      Record length in x direction (elements)
+%% > 050      Record length in y direction (elements)
+%% > 01       Option number for solver
+%% > 01       Number of wave frequencies
+%% > 016      Number of wave directions
 bid   = fopen(bfile);
 C     = textscan(bid,'%2.2d %s %s %s',1);
 nrec  = C{1};
@@ -381,9 +398,11 @@ nx = C{1};
 C  = textscan(bid,'%3.3d %s %s %s %s %s %s',1);
 ny = C{1};
 %%
-C        = textscan(bid,'%2.2d %s %s %s %s',2);
-SOLVER   = C{1}(1);
-nw       = C{1}(2);
+C        = textscan(bid,'%2.2d %s %s %s %s',1);
+SOLVER   = C{1};
+%%
+C  = textscan(bid,'%2.2d %s %s %s %s',1);
+nw = C{1};
 %%
 C     = textscan(bid,'%3.3d %s %s %s %s',1);
 ndir  = C{1};
