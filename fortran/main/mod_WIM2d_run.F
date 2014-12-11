@@ -1,5 +1,5 @@
-      !WIM2d_run.F
-      !main code - also interface to python
+      !mod_WIM2d_run.F
+      !main code
       !Author: Timothy Williams
       !Date:   20141118, 17:20:34 CET
 

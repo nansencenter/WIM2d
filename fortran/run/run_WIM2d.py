@@ -60,7 +60,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
       print("###################################################")
       print(" ")
 
-      Mwim.wim2d_run()
+      Mwim.py_wim2d_run()
       
       print(" ")
       print("###################################################")
@@ -129,11 +129,16 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
          # 'in_fields' not given as input
          # - specify 'in_arrays' manually
 
-         GRID_OPT       = 1
-         nx,ny          = Mwim.get_grid_size()
-         X,Y,LANDMASK   = Mwim.retrieve_grid(GRID_OPT,nx,ny)
-         xmin           = X.min()
-         xmax           = X.max()
+         in_dir      = 'out/binaries'
+         grid_prams  = Fdat.fn_check_grid(in_dir)
+
+         n        = grid_prams['nx']
+         ny       = grid_prams['ny']
+         X        = grid_prams['X']
+         Y        = grid_prams['Y']
+         LANDMASK = grid_prams['LANDMASK']
+         xmin     = X.min()
+         xmax     = X.max()
 
          # set ice conc/thickness
          ICE_MASK = np.zeros((nx,ny))
@@ -164,7 +169,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
       print("###################################################")
       print(" ")
       
-      out_arrays  = Mwim.wim2d_run_io(in_arrays,int_prams)
+      out_arrays  = Mwim.py_wim2d_run_io(in_arrays,int_prams)
 
       print(" ")
       print("###################################################")

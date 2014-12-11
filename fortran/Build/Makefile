@@ -49,7 +49,7 @@ TARGET_F	:=	WIM2d.exe
 # - NB f2py needs the full path
 # - called by run_WIM2d.py
 #   (cd ../run; ipython run_WIM2d.py)
-PROG_PY		:=	$(src)/main/WIM2d_run.F
+PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
@@ -79,7 +79,7 @@ default: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	cp $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
-py:	$(PROG_PY) $(OBJS)
+py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 	cp $(TARGET_PY).so $(bin)
 
