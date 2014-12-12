@@ -341,4 +341,54 @@
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine mex_io_gate(y1,y2,y3,y4,y5                             &
+     &                  , x1,x2,x3,x4,x5,x6,int_prams, nx, ny,ni)
+      
+      !! gateway between run_wim2d_io.m,
+      !! mex function WIM2d_run_io_mex.F,
+      !! and wim2d_run_io subroutine in this file
+      !! - 3d arrays hard to do in mex/fortran
+
+      implicit none
+
+      integer,intent(in)   :: nx,ny,ni,int_prams(ni)
+      real,intent(in)      :: x1(nx*ny),x2(nx*ny),x3(nx*ny)             &
+     &                        ,x4(nx*ny),x5(nx*ny),x6(nx*ny)
+      real,intent(out)     :: y1(nx*ny),y2(nx*ny),y3(nx*ny)             &
+     &                        ,y4(nx*ny),y5(nx*ny)
+
+      integer                 :: i,j,s
+      real,dimension(nx,ny,6) :: in_arrays
+      real,dimension(nx,ny,5) :: out_arrays
+
+      do j=1,ny
+      do i=1,nx
+         s                 = i+(j-1)*nx
+         in_arrays(i,j,1)  = x1(s)
+         in_arrays(i,j,2)  = x2(s)
+         in_arrays(i,j,3)  = x3(s)
+         in_arrays(i,j,4)  = x4(s)
+         in_arrays(i,j,5)  = x5(s)
+         in_arrays(i,j,6)  = x6(s)
+      end do
+      end do
+
+      call wim2d_run_io(in_arrays,out_arrays,int_prams,nx,ny)
+
+      do j=1,ny
+      do i=1,nx
+         s     = i+(j-1)*nx
+         y1(s) = out_arrays(i,j,1)
+         y2(s) = out_arrays(i,j,2)
+         y3(s) = out_arrays(i,j,3)
+         y4(s) = out_arrays(i,j,4)
+         y5(s) = out_arrays(i,j,5)
+      end do
+      end do
+
+      return
+      end subroutine mex_io_gate
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       end module mod_wim2d_run

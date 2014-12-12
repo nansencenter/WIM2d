@@ -15,6 +15,7 @@ bin	:=	$(src)/bin
 # NB relative to this directory
 VPATH 	:=	$(src)/main:$(src)/misc:$(src)/init:$(src)/numerics
 VPATH 	:=	$(VPATH):$(src)/attenuation_youngs:$(src)/header_files
+VPATH 	:=	$(VPATH):$(src)/interfaces
 
 # directory where objects are kept
 ODIR	:=	objs
@@ -23,7 +24,7 @@ ODIR	:=	objs
 MDIR	:=	mods
 
 # header files for "include" statements
-# NB relative to $(ODIR)
+# NB also need to be in VPATH
 HDIR	:=	$(src)/header_files
 
 # # optimise code
@@ -57,8 +58,15 @@ PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
 # mex function to run non-interactive WIM in matlab
-MEX1		:=	$(src)/interfaces/WIM2d_run_mex.F
-TARGET_MEX1	:=	WIM2d_run_mex.mexmaci64
+MX_EXT		:=	mexmaci64
+MX1		:=	WIM2d_run_mex
+MEX1		:=	$(src)/interfaces/$(MX1).F
+TARGET_MEX1	:=	$(MX1).$(MX_EXT)
+
+# mex function to run interactive WIM in matlab
+MX2		:=	WIM2d_run_io_mex
+MEX2		:=	$(src)/interfaces/$(MX2).F
+TARGET_MEX2	:=	$(MX2).$(MX_EXT)
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
@@ -81,10 +89,10 @@ OBJS		:=      \
 $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
-all:	sh py mex1
+all:	py exe mex1 mex2
 
 # Link objects to make executable $(TARGET_F)
-sh: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
 
@@ -97,6 +105,10 @@ py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
 mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX1) $(bin)
+
+mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
+	$(MXC) $(MEX_FLAGS) $^
+	mv $(TARGET_MEX2) $(bin)
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
@@ -124,7 +136,11 @@ $(PROG_PY): 		$(OBJS) \
 				print_log_info.h \
 				WIM2d_run.h
 
-.PHONY: clean vclean mex1
+$(MEX1):		grid_info.h $(OBJ_MAIN)
+
+$(MEX2):		grid_info.h $(OBJ_MAIN)
+
+.PHONY: clean vclean mex1 mex2
 
 # clean: keep executable, but delete modules and objects
 clean:
@@ -132,10 +148,11 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F)
-	rm $(bin)/$(TARGET_PY).so
-	rm $(bin)/$(TARGET_MEX1)
-	rm $(ODIR)/* $(MDIR)/*
+	rm $(ODIR)/* $(MDIR)/* \
+	   $(bin)/$(TARGET_F) \
+	   $(bin)/$(TARGET_PY).so \
+	   $(bin)/$(TARGET_MEX1) \
+	   $(bin)/$(TARGET_MEX2)
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
