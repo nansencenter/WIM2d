@@ -176,13 +176,12 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,intent(in)                  :: nx,ny,int_prams(2)
-      real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,Dmax
-      real,dimension(nx,ny,5),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy
-!f2py intent(hide)   :: nx,ny
+      integer,intent(in)                  :: nx,ny
+      integer,dimension(2),intent(in)     :: int_prams   !!SOLVER,ADV_DIM
+      real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
+      real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
 
-      integer   :: SOLVER,ADV_DIM
-      !!
+      integer  :: SOLVER,ADV_DIM
       real     :: PI
       real     :: x_ext,y_ext,u_ref
       integer  :: nt,n,w,wth,reps
@@ -343,7 +342,8 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mex_io_gate(y1,y2,y3,y4,y5                             &
-     &                  , x1,x2,x3,x4,x5,x6,int_prams, nx, ny,ni)
+     &                  ,x1,x2,x3,x4,x5,x6,int_prams                    &
+     &                  ,nx,ny,ni)
       
       !! gateway between run_wim2d_io.m,
       !! mex function WIM2d_run_io_mex.F,

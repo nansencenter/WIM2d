@@ -2,18 +2,14 @@
 C
 #if 0
 C     
-C     matsq.F
-C     .F file needs to be preprocessed to generate .for equivalent
+C     CALL:
+C     [Dmax,Hs,Tp,taux,tauy]=...
+C        WIM2d_run_io_mex(c,h,Dmax,Hs,Tp,mwd,int_prams);
+C        int_prams   = [SOLVER,ADV_DIM]
 C     
 #endif
 C     
-C     matsq.f
-C
-C     squares the input matrix
-      
 C     This is a MEX-file for MATLAB.
-C     Copyright 1984-2006 The MathWorks, Inc.
-C     $Revision: 1.13.2.3 $
 
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 C-----------------------------------------------------------------------
@@ -28,7 +24,7 @@ C
       mwpointer x1_pr, x2_pr, x3_pr, x4_pr, x5_pr, x6_pr,ip_pr
 
       !!pointers to outputs
-      mwpointer y1_pr, y2_pr, y3_pr, y4_pr, y5_pr, y6_pr
+      mwpointer y1_pr, y2_pr, y3_pr, y4_pr, y5_pr
 C-----------------------------------------------------------------------
 C
 
@@ -48,14 +44,14 @@ C
       !! - need to be converted to double before passing to matlab (plhs)
       !! - use dble
       real   :: y1(ii*jj),y2(ii*jj),y3(ii*jj)                           &
-     &         ,y4(ii*jj),y5(ii*jj),y6(ii*jj)
+     &         ,y4(ii*jj),y5(ii*jj)
       character(len=4)   :: cii,cjj
 
 C     Check for proper number of arguments. 
-      if(nrhs .ne. 6) then
-         call mexErrMsgTxt('6 inputs required.')
-      elseif(nlhs .ne. 6) then
-         call mexErrMsgTxt('6 outputs required.')
+      if(nrhs .ne. 7) then
+         call mexErrMsgTxt('7 inputs required.')
+      elseif(nlhs .ne. 5) then
+         call mexErrMsgTxt('5 outputs required.')
       endif
 
 C     Get the size of the input arrays.
@@ -71,7 +67,7 @@ C     matrices shoulb be ii*jj
      &                     //cii//' x '//cjj)
       endif
       
-C     Check to insure the array is numeric (not strings).
+C     Check to ensure the array is numeric (not strings).
       if(mxIsNumeric(prhs(1)) .eq. 0) then
          call mexErrMsgTxt('Input must be a numeric array.')
       endif
@@ -87,7 +83,6 @@ C     Create matrix for the return arguments.
       y3_pr    = mxGetPr(plhs(3))
       y4_pr    = mxGetPr(plhs(4))
       y5_pr    = mxGetPr(plhs(5))
-      y6_pr    = mxGetPr(plhs(6))
 
       !!pointers to input memory
       x1_pr    = mxGetPr(prhs(1))

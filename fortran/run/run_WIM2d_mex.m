@@ -20,9 +20,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if 1
    %% run non-io 2d WIM:
-   disp('Running 2d WIM (on in/out)...');
+   disp('Running 2d WIM (no in/out)...');
    disp(' ');
-   addpath('../bin');
    WIM2d_run_mex;
    %%
    !cat out/log/wim2d.log
