@@ -352,11 +352,10 @@
 
       implicit none
 
-      integer,intent(in)   :: nx,ny,ni,int_prams(ni)
-      real,intent(in)      :: x1(nx*ny),x2(nx*ny),x3(nx*ny)             &
-     &                        ,x4(nx*ny),x5(nx*ny),x6(nx*ny)
-      real,intent(out)     :: y1(nx*ny),y2(nx*ny),y3(nx*ny)             &
-     &                        ,y4(nx*ny),y5(nx*ny)
+      integer,intent(in)                  :: nx,ny,ni
+      integer,dimension(ni)               :: int_prams
+      real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
+      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5
 
       integer                 :: i,j,s
       real,dimension(nx,ny,6) :: in_arrays
@@ -405,15 +404,15 @@
 
       integer,intent(in)   :: nx,ny,ni,int_prams(ni)
       real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
-      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4
-      integer,intent(out)  :: y5(ni)
+      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5
+      !integer,dimension(ni),intent(out)   :: y5
 
       y1 = x1**2
       y2 = x2**2
       y3 = x3**2
       y4 = x4**2+x5**2+x6**2
       !y5 = int_prams**2
-      y5 = 0
+      y5 = x5**2
 
       return
       end subroutine mex_io_gate_test

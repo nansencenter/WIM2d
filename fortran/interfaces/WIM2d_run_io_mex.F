@@ -19,14 +19,25 @@ C
 
       mwpointer plhs(*), prhs(*)
       mwpointer mxCreateDoubleMatrix, mxGetPr
+      integer*4   :: mexPrintf,k
 
       !!pointers to inputs
-      mwpointer x1_pr, x2_pr, x3_pr, x4_pr, x5_pr, x6_pr,ip_pr
+      integer,parameter :: Nin   = 7
+      mwpointer x1_pr
+      mwpointer x2_pr
+      mwpointer x3_pr
+      mwpointer x4_pr
+      mwpointer x5_pr
+      mwpointer x6_pr
+      mwpointer ip_pr
 
       !!pointers to outputs
-      mwpointer y1_pr, y2_pr, y3_pr, y4_pr, y5_pr
-      integer*4 mexPrintf
-      integer*4 k
+      integer,parameter :: Nout  = 5
+      mwpointer y1_pr
+      mwpointer y2_pr
+      mwpointer y3_pr
+      mwpointer y4_pr
+      mwpointer y5_pr
       
 C-----------------------------------------------------------------------
 C
@@ -35,14 +46,16 @@ C
 
       integer nlhs, nrhs, mxIsNumeric
       mwsize mxGetM, mxGetN
-      mwsize m, n, size
-      integer,parameter :: ni = 2
-      integer,parameter :: DO_TEST  = 1   !!test i-o for reals,integers
+      mwsize m,n,size
+      mwsize m2,n2,size2
+      integer,parameter :: ni       = 2
+      integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 
       !!inputs from matlab - need to be double precision
-      real*8   :: x1(ii*jj),x2(ii*jj),x3(ii*jj)                         &
-     &            ,x4(ii*jj),x5(ii*jj),x6(ii*jj),ip(ni)
-      integer  :: j,int_prams(ni)
+      real*8,dimension(ii*jj) :: x1,x2,x3,x4,x5,x6
+      real*8,dimension(ni)    :: ip
+      integer  :: j
+      logical  :: critter
 
       !! outputs from main subroutine (float)
       !! - need to be converted to double before passing to matlab (plhs)
@@ -50,32 +63,37 @@ C
       real,dimension(ii*jj)   :: y1,y2,y3,y4,y5
       integer,dimension(ni)   :: y6             !DO_TEST = 1
       character(len=4)        :: cii,cjj,cj,cm,cn
+      character(len=80)       :: msg
 
 C     Check for proper number of arguments. 
-      if(nrhs .ne. 7) then
+      if(nrhs .ne. Nin) then
          call mexErrMsgTxt('7 inputs required.')
-      elseif(nlhs .ne. 5) then
+      elseif(nlhs .ne. Nout) then
          call mexErrMsgTxt('5 outputs required.')
       endif
+
+      m     = mxGetM(prhs(1))
+      n     = mxGetN(prhs(1))
+      size  = m*n
+      m2    = mxGetM(prhs(7))
+      n2    = mxGetN(prhs(7))
+      size2 = m2*n2
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Get the size of the input arrays.
       do j=7,7
-         m     = mxGetM(prhs(j))
-         n     = mxGetN(prhs(j))
-         size  = m*n
          write(cii,'(i4.4)') 1
          write(cjj,'(i4.4)') ni
          write(cj,'(i1.1)')  j
-         write(cm,'(i1.1)')  m
-         write(cn,'(i1.1)')  n
+         write(cm,'(i1.1)')  m2
+         write(cn,'(i1.1)')  n2
 
 C        matrices should be 1*ni
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
             k  = mexPrintf(cii//' x '//cjj//'\n')
-         if((m.ne.1).or.(n.ne.ni)) then
+         if((m2.ne.1).or.(n2.ne.ni)) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
@@ -84,17 +102,16 @@ C        matrices should be 1*ni
          endif
       end do
       do j=1,6
-         m     = mxGetM(prhs(j))
-         n     = mxGetN(prhs(j))
-         size  = m*n
          write(cii,'(i4.4)') ii
          write(cjj,'(i4.4)') jj
          write(cj,'(i1.1)')  j
-         write(cm,'(i4.4)')  m
-         write(cn,'(i4.4)')  n
+         write(cm,'(i4.4)')  mxGetM(prhs(j))
+         write(cn,'(i4.4)')  mxGetN(prhs(j))
 
 C        matrices should be ii*jj
-         if((m.ne.ii).or.(n.ne.jj)) then
+         critter  = ((mxGetM(prhs(j)).ne.ii)                            &
+     &               .or.(mxGetN(prhs(j)).ne.jj))
+         if (critter) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
@@ -106,9 +123,12 @@ C        matrices should be ii*jj
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
 C     Check to ensure the array is numeric (not strings).
-      if(mxIsNumeric(prhs(1)) .eq. 0) then
-         call mexErrMsgTxt('Input must be a numeric array.')
-      endif
+      do j=1,7
+         write(cj,'(i1.1)')  j
+         if(mxIsNumeric(prhs(j)) .eq. 0) then
+            call mexErrMsgTxt('Input '//cj//' must be a numeric array.')
+         endif
+      end do
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!pointers to input memory
@@ -127,7 +147,7 @@ C     Check to ensure the array is numeric (not strings).
       call mxCopyPtrToReal8(x4_pr,x4,size)
       call mxCopyPtrToReal8(x5_pr,x5,size)
       call mxCopyPtrToReal8(x6_pr,x6,size)
-      call mxCopyPtrToReal8(ip_pr,ip,ni)
+      call mxCopyPtrToReal8(ip_pr,ip,size2)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -138,7 +158,7 @@ C     Create matrix for the return arguments.
       if (DO_TEST.eq.0) then
          plhs(5)  = mxCreateDoubleMatrix(m,n,0)
       else
-         plhs(5)  = mxCreateDoubleMatrix(1,ni,0)
+         plhs(5)  = mxCreateDoubleMatrix(m2,n2,0)
       end if
 
       !!pointers to output memory
@@ -150,29 +170,64 @@ C     Create matrix for the return arguments.
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      k  = mexPrintf('Have pointers, about to do computations...')
+      k  = mexPrintf('Have pointers, about to do computations...\n')
 C     Call the computational subroutine.
-      if (DO_TEST.eq.0) then
-         k  = mexPrintf('Entering mex_io_gate...')
-         call mex_io_gate(y1,y2,y3,y4,y5                                &
-     &                    ,real(x1),real(x2),real(x3)                   &
-     &                    ,real(x4),real(x5),real(x6)                   &
-     &                    ,nint(ip),ii,jj,ni)
-      elseif (.false.) then
-         k  = mexPrintf('Entering mex_io_gate_test...')
-         call mex_io_gate_test(y1,y2,y3,y4,y6                           &
-     &                         ,real(x1),real(x2),real(x3)              &
-     &                         ,real(x4),real(x5),real(x6)              &
-     &                         ,nint(ip),ii,jj,ni)
-      else
-         k  = mexPrintf('Doing simple test...')
+      y1 = 0.0
+      y2 = 0.0
+      y3 = 0.0
+      y4 = 0.0
+      y5 = 0.0
+      y6 = 0
+
+      if (.false.) then
+         !!simple test
+         k  = mexPrintf('Doing simple test...\n')
          y1 = real(x1)**2
          y2 = real(x2)**2
          y3 = real(x3)**2
          y4 = real(x4)**2+real(x5)**2+real(x6)**2
+         y5 = real(x5)**2
+         !!
+         write(msg,'(a,i2.2,a,i2.2,a)') 'int_prams = (',                &
+     &                  nint(ip(1)),',',nint(ip(2)),')\n'
+         k  = mexPrintf(trim(msg))
+         k  = mexPrintf('\n')
+         !!
          y6 = nint(ip)**2
+      elseif (.false.) then
+         k  = mexPrintf('Entering mex_io_gate_test...\n')
+         call mex_io_gate_test(y1,y2,y3,y4,y5                           &
+     &                         ,real(x1),real(x2),real(x3)              &
+     &                         ,real(x4),real(x5),real(x6)              &
+     &                         ,nint(ip),ii,jj,ni)
+      else
+         k  = mexPrintf('Entering mex_io_gate...\n')
+         call mex_io_gate(y1,y2,y3,y4,y5                                &
+     &                    ,real(x1),real(x2),real(x3)                   &
+     &                    ,real(x4),real(x5),real(x6)                   &
+     &                    ,nint(ip),ii,jj,ni)
       end if
-      k  = mexPrintf('Finished computations...')
+!     if (DO_TEST.eq.0) then
+!        k  = mexPrintf('Entering mex_io_gate...')
+!        call mex_io_gate(y1,y2,y3,y4,y5                                &
+!    &                    ,real(x1),real(x2),real(x3)                   &
+!    &                    ,real(x4),real(x5),real(x6)                   &
+!    &                    ,nint(ip),ii,jj,ni)
+!     elseif (.false.) then
+!        k  = mexPrintf('Entering mex_io_gate_test...')
+!        call mex_io_gate_test(y1,y2,y3,y4,y6                           &
+!    &                         ,real(x1),real(x2),real(x3)              &
+!    &                         ,real(x4),real(x5),real(x6)              &
+!    &                         ,nint(ip),ii,jj,ni)
+!     else
+!        k  = mexPrintf('Doing simple test...')
+!        y1 = real(x1)**2
+!        y2 = real(x2)**2
+!        y3 = real(x3)**2
+!        y4 = real(x4)**2+real(x5)**2+real(x6)**2
+!        y6 = nint(ip)**2
+!     end if
+      k  = mexPrintf('Finished computations...\n')
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -184,7 +239,7 @@ C     Load the data into pointers, which are the outputs to MATLAB
       if (DO_TEST.eq.0) then
          call mxCopyReal8ToPtr(dble(y5),y5_pr,size)
       else
-         call mxCopyReal8ToPtr(dble(y6),y5_pr,ni)
+         call mxCopyReal8ToPtr(dble(y6),y5_pr,size2)
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -3,6 +3,8 @@ function s1 = fn_plot_final(grid_prams,outdir)
 if isstruct(outdir)
    %% already have the data required to plot;
    s1 = outdir;
+   X  = grid_prams.X;
+   Y  = grid_prams.Y;
 else
    %% load from binaries;
    afile = [outdir,'/binaries/wim_out.a'];

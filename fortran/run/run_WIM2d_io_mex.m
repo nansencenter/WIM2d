@@ -42,13 +42,13 @@ end
 %  [Dmax,Hs,Tp,taux,tauy]=...
 %     WIM2d_run_io_mex(c,h,Dmax,Hs,Tp,mwd);
 disp('Calling mex function WIM2d_run_io_mex...')
-[out_fields.Dmax,out_fields.Hs,out_fields.Tp,...
-   out_fields.taux,out_fields.tauy]=...
+[out_fields.Dmax,out_fields.tau_x,out_fields.tau_y,...
+   out_fields.Hs,out_fields.Tp]=...
       WIM2d_run_io_mex(ice_fields.cice,ice_fields.hice,ice_fields.Dmax,...
          wave_fields.Hs,wave_fields.Tp,wave_fields.mwd,int_prams);
-if 0
+if 1
    disp('Plotting results...');
-   fn_plot_final(out_fields);
+   fn_plot_final(grid_prams,out_fields);
 else
    %%test i-o:
    %%(compile with call to mex_io_gate_test)
@@ -57,6 +57,10 @@ else
    d2 = norm(abs(out_fields.Hs-(ice_fields.hice).^2))
    d3 = norm(abs(out_fields.Tp-(ice_fields.Dmax).^2))
    d4 = norm(abs(out_fields.taux-(wave_fields.Hs).^2-(wave_fields.Tp).^2-(wave_fields.mwd).^2))
-   {out_fields.tauy,int_prams}
-   d5 = norm(abs(out_fields.tauy-(int_prams).^2))
+   if 0
+      {out_fields.tauy,int_prams}
+      d5 = norm(abs(out_fields.tauy-(int_prams).^2))
+   else
+      d5 = norm(abs(out_fields.tauy-(wave_fields.Tp).^2))
+   end
 end
