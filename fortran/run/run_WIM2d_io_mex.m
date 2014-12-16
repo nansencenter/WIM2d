@@ -46,6 +46,17 @@ disp('Calling mex function WIM2d_run_io_mex...')
    out_fields.taux,out_fields.tauy]=...
       WIM2d_run_io_mex(ice_fields.cice,ice_fields.hice,ice_fields.Dmax,...
          wave_fields.Hs,wave_fields.Tp,wave_fields.mwd,int_prams);
-
-disp('Plotting results...');
-fn_plot_final(out_fields);
+if 0
+   disp('Plotting results...');
+   fn_plot_final(out_fields);
+else
+   %%test i-o:
+   %%(compile with call to mex_io_gate_test)
+   disp('Testing results...');
+   d1 = norm(abs(out_fields.Dmax-(ice_fields.cice).^2))
+   d2 = norm(abs(out_fields.Hs-(ice_fields.hice).^2))
+   d3 = norm(abs(out_fields.Tp-(ice_fields.Dmax).^2))
+   d4 = norm(abs(out_fields.taux-(wave_fields.Hs).^2-(wave_fields.Tp).^2-(wave_fields.mwd).^2))
+   {out_fields.tauy,int_prams}
+   d5 = norm(abs(out_fields.tauy-(int_prams).^2))
+end

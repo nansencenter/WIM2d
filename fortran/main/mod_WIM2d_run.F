@@ -345,7 +345,7 @@
      &                  ,x1,x2,x3,x4,x5,x6,int_prams                    &
      &                  ,nx,ny,ni)
       
-      !! gateway between run_wim2d_io.m,
+      !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
       !! and wim2d_run_io subroutine in this file
       !! - 3d arrays hard to do in mex/fortran
@@ -389,6 +389,34 @@
 
       return
       end subroutine mex_io_gate
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine mex_io_gate_test(y1,y2,y3,y4,y5                        &
+     &                  ,x1,x2,x3,x4,x5,x6,int_prams                    &
+     &                  ,nx,ny,ni)
+      
+      !! test gateway between run_wim2d_io_mex.m,
+      !! mex function WIM2d_run_io_mex.F,
+      !! and wim2d_run_io subroutine in this file
+      !! - check in-out for reals and integers
+
+      implicit none
+
+      integer,intent(in)   :: nx,ny,ni,int_prams(ni)
+      real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
+      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4
+      integer,intent(out)  :: y5(ni)
+
+      y1 = x1**2
+      y2 = x2**2
+      y3 = x3**2
+      y4 = x4**2+x5**2+x6**2
+      !y5 = int_prams**2
+      y5 = 0
+
+      return
+      end subroutine mex_io_gate_test
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim2d_run
