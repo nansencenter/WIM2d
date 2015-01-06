@@ -125,13 +125,10 @@ $(ODIR)/RTparam_outer.o:        $(ODIR)/RTparam_fast.o
 $(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o
 $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 #
-$(OBJ_MAIN):			$(OBJS) \
-				WIM2d_run.h
-
+$(OBJ_MAIN):			$(OBJS)
 
 $(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
-$(PROG_PY): 		$(OBJS) \
-				WIM2d_run.h
+$(PROG_PY): 		$(OBJS)
 
 $(MEX1):		grid_info.h $(OBJ_MAIN)
 
