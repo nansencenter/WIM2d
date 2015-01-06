@@ -90,6 +90,7 @@ $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
+# (default)
 exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
@@ -125,15 +126,11 @@ $(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o
 $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 #
 $(OBJ_MAIN):			$(OBJS) \
-				print_screen_info.h \
-				print_log_info.h \
 				WIM2d_run.h
 
 
 $(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
 $(PROG_PY): 		$(OBJS) \
-				print_screen_info.h \
-				print_log_info.h \
 				WIM2d_run.h
 
 $(MEX1):		grid_info.h $(OBJ_MAIN)

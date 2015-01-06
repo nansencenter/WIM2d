@@ -6,6 +6,28 @@
       module mod_wim2d_run
 
       implicit none
+
+      private
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! variables common to subroutines here
+      integer  :: SOLVER,ADV_DIM
+
+      real     :: x_ext,y_ext,u_ref
+      integer  :: nt,n,w,wth,reps
+      logical  :: critter
+
+      character(len=80) :: log_file,this_subr
+
+      real                    :: W_MIZ,taux_max,tauy_max                &
+     &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
+
+      real :: et,tictoc(2) !!print time
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!only subroutines are public
+      public   :: wim2d_run,wim2d_run_io                                &
+     &            ,mex_io_gate,mex_io_gate_test 
       
       contains
       
@@ -40,13 +62,8 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,parameter :: SOLVER   = 1
-      integer,parameter :: ADV_DIM  = 2
       !!
       real     :: PI
-      real     :: x_ext,y_ext,u_ref
-      integer  :: nt,n,w,wth,reps
-      logical  :: critter
 
       integer,parameter :: DO_CHECK_PROG  = 1
       integer,parameter :: DO_CHECK_INIT  = 1
@@ -55,22 +72,23 @@
 
       !!test outputs
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
-      real                    :: W_MIZ,taux_max,tauy_max                &
-     &   ,taux_min,tauy_min,Dmax_min,Dmax_max
       integer                 :: nMIZ
 
-      !!
-      character(len=80)          :: outdir
-      character(len=80)          :: log_file
-      character(len=*),parameter :: this_subr   = 'wim2d_run'
+      !! function to print time
+      real  :: etime
 
-      real :: et,etime,tictoc(2) !!print time
+      character(len=80) :: outdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      SOLVER   = 1
+      ADV_DIM  = 2
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
       outdir   = 'out'
-      log_file = trim(outdir)//"/log/wim2d.log"
+      
+      log_file    = trim(outdir)//"/log/wim2d.log"
+      this_subr   = 'wim2d_run'
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -124,7 +142,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
-      include "print_screen_info.h"
+      !include "print_screen_info.h"
+      call print_screen_info()
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
@@ -137,10 +156,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info to screen again
-      include "print_screen_info.h"
+      !include "print_screen_info.h"
+      call print_screen_info()
 
       !!print  some outputs to log file
-      include "print_log_info.h"
+      !include "print_log_info.h"
+      call print_log_info()
 
       end subroutine wim2d_run
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -181,9 +202,7 @@
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
 
-      integer  :: SOLVER,ADV_DIM
       real     :: PI
-      real     :: x_ext,y_ext,u_ref
       integer  :: nt,n,w,wth,reps
       logical  :: critter
 
@@ -196,17 +215,13 @@
 
       !!test outputs
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
-      real                    :: W_MIZ,taux_max,tauy_max                &
-     &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
-     &   ,Tmean,Tvar,Tstdev
+      real  :: Tmean,Tvar,Tstdev
       integer                 :: nMIZ
 
-      !!
-      character(len=80)          :: outdir
-      character(len=80)          :: log_file
-      character(len=*),parameter :: this_subr   = 'wim2d_run_io'
+      !! function to print time
+      real  :: etime
 
-      real :: et,etime,tictoc(2) !!print time
+      character(len=80) :: outdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SOLVER   = int_prams(1) ! solver to use for advection/attenuation
@@ -219,7 +234,9 @@
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
       outdir   = "out_io/"
-      log_file = trim(outdir)//'/log/wim2d.log'
+      
+      log_file    = trim(outdir)//"/log/wim2d.log"
+      this_subr   = 'wim2d_run_io'
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -312,7 +329,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
-      include "print_screen_info.h"
+      !include "print_screen_info.h"
+      call print_screen_info()
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
@@ -325,10 +343,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info to screen again
-      include "print_screen_info.h"
+      !include "print_screen_info.h"
+      call print_screen_info()
 
       !!print  some outputs to log file
-      include "print_log_info.h"
+      !include "print_log_info.h"
+      call print_log_info()
 
       !! put in same order as binary outputs:
       out_arrays(:,:,1) = dfloe
@@ -416,6 +436,137 @@
 
       return
       end subroutine mex_io_gate_test
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine print_screen_info()
+
+      use mod_gridinfo
+      use mod_common_wim
+      use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
+      use mod_wavesice, only: amax,amin,CFL,dt
+
+      implicit none
+
+      integer,parameter :: ndir  = n_wavdir
+      integer,parameter :: nw    = n_wave_freq
+
+      print*,' '
+      print*,'******************************************************'
+      print*,'CFL number:                       ' ,CFL
+      print*,'Maximum wave group velocity (m/s):' ,amax
+      print*,'Time step (s):                    ' ,dt
+      print*,'Number of time steps:             ' ,nt
+      print*,'Time interval (h):                ' ,(nt*dt)/60.0/60.0
+      print*,' '
+      print*,'Grid dimensions:                  ' ,idm,jdm
+      print*,'Spatial resolution (km):          ' ,dx/1.0e3,dy/1.0e3
+      print*,'Extent of domain (km):            ' ,x_ext,y_ext
+      print*,' '
+      print*,'Minimum period (s):               ' ,1.0/freq_vec(nw)
+      print*,'Maximum period (s):               ' ,1.0/freq_vec(1)
+      print*,'Number of wave frequencies:       ' ,nw
+      print*,'Number of wave directions:        ' ,ndir
+      print*,'Directional resolution (degrees): ' ,360.0/(1.0*ndir)
+      print*,'******************************************************'
+      print*,' '
+
+      end subroutine print_screen_info
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine print_log_info()
+      !!print text to log file during run
+
+      use mod_gridinfo
+      use mod_wim_prams
+      use mod_common_wim
+      use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
+      use mod_wavesice, only: amax,amin,CFL,dt
+
+      implicit none
+
+      integer,parameter :: ndir  = n_wavdir
+      integer,parameter :: nw    = n_wave_freq
+
+      print*,'Printing info to log file: ',trim(log_file)
+      open(unit=3,file=trim(log_file),status = 'replace')
+
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'Outer subroutine:'
+      write(3,'(a,a)'),'>> ',this_subr
+      write(3,'(a)'),'*************************************************'
+
+      write(3,'(a)'),' '
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'Main parameters:'
+      write(3,'(a,i2.2)'),'SOLVER:                           ' ,SOLVER
+      write(3,'(a)'),'*************************************************'
+
+      write(3,'(a)'),' '
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'WIM parameters:'
+      write(3,'(a,f4.2)'),'Brine volume fraction:      ',vbf
+      write(3,'(a,e10.3)'),'Youngs modulus (Pa):        ',young
+      write(3,'(a,e10.3)'),'Flexural strength (Pa):     ',sigma_c
+      write(3,'(a,e10.3)'),'Breaking strain:            ',epsc
+      write(3,'(a,f5.2)'),'Damping (Pa.s/m):           ',visc_rp
+      write(3,'(a)'),'*************************************************'
+
+      write(3,'(a)'),' '
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'Other Parameters:'
+      write(3,'(a,f6.1)'),'Time step (s):                    ' ,dt
+      write(3,'(a,f4.3)'),'CFL number:                       ' ,CFL
+      write(3,'(a,f5.2)'),'Maximum wave group velocity (m/s):' ,amax
+      write(3,'(a,f6.1)'),'Time step (s):                    ' ,dt
+      write(3,'(a,i4.4)'),'Number of time steps:             ' ,nt
+      write(3,'(a,f5.2)'),'Time interval (h):                '          &
+     &    ,(nt*dt)/60.0/60.0
+      write(3,'(a)'),'*************************************************'
+
+      write(3,'(a)'),' '
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a,i4.4,a,i4.4)'),'Grid dimensions:                  '   &
+     &                        ,idm,' ',jdm
+      write(3,'(a,f4.1,a,f4.1)'),'Spatial resolution (km):          '   &
+     &                        ,dx/1.0e3,' ',dy/1.0e3
+      write(3,'(a,f6.1,a,f6.1)'),'Extent of domain (km):            '   &
+     &                        ,x_ext,' ',y_ext
+
+      write(3,'(a)'),' '
+      write(3,'(a,f5.2)'),'Minimum period (s):               '          &
+     &                   ,1.0/freq_vec(nw)
+      write(3,'(a,f5.2)'),'Maximum period (s):               '          &
+     &                   ,1.0/freq_vec(1)
+      write(3,'(a,i2.2)'),'Number of wave frequencies:       ' , nw
+      write(3,'(a,i3.3)'),'Number of wave directions:        ' , ndir
+      write(3,'(a,f5.2)'),'Directional resolution (degrees): '
+     &                   ,360.0/(1.0*ndir)
+      write(3,'(a)'),'*************************************************'
+
+      write(3,'(a)'),' '
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),'Diagnostics:'
+      write(3,'(a,f6.1)'),'MIZ width (km): ',W_MIZ
+      write(3,'(a,f6.1,a,f6.1)'),'Dmax range in MIZ (m): '              &
+     &                          ,Dmax_min,' ',Dmax_max
+      write(3,'(a,e10.3,a,e10.3)'),'tau_x range (Pa): '                 &
+     &                          ,taux_min,' ',taux_max
+      write(3,'(a,e10.3,a,e10.3)'),'tau_y range (Pa): '                 &
+     &                          ,tauy_min,' ',tauy_max
+      write(3,'(a)'),'*************************************************'
+
+      write(3,'(a,f6.1)'),' '
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a,f7.1)'),'Elapsed time (min):',et/60.0
+      write(3,'(a)'),'*************************************************'
+      write(3,'(a)'),' '
+
+      !!close file
+      close(3)
+
+      end subroutine print_log_info
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim2d_run
