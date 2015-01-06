@@ -89,8 +89,6 @@ OBJS		:=      \
 $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
-all:	py exe mex1 mex2
-
 # Link objects to make executable $(TARGET_F)
 exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
@@ -109,6 +107,8 @@ mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX2) $(bin)
+
+all:	py exe mex1 mex2
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
