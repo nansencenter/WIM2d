@@ -22,7 +22,7 @@ C
       integer*4   :: mexPrintf,k
 
       !!pointers to inputs
-      integer,parameter :: Nin   = 7
+      integer,parameter :: Nin   = 8
       mwpointer x1_pr
       mwpointer x2_pr
       mwpointer x3_pr
@@ -71,7 +71,7 @@ C
 
 C     Check for proper number of arguments. 
       if(nrhs .ne. Nin) then
-         call mexErrMsgTxt('7 inputs required.')
+         call mexErrMsgTxt('8 inputs required.')
       elseif(nlhs .ne. Nout) then
          call mexErrMsgTxt('5 outputs required.')
       endif
@@ -96,10 +96,6 @@ C     Get the size of the input arrays.
          write(cn,'(i1.1)')  n3
 
 C        matrices should be 1*nr
-            k  = mexPrintf('Input '//cj//' dimensions:\n')
-            k  = mexPrintf(cm//' x '//cn//'\n')
-            k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
          if((m3.ne.1).or.(n3.ne.nr)) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
@@ -116,10 +112,6 @@ C        matrices should be 1*nr
          write(cn,'(i1.1)')  n2
 
 C        matrices should be 1*ni
-            k  = mexPrintf('Input '//cj//' dimensions:\n')
-            k  = mexPrintf(cm//' x '//cn//'\n')
-            k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
          if((m2.ne.1).or.(n2.ne.ni)) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
@@ -176,7 +168,7 @@ C     Check to ensure the array is numeric (not strings).
       call mxCopyPtrToReal8(x5_pr,x5,size)
       call mxCopyPtrToReal8(x6_pr,x6,size)
       call mxCopyPtrToReal8(ip_pr,ip,size2)
-      call mxCopyPtrToReal8(rp_pr,rp,size2)
+      call mxCopyPtrToReal8(rp_pr,rp,size3)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

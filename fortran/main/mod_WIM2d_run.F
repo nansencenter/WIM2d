@@ -450,8 +450,9 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mex_io_gate(y1,y2,y3,y4,y5                             &
-     &                  ,x1,x2,x3,x4,x5,x6,int_prams                    &
-     &                  ,real_prams,nx,ny,ni,nr)
+     &                  ,x1,x2,x3,x4,x5,x6                              &
+     &                  ,int_prams,real_prams                           &
+     &                  ,nx,ny,ni,nr)
       
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,

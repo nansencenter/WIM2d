@@ -36,6 +36,12 @@ if nargin==0
    SOLVER      = 1;
    ADV_DIM     = 2;
    int_prams   = [SOLVER,ADV_DIM];
+   %%
+   young          = 2.0e9;
+   visc_rp        = 13;
+   duration_hours = 17.7;
+   duration       = duration_hours*60*60;
+   real_prams     = [young,visc_rp,duration];
 end
 
 %% Call to mex-function:
@@ -45,7 +51,11 @@ disp('Calling mex function WIM2d_run_io_mex...')
 [out_fields.Dmax,out_fields.tau_x,out_fields.tau_y,...
    out_fields.Hs,out_fields.Tp]=...
       WIM2d_run_io_mex(ice_fields.cice,ice_fields.hice,ice_fields.Dmax,...
-         wave_fields.Hs,wave_fields.Tp,wave_fields.mwd,int_prams);
+         wave_fields.Hs,wave_fields.Tp,wave_fields.mwd,int_prams,real_prams);
+
+%% delete annnoying file from "print*" commands in fortran code
+!rm fort.6
+
 if 1
    disp('Plotting results...');
    fn_plot_final(grid_prams,out_fields);
