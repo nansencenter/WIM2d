@@ -12,11 +12,10 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
       integer  :: SOLVER,ADV_DIM
-      integer  :: DO_CHECK_PROG,DO_CHECK_INIT
+      integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
 
-      real     :: x_ext,y_ext,u_ref
+      real     :: x_ext,y_ext,u_ref,duration
       integer  :: nt
-      integer  :: n,w,wth,reps!!TODO only have these in wim2d_run_common()
 
       character(len=80) :: log_file,this_subr,outdir
 
@@ -68,8 +67,7 @@
 
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
-
-      !!test outputs
+      integer           :: w,wth
 
       !! function to print time
       real  :: etime
@@ -80,6 +78,7 @@
 
       DO_CHECK_PROG  = 1
       DO_CHECK_INIT  = 1
+      DO_CHECK_FINAL = 1
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -132,25 +131,19 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set number of time steps
-      u_ref = amin+.7*(amax-amin);
-      dt    = CFL*dx/amax
-      x_ext = idm*dx/1.0e3!km
-      y_ext = jdm*dy/1.0e3!km
-      nt    = nint( 1.0e3*x_ext/u_ref/dt )
+      u_ref    = amin+.7*(amax-amin);
+      dt       = CFL*dx/amax
+      x_ext    = idm*dx/1.0e3!km
+      y_ext    = jdm*dy/1.0e3!km
+      duration = 1.0e3*x_ext/u_ref
+      nt       = nint( duration/dt )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
-      !include "print_screen_info.h"
       call print_screen_info()
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-
-      !! text that is common to both
-      !!    wim2d_run 
-      !!    wim2d_run_io
-      !! subroutines:
-      !include "WIM2d_run.h"
       call wim2d_run_common()
 
       et = etime(tictoc)!!finish etime
@@ -167,18 +160,17 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info to screen again
-      !include "print_screen_info.h"
       call print_screen_info()
 
       !!print  some outputs to log file
-      !include "print_log_info.h"
       call print_log_info()
 
       end subroutine wim2d_run
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_io(in_arrays,out_arrays,int_prams,nx,ny)
+      subroutine wim2d_run_io(in_arrays,out_arrays                      &
+     &                       ,int_prams,real_prams,nx,ny)
 
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
@@ -210,22 +202,20 @@
       !!variables
       integer,intent(in)                  :: nx,ny
       integer,dimension(2),intent(in)     :: int_prams   !!SOLVER,ADV_DIM
+      real,dimension(3),intent(in)        :: real_prams  !!young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
 
       real     :: PI
-      integer  :: nt,n,w,wth,reps
-      !logical  :: critter
+      real,dimension(2) :: wim_prams_in  !!young,visc_rp
 
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
+      integer           :: w,wth
 
       real,parameter    :: min_conc = 0.05
 
-      !!test outputs
-      !real,dimension(idm,jdm) :: MIZ_MASK,tmp1
       real  :: Tmean,Tvar,Tstdev
-      integer                 :: nMIZ
 
       !! function to print time
       real  :: etime
@@ -238,8 +228,14 @@
                               !    if we use this option
                               !    - in practice we set speed in 'y' dirn to 0.
 
+      !! TODO make these inputs
       DO_CHECK_PROG  = 1
       DO_CHECK_INIT  = 1
+      DO_CHECK_FINAL = 1
+
+      !!real inputs
+      wim_prams_in   = real_prams(1:2)    !!young,visc_rp
+      duration       = real_prams(3)      !!length of sim [s]
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -255,7 +251,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams() ! - ice properties like Young's modulus
+      call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
       call get_grid_file() ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
@@ -331,25 +327,17 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set number of time steps
-      u_ref = amin+.7*(amax-amin);
       dt    = CFL*dx/amax
       x_ext = idm*dx/1.0e3!km
       y_ext = jdm*dy/1.0e3!km
-      nt    = nint( 1.0e3*x_ext/u_ref/dt )
+      nt    = nint(duration/dt)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
-      !include "print_screen_info.h"
       call print_screen_info()
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-
-      !! text that is common to both
-      !!    wim2d_run 
-      !!    wim2d_run_io
-      !! subroutines:
-      !include "WIM2d_run.h"
       call wim2d_run_common()
 
       et = etime(tictoc)!!finish etime
@@ -365,11 +353,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info to screen again
-      !include "print_screen_info.h"
       call print_screen_info()
 
       !!print  some outputs to log file
-      !include "print_log_info.h"
       call print_log_info()
 
       !! put in same order as binary outputs:
@@ -399,7 +385,7 @@
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
 
       logical :: critter
-      !!TODO  &: n **
+      integer  :: n,reps
 
       !! MAIN INTEGRATION
       !! - Common to WIM2d_run & WIM2d_run_io subroutines
@@ -422,8 +408,10 @@
 
       end do!! n - finish time stepping
 
-      !!dump final output
-      call check_prog(SOLVER,n-1,1,outdir)
+      if (DO_CHECK_FINAL.eq.1) then
+         !!dump final output
+         call check_prog(SOLVER,n-1,1,outdir)
+      end if
 
       MIZ_MASK = 0.0
       where ((dfloe.gt.0.0).and.(dfloe.lt.dfloe_pack_init))
@@ -463,7 +451,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mex_io_gate(y1,y2,y3,y4,y5                             &
      &                  ,x1,x2,x3,x4,x5,x6,int_prams                    &
-     &                  ,nx,ny,ni)
+     &                  ,real_prams,nx,ny,ni,nr)
       
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
@@ -472,8 +460,9 @@
 
       implicit none
 
-      integer,intent(in)                  :: nx,ny,ni
+      integer,intent(in)                  :: nx,ny,ni,nr
       integer,dimension(ni)               :: int_prams
+      real,dimension(nr)                  :: real_prams
       real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
       real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5
 
@@ -493,7 +482,8 @@
       end do
       end do
 
-      call wim2d_run_io(in_arrays,out_arrays,int_prams,nx,ny)
+      call wim2d_run_io(in_arrays,out_arrays                            &
+     &                  ,int_prams,real_prams,nx,ny)
 
       do j=1,ny
       do i=1,nx
@@ -557,7 +547,7 @@
       print*,'Maximum wave group velocity (m/s):' ,amax
       print*,'Time step (s):                    ' ,dt
       print*,'Number of time steps:             ' ,nt
-      print*,'Time interval (h):                ' ,(nt*dt)/60.0/60.0
+      print*,'Time interval (h):                ' ,duration/60.0/60.0
       print*,' '
       print*,'Grid dimensions:                  ' ,idm,jdm
       print*,'Spatial resolution (km):          ' ,dx/1.0e3,dy/1.0e3
@@ -622,7 +612,7 @@
       write(3,'(a,f6.1)'),'Time step (s):                    ' ,dt
       write(3,'(a,i4.4)'),'Number of time steps:             ' ,nt
       write(3,'(a,f5.2)'),'Time interval (h):                '          &
-     &    ,(nt*dt)/60.0/60.0
+     &    ,duration/60.0/60.0
       write(3,'(a)'),'*************************************************'
 
       write(3,'(a)'),' '

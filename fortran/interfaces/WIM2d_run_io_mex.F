@@ -30,6 +30,7 @@ C
       mwpointer x5_pr
       mwpointer x6_pr
       mwpointer ip_pr
+      mwpointer rp_pr
 
       !!pointers to outputs
       integer,parameter :: Nout  = 5
@@ -48,12 +49,15 @@ C
       mwsize mxGetM, mxGetN
       mwsize m,n,size
       mwsize m2,n2,size2
+      mwsize m3,n3,size3
       integer,parameter :: ni       = 2
+      integer,parameter :: nr       = 3
       integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 
       !!inputs from matlab - need to be double precision
       real*8,dimension(ii*jj) :: x1,x2,x3,x4,x5,x6
       real*8,dimension(ni)    :: ip
+      real*8,dimension(nr)    :: rp
       integer  :: j
       logical  :: critter
 
@@ -78,9 +82,32 @@ C     Check for proper number of arguments.
       m2    = mxGetM(prhs(7))
       n2    = mxGetN(prhs(7))
       size2 = m2*n2
+      m3    = mxGetM(prhs(8))
+      n3    = mxGetN(prhs(8))
+      size3 = m3*n3
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Get the size of the input arrays.
+      do j=8,8
+         write(cii,'(i4.4)') 1
+         write(cjj,'(i4.4)') nr
+         write(cj,'(i1.1)')  j
+         write(cm,'(i1.1)')  m3
+         write(cn,'(i1.1)')  n3
+
+C        matrices should be 1*nr
+            k  = mexPrintf('Input '//cj//' dimensions:\n')
+            k  = mexPrintf(cm//' x '//cn//'\n')
+            k  = mexPrintf('Should be:'//'\n')
+            k  = mexPrintf(cii//' x '//cjj//'\n')
+         if((m3.ne.1).or.(n3.ne.nr)) then
+            k  = mexPrintf('Input '//cj//' dimensions:\n')
+            k  = mexPrintf(cm//' x '//cn//'\n')
+            k  = mexPrintf('Should be:'//'\n')
+            k  = mexPrintf(cii//' x '//cjj//'\n')
+            call mexErrMsgTxt('Input '//cj//' wrong size')
+         endif
+      end do
       do j=7,7
          write(cii,'(i4.4)') 1
          write(cjj,'(i4.4)') ni
@@ -123,7 +150,7 @@ C        matrices should be ii*jj
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
 C     Check to ensure the array is numeric (not strings).
-      do j=1,7
+      do j=1,8
          write(cj,'(i1.1)')  j
          if(mxIsNumeric(prhs(j)) .eq. 0) then
             call mexErrMsgTxt('Input '//cj//' must be a numeric array.')
@@ -139,6 +166,7 @@ C     Check to ensure the array is numeric (not strings).
       x5_pr    = mxGetPr(prhs(5))
       x6_pr    = mxGetPr(prhs(6))
       ip_pr    = mxGetPr(prhs(7))
+      rp_pr    = mxGetPr(prhs(8))
 
       !!copy input memory to fortran arrays
       call mxCopyPtrToReal8(x1_pr,x1,size)
@@ -148,6 +176,7 @@ C     Check to ensure the array is numeric (not strings).
       call mxCopyPtrToReal8(x5_pr,x5,size)
       call mxCopyPtrToReal8(x6_pr,x6,size)
       call mxCopyPtrToReal8(ip_pr,ip,size2)
+      call mxCopyPtrToReal8(rp_pr,rp,size2)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -205,7 +234,7 @@ C     Call the computational subroutine.
          call mex_io_gate(y1,y2,y3,y4,y5                                &
      &                    ,real(x1),real(x2),real(x3)                   &
      &                    ,real(x4),real(x5),real(x6)                   &
-     &                    ,nint(ip),ii,jj,ni)
+     &                    ,nint(ip),real(rp),ii,jj,ni,nr)
       end if
 !     if (DO_TEST.eq.0) then
 !        k  = mexPrintf('Entering mex_io_gate...')

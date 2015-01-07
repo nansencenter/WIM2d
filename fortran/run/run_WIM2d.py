@@ -11,7 +11,7 @@ import fns_get_data as Fdat
 import fns_plot_data as Fplt
 
 ################################################################
-def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
+def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
    run_dict = {0: 'old version (no in/out)',
                1: 'look at saved results of no in/out run',
                2: 'in/out',
@@ -80,6 +80,16 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
          SOLVER      = 1
          ADV_DIM     = 2
          int_prams   = np.array([SOLVER,ADV_DIM])
+      ##########################################################
+
+      ##########################################################
+      if real_prams is None:
+         young          = 2.0e9     # Young's modulus [Pa]
+         visc_rp        = 13.0      # Robinson-Palmer damping parameter [Pa/(m/s)] : ~13.0
+         duration_hours = 17.77     # length of simulation [h]
+         #
+         duration       = duration_hours*60*60 # [s]
+         real_prams     = np.array([young,visc_rp,duration])
       ##########################################################
 
       ##########################################################
@@ -169,7 +179,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None):
       print("###################################################")
       print(" ")
       
-      out_arrays  = Mwim.py_wim2d_run_io(in_arrays,int_prams)
+      out_arrays  = Mwim.py_wim2d_run_io(in_arrays,int_prams,real_prams)
 
       print(" ")
       print("###################################################")

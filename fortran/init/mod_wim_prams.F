@@ -7,7 +7,6 @@
       real,parameter :: rhoice   = 922.5  ! Ice density      [kg/m^3]
       real,parameter :: gravity  = 9.81   ! Gravity          [m/s^2]
       real,parameter :: poisson  = .3     ! Poisson's ratio
-      real,parameter :: visc_rp  = 13.0   ! Robinson-Palmer viscosity coefficient [Pa/(m/s)] (~13)
 
       ! Parameters for the floe size distribution
       real,parameter :: Dmin        = 20   ! min floe size [m]
@@ -16,15 +15,18 @@
 
       !! parameters that still need to be set
       !! in set_wim_prams
-      real  :: young,epsc!!young's modulus,breaking strain
-      real  :: sigma_c,vbf!!flex strength,brine volume fraction
+      real  :: visc_rp     !!Robinson-Palmer viscosity coefficient [Pa/(m/s)] (~13)
+      real  :: young,epsc  !!young's modulus [Pa], breaking strain [-]
+      real  :: sigma_c,vbf !!flex strength [Pa], brine volume fraction [-]
 
       contains
 
-      subroutine set_wim_prams()
+      subroutine set_wim_prams(wim_prams_in)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
+
+      real,optional,intent(in)   :: wim_prams_in(2)
 
       integer,parameter :: BRK_OPT     = 1
       integer,parameter :: YOUNG_OPT   = 1
@@ -54,13 +56,21 @@
          vbf   = vb/1.0d3                         ! brine volume fraction 
       end if
 
-      !!Young's modulus
-      if (YOUNG_OPT.eq.1) then
-         !!just set Young's modulus
-         young = 2.0d9     !!lower ~ Marchenko
-         !young = 5.49d9    !!higher ~ Vernon
+      if (present(wim_prams_in)) then
+         young    = wim_prams_in(1)
+         visc_rp  = wim_prams_in(2)
       else
-         young = 10.0d9*(1-3.51*vbf)-1.0d9   ! Young's modulus [Pa]
+         !!Robinson-Palmer viscosity parameter
+         visc_rp  = 13.
+
+         !!Young's modulus
+         if (YOUNG_OPT.eq.1) then
+            !!just set Young's modulus
+            young = 2.0e9     !!lower ~ Marchenko
+            !young = 5.49e9    !!higher ~ Vernon
+         else
+            young = 10.0e9*(1-3.51*vbf)-1.0e9   ! Young's modulus [Pa]
+         end if
       end if
 
       !!Flexural strength (Timco and O'Brien 1994)

@@ -40,7 +40,27 @@ elif testing is 2:
    ice_fields.update(wave_fields)
    in_fields   = ice_fields
 
-   out_fields,outdir = Rwim.do_run(RUN_OPT=2,in_fields=in_fields)
+   int_prams   = None # default parameters
+   real_prams  = None # default parameters
+
+   if 0:
+      # check passing in of integer parameters:
+      SOLVER   = 1
+      ADV_DIM  = 2
+      int_prams   = np.array([SOLVER,ADV_DIM])
+
+   if 1:
+      # check passing in of real parameters:
+      young          = 3.0e9
+      visc_rp        = 3.0
+      duration_hours = 3.0
+      duration       = duration_hours*60*60
+      real_prams     = np.array([young,visc_rp,duration])
+
+   out_fields,outdir = Rwim.do_run(RUN_OPT=2,in_fields=in_fields,
+                                       int_prams=int_prams,
+                                       real_prams=real_prams)
+
 
 ##########################################################################
 elif testing is 3:
