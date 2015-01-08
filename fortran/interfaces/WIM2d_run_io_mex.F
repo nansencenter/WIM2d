@@ -50,7 +50,7 @@ C
       mwsize m,n,size
       mwsize m2,n2,size2
       mwsize m3,n3,size3
-      integer,parameter :: ni       = 2
+      integer,parameter :: ni       = 5
       integer,parameter :: nr       = 3
       integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 

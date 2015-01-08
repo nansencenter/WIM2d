@@ -16,6 +16,8 @@ for j=1:length(dirs)
       mkdir(dd);
    end
 end
+
+eval(['!rm ',dirs{4},'/*']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if nargin==0
@@ -35,7 +37,11 @@ if nargin==0
    %%
    SOLVER      = 1;
    ADV_DIM     = 2;
-   int_prams   = [SOLVER,ADV_DIM];
+   CHECK_FINAL = 1;
+   CHECK_PROG  = 0;
+   CHECK_INIT  = 1;
+   int_prams   = [SOLVER,ADV_DIM,...
+                  CHECK_FINAL,CHECK_PROG,CHECK_INIT];
    %%
    young          = 2.0e9;
    visc_rp        = 13;

@@ -16,7 +16,7 @@ import WIM2d_f2py    as Mwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-testing  = 3
+testing  = 2
 
 ##########################################################################
 if testing is 1:
@@ -43,11 +43,15 @@ elif testing is 2:
    int_prams   = None # default parameters
    real_prams  = None # default parameters
 
-   if 0:
+   if 1:
       # check passing in of integer parameters:
-      SOLVER   = 1
-      ADV_DIM  = 2
-      int_prams   = np.array([SOLVER,ADV_DIM])
+      SOLVER      = 1
+      ADV_DIM     = 2
+      CHECK_FINAL = 1
+      CHECK_PROG  = 0
+      CHECK_INIT  = 1
+      int_prams   = np.array([SOLVER,ADV_DIM,
+                              CHECK_FINAL,CHECK_PROG,CHECK_INIT])
 
    if 1:
       # check passing in of real parameters:

@@ -201,7 +201,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-      integer,dimension(2),intent(in)     :: int_prams   !!SOLVER,ADV_DIM
+      integer,dimension(5),intent(in)     :: int_prams   !!SOLVER,ADV_DIM
       real,dimension(3),intent(in)        :: real_prams  !!young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
@@ -228,10 +228,11 @@
                               !    if we use this option
                               !    - in practice we set speed in 'y' dirn to 0.
 
-      !! TODO make these inputs
-      DO_CHECK_PROG  = 1
-      DO_CHECK_INIT  = 1
-      DO_CHECK_FINAL = 1
+      !! Inputs to determine if results
+      !! should be dumped to binaries or not
+      DO_CHECK_FINAL = int_prams(3)
+      DO_CHECK_PROG  = int_prams(4)
+      DO_CHECK_INIT  = int_prams(5)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp

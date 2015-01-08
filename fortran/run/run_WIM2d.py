@@ -37,6 +37,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
          os.makedirs(dirj)
 
    if RUN_OPT%2 is 0:
+      # if RUN_OPT is 0 or 2
       # clear out old progress files
       dd    = os.path.abspath(outdir+"/binaries/prog")
       files = os.listdir(dd)
@@ -79,7 +80,11 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       if int_prams is None:
          SOLVER      = 1
          ADV_DIM     = 2
-         int_prams   = np.array([SOLVER,ADV_DIM])
+         CHECK_FINAL = 1
+         CHECK_PROG  = 1
+         CHECK_INIT  = 1
+         int_prams   = np.array([SOLVER,ADV_DIM,
+                                 CHECK_FINAL,CHECK_PROG,CHECK_INIT])
       ##########################################################
 
       ##########################################################
