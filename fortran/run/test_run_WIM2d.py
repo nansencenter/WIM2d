@@ -56,8 +56,8 @@ elif testing is 2:
    if 1:
       # check passing in of real parameters:
       young          = 3.0e9
-      visc_rp        = 3.0
-      duration_hours = 3.0
+      visc_rp        = 0.0
+      duration_hours = 17.0
       duration       = duration_hours*60*60
       real_prams     = np.array([young,visc_rp,duration])
 

@@ -8,7 +8,8 @@
      &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
 
       use mod_gridinfo
-      use mod_common_wim
+      use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
+     &   ,wavdir,n_wavdir
       use mod_advect
 
       implicit none
@@ -122,7 +123,8 @@
      &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
 
       use mod_gridinfo
-      use mod_common_wim
+      use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
+     &   ,wavdir,n_wavdir
       use mod_advect
 
       implicit none
@@ -210,9 +212,17 @@
 
          if (ICE_MASK(i,j).gt.0.0) then
 
-            !! atten_dim = ENERGY attenuation coeff [m^{-1}]
-            q_scat   = atten_dim(i,j)
-            q_abs    = damp_dim(i,j)
+            !! atten_dim,damp_dim = ENERGY attenuation coeffs [m^{-1}]
+            if (dfloe(i,j).lt.dfloe_pack_init) then
+               !! only apply scattering in the MIZ
+               !! - otherwise ice is completely broken
+               q_scat   = atten_dim(i,j)
+               q_abs    = damp_dim(i,j)
+            else
+               !! in pack all energy is dissipated
+               q_scat   = 0.0
+               q_abs    = atten_dim(i,j)+damp_dim(i,j)
+            end if
             q_tot    = q_scat+q_abs
             cg       = ag_eff(i,j)
 
