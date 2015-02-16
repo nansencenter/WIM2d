@@ -36,32 +36,18 @@ if not (os.path.exists(dd2)):
    os.makedirs(dd2)
 
 ###########################################################
-# grid size
-GRID_OPT = 1
-if GRID_OPT is -1:
-   # test:
-   nx = 10
-   ny = 4
-   dx = 3.0e3
-   dy = 3.0e3
+def get_grid_arrays_SmallSquare(diag_length,resolution):
 
-elif GRID_OPT is 0:
-   # standard 1d setup:
-   nx = 150
-   ny = 1
-   dx = 4.0e3
-   dy = 4.0e3
+   side_length = diag_length/np.sqrt(2.)
+   dx          = resolution
+   nx          = int(np.floor(side_length/resolution))
+   out         = get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
 
-elif GRID_OPT is 1:
-   # standard 2d setup:
-   nx = 150
-   ny = 50
-   dx = 4.0e3
-   dy = 4.0e3
+   return out # = [grid_arrays,grid_fields]
 ###########################################################
 
 ###########################################################
-def get_grid_arrays(nx,ny,dx,dy):
+def get_grid_arrays(nx,ny,dx,dy,LAND_OPT=1):
 
    vx = np.array(range(0,nx))*dx
    vx = vx-vx.mean()
@@ -88,7 +74,6 @@ def get_grid_arrays(nx,ny,dx,dy):
       gf['Y'][i,:]   = vy
 
    # LANDMASK:
-   LAND_OPT = 1
    if LAND_OPT is 1:
       # standard 2d setup (works with the standard 2d grid):
       gf['LANDMASK'][113:,:]  = 1.0
@@ -108,7 +93,45 @@ def get_grid_arrays(nx,ny,dx,dy):
 ###########################################################
 
 ###########################################################
-grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+# set grid configurations
+GRID_OPT = 1
+if GRID_OPT is -1:
+   # test:
+   nx = 10
+   ny = 4
+   dx = 3.0e3
+   dy = 3.0e3
+   #
+   grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+
+elif GRID_OPT is 0:
+   # standard 1d setup:
+   nx = 150
+   ny = 1
+   dx = 4.0e3
+   dy = 4.0e3
+   #
+   grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+
+elif GRID_OPT is 1:
+   # standard 2d setup:
+   nx = 150
+   ny = 50
+   dx = 4.0e3
+   dy = 4.0e3
+   #
+   grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+
+elif GRID_OPT is 2:
+   # to use with Philipp's "small-square" grid
+   diag_length = 96e3
+   resolution  = 0.7
+
+   # this gives a rotated (x',y') grid to align with the sides of the square
+   grid_arrays,grid_fields = get_grid_arrays_SmallSquare(diag_length,resolution)
+###########################################################
+
+###########################################################
 print(' ')
 print(60*'*')
 gs.save_grid_info_hdr(outdir2,nx,ny,dx,dy,nc2)
@@ -120,7 +143,7 @@ print(' ')
 ###########################################################
 if 0:
    # check difference between binaries
-   # saved by pure fortran and python:
+   # saved by pure fortran and f2py:
    outdir1  = 'test/out'   # fortran binaries here
                            # run grid_setup.sh with
                            # testing=1 in p_save_grid.F (recompile)
@@ -137,7 +160,7 @@ if 0:
       print('min difference in : '+key+' = '+str(diff_min)+'\n')
 elif 1:
    # check difference between binaries
-   # saved by python and the input fields:
+   # saved by f2py and the input fields:
    gf    = grid_fields
    gf2   = Fdat.fn_check_grid(outdir)
    keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
@@ -152,7 +175,7 @@ elif 1:
 ###########################################################
 
 ###########################################################
-if 1:
+if 0:
    # save test figure:
    fig   = 'test/out_py/land.png'
    print('Saving test figure : '+fig)
@@ -169,8 +192,8 @@ if 1:
 ###########################################################
 print(' ')
 print(60*'*')
-print("Now compile in ../Build")
-print("Run in         ../run")
+print("Now compile WIM code in ../Build")
+print("Run in                  ../run")
 print(60*'*')
 print(' ')
 ###########################################################
