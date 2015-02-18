@@ -46,11 +46,15 @@ def diag(dd):
    # diagonal matrix with dd as diagonal
 
    N  = len(dd)
-   DD = np.zeros((N,N))
 
-   if abs(dd).imag.sum()!=0.0:
-      #test if any complex
+   if abs(dd.imag).sum()!=0.0:
+      # if any of dd complex,
+      # need to initialise DD as complex
+      # (otherwise can't put elements of dd into it)
       DD = 0j*np.ones((N,N))
+   else:
+      # initialize DD as real
+      DD = np.zeros((N,N))
 
    for n in range(N):
       DD[n,n]  = dd[n]
@@ -94,13 +98,18 @@ def matrix_isotropic(alp,N):
 ##############################################
 
 ##############################################
-def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
+def get_ft_kernel(alp,N,OPT=0):
    # fourier coefficients of kernel:
    # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
-   K_fou = alp*np.eye(N)[:,0]
+   if OPT is 0:
+      # isotropic scattering
+      # (K=alp, so K_n = \delta_{n,0})
+      K_fou = alp*np.eye(N)[:,0]
+   elif OPT is 1:
+      # start with isotropic scattering
+      # (K=alp, so K_n = \delta_{n,0})
+      K_fou = alp*np.eye(N)[:,0]
 
-   ##############################################
-   if 0:
       # introduce some directionality to scattering
       # K->K*(1+a*cos(\theta))
       a  = .7
@@ -110,7 +119,18 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
 
       K_fou[1]    = a/2.0*K_fou[0]
       K_fou[N-1]  = a/2.0*K_fou[0]
-   ##############################################
+
+   return K_fou
+##############################################
+
+##############################################
+def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
+   # fourier coefficients of kernel:
+   # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
+   OPT   = 0 # isotropic scattering
+   # OPT   = 0 # add some directionality
+
+   K_fou = get_ft_kernel(alp,N,OPT=OPT)
 
    sn    = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
@@ -124,7 +144,7 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
    ##############################################
 
    ##############################################
-   # get evals
+   # get eigenvalues & eigenvectors
    Ds       = diag(sn)
    evals,U  = LA.eig(Ds,b=Lmat) # DS*U=\lambda*Lmat*U
    evals    = evals.real        # inv(Lmat)*Ds = real, symmetric 
@@ -137,13 +157,14 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
    jkeep    = np.concatenate([jz[0:1],jm])
    
    # if alp_dis==0:
-   # 2 zero evals, but e-vecs are lin dep so keep 1
+   # 2 zero evals, but e-vecs are lin dep so can keep either
    # (other grows linearly)
    # always discard pos evals (grow exponentially)
    # keep neg evals (grow exponentially)
    M_c2ft   = U[:,jkeep]
    lam      = evals[jkeep]
    ##############################################
+
    ##############################################
    if 0:
       # test ode solved correctly
@@ -178,15 +199,18 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
          plt.plot(xx,g[r_test,:].real)
          plt.plot(xx,df[r_test,:].real,'--r')
          plt.show()
-         
    ##############################################
 
    ##############################################
    # angles:
-   M        = int(round(N/2.0))
-   dth      = 2*np.pi/N
+   M           = int(round(N/2.0))
+   dth         = 2*np.pi/N
    shift    = dth/2.0
    th_vec   = dth*nn+shift
+   # solution of edge conditions
+   # 0: explicit solution
+   #    (need to avoid \pm\pi/2)
+   ECON_SOLN   = 0
 
    # indices: go between real index (n>=0)
    # and physical index (n>=-M,n<M)
@@ -262,20 +286,24 @@ def solve_isotropic_ft(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
    ##############################################
    # find coeffs of eigenfunction expansion
    # from incident spectrum:
-   D_inc    = f_inc(th_vec)
-   n_inc    = nn[np.cos(th_vec)>0]
-   coeffs   = solve(M_c2th[n_inc,:],D_inc[n_inc])
+   if ECON_SOLN is 0:
+      # explicit solution
+      # (assumes incident wave is even)
+      D_inc    = f_inc(th_vec)
+      n_inc    = nn[np.cos(th_vec)>0] # N/2 unknowns
+      coeffs   = solve(M_c2th[n_inc,:],D_inc[n_inc])
    ##############################################
    
    ##############################################
    En_edge  = M_c2ft.dot(coeffs)
    E_edge   = M_c2th.dot(coeffs)
-   Sn_edge  = Ds.dot(En_edge)
+   Sn_edge  = Ds.dot(En_edge) # source
 
    out   = {'En_edge': En_edge,'E_edge': E_edge,'Sn_edge': Sn_edge,
             'eig_coeffs':coeffs,'eig_vals':lam,
             'M_c2th':M_c2th,'M_c2ft':M_c2ft,
             'angles':th_vec,'dirspec_inc':D_inc}
+
    return out
 ##############################################
 
@@ -283,8 +311,8 @@ N        = 2**8
 alp      = 1.0e-5
 alp_dis  = 0.0e-5
 cg       = 1.0
-out      = solve_isotropic_ft(
-         alp,N,alp_dis=alp_dis,cg=cg,f_inc=dirspec_inc)
+out      = solve_boltzmann_ft_semiinf(
+            alp,N,alp_dis=alp_dis,cg=cg,f_inc=dirspec_inc)
 
 cn       = out['eig_coeffs']
 M_c2ft   = out['M_c2ft']
