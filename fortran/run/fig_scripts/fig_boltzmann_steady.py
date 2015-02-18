@@ -366,6 +366,12 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
    evr   = evals[jp] # >0, scattered by rh edge
    Ur    = U[:,jp] # 
 
+
+   No2   = int(N/2.)
+   expL  = np.exp(-evr*width)# = exp(evl*width)
+
+   M_c2ft_0       = np.zeros((N,N))*0j
+   M_c2ft_L       = np.zeros((N,N))*0j
    if len(jz)>0:
       """
       zero is a repeated eigenvalue,
@@ -376,40 +382,46 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
           so since \lambda=0,
           DS*V0=Lmat*U0
       """
+      M     = No2-1
       lam   = np.concatenate([[0.],np.array(evr)])
       U0    = U[:,jz[0]]
       v0    = Lmat[1:,:].dot(U0)
       V0    = np.concatenate([[0.],v0/sn[1:]]) # V0[0] is arbitrary as sn[0]=0
       
       """
-      TODO - this is only if 2 zero eigenvalues - otherwise all evals are simple
       General soln for E_n is:
       y  = sum_n a_n*Ul_n*exp(evl_n*x)
             + sum_n b_n*Ur_n*exp(evr_n*(x-L)) 
             + c0*U0+c1*(x*U0+V0)
        => 2+2*(N/2-1)=N unknowns: coeffs=[c0,c1,[a_n],[b_n]]
       """
-
-      No2   = int(N/2.)
-      expL  = np.exp(-evr*width)# = exp(evl*width)
-
       # E_n, x=0:
-      M_c2ft_0       = np.zeros((N,N))*0j
       M_c2ft_0[:,0]  = U0
       M_c2ft_0[:,1]  = V0
-      #
-      M_c2ft_0[:,2:2+No2-1]   = Ul
-      M_c2ft_0[:,2+No2-1:]    = Ur.dot(np.diag(expL))
 
       # E_n, x=L:
-      M_c2ft_L       = np.zeros((N,N))*0j
       M_c2ft_L[:,0]  = U0
       M_c2ft_L[:,1]  = V0+U0*width
-      #
-      M_c2ft_L[:,2:2+No2-1]   = Ul.dot(np.diag(expL))
-      M_c2ft_L[:,2+No2-1:]    = Ur
-      print(M_c2ft_L.shape)
-      ##############################################
+   else:
+      """
+      General soln for E_n is:
+      y  = sum_n a_n*Ul_n*exp(evl_n*x)
+            + sum_n b_n*Ur_n*exp(evr_n*(x-L)) 
+       => 2*(N/2)=N unknowns: coeffs=[[a_n],[b_n]]
+      """
+      M     = No2
+      lam   = np.array(evr)
+
+   # E_n, x=0:
+   n0 = N-2*M
+   print(n0,len(jz))
+   M_c2ft_0[:,n0:n0+M]  = Ul
+   M_c2ft_0[:,n0+M:]    = Ur.dot(np.diag(expL))
+
+   # E_n, x=L:
+   M_c2ft_L[:,n0:n0+M]  = Ul.dot(np.diag(expL))
+   M_c2ft_L[:,n0+M:]    = Ur
+   ##############################################
 
    ##############################################
    if 0:
