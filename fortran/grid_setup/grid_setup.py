@@ -14,9 +14,9 @@ import fns_plot_data    as Fplt
 ###########################################################
 def _get_grid_arrays_SmallSquare(diag_length,resolution):
 
-   dx          = resolution
-   nx          = int(np.floor(diag_length/resolution))
-   out         = _get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
+   dx    = resolution
+   nx    = int(np.floor(diag_length/resolution))
+   out   = _get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
 
    # fix landmask
    gf    = out[1]

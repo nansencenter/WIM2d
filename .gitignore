@@ -13,6 +13,7 @@ fortran/run/out_io/*
 fortran/run/log/*
 fortran/run/test/out/*
 fortran/run/fig_scripts/Boltzmann_kernel/out/*
+fortran/run/fig_scripts/datfiles/*
 fortran/run/test/out_io/*
 fortran/numerics/test_advection/out/*
 fortran/grid_setup/test/out/*

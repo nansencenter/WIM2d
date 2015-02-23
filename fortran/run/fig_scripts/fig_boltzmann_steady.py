@@ -70,13 +70,16 @@ def linspace(N,a=0.,b=1.):
 ##############################################
 
 ##############################################
-def dirspec_inc(th_vec):
+def dirspec_inc(th_vec,Hs=2.):
 
    # incident spectrum:
    # - 2/pi*cos^2(th)
    cc             = np.cos(th_vec)
    D_inc          = 2.0/np.pi*cc**2
    D_inc[cc<0.0]  = 0.0
+      # integral=1, so this corresponds to Hs=4*sqrt(1)=4
+
+   D_inc = D_inc*pow(Hs/4.,2)
 
    return D_inc
 ##############################################
@@ -162,6 +165,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
    # always discard pos evals (grow exponentially)
    # keep neg evals (grow exponentially)
    M_c2ft   = U[:,jkeep]
+   eig_vecs = [M_c2ft]
    lam      = evals[jkeep]
    if 1:
       # print(sn)
@@ -316,10 +320,12 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
                'M_c2th'       : M_c2th,
                'M_c2ft'       : M_c2ft,
                'Sn_edge'      : Sn_edge,
+               'which_edge'   : 'lhs',
                'dirspec_inc'  : D_inc}
    out   = {'edge_lhs'     : edge_lhs,
             'eig_coeffs'   : coeffs,
             'eig_vals'     : lam,
+            'eig_vecs'     : eig_vecs,
             'angles'       : th_vec}
 
    return out
@@ -402,6 +408,8 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
       # E_n, x=L:
       M_c2ft_L[:,0]  = U0
       M_c2ft_L[:,1]  = V0+U0*width
+
+      eig_vecs = [U0,V0,Ul,Ur]
    else:
       """
       General soln for E_n is:
@@ -409,8 +417,9 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
             + sum_n b_n*Ur_n*exp(evr_n*(x-L)) 
        => 2*(N/2)=N unknowns: coeffs=[[a_n],[b_n]]
       """
-      M     = No2
-      lam   = np.array(evr)
+      M        = No2
+      lam      = np.array(evr)
+      eig_vecs = [Ul,Ur]
 
    # E_n, x=0:
    n0 = N-2*M
@@ -510,8 +519,8 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
    if ECON_SOLN is 0:
       # explicit solution
       # (assumes incident wave is even)
-      rhs      = np.zeros(N)
-      Mlhs     = np.zeros((N,N))
+      rhs      = np.zeros(N)*0j
+      Mlhs     = np.zeros((N,N))*0j
       n_inc0   = nn[np.cos(th_vec)>0] # N/2 unknowns
       n_incL   = nn[np.cos(th_vec)<0] # N/2 unknowns
       D_inc    = f_inc(th_vec)
@@ -536,17 +545,20 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
                'Sn_edge'      : Sn_edge_0,
                'M_c2th'       : M_c2th_0,
                'M_c2ft'       : M_c2ft_0,
-               'dirspec_inc'  : D_inc}
+               'dirspec_inc'  : D_inc,
+               'which_edge'   : 'lhs'}
    edge_rhs = {'En_edge'      : En_edge_L,
                'E_edge'       : E_edge_L,
                'Sn_edge'      : Sn_edge_L,
                'M_c2th'       : M_c2th_L,
                'M_c2ft'       : M_c2ft_L,
-               'dirspec_inc'  : 0*D_inc}
+               'dirspec_inc'  : 0*D_inc,
+               'which_edge'   : 'rhs'}
    out      = {'edge_lhs'     : edge_lhs,
                'edge_rhs'     : edge_rhs,
                'eig_coeffs'   : coeffs,
                'eig_vals'     : lam,
+               'eig_vecs'     : eig_vecs,
                'angles'       : th_vec}
 
    return out
@@ -586,8 +598,10 @@ def test_edge_cons(out,semiinf=True,lhs=True):
       plt.plot(ang*180/np.pi,edge['dirspec_inc'],'--r')
       plt.show()
    elif 1:
-      fig   = Fplt.plot_1d(ang*180/np.pi,edge['E_edge'].real,
-               labs=['Angle,  degrees','$E$'],linestyle='-',color='k')
+      fig   = Fplt.plot_1d(ang*180/np.pi,edge['E_edge'].imag,
+               labs=['Angle,  degrees','$E$'],linestyle='-',color='b')
+      Fplt.plot_1d(ang*180/np.pi,edge['E_edge'].real,
+               labs=None,f=fig,linestyle='-',color='k')
       Fplt.plot_1d(ang*180/np.pi,edge['dirspec_inc'].real,
                labs=None,f=fig,linestyle='--',color='r')
 
@@ -601,88 +615,102 @@ def test_edge_cons(out,semiinf=True,lhs=True):
 ##############################################
 
 ##############################################
-def plot_energy(out,width=None):
+def calc_energy(out,xx,L,n_test=0):
+
+   #############################################
+   lam   = out['eig_vals']
+   cn    = out['eig_coeffs']
+   N     = len(cn)
+   No2   = int(N/2.)
+   npts  = len(xx)
+
+   #############################################
+   if len(out['eig_vecs'])==2:
+      # only single eigen-values
+      print('only simple eigenvalues')
+      #
+      Ul = out['eig_vecs'][0][n_test,:]
+      Ur = out['eig_vecs'][1][n_test,:]
+      #
+      E_n   = 0.*xx
+      M     = No2
+      an    = cn[0:M]
+      bn    = cn[M:]
+   else:
+      # repeated eigen-value
+      print('zero is repeated eigenvalue')
+      #
+      U0 = out['eig_vecs'][0][n_test]
+      V0 = out['eig_vecs'][1][n_test]
+      Ul = out['eig_vecs'][2][n_test,:]
+      Ur = out['eig_vecs'][3][n_test,:]
+      #
+      E_n   = cn[0]*U0+cn[1]*(U0*xx+V0)
+      lam   = lam[1:]
+      M     = No2-1
+      an    = cn[2:][0:M]
+      bn    = cn[2:][M:]
+      print(an.shape,bn.shape)
+   #############################################
+
+   #############################################
+   for n in range(npts):
+      x        = xx[n]
+      an_x     = np.exp(-lam*x)*an
+      bn_x     = np.exp(-lam*(L-x))*bn
+      E_n[n]   = E_n[n] + Ul.dot(an_x) \
+                        + Ur.dot(bn_x)
+   #############################################
+
+   return E_n
+################################################
+
+##############################################
+def plot_energy(out,width=None,n_test=0):
+   # n_test is the Fourier component to plot:
+   # (0 is the energy)
+   # NB odd n are zero
+
+   fdir  = 'fig_scripts/figs/profiles/'
+   if not os.path.exists(fdir):
+      os.mkdir(fdir)
 
    if width is None:
-      semiinf  = True
-      L        = 500.0e3
+      semiinf     = True
+      L           = 500.0e3
+      figname     = fdir+'SSboltzmann_E'+str(n_test)+'_profile-semiinf.png'
+      edge_keys   = ['lhs']
    else:
-      semiinf  = False
-      L        = width
+      semiinf     = False
+      L           = width
+      figname     = fdir+'SSboltzmann_E'+str(n_test)+'_profile-L'+str(width)+'.png'
+      edge_keys   = ['lhs','rhs']
 
    # plot energy vs x:
    npts  = 5000
    xx    = linspace(npts,0.0,L)
    E_n   = 0.0j*xx
    lam   = out['eig_vals']
-   edge  = out['edge_lhs']
    #
    cn       = out['eig_coeffs']
-   M_c2ft   = edge['M_c2ft']
-   M_c2th   = edge['M_c2th']
-
-   # Fourier component to plot:
-   # (0 is the energy)
-   # NB odd n are zero
-   n_test   = 0
+   M_c2ft0  = out['edge_lhs']['M_c2ft']
+   M_c2th   = out['edge_lhs']['M_c2th']
 
    ################################################################################
    # calc Fourier coefficients at x:
    if semiinf:
       # semi-infinite
-
-      figname  = 'fig_scripts/figs/SSboltzmann_E'+str(n_test)+'_profile-semiinf.png'
       No2      = len(cn) # N/2
       N        = 2*No2
       for n in range(npts):
          x        = xx[n]
-         D_exp    = diag(np.exp(lam*x))
-         cn_x     = D_exp.dot(cn)
-         E_n[n]   = M_c2ft[n_test,:].dot(cn_x)
-
+         cn_x     = np.exp(lam*x)*cn
+         E_n[n]   = M_c2ft0[n_test,:].dot(cn_x)
    else:
       # finite width
-
-      figname  = 'fig_scripts/figs/SSboltzmann_E'+str(n_test)+'_profile.png'
+      E_n      = calc_energy(out,xx,L,n_test=n_test)
       N        = len(cn)
       No2      = int(N/2.)
-
-      #############################################
-      if lam[0]==0.0:
-         # repeated eigen-value
-         print('zero is repeated eigenvalue')
-         U0    = M_c2ft[n_test,0]
-         V0    = M_c2ft[n_test,1]
-         abx   = np.zeros((npts,2))
-         E_n   = cn[0]*U0+cn[1]*(U0*xx+V0)
-         #
-         lam   = lam[1:]
-         M     = No2-1
-         an    = cn[2:][0:M]
-         bn    = cn[2:][M:]
-         print(an.shape,bn.shape)
-      else:
-         print('only simple eigenvalues')
-         # only single eigen-values
-         E_n   = 0.*xx
-         #
-         M     = No2
-         an    = cn[0:M]
-         bn    = cn[M:]
-         print(an.shape,bn.shape)
-      #############################################
-
-      for n in range(npts):
-         x        = xx[n]
-         D_exp0   = np.diag(np.exp(lam*x))
-         an_x     = D_exp0.dot(an)
-         #
-         D_expL   = np.diag(np.exp(lam*(L-x)))
-         bn_x     = D_expL.dot(bn)
-         #
-         abx      = np.concatenate([an_x,bn_x])
-         E_n[n]   = E_n[n] + M_c2ft[n_test,N-2*M:].dot(abx)
-            # M=N/2-1 => already counted repeated eigenvalue (=0)
    ################################################################################
 
    ang      = out['angles'] 
@@ -690,30 +718,31 @@ def plot_energy(out,width=None):
    fwd_mask = np.zeros(N)
    fwd_mask[np.cos(ang)>0] = 1.0
    #
-   if 0:
-      print('check edge E')
-      E_edge   = edge['E_edge']
-      E0_p     = dth*(fwd_mask*E_edge).sum()
-      E0_m     = dth*((1-fwd_mask)*E_edge).sum()
-      if n_test==0:
-         print('E0 edge')
-         print(edge['En_edge'][0],E_n[0],E0_p+E0_m) # consistency of eig expansion and fourier coeffs
-         print('E0 fwd  = '+str(E0_p))
-         print('E0 back = '+str(E0_m))
-   elif 0:
-      xt = xx[200]
-      print('check E, x='+str(xt))
-      D_exp    = diag(np.exp(lam*x))
-      Mc2th_x  = M_c2th.dot(D_exp)
-      Ex       = Mc2th_x.dot(cn)
-      Ex_p     = dth*(fwd_mask*Ex).sum()
-      Ex_m     = dth*((1-fwd_mask)*Ex).sum()
-      print('E fwd  = '+str(Ex_p))
-      print('E back = '+str(Ex_m))
+   if 1:
+      for key in edge_keys:
+         print('************************************************')
+         print('check edge E')
+         edge     = out['edge_'+key]
+         E_edge   = edge['E_edge']
+         E0_p     = dth*(fwd_mask*E_edge).sum()
+         E0_m     = dth*((1-fwd_mask)*E_edge).sum()
 
-      Mc2ft_x  = M_c2ft.dot(D_exp)
-      En_x     = Mc2ft_x.dot(cn)
-      print('E tot = '+str(En_x[0])+str(Ex_p+Ex_m))
+         if n_test==0:
+            print('E0 at edge: '+edge['which_edge'])
+            print('E0 fwd     = '+str(E0_p))
+            print('E0 back    = '+str(E0_m))
+            print('E0 total   = '+str(edge['En_edge'][0]))
+            print('E0 total 1 = '+str(E0_p+E0_m))
+
+            if edge['which_edge']=='lhs':
+               print('E0 total 2 = '+str(E_n[0]))
+               print('x          = '+str(xx[0]))
+            else:
+               print('E0 total 2 = '+str(E_n[-1]))
+               print('x          = '+str(xx[-1]))
+
+         print('************************************************')
+         print('\n')
 
    if 0:
       fig   = plt.figure()
@@ -721,6 +750,21 @@ def plot_energy(out,width=None):
       ax.plot(xx,E_n.real)
       ax.set_yscale('log')
       plt.show()
+   elif n_test==0:
+      fig   = plt.figure()
+      ax    = fig.add_subplot(1,1,1)
+      Fplt.plot_1d(xx/1.0e3,4*np.sqrt(E_n.real),f=fig,
+               labs=['$x$, km','$H_s$, m'],linestyle='-',color='k')
+
+      if alp_dis>0.0:
+         ax.set_yscale('log')
+
+      plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      fig.clf()
+      print(' ')
+      print('Saving to file : '+figname)
+      print(' ')
    elif 1:
       fig   = plt.figure()
       ax    = fig.add_subplot(1,1,1)
@@ -736,10 +780,12 @@ def plot_energy(out,width=None):
       print(' ')
       print('Saving to file : '+figname)
       print(' ')
-   return
+
+   out   = {'E_n':E_n,'x':xx,'n':n_test}
+   return out
 ##############################################
 
-N        = 2**8
+N        = 2**9
 alp      = 1.0e-5
 alp_dis  = 0.0e-5
 cg       = 1.0
@@ -753,22 +799,39 @@ if 0:
    M_c2ft   = out['edge_lhs']['M_c2ft']
    M_c2th   = out['edge_lhs']['M_c2th']
    semiinf  = True
-   lhs      = True
    width    = None
 elif 1:
    #finite width:
-   width = 10.
+   width = 50.e0 #m
    out   = solve_boltzmann_ft(width=width,
             alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=dirspec_inc)
 
    semiinf  = False
-   lhs      = True
-   # lhs      = False
 
 if 1:
    # test edge conditions
-   test_edge_cons(out,semiinf=semiinf,lhs=lhs)
+   test_edge_cons(out,semiinf=semiinf,lhs=True)
+   if not semiinf:
+      test_edge_cons(out,semiinf=semiinf,lhs=False)
 
 if 1:
    # plot energy
-   plot_energy(out,width=width)
+   out_plot = plot_energy(out,width=width,n_test=0)
+   xx       = out_plot['x']
+   E0       = out_plot['E_n']
+   # Hs       = 4*np.sqrt(E0.real)
+   Hs       = E0.real
+
+   if width is None:
+      out_file = 'fig_scripts/datfiles/steady_semiinf.dat'
+   else:
+      out_file = 'fig_scripts/datfiles/steady_L'+str(width)+'.dat'
+
+   print('\n')
+   print('Saving data points to '+out_file)
+   of1   = open(out_file,'w')
+   of1.write('x, m       Hs, m\n')
+   for n in range(len(xx)):
+      of1.write('%f   %f\n'%(xx[n],Hs[n]))
+
+   of1.close()

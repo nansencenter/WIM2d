@@ -17,8 +17,8 @@ import grid_setup as gst
 
 *Decide on integer GRID_OPT (which grid)
 *Decide on integer TEST
-   0: save to proper place where rest of WIM2d code can access it
-   1: save to test directory, where rest of WIM2d code cannot access it
+ 0: save to proper place where rest of WIM2d code can access it
+ 1: save to test directory, where rest of WIM2d code cannot access it
 
 *Type:
 gst.grid_setup(GRID_OPT=GRID_OPT,TEST=TEST)
