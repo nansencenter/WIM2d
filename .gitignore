@@ -5,6 +5,7 @@
 *.so
 *.pyc
 *fort.6
+#
 fortran/run/inputs/*
 fortran/run/out/*
 fortran/run/prog/*
@@ -17,7 +18,9 @@ fortran/numerics/test_advection/out/*
 fortran/grid_setup/test/out/*
 fortran/grid_setup/test/out_py/*
 fortran/bin/*
+fortran/header_files/*
 fortran/numerics/test_advection/test_out/*
 fortran/numerics/test_advection/figs/*
 fortran/run/fig_scripts/figs
+#
 matlab/main/out

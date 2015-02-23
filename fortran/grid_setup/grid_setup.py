@@ -4,50 +4,45 @@ import sys
 import matplotlib.pyplot as plt
 # import matplotlib.rcsetup as rc
 
-##
-## NB run from 'run' directory !!
-##
 dd = os.path.abspath("..")
 sys.path.append(dd+"/bin")
-sys.path.append(dd+"/misc_py")
-
+sys.path.append(dd+"/py_funs")
 import save_grid_f2py   as gs
 import fns_get_data     as Fdat
 import fns_plot_data    as Fplt
 
-if 0:
-   # test
-   outdir   = 'test/out_py'
-   outdir2  = 'test/out_py'
-   nc       = len(outdir)
-   nc2      = len(outdir2)
-else:
-   # proper places
-   outdir   = '../run/inputs'
-   outdir2  = '../header_files'
-   nc       = len(outdir)
-   nc2      = len(outdir2)
-
-
-dd    = os.path.abspath(".")
-dd2   = dd+'/'+outdir
-print(dd2)
-if not (os.path.exists(dd2)):
-   os.makedirs(dd2)
-
 ###########################################################
-def get_grid_arrays_SmallSquare(diag_length,resolution):
+def _get_grid_arrays_SmallSquare(diag_length,resolution):
 
-   side_length = diag_length/np.sqrt(2.)
    dx          = resolution
-   nx          = int(np.floor(side_length/resolution))
-   out         = get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
+   nx          = int(np.floor(diag_length/resolution))
+   out         = _get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
+
+   # fix landmask
+   gf    = out[1]
+   xmin  = np.min(gf['X'])
+   xmax  = np.max(gf['X'])
+   ymin  = np.min(gf['Y'])
+   ymax  = np.max(gf['Y'])
+   #
+   X        = gf['X']
+   Y        = gf['Y']
+   LANDMASK = np.zeros((nx,nx))
+   
+   # land outside the diamond of Philipp:
+   LANDMASK[Y>(X-xmin)]    = 1.
+   LANDMASK[Y<-(X-xmin)]   = 1.
+   LANDMASK[Y<(X-xmax)]    = 1.
+   LANDMASK[Y>-(X-xmax)]   = 1.
+
+   out[1]['LANDMASK']   = LANDMASK
+   out[0][:,:,6]        = LANDMASK
 
    return out # = [grid_arrays,grid_fields]
 ###########################################################
 
 ###########################################################
-def get_grid_arrays(nx,ny,dx,dy,LAND_OPT=1):
+def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=1):
 
    vx = np.array(range(0,nx))*dx
    vx = vx-vx.mean()
@@ -93,107 +88,144 @@ def get_grid_arrays(nx,ny,dx,dy,LAND_OPT=1):
 ###########################################################
 
 ###########################################################
-# set grid configurations
-GRID_OPT = 1
-if GRID_OPT is -1:
-   # test:
-   nx = 10
-   ny = 4
-   dx = 3.0e3
-   dy = 3.0e3
-   #
-   grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+def grid_setup(GRID_OPT=1,TEST=0):
 
-elif GRID_OPT is 0:
-   # standard 1d setup:
-   nx = 150
-   ny = 1
-   dx = 4.0e3
-   dy = 4.0e3
-   #
-   grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+   if TEST==1:
+      # test
+      outdir   = 'test/out_py'
+      outdir2  = 'test/out_py'
+      nc       = len(outdir)
+      nc2      = len(outdir2)
+   else:
+      # proper places
+      outdir   = '../run/inputs'
+      outdir2  = '../header_files'
+      nc       = len(outdir)
+      nc2      = len(outdir2)
 
-elif GRID_OPT is 1:
-   # standard 2d setup:
-   nx = 150
-   ny = 50
-   dx = 4.0e3
-   dy = 4.0e3
-   #
-   grid_arrays,grid_fields = get_grid_arrays(nx,ny,dx,dy)
+   dd    = os.path.abspath(".")
+   dd2   = dd+'/'+outdir
+   print('\n')
+   print("Saving grid files to:")
+   print(dd2)
+   print('\n')
+   if not (os.path.exists(dd2)):
+      os.makedirs(dd2)
+   ###########################################################
 
-elif GRID_OPT is 2:
-   # to use with Philipp's "small-square" grid
-   diag_length = 96e3
-   resolution  = 0.7
+   ###########################################################
+   # set grid configurations
+   if GRID_OPT is -1:
+      # test:
+      nx = 10
+      ny = 4
+      dx = 3.0e3
+      dy = 3.0e3
+      #
+      grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy)
 
-   # this gives a rotated (x',y') grid to align with the sides of the square
-   grid_arrays,grid_fields = get_grid_arrays_SmallSquare(diag_length,resolution)
-###########################################################
+   elif GRID_OPT is 0:
+      # standard 1d setup:
+      nx = 150
+      ny = 1
+      dx = 4.0e3
+      dy = 4.0e3
+      #
+      grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy)
 
-###########################################################
-print(' ')
-print(60*'*')
-gs.save_grid_info_hdr(outdir2,nx,ny,dx,dy,nc2)
-gs.save_grid(outdir,grid_arrays,nc)
-print(60*'*')
-print(' ')
-###########################################################
+   elif GRID_OPT is 1:
+      # standard 2d setup:
+      nx = 150
+      ny = 50
+      dx = 4.0e3
+      dy = 4.0e3
+      #
+      grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy)
 
-###########################################################
-if 0:
-   # check difference between binaries
-   # saved by pure fortran and f2py:
-   outdir1  = 'test/out'   # fortran binaries here
-                           # run grid_setup.sh with
-                           # testing=1 in p_save_grid.F (recompile)
-   gf1      = Fdat.fn_check_grid(outdir1)
-   gf2      = Fdat.fn_check_grid(outdir)
-   keys     = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
+   elif GRID_OPT is 2:
+      # to use with Philipp's "small-square" grid
+      diag_length = 96e3   # m
+      resolution  = 0.75e3  # m
 
-   print('Comparing fortran to python:\n')
-   for key in keys:
-      diff     = np.abs(gf1[key]-gf2[key])
-      diff_max = diff.max()
-      diff_min = diff.min()
-      print('max difference in : '+key+' = '+str(diff_max))
-      print('min difference in : '+key+' = '+str(diff_min)+'\n')
-elif 1:
-   # check difference between binaries
-   # saved by f2py and the input fields:
-   gf    = grid_fields
-   gf2   = Fdat.fn_check_grid(outdir)
-   keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
+      # this gives a rotated (x',y') grid to align with the sides of the square
+      grid_arrays,grid_fields = _get_grid_arrays_SmallSquare(diag_length,resolution)
+      #
+      nx = grid_fields['nx']
+      ny = grid_fields['ny']
+      dx = grid_fields['dx']
+      dy = grid_fields['dy']
+      print('nx = '+str(nx))
+      print('ny = '+str(ny))
+      print('dx = '+str(dx/1.e3)+'km')
+      print('dy = '+str(dy/1.e3)+'km')
+   ###########################################################
 
-   print('Comparing python in to python out:\n')
-   for key in keys:
-      diff     = np.abs(gf[key]-gf2[key])
-      diff_max = diff.max()
-      diff_min = diff.min()
-      print('max difference in : '+key+' = '+str(diff_max))
-      print('min difference in : '+key+' = '+str(diff_min)+'\n')
-###########################################################
+   ###########################################################
+   print(' ')
+   print(60*'*')
+   gs.save_grid_info_hdr(outdir2,nx,ny,dx,dy,nc2)
+   gs.save_grid(outdir,grid_arrays,nc)
+   print(60*'*')
+   print(' ')
+   ###########################################################
 
-###########################################################
-if 0:
-   # save test figure:
-   fig   = 'test/out_py/land.png'
-   print('Saving test figure : '+fig)
-   #
-   gf = grid_fields
-   f  = Fplt.cmap_3d(gf['X']/1.0e3,gf['Y']/1.0e3,
-                     gf['LANDMASK'],
-                     ['$x$, km','$y$, km','LANDMASK'])
-   plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   f.clf()
-###########################################################
+   ###########################################################
+   if 0:
+      # check difference between binaries
+      # saved by pure fortran and f2py:
+      outdir1  = 'test/out'   # fortran binaries here
+                              # run grid_setup.sh with
+                              # testing=1 in p_save_grid.F (recompile)
+      gf1      = Fdat.fn_check_grid(outdir1)
+      gf2      = Fdat.fn_check_grid(outdir)
+      keys     = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
 
-###########################################################
-print(' ')
-print(60*'*')
-print("Now compile WIM code in ../Build")
-print("Run in                  ../run")
-print(60*'*')
-print(' ')
-###########################################################
+      print('Comparing fortran to python:\n')
+      for key in keys:
+         diff     = np.abs(gf1[key]-gf2[key])
+         diff_max = diff.max()
+         diff_min = diff.min()
+         print('max difference in : '+key+' = '+str(diff_max))
+         print('min difference in : '+key+' = '+str(diff_min)+'\n')
+   elif 1:
+      # check difference between binaries
+      # saved by f2py and the input fields:
+      gf    = grid_fields
+      gf2   = Fdat.fn_check_grid(outdir)
+      keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
+
+      print('Comparing python in to python out:\n')
+      for key in keys:
+         diff     = np.abs(gf[key]-gf2[key])
+         diff_max = diff.max()
+         diff_min = diff.min()
+         print('max difference in : '+key+' = '+str(diff_max))
+         print('min difference in : '+key+' = '+str(diff_min)+'\n')
+   ###########################################################
+
+   ###########################################################
+   if 1:
+      # save test figure:
+      fig   = 'test/out_py/land.png'
+      print('Saving test figure : '+fig)
+      #
+      gf = grid_fields
+      f  = Fplt.cmap_3d(gf['X']/1.0e3,gf['Y']/1.0e3,
+                        gf['LANDMASK'],
+                        ['$x$, km','$y$, km','LANDMASK'])
+      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      f.clf()
+   ###########################################################
+
+   ###########################################################
+   print(' ')
+   print(60*'*')
+   print("Now compile WIM code in ../Build")
+   print("Run in                  ../run")
+   print(60*'*')
+   print(' ')
+   ###########################################################
+
+   return
+##############################################################
