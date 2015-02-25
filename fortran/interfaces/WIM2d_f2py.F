@@ -33,3 +33,31 @@
 
       end subroutine py_wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine atten_youngs(outputs,inputs)
+      use mod_wim_prams, only: gravity
+
+      real,intent(in)   :: inputs(4)
+      real,intent(out)  :: outputs(8)
+
+      real  :: damping,kice,kwtr,int_adm,ac,modT,argR,argT
+
+      real  :: guess,om
+
+      ! h        = inputs(1)
+      ! om       = inputs(2)
+      ! young    = inputs(3)
+      ! visc_rp  = inputs(4)
+      om    = inputs(2)
+      guess = om**2/gravity
+
+      call RTparam_outer(damping,kice,kwtr,int_adm,
+     &                  ac,modT,argR,argT,
+     &                  inputs,guess)
+
+      outputs  = (/damping,kice,kwtr,int_adm,
+     &                  ac,modT,argR,argT/)
+
+      end subroutine atten_youngs
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
