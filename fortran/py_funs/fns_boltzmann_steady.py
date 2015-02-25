@@ -5,75 +5,22 @@ import struct
 import matplotlib.pyplot as plt
 # import matplotlib.rcsetup as rc
 
-##
-## NB run from 'run' directory !!
-##
-dd    = os.path.abspath("..")
-dirs  = [dd+"/bin",dd+"/run",dd+"/py_funs"]
-for n in range(0,len(dirs)):
-   dd2   = dirs[n]
-   if not(dd2 in sys.path):
-      print('adding path : '+dd2)
-      sys.path.append(dd2)
-
 import WIM2d_f2py    as Mwim
 import run_WIM2d     as Rwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
+import fns_inprod    as Finpr
 
 # linear algebra
 from scipy import linalg as LA
 eig   = LA.eig          # 
 solve = np.linalg.solve # x=solve(A,b) -> solves A*x=b
 
-# get grid
-gdir        = 'inputs'
-grid_prams  = Fdat.fn_check_grid(gdir)
-nx          = grid_prams['nx']
-ny          = grid_prams['ny']
-dx          = grid_prams['dx']
-dy          = grid_prams['dy']
-X           = grid_prams['X']
-Y           = grid_prams['Y']
-LANDMASK    = grid_prams['LANDMASK']
-xmin        = X.min()
-xmax        = X.max()
-
-period   = 10
-
 ##############################################
-def diag(dd):
-   # diagonal matrix with dd as diagonal
-
-   N  = len(dd)
-
-   if abs(dd.imag).sum()!=0.0:
-      # if any of dd complex,
-      # need to initialise DD as complex
-      # (otherwise can't put elements of dd into it)
-      DD = 0j*np.ones((N,N))
-   else:
-      # initialize DD as real
-      DD = np.zeros((N,N))
-
-   for n in range(N):
-      DD[n,n]  = dd[n]
-
-   return DD
-##############################################
-
-##############################################
-def linspace(N,a=0.,b=1.):
-   v  = np.arange(N)/float(N-1)
-   y  = a+v*(b-a)
-   return y
-##############################################
-
-##############################################
-def dirspec_inc(th_vec,Hs=2.):
+def dirspec_inc_spreading(th_vec,Hs=1.):
 
    # incident spectrum:
-   # - 2/pi*cos^2(th)
+   # = 2/pi*cos^2(th)
    cc             = np.cos(th_vec)
    D_inc          = 2.0/np.pi*cc**2
    D_inc[cc<0.0]  = 0.0
@@ -84,21 +31,21 @@ def dirspec_inc(th_vec,Hs=2.):
    return D_inc
 ##############################################
 
-##############################################
-def matrix_isotropic(alp,N):
-
-   Mb = alp*np.ones((N,N))/float(N)
-   for n in range(N):
-      Mb[n,n]  = Mb[n,n]-alp
-
-   # angles:
-   th_vec   = linspace(N+1,0.,2*np.pi)
-   th_vec   = th_vec[:-1]  # last element is 2\pi \equiv 0
-   C        = diag(np.cos(th_vec))
-   # print(C)
-
-   return Mb,th_vec,C
-##############################################
+# ##############################################
+# def matrix_isotropic(alp,N):
+# 
+#    Mb = alp*np.ones((N,N))/float(N)
+#    for n in range(N):
+#       Mb[n,n]  = Mb[n,n]-alp
+# 
+#    # angles:
+#    th_vec   = np.linspace(0.,2*np.pi,N+1)
+#    th_vec   = th_vec[:-1]  # last element is 2\pi \equiv 0
+#    C        = np.diag(np.cos(th_vec))
+#    # print(C)
+# 
+#    return Mb,th_vec,C
+# ##############################################
 
 ##############################################
 def get_ft_kernel(alp,N,OPT=0):
@@ -127,14 +74,16 @@ def get_ft_kernel(alp,N,OPT=0):
 ##############################################
 
 ##############################################
-def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
+def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
    # fourier coefficients of kernel:
    # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
    OPT   = 0 # isotropic scattering
    # OPT   = 0 # add some directionality
 
-   K_fou = get_ft_kernel(alp,N,OPT=OPT)
+   if INC_OPT is None:
+      f_inc = dirspec_inc_spreading  # spreading around central peak - Hs=1 is default
 
+   K_fou = get_ft_kernel(alp,N,OPT=OPT)
    sn    = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
    ##############################################
@@ -148,7 +97,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
 
    ##############################################
    # get eigenvalues & eigenvectors
-   Ds       = diag(sn)
+   Ds       = np.diag(sn)
    evals,U  = LA.eig(Ds,b=Lmat) # DS*U=\lambda*Lmat*U
    evals    = evals.real        # inv(Lmat)*Ds = real, symmetric => eig's should be real
 
@@ -167,17 +116,12 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
    M_c2ft   = U[:,jkeep]
    eig_vecs = [M_c2ft]
    lam      = evals[jkeep]
-   if 1:
-      # print(sn)
-      # print(K_fou)
+   if 0:
       U0 = M_c2ft[:,0]
-      print(Lmat.dot(U0))
       
       # solve Ds*V0=Lmat*U0
       v0 = Lmat[1:,:].dot(U0)
       V0 = np.concatenate([[0.],v0/sn[1:]])
-      print(V0.shape)
-      print(Ds.dot(V0))
 
    ##############################################
 
@@ -188,7 +132,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
       Lmi   = LA.inv(Lmat)
       Mr    = Lmi.dot(Ds)
       npts  = 500
-      xx    = linspace(npts,0.0,1.0e3)
+      xx    = np.linspace(0.0,1.0e3,npts)
       f     = np.zeros((N,npts)) # (fourier modes,position)
       g     = np.zeros((N,npts))
       df    = np.zeros((N,npts))
@@ -305,7 +249,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
    if ECON_SOLN is 0:
       # explicit solution
       # (assumes incident wave is even)
-      D_inc    = f_inc(th_vec)
+      D_inc    = f_inc(th_vec,Hs)
       n_inc    = nn[np.cos(th_vec)>0] # N/2 unknowns
       coeffs   = solve(M_c2th[n_inc,:],D_inc[n_inc])
    ##############################################
@@ -322,6 +266,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
                'Sn_edge'      : Sn_edge,
                'which_edge'   : 'lhs',
                'dirspec_inc'  : D_inc}
+
    out   = {'edge_lhs'     : edge_lhs,
             'eig_coeffs'   : coeffs,
             'eig_vals'     : lam,
@@ -332,14 +277,16 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc)
 ##############################################
 
 ##############################################
-def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc):
+def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=None):
    # fourier coefficients of kernel:
    # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
    OPT   = 0 # isotropic scattering
    # OPT   = 0 # add some directionality
 
-   K_fou = get_ft_kernel(alp,N,OPT=OPT)
+   # if f_inc is None:
+   #    f_inc = dirspec_inc_spreading  # spreading around central peak - Hs=1 is default
 
+   K_fou = get_ft_kernel(alp,N,OPT=OPT)
    sn    = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
    ##############################################
@@ -353,7 +300,7 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
 
    ##############################################
    # get eigenvalues & eigenvectors
-   Ds       = diag(sn)
+   Ds       = np.diag(sn)
    evals,U  = LA.eig(Ds,b=Lmat) # DS*U=\lambda*Lmat*U
    evals    = evals.real        # inv(Lmat)*Ds = real, symmetric => eig's should be real
 
@@ -371,7 +318,6 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
    # N/2-1 corresp to rh edge:
    evr   = evals[jp] # >0, scattered by rh edge
    Ur    = U[:,jp] # 
-
 
    No2   = int(N/2.)
    expL  = np.exp(-evr*width)# = exp(evl*width)
@@ -423,7 +369,6 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
 
    # E_n, x=0:
    n0 = N-2*M
-   print(n0,len(jz))
    M_c2ft_0[:,n0:n0+M]  = Ul
    M_c2ft_0[:,n0+M:]    = Ur.dot(np.diag(expL))
 
@@ -439,7 +384,7 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
       Lmi   = LA.inv(Lmat)
       Mr    = Lmi.dot(Ds)
       npts  = 500
-      xx    = linspace(npts,0.0,1.0e3)
+      xx    = np.linspace(0.0,1.0e3,npts)
       f     = np.zeros((N,npts)) # (fourier modes,position)
       g     = np.zeros((N,npts))
       df    = np.zeros((N,npts))
@@ -510,7 +455,6 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
    """
    M_c2th_0 = M_ift.dot(M_c2ft_0)   # x=0
    M_c2th_L = M_ift.dot(M_c2ft_L)   # x=L
-   print(M_c2th_L.shape)
    ##############################################
 
    ##############################################
@@ -521,14 +465,37 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
       # (assumes incident wave is even)
       rhs      = np.zeros(N)*0j
       Mlhs     = np.zeros((N,N))*0j
-      n_inc0   = nn[np.cos(th_vec)>0] # N/2 unknowns
       n_incL   = nn[np.cos(th_vec)<0] # N/2 unknowns
-      D_inc    = f_inc(th_vec)
+
       #
-      rhs[0:No2]     = D_inc[n_inc0]      # waves to right only
-      Mlhs[0:No2,:]  = M_c2th_0[n_inc0,:] # waves to right only 
-      Mlhs[No2:,:]   = M_c2th_L[n_incL,:] # waves to left  only 
-      coeffs         = solve(Mlhs,rhs)
+      if f_inc is not None:
+         n_inc0         = nn[np.cos(th_vec)>0] # N/2 unknowns
+         D_inc          = f_inc(th_vec,Hs)
+         rhs[0:No2]     = D_inc[n_inc0]      # waves to right only
+         Mlhs[0:No2,:]  = M_c2th_0[n_inc0,:] # waves to right only 
+         Mlhs[No2:,:]   = M_c2th_L[n_incL,:] # waves to left  only 
+         coeffs         = solve(Mlhs,rhs)
+      else:
+         # delta function (plane wave)
+
+         # order lhs correctly for inprod with cos over [-pi/2,pi/2]
+         ni0      = nn[np.logical_and(th_vec>0,th_vec<np.pi/2.)]
+         ni1      = nn[np.logical_and(th_vec<0,th_vec>-np.pi/2.)]
+         if len(ni1)==0:
+            ni1      = nn[np.logical_and(th_vec>1.5*np.pi,th_vec<2*np.pi)]
+         n_inc0   = np.concatenate([ni1,ni0])
+         #
+         Mip_out        = Finpr.ipmat_cos(No2)
+         A              = Hs/2./np.sqrt(2.)
+
+         # Plane wave to right only: A^2/2*\delta(\theta)
+         # 2/\pi*\int_0^\pi.cos(n\theta')*A^2/2*\delta(\theta)d\theta'
+         # = A^2/\pi*cos(n*\pi/2)
+         rhs[0:No2]     = (A*A/np.pi)*np.cos(np.arange(No2)*np.pi/2)
+         Mlhs[0:No2,:]  = Mip_out[0].dot(M_c2th_0[n_inc0,:])   # waves to right only 
+         Mlhs[No2:,:]   = M_c2th_L[n_incL,:]                   # waves to left  only (rhs=0)
+         coeffs         = solve(Mlhs,rhs)
+         D_inc          = 0*rhs[0:No2]
    ##############################################
    
    ##############################################
@@ -547,6 +514,7 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
                'M_c2ft'       : M_c2ft_0,
                'dirspec_inc'  : D_inc,
                'which_edge'   : 'lhs'}
+
    edge_rhs = {'En_edge'      : En_edge_L,
                'E_edge'       : E_edge_L,
                'Sn_edge'      : Sn_edge_L,
@@ -554,8 +522,10 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,f_inc=dirspec_inc
                'M_c2ft'       : M_c2ft_L,
                'dirspec_inc'  : 0*D_inc,
                'which_edge'   : 'rhs'}
+
    out      = {'edge_lhs'     : edge_lhs,
                'edge_rhs'     : edge_rhs,
+               'M_En2E'       : M_ift,
                'eig_coeffs'   : coeffs,
                'eig_vals'     : lam,
                'eig_vecs'     : eig_vecs,
@@ -615,7 +585,7 @@ def test_edge_cons(out,semiinf=True,lhs=True):
 ##############################################
 
 ##############################################
-def calc_energy(out,xx,L,n_test=0):
+def calc_energy(out,xx,L,n_test=None):
 
    #############################################
    lam   = out['eig_vals']
@@ -623,50 +593,66 @@ def calc_energy(out,xx,L,n_test=0):
    N     = len(cn)
    No2   = int(N/2.)
    npts  = len(xx)
+   if n_test is None:
+      n_test   = range(N)
+   E_n   = np.zeros((npts,len(n_test)))*0j
+
+   print('Reconstructing energy from eigenvalues in calc_energy...')
 
    #############################################
    if len(out['eig_vecs'])==2:
       # only single eigen-values
       print('only simple eigenvalues')
+      print('\n')
       #
-      Ul = out['eig_vecs'][0][n_test,:]
-      Ur = out['eig_vecs'][1][n_test,:]
-      #
-      E_n   = 0.*xx
-      M     = No2
-      an    = cn[0:M]
-      bn    = cn[M:]
+      M        = No2
+      an       = cn[0:M]
+      bn       = cn[M:]
    else:
       # repeated eigen-value
-      print('zero is repeated eigenvalue')
+      print('zero is a repeated eigenvalue')
+      print('\n')
       #
-      U0 = out['eig_vecs'][0][n_test]
-      V0 = out['eig_vecs'][1][n_test]
-      Ul = out['eig_vecs'][2][n_test,:]
-      Ur = out['eig_vecs'][3][n_test,:]
-      #
-      E_n   = cn[0]*U0+cn[1]*(U0*xx+V0)
-      lam   = lam[1:]
-      M     = No2-1
-      an    = cn[2:][0:M]
-      bn    = cn[2:][M:]
-      print(an.shape,bn.shape)
+      lam      = lam[1:]
+      M        = No2-1
+      an       = cn[2:][0:M]
+      bn       = cn[2:][M:]
    #############################################
 
    #############################################
-   for n in range(npts):
-      x        = xx[n]
-      an_x     = np.exp(-lam*x)*an
-      bn_x     = np.exp(-lam*(L-x))*bn
-      E_n[n]   = E_n[n] + Ul.dot(an_x) \
-                        + Ur.dot(bn_x)
-   #############################################
+   for m in n_test:
+
+      #############################################
+      if len(out['eig_vecs'])==2:
+         # only single eigen-values
+         Ul = out['eig_vecs'][0][m,:]
+         Ur = out['eig_vecs'][1][m,:]
+         #
+         E_n[:,m] = 0.*xx
+      else:
+         # repeated eigen-value
+         U0 = out['eig_vecs'][0][m]
+         V0 = out['eig_vecs'][1][m]
+         Ul = out['eig_vecs'][2][m,:]
+         Ur = out['eig_vecs'][3][m,:]
+         #
+         E_n[:,m] = cn[0]*U0+cn[1]*(U0*xx+V0)
+      #############################################
+
+      #############################################
+      for n in range(npts):
+         x        = xx[n]
+         an_x     = np.exp(-lam*x)*an
+         bn_x     = np.exp(-lam*(L-x))*bn
+         E_n[n,m] = E_n[n,m] + Ul.dot(an_x) \
+                             + Ur.dot(bn_x)
+      #############################################
 
    return E_n
 ################################################
 
 ##############################################
-def plot_energy(out,width=None,n_test=0):
+def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
    # n_test is the Fourier component to plot:
    # (0 is the energy)
    # NB odd n are zero
@@ -688,7 +674,7 @@ def plot_energy(out,width=None,n_test=0):
 
    # plot energy vs x:
    npts  = 5000
-   xx    = linspace(npts,0.0,L)
+   xx    = np.linspace(0.0,L,npts)
    E_n   = 0.0j*xx
    lam   = out['eig_vals']
    #
@@ -708,15 +694,36 @@ def plot_energy(out,width=None,n_test=0):
          E_n[n]   = M_c2ft0[n_test,:].dot(cn_x)
    else:
       # finite width
-      E_n      = calc_energy(out,xx,L,n_test=n_test)
+      E_n      = calc_energy(out,xx,L,n_test=[n_test])
       N        = len(cn)
       No2      = int(N/2.)
+      #
+      En_all   = calc_energy(out,xx,L)
+      E_coh    = 0*xx # coherent energy: E going to right
+      dth      = out['angles'][1]-out['angles'][0]
+      for n in range(npts):
+         E_th     = out['M_En2E'].dot(En_all[n,:])
+         E_f      = E_th[abs(out['angles'])<dth].real # two closest intervals around 0
+         E_coh[n] = dth*(E_f.sum())                   # integrate over these intervals
    ################################################################################
 
    ang      = out['angles'] 
    dth      = 2*np.pi/float(N)
    fwd_mask = np.zeros(N)
    fwd_mask[np.cos(ang)>0] = 1.0
+   if 1:
+      if f_inc is None:
+         A        = Hs/2./np.sqrt(2.)
+         Ec_tst   = A*A/2.
+      else:
+         #dirspec_spreading
+         Ec_tst   = 1./np.pi*(dth+.5*np.sin(2*dth))*pow(Hs/4.,2)
+
+      print('\n')
+      print('Check coherent energy (converted to Hs)')
+      print('(analytic integration at x=0)')
+      print(4*np.sqrt(E_coh[0]),4*np.sqrt(Ec_tst))
+      print('\n')
    #
    if 1:
       for key in edge_keys:
@@ -755,8 +762,11 @@ def plot_energy(out,width=None,n_test=0):
       ax    = fig.add_subplot(1,1,1)
       Fplt.plot_1d(xx/1.0e3,4*np.sqrt(E_n.real),f=fig,
                labs=['$x$, km','$H_s$, m'],linestyle='-',color='k')
+      Fplt.plot_1d(xx/1.0e3,4*np.sqrt(E_coh),f=fig,
+               linestyle='--',color='r')
 
-      if alp_dis>0.0:
+      if lam[0]>0.0:
+         # dissipation so plot y with log scale (exponential decay)
          ax.set_yscale('log')
 
       plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
@@ -781,57 +791,6 @@ def plot_energy(out,width=None,n_test=0):
       print('Saving to file : '+figname)
       print(' ')
 
-   out   = {'E_n':E_n,'x':xx,'n':n_test}
+   out   = {'E_n':E_n,'x':xx,'n':n_test,'E_coh':E_coh}
    return out
 ##############################################
-
-N        = 2**9
-alp      = 1.0e-5
-alp_dis  = 0.0e-5
-cg       = 1.0
-
-if 0:
-   #semi-infinite:
-   out   = solve_boltzmann_ft_semiinf(
-            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=dirspec_inc)
-
-   cn       = out['eig_coeffs']
-   M_c2ft   = out['edge_lhs']['M_c2ft']
-   M_c2th   = out['edge_lhs']['M_c2th']
-   semiinf  = True
-   width    = None
-elif 1:
-   #finite width:
-   width = 50.e0 #m
-   out   = solve_boltzmann_ft(width=width,
-            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=dirspec_inc)
-
-   semiinf  = False
-
-if 1:
-   # test edge conditions
-   test_edge_cons(out,semiinf=semiinf,lhs=True)
-   if not semiinf:
-      test_edge_cons(out,semiinf=semiinf,lhs=False)
-
-if 1:
-   # plot energy
-   out_plot = plot_energy(out,width=width,n_test=0)
-   xx       = out_plot['x']
-   E0       = out_plot['E_n']
-   # Hs       = 4*np.sqrt(E0.real)
-   Hs       = E0.real
-
-   if width is None:
-      out_file = 'fig_scripts/datfiles/steady_semiinf.dat'
-   else:
-      out_file = 'fig_scripts/datfiles/steady_L'+str(width)+'.dat'
-
-   print('\n')
-   print('Saving data points to '+out_file)
-   of1   = open(out_file,'w')
-   of1.write('x, m       Hs, m\n')
-   for n in range(len(xx)):
-      of1.write('%f   %f\n'%(xx[n],Hs[n]))
-
-   of1.close()
