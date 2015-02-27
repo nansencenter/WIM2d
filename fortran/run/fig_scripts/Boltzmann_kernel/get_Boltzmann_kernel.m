@@ -1,6 +1,13 @@
 function get_Boltzmann_kernel(file_info)
 %% save Fourier coefficients from elastic disc code
 
+%%seems to a be a conflict with ISSM (license.m) somehow
+issmdir  = 'GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/externalpackages/matlab/install/toolbox/local'; 
+index    = strfind(path,issmdir);
+if ~isempty(index)
+   rmpath([getenv('HOME'),'/',issmdir]);
+end
+
 %%add path to CITEPH:
 citeph_path = getenv('CITEPH_PATH');
 if strcmp(citeph_path,'')==1
@@ -24,10 +31,10 @@ end
 if ~exist('fileinfo','var')
    fileinfo.period      = 10;%wave period    [s]
    fileinfo.thickness   = 1;%floe thickness  [m]
-   fileinfo.youngs      = 4;%Young's modulus [GPa]
+   fileinfo.youngs      = 5;%Young's modulus [GPa]
    fileinfo.floe_diam   = 150;%floe diameter [m]
    fileinfo.conc        = .7;%floe diameter [m]
-   fileinfo.Nangles     = 2^4;%number of angles (can't be too high as it becomes ill-conditioned)
+   fileinfo.Nangles     = 2^5;%number of angles (can't be too high as it becomes ill-conditioned)
    fileinfo.Nroots      = 200;%number of roots
 end
 
@@ -106,9 +113,10 @@ fprintf(fid,'%s\n','Boltzmann eqn:');
 fprintf(fid,'%s\n','cos(theta)*dE/dx = -beta*E + int_{-pi}^{pi} K(th-s)*E(s) ds');
 fprintf(fid,'%s\n','NB: units of K are m^{-1}');
 fprintf(fid,'%s\n','');
-fprintf(fid,'%s\n','Cosine coefficients below:');
+fprintf(fid,'%s\n','Expand K in cosine series:');
 fprintf(fid,'%s\n','2*pi*K(theta)=K_0/2+\sum_{n=1}^N[K_n*cos(n*theta)]');
 fprintf(fid,'%s\n','');
+fprintf(fid,'%s\n','Coefficients below:');
 
 for n=1:length(Kcos)
    fprintf(fid,'%0.15e\n',Kcos(n));

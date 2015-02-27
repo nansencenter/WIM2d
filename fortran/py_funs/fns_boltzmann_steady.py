@@ -17,7 +17,12 @@ eig   = LA.eig          #
 solve = np.linalg.solve # x=solve(A,b) -> solves A*x=b
 
 ##############################################
-def dirspec_inc_spreading(th_vec,Hs=1.):
+def dirspec_inc_spreading(th_vec,inputs=None):
+
+   if inputs is None:
+      Hs = 1.
+   else:
+      Hs = inputs['Hs']
 
    # incident spectrum:
    # = 2/pi*cos^2(th)
@@ -27,6 +32,32 @@ def dirspec_inc_spreading(th_vec,Hs=1.):
       # integral=1, so this corresponds to Hs=4*sqrt(1)=4
 
    D_inc = D_inc*pow(Hs/4.,2)
+
+   return D_inc
+##############################################
+
+##############################################
+def dirspec_inc_plane(th_vec,inputs):
+
+   if inputs is None:
+      Hs    = 1.
+      dth   = th_vec[1]-th_vec[0]
+   else:
+      Hs    = inputs['Hs']
+      dth   = inputs['dth']
+
+   # incident spectrum:
+   # = A^2/2\delta(\theta) : approximate with constant in neigbouring cells to \theta=0
+   A  = Hs/2./np.sqrt(2.)
+   C  = A*A/2./(2.*dth)
+   #
+   D_inc                            = 0.*th_vec
+   D_inc[abs(th_vec)<dth]           = C
+   D_inc[abs(2*np.pi-th_vec)<dth]   = C
+   if D_inc.sum()>C:
+      # zero only corresponds to one interval
+      # => must double C
+      D_inc = 2*D_inc
 
    return D_inc
 ##############################################
@@ -46,6 +77,36 @@ def dirspec_inc_spreading(th_vec,Hs=1.):
 # 
 #    return Mb,th_vec,C
 # ##############################################
+
+###############################################
+def read_ft_kernel(filename,Nout):
+   f     = open(filename)
+   lines = f.readlines()
+   f.close()
+
+   nl    = len(lines)
+   start = 0
+   Kcos  = []
+   for n in range(nl):
+      ll = lines[n].split()
+      if len(ll)>0:
+         if ll[0]=='Coefficients':
+            start = 1
+         elif start:
+            Kcos.append(float(ll[0]))
+
+   No2      = len(Kcos)-1
+   N        = 2*No2
+   K_fou     = np.zeros(Nout)
+   K_fou[0]  = .5*Kcos[0]
+   for n in range(1,min(int(Nout/2.),No2)):
+      K_fou[n]       = .5*Kcos[n]
+      K_fou[Nout-n]  = .5*Kcos[n]
+
+   # print(Kcos)
+   # print(K_fou)
+   return K_fou
+###############################################
 
 ##############################################
 def get_ft_kernel(alp,N,OPT=0):
@@ -70,21 +131,32 @@ def get_ft_kernel(alp,N,OPT=0):
       K_fou[1]    = a/2.0*K_fou[0]
       K_fou[N-1]  = a/2.0*K_fou[0]
 
-   return K_fou
+   elif OPT is 2:
+      # load from file
+      fdir  = 'fig_scripts/Boltzmann_kernel/out/'
+      #dfil  = fdir+'Kfou_h1_E4_T10_D150.dat'
+      dfil  = fdir+'Kfou_h1_E5_T10_D150.dat'
+      #dfil  = fdir+'Kfou_h1_E5_T5_D150.dat'
+      #dfil  = fdir+'Kfou_test.dat'
+
+      # start with isotropic scattering
+      # (K=alp, so K_n = \delta_{n,0})
+      K_fou = read_ft_kernel(dfil,N)
+      alp   = K_fou[0]
+
+   return K_fou,alp
 ##############################################
 
 ##############################################
 def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
    # fourier coefficients of kernel:
    # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
-   OPT   = 0 # isotropic scattering
-   # OPT   = 0 # add some directionality
+   # OPT   = 0 # isotropic scattering
+   # OPT   = 1 # add some directionality
+   OPT   = 2 # real coefficients from file
 
-   if INC_OPT is None:
-      f_inc = dirspec_inc_spreading  # spreading around central peak - Hs=1 is default
-
-   K_fou = get_ft_kernel(alp,N,OPT=OPT)
-   sn    = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
+   K_fou,alp   = get_ft_kernel(alp,N,OPT=OPT)
+   sn          = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
    ##############################################
    # LH matrix
@@ -105,7 +177,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
    nn       = np.arange(N)
    jz       = nn[evals==0]  # here are the zero eigenvals
    jp       = nn[evals>0]   # here are the positive eigenvals
-   jm       = nn[evals<0]   # here are the positive eigenvals
+   jm       = nn[evals<0]   # here are the negative eigenvals [decay as required]
    jkeep    = np.concatenate([jz[0:1],jm])
    
    # if alp_dis==0:
@@ -115,7 +187,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
    # keep neg evals (grow exponentially)
    M_c2ft   = U[:,jkeep]
    eig_vecs = [M_c2ft]
-   lam      = evals[jkeep]
+   lam      = -evals[jkeep]
    if 0:
       U0 = M_c2ft[:,0]
       
@@ -140,7 +212,7 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
       # eigen-pair to test
       for nc in [1]:
          e_vec = M_c2ft[:,nc]
-         e_val = lam[nc]
+         e_val = -lam[nc]
 
          for rx in range(npts):
             x        = xx[rx]
@@ -244,12 +316,25 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
    ##############################################
 
    ##############################################
+   # default incident wave spectrum
+   # if f_inc is None:
+   #    f_inc    = dirspec_inc_spreading  # spreading around central peak - Hs=1 is default
+   if f_inc is None:
+      f_inc    = dirspec_inc_plane      # delta function - numerical approx
+
+   if f_inc is dirspec_inc_plane:
+      finc_in  = {'Hs':Hs,'dth':dth}
+   elif f_inc is dirspec_inc_steady: 
+      finc_in  = {'Hs':Hs}
+   ##############################################
+
+   ##############################################
    # find coeffs of eigenfunction expansion
    # from incident spectrum:
    if ECON_SOLN is 0:
       # explicit solution
       # (assumes incident wave is even)
-      D_inc    = f_inc(th_vec,Hs)
+      D_inc    = f_inc(th_vec,finc_in)
       n_inc    = nn[np.cos(th_vec)>0] # N/2 unknowns
       coeffs   = solve(M_c2th[n_inc,:],D_inc[n_inc])
    ##############################################
@@ -264,13 +349,15 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
                'M_c2th'       : M_c2th,
                'M_c2ft'       : M_c2ft,
                'Sn_edge'      : Sn_edge,
-               'which_edge'   : 'lhs',
-               'dirspec_inc'  : D_inc}
+               'dirspec_inc'  : D_inc,
+               'which_edge'   : 'lhs'}
 
    out   = {'edge_lhs'     : edge_lhs,
             'eig_coeffs'   : coeffs,
             'eig_vals'     : lam,
             'eig_vecs'     : eig_vecs,
+            'M_En2E'       : M_ift,
+            'inputs'       : [alp,N,alp_dis,cg,Hs,f_inc],
             'angles'       : th_vec}
 
    return out
@@ -280,14 +367,12 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
 def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=None):
    # fourier coefficients of kernel:
    # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
-   OPT   = 0 # isotropic scattering
-   # OPT   = 0 # add some directionality
+   # OPT   = 0 # isotropic scattering
+   # OPT   = 1 # add some directionality
+   OPT   = 2 # real coefficients from file
 
-   # if f_inc is None:
-   #    f_inc = dirspec_inc_spreading  # spreading around central peak - Hs=1 is default
-
-   K_fou = get_ft_kernel(alp,N,OPT=OPT)
-   sn    = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
+   K_fou,alp   = get_ft_kernel(alp,N,OPT=OPT)
+   sn          = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
    ##############################################
    # LH matrix
@@ -458,6 +543,19 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
    ##############################################
 
    ##############################################
+   # Default incident wave spectrum
+   # if f_inc is None:
+   #    f_inc    = dirspec_inc_spreading  # spreading around central peak - Hs=1 is default
+   if f_inc is None:
+      f_inc    = dirspec_inc_plane      # delta function - numerical approx
+
+   if f_inc is dirspec_inc_plane:
+      finc_in  = {'Hs':Hs,'dth':dth}
+   elif f_inc is dirspec_inc_steady: 
+      finc_in  = {'Hs':Hs}
+   ##############################################
+
+   ##############################################
    # find coeffs of eigenfunction expansion
    # from incident spectrum:
    if ECON_SOLN is 0:
@@ -470,13 +568,13 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
       #
       if f_inc is not None:
          n_inc0         = nn[np.cos(th_vec)>0] # N/2 unknowns
-         D_inc          = f_inc(th_vec,Hs)
+         D_inc          = f_inc(th_vec,finc_in)
          rhs[0:No2]     = D_inc[n_inc0]      # waves to right only
          Mlhs[0:No2,:]  = M_c2th_0[n_inc0,:] # waves to right only 
          Mlhs[No2:,:]   = M_c2th_L[n_incL,:] # waves to left  only 
          coeffs         = solve(Mlhs,rhs)
       else:
-         # delta function (plane wave)
+         # delta function (plane wave) - analytically TODO looks wrong
 
          # order lhs correctly for inprod with cos over [-pi/2,pi/2]
          ni0      = nn[np.logical_and(th_vec>0,th_vec<np.pi/2.)]
@@ -529,6 +627,7 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
                'eig_coeffs'   : coeffs,
                'eig_vals'     : lam,
                'eig_vecs'     : eig_vecs,
+               'inputs'       : [alp,N,alp_dis,cg,Hs,f_inc],
                'angles'       : th_vec}
 
    return out
@@ -585,13 +684,22 @@ def test_edge_cons(out,semiinf=True,lhs=True):
 ##############################################
 
 ##############################################
-def calc_energy(out,xx,L,n_test=None):
+def calc_energy(out,xx,L=None,n_test=None):
 
    #############################################
    lam   = out['eig_vals']
    cn    = out['eig_coeffs']
-   N     = len(cn)
-   No2   = int(N/2.)
+   if L is None:
+      # semi-infinite
+      semiinf  = True
+      No2      = len(cn)
+      N        = 2*No2
+   else:
+      # finite width
+      semiinf  = False
+      N        = len(cn)
+      No2      = int(N/2.)
+
    npts  = len(xx)
    if n_test is None:
       n_test   = range(N)
@@ -600,54 +708,71 @@ def calc_energy(out,xx,L,n_test=None):
    print('Reconstructing energy from eigenvalues in calc_energy...')
 
    #############################################
-   if len(out['eig_vecs'])==2:
-      # only single eigen-values
-      print('only simple eigenvalues')
-      print('\n')
-      #
-      M        = No2
-      an       = cn[0:M]
-      bn       = cn[M:]
+   if not semiinf:
+      if len(out['eig_vecs'])==2:
+         # only single eigen-values
+         print('only simple eigenvalues')
+         print('\n')
+         #
+         M        = No2
+         an       = cn[0:M]
+         bn       = cn[M:]
+      else:
+         # repeated eigen-value
+         print('zero is a repeated eigenvalue')
+         print('\n')
+         #
+         lam      = lam[1:]
+         M        = No2-1
+         an       = cn[2:][0:M]
+         bn       = cn[2:][M:]
    else:
-      # repeated eigen-value
-      print('zero is a repeated eigenvalue')
+      print('semi-infinite case')
       print('\n')
-      #
-      lam      = lam[1:]
-      M        = No2-1
-      an       = cn[2:][0:M]
-      bn       = cn[2:][M:]
    #############################################
 
    #############################################
    for m in n_test:
 
       #############################################
-      if len(out['eig_vecs'])==2:
-         # only single eigen-values
-         Ul = out['eig_vecs'][0][m,:]
-         Ur = out['eig_vecs'][1][m,:]
-         #
-         E_n[:,m] = 0.*xx
+      if semiinf:
+         ##########################################
+         # no need to distinguish between repeated eigenvalue case
+         Ul       = out['eig_vecs'][0][m,:]
+         E_n[:,m] = 0*xx
+         for n in range(npts):
+            x        = xx[n]
+            cn_x     = np.exp(-lam*x)*cn
+            E_n[n,m] = E_n[n,m] + Ul.dot(cn_x)
+         ##########################################
       else:
-         # repeated eigen-value
-         U0 = out['eig_vecs'][0][m]
-         V0 = out['eig_vecs'][1][m]
-         Ul = out['eig_vecs'][2][m,:]
-         Ur = out['eig_vecs'][3][m,:]
-         #
-         E_n[:,m] = cn[0]*U0+cn[1]*(U0*xx+V0)
+         ##########################################
+         # finite width
+         if len(out['eig_vecs'])==2:
+            # only single eigen-values
+            Ul = out['eig_vecs'][0][m,:]
+            Ur = out['eig_vecs'][1][m,:]
+            #
+            E_n[:,m] = 0.*xx
+         else:
+            # repeated eigen-value
+            U0 = out['eig_vecs'][0][m]
+            V0 = out['eig_vecs'][1][m]
+            Ul = out['eig_vecs'][2][m,:]
+            Ur = out['eig_vecs'][3][m,:]
+            #
+            E_n[:,m] = cn[0]*U0+cn[1]*(U0*xx+V0)
+
+         for n in range(npts):
+            x        = xx[n]
+            an_x     = np.exp(-lam*x)*an
+            bn_x     = np.exp(-lam*(L-x))*bn
+            E_n[n,m] = E_n[n,m] + Ul.dot(an_x) \
+                                + Ur.dot(bn_x)
       #############################################
 
-      #############################################
-      for n in range(npts):
-         x        = xx[n]
-         an_x     = np.exp(-lam*x)*an
-         bn_x     = np.exp(-lam*(L-x))*bn
-         E_n[n,m] = E_n[n,m] + Ul.dot(an_x) \
-                             + Ur.dot(bn_x)
-      #############################################
-
+   #############################################
+   # finished loop over m - return Fourier coefficients
    return E_n
 ################################################
 
@@ -658,18 +783,23 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
    # NB odd n are zero
 
    fdir  = 'fig_scripts/figs/profiles/'
+   fdir2 = 'fig_scripts/figs/profiles/IsoFrac/'
    if not os.path.exists(fdir):
       os.mkdir(fdir)
+   if not os.path.exists(fdir2):
+      os.mkdir(fdir2)
 
    if width is None:
       semiinf     = True
       L           = 500.0e3
       figname     = fdir+'SSboltzmann_E'+str(n_test)+'_profile-semiinf.png'
+      figname2    = fdir2+'SSboltzmann_IsoFrac_profile-semiinf.png'
       edge_keys   = ['lhs']
    else:
       semiinf     = False
       L           = width
       figname     = fdir+'SSboltzmann_E'+str(n_test)+'_profile-L'+str(width)+'.png'
+      figname2    = fdir2+'SSboltzmann_IsoFrac_profile-L'+str(width)+'.png'
       edge_keys   = ['lhs','rhs']
 
    # plot energy vs x:
@@ -681,30 +811,55 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
    cn       = out['eig_coeffs']
    M_c2ft0  = out['edge_lhs']['M_c2ft']
    M_c2th   = out['edge_lhs']['M_c2th']
+   alp      = out['inputs'][0]
+   alp_dis  = out['inputs'][2]
 
    ################################################################################
    # calc Fourier coefficients at x:
    if semiinf:
       # semi-infinite
+      E_n      = calc_energy(out,xx,L=None,n_test=[n_test])
       No2      = len(cn) # N/2
       N        = 2*No2
+      En_si    = E_n
+
+      En_all   = calc_energy(out,xx,L=None)
+      E_coh    = 0*xx # coherent energy: E going to right
+      iso_frac = 0*xx # amount of isotropy measure
+      dth      = out['angles'][1]-out['angles'][0]
       for n in range(npts):
-         x        = xx[n]
-         cn_x     = np.exp(lam*x)*cn
-         E_n[n]   = M_c2ft0[n_test,:].dot(cn_x)
+         E_th        = out['M_En2E'].dot(En_all[n,:])
+         E_f         = E_th[abs(out['angles'])<dth].real # two closest intervals around 0
+         E_coh[n]    = dth*(E_f.sum())                   # integrate over these intervals
+         #
+         e0          = abs(E_n[n])*abs(E_n[n])
+         ea          = abs(En_all[n,:])*abs(En_all[n,:])
+         iso_frac[n] = e0/np.sum(ea)
    else:
       # finite width
-      E_n      = calc_energy(out,xx,L,n_test=[n_test])
-      N        = len(cn)
-      No2      = int(N/2.)
+      E_n   = calc_energy(out,xx,L=L,n_test=[n_test])
+      N     = len(cn)
+      No2   = int(N/2.)
+      if 1:
+         comp_si  = 1
+         cg       = out['inputs'][3]
+         Hs       = out['inputs'][4]
+         f_inc    = out['inputs'][5]
+         out_si   = solve_boltzmann_ft_semiinf(alp=alp,N=N,alp_dis=alp_dis,cg=cg,Hs=Hs,f_inc=f_inc)
+         En_si    = calc_energy(out_si,xx,L=None,n_test=[n_test]) # semi-infinite profile
       #
       En_all   = calc_energy(out,xx,L)
       E_coh    = 0*xx # coherent energy: E going to right
+      iso_frac = 0*xx # amount of isotropy measure
       dth      = out['angles'][1]-out['angles'][0]
       for n in range(npts):
          E_th     = out['M_En2E'].dot(En_all[n,:])
          E_f      = E_th[abs(out['angles'])<dth].real # two closest intervals around 0
          E_coh[n] = dth*(E_f.sum())                   # integrate over these intervals
+         #
+         e0          = abs(E_n[n])*abs(E_n[n])
+         ea          = abs(En_all[n,:])*abs(En_all[n,:])
+         iso_frac[n] = e0/np.sum(ea)
    ################################################################################
 
    ang      = out['angles'] 
@@ -713,6 +868,7 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
    fwd_mask[np.cos(ang)>0] = 1.0
    if 1:
       if f_inc is None:
+         #dirspec_plane or analytical delta function
          A        = Hs/2./np.sqrt(2.)
          Ec_tst   = A*A/2.
       else:
@@ -760,10 +916,22 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
    elif n_test==0:
       fig   = plt.figure()
       ax    = fig.add_subplot(1,1,1)
+      if (not semiinf) and (comp_si==1):
+         Fplt.plot_1d(xx/1.0e3,4*np.sqrt(En_si.real),f=fig,
+               linestyle='-',color='g')
       Fplt.plot_1d(xx/1.0e3,4*np.sqrt(E_n.real),f=fig,
                labs=['$x$, km','$H_s$, m'],linestyle='-',color='k')
       Fplt.plot_1d(xx/1.0e3,4*np.sqrt(E_coh),f=fig,
                linestyle='--',color='r')
+
+      # check vs exponential decay
+      Fplt.plot_1d(xx/1.0e3,Hs*np.exp(-alp/2.*xx),f=fig,
+               linestyle='--',color='b')
+
+      # check vs equi-partition of energy
+      E_eq  = En_si[-1].real/float(N)
+      Fplt.plot_1d(xx/1.0e3,4*np.sqrt(E_eq)+0*xx,f=fig,
+               linestyle='--',color='g')
 
       if lam[0]>0.0:
          # dissipation so plot y with log scale (exponential decay)
@@ -774,6 +942,19 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
       fig.clf()
       print(' ')
       print('Saving to file : '+figname)
+      print(' ')
+
+      # plot amount of isotropy:
+      fig   = plt.figure()
+      Fplt.plot_1d(xx/1.0e3,iso_frac,f=fig,
+               labs=['$x$, km','Isotropic fraction'],linestyle='-',color='k')
+      Fplt.plot_1d(xx/1.0e3,1-np.exp(-alp*xx),f=fig,
+               linestyle='--',color='r')
+      plt.savefig(figname2,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      fig.clf()
+      print(' ')
+      print('Saving to file : '+figname2)
       print(' ')
    elif 1:
       fig   = plt.figure()
@@ -792,5 +973,31 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
       print(' ')
 
    out   = {'E_n':E_n,'x':xx,'n':n_test,'E_coh':E_coh}
+
+   #######################################################
+   # save data to file
+   if n_test==0:
+      Hs       = 4*np.sqrt(E_n.real)
+      Hs_f     = 4*np.sqrt(E_coh)
+
+      ddir  = 'fig_scripts/figs/profiles/datfiles'
+      if not os.path.exists(ddir):
+         os.mkdir(ddir)
+
+      if width is None:
+         out_file = ddir+'/steady_semiinf.dat'
+      else:
+         out_file = ddir+'/steady_L'+str(width)+'.dat'
+
+      print('\n')
+      print('Saving data points to '+out_file)
+      of1   = open(out_file,'w')
+      of1.write('x, m       Hs, m       Hs (coherent), m\n')
+      for n in range(len(xx)):
+         of1.write('%f   %f    %f\n'%(xx[n],Hs[n],Hs_f[n]))
+
+      of1.close()
+   #######################################################
+
    return out
 ##############################################

@@ -62,7 +62,7 @@ kwtr        = atten_out[2]
 cp          = om/kwtr # phase vel (open water) [m/s]
 cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
 
-if 0:
+if 1:
    #semi-infinite:
    out   = Fbs.solve_boltzmann_ft_semiinf(
             alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=None,Hs=Hs)
@@ -78,31 +78,8 @@ if 0:
 
    # plot energy
    out_plot = Fbs.plot_energy(out,width=None,n_test=0,Hs=Hs)
-   xx       = out_plot['x']
-   E0       = out_plot['E_n']
-   E_coh    = out_plot['E_coh']#TODO
 
-   Hs       = 4*np.sqrt(E0.real)
-   Hs_f     = 4*np.sqrt(E_coh)
-
-   ddir  = 'fig_scripts/datfiles'
-   if not os.path.exists(ddir):
-      os.mkdir(ddir)
-
-   if width is None:
-      out_file = ddir+'/steady_semiinf.dat'
-   else:
-      out_file = ddir+'/steady_L'+str(width)+'.dat'
-
-   print('\n')
-   print('Saving data points to '+out_file)
-   of1   = open(out_file,'w')
-   of1.write('x, m       Hs, m       Hs (coherent), m\n')
-   for n in range(len(xx)):
-      of1.write('%f   %f    %f\n'%(xx[n],Hs[n],Hs_f[n]))
-
-   of1.close()
-elif 1:
+# elif 1:
    #finite width [width in metres]:
    #for width in [50.,500.,5000.,50.e3,500.e3,5000.e3]:
    for width in [500.e3]:
@@ -121,28 +98,3 @@ elif 1:
 
       # plot energy
       out_plot = Fbs.plot_energy(out,width=width,n_test=0)
-      xx       = out_plot['x']
-      E0       = out_plot['E_n']
-      E_coh    = out_plot['E_coh']
-
-      # convert energy to sig wave height
-      Hs       = 4*np.sqrt(E0.real)
-      Hs_f     = 4*np.sqrt(E_coh)
-
-      ddir  = 'fig_scripts/datfiles'
-      if not os.path.exists(ddir):
-         os.mkdir(ddir)
-
-      if width is None:
-         out_file = ddir+'/steady_semiinf.dat'
-      else:
-         out_file = ddir+'/steady_L'+str(width)+'.dat'
-
-      print('\n')
-      print('Saving data points to '+out_file)
-      of1   = open(out_file,'w')
-      of1.write('x, m       Hs, m       Hs (coherent), m\n')
-      for n in range(len(xx)):
-         of1.write('%f   %f    %f\n'%(xx[n],Hs[n],Hs_f[n]))
-
-      of1.close()
