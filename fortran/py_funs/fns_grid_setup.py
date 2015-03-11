@@ -74,7 +74,7 @@ def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=0):
       gf['LANDMASK'][113:,:]  = 1.0
    elif LAND_OPT is 2:
       # standard 2d, but with an island
-      xc = -150.e3
+      xc = -190.e3
       yc = 0.e3
       Rc = 45.e3
       for i in range(nx):

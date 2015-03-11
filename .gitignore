@@ -23,5 +23,6 @@ fortran/header_files/*
 fortran/numerics/test_advection/test_out/*
 fortran/numerics/test_advection/figs/*
 fortran/run/fig_scripts/figs
+fortran/run/results/*
 #
 matlab/main/out
