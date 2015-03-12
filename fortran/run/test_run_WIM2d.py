@@ -27,49 +27,25 @@ if testing is 1:
 
 ##########################################################################
 elif testing is 2:
-   if 0:
-      RUN_OPT  = 2
-      # check passing in of 'in_fields'
-      # - read in inputs from saved files:
-      # (need to run without I/O first)
-      if 0:
-         in_dir   = 'out/binaries'
-      else:
-         in_dir   = 'out_io/binaries'
 
-      gf                      = Fdat.fn_check_grid(in_dir)
-      grid_prams              = gf
-      ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
-
-      # merge ice and wave fields:
-      ice_fields.update(wave_fields)
-      in_fields   = ice_fields
-
+   RUN_OPT  = 2
+   # check passing in of 'in_fields'
+   # - read in inputs from saved files:
+   # (need to run without I/O first)
+   if 1:
+      in_dir   = 'out/binaries'
    else:
-      RUN_OPT  = 2 # rerun then plot
-      # RUN_OPT  = 3 # plot saved results
+      in_dir   = 'out_io/binaries'
 
-      gf          = Fdat.fn_check_grid('inputs')
-      gfl         = gf['LANDMASK']
-      ICEMASK     = 1.-gfl
-      WAVEMASK    = 1.-gfl
-      grid_prams  = gf
+   gf                      = Fdat.fn_check_grid(in_dir)
+   grid_prams              = gf
+   ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
 
-      # ice edge
-      xe                   = -220.e3
-      ICEMASK              = 1+0*gf['X']
-      ICEMASK[gf['X']<xe]  = 0.
-      ICEMASK[gfl>0]       = 0.
+   # merge ice and wave fields:
+   ice_fields.update(wave_fields)
+   in_fields   = ice_fields
 
-      # edge of wave mask
-      xw                   = -260.e3
-      WAVEMASK             = 1+0*gf['X']
-      WAVEMASK[gf['X']>xw] = 0.
-      WAVEMASK[gfl>0]      = 0.
-
-      in_fields   = {'icec':.7*ICEMASK,'iceh':2.*ICEMASK,'dfloe':300.*ICEMASK,
-                     'Hs':3.*WAVEMASK,'Tp':12.*WAVEMASK,'mwd':-90.*WAVEMASK}
-
+   # other inputs:
    int_prams   = None # default parameters
    real_prams  = None # default parameters
 
@@ -95,7 +71,6 @@ elif testing is 2:
    out_fields,outdir = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
                                        int_prams=int_prams,
                                        real_prams=real_prams)
-
 
 ##########################################################################
 elif testing is 3:
