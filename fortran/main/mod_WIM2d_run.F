@@ -201,10 +201,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-      integer,dimension(5),intent(in)     :: int_prams   !!SOLVER,ADV_DIM
+      integer,dimension(5),intent(in)     :: int_prams
+         !!SOLVER,ADV_DIM,DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT 
       real,dimension(3),intent(in)        :: real_prams  !!young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
+
+
 
       real     :: PI
       real,dimension(2) :: wim_prams_in  !!young,visc_rp
