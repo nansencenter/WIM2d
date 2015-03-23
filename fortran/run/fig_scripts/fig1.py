@@ -21,7 +21,7 @@ import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 # get grid
-gdir        = 'out'
+gdir        = 'inputs'
 grid_prams  = Fdat.fn_check_grid(gdir)
 nx          = grid_prams['nx']
 ny          = grid_prams['ny']
@@ -35,11 +35,8 @@ xmax        = X.max()
 
 #########################################################
 v        = np.arange(0,ny)/float(ny-1) # ny points between 0,1
-Tp0      = 8.0
-Tp1      = 18.0
-Tp_vec   = Tp0+(Tp1-Tp0)*v
 
-if 0:
+if 1:
    # do a new calculation:
 
    ######################################################
@@ -51,15 +48,18 @@ if 0:
    dfloe = 250*ICE_MASK
 
    # set input wave fields
-   WAVE_MASK   = np.zeros((nx,ny))
+   WAVE_MASK               = np.zeros((nx,ny))
    WAVE_MASK[X<xmin*0.8]   = 1   # i<=15
-   Hs    = 2.0*WAVE_MASK
-   mwd   = -90.0*WAVE_MASK
+   Hs                      = 2.0*WAVE_MASK
+   mwd                     = -90.0*WAVE_MASK
 
-   if 0:
-      Tp = 12.0*WAVE_MASK
+   if 1:
+      Tp = 10.0*WAVE_MASK
    else:
-      Tp = np.zeros((nx,ny))
+      Tp0      = 8.0
+      Tp1      = 18.0
+      Tp_vec   = Tp0+(Tp1-Tp0)*v
+      Tp       = np.zeros((nx,ny))
       for j in range(0,ny):
          Tp[:,j]  = Tp_vec[j]*WAVE_MASK[:,j]
    ######################################################
@@ -73,14 +73,24 @@ if 0:
                   'mwd'    : mwd}
 
    # parameters for advection/attenuation
-   SOLVER      = 1
-   ADV_DIM     = 1
-   int_prams   = np.array([SOLVER,ADV_DIM])
+   SOLVER         = 1
+   ADV_DIM        = 2
+   DO_CHECK_FINAL = 0
+   DO_CHECK_PROG  = 1
+   DO_CHECK_INIT  = 0
+   #
+   young    = 5.e9
+   visc_rp  = 0. #13. 
+   duration = 20.*3600 # length of simulation [s]
+   
+   int_prams   = np.array([SOLVER,ADV_DIM,DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT])
+   real_prams  = np.array([young,visc_rp,duration])
 
    # do calculation in fortran:
    out_fields,outdir = Rwim.do_run(RUN_OPT=2,
                                    in_fields=in_fields,
-                                   int_prams=int_prams)
+                                   int_prams=int_prams,
+                                   real_prams=real_prams)
    ######################################################
 else:
    # load results of previous run:
@@ -124,8 +134,8 @@ def plot_diagnostics(Tp_vec,Wmiz,taux_max):
 #########################################################
 
 if 1:
-   print("Tp (s) :")
-   print(Tp_vec)
+   # print("Tp (s) :")
+   # print(Tp_vec)
 
    print(" ")
    print("MIZ midth (km) :")
