@@ -62,7 +62,7 @@ $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
-default: $(PROG_F) $(OBJS)
+exe: $(PROG_F) $(OBJS)
 	mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
@@ -72,6 +72,8 @@ py:	$(PROG_PY) $(OBJS)
 	mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 	mv $(TARGET_PY).so $(bin)
+
+all: exe py
 
 # DEPENDENCIES
 $(PROG_F): 		$(OBJS)

@@ -1,3 +1,6 @@
+import os
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -142,7 +145,9 @@ def cmap_3d(x,y,z,labs):
 #######################################################################
 def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
-   fdir  = figdir+'/init/'
+   if not os.path.exists(figdir):
+      os.mkdir(figdir)
+
    x     = grid_prams['X']/1.0e3
    y     = grid_prams['Y']/1.0e3
 
@@ -152,7 +157,7 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
    keys   = ['icec','iceh','dfloe']
 
    for key in keys:
-      fig   = fdir+figs[key]
+      fig   = figdir+figs[key]
       f     = cmap_3d(x,y,ice_fields[key],
                       ['$x$, km','$y$, km','$c$'])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
@@ -165,7 +170,7 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
    keys   = ['Hs','Tp','mwd']
 
    for key in keys:
-      fig   = fdir+figs[key]
+      fig   = figdir+'/'+figs[key]
       f     = cmap_3d(x,y,wave_fields[key],
                       ['$x$, km','$y$, km',labs[key]])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
@@ -176,7 +181,9 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 ############################################################################
 def fn_plot_final(grid_prams,out_fields,figdir):
 
-   fdir  = figdir+'/final/'
+   if not os.path.exists(figdir):
+      os.mkdir(figdir)
+
    keys  = out_fields.keys()
    x     = grid_prams['X']/1.0e3
    y     = grid_prams['Y']/1.0e3
@@ -189,7 +196,7 @@ def fn_plot_final(grid_prams,out_fields,figdir):
                            'Stress (x dir.), Pa','Stress (y dir.), Pa',
                            '$H_s$, m','$T_p$, s')
    for key in keys:
-      fig   = fdir+figs[key]
+      fig   = figdir+'/'+figs[key]
       f     = cmap_3d(x,y,out_fields[key],
                ['$x$, km','$y$, km',labs[key]])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
@@ -201,7 +208,9 @@ def fn_plot_final(grid_prams,out_fields,figdir):
 def fn_plot_final_V1d(grid_prams,Tp_vec,out_fields,figdir):
    # plot against T_p instead of y
 
-   fdir  = figdir+'/final/'
+   if not os.path.exists(figdir):
+      os.mkdir(figdir)
+
    # keys  = out_fields.keys()
    keys  = ['dfloe','taux','Hs']
    x     = grid_prams['X']/1.0e3

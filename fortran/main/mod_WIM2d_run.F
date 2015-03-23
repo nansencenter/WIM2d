@@ -201,8 +201,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
+<<<<<<< HEAD
       integer,dimension(5),intent(in)     :: int_prams
          !!SOLVER,ADV_DIM,DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT 
+=======
+      integer,dimension(5),intent(in)     :: int_prams   !!SOLVER,ADV_DIM, CHECK_FINAL,CHECK_PROG,CHECK_INIT
+>>>>>>> FETCH_HEAD
       real,dimension(3),intent(in)        :: real_prams  !!young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
@@ -225,6 +229,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SOLVER   = int_prams(1) ! solver to use for advection/attenuation
+                              ! 0: scattering treated like attenuation
+                              ! 1: directional scattering
       ADV_DIM  = int_prams(2) ! 1d advection option can be useful for checking
                               ! and also testing many parameters at once
                               ! ie each 'y' row can be a different experiment

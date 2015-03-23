@@ -98,7 +98,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       ##########################################################
 
       ##########################################################
-      if not (in_fields is None):
+      if in_fields is not None:
          # 'in_fields' is given as input
          # - put data into 'in_arrays':
          keys  = ['icec','iceh','dfloe','Hs','Tp','mwd']
