@@ -196,7 +196,7 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(SOLVER,ADV_DIM)
+      subroutine wim_step(SOLVER,ADV_DIM,DO_BREAKING)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -207,7 +207,7 @@
 
       implicit none
 
-      integer,intent(in)   :: SOLVER,ADV_DIM
+      integer,intent(in)   :: SOLVER,ADV_DIM,DO_BREAKING
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
@@ -375,7 +375,7 @@
 
             if (ICE_MASK(i,j).eq.1.0) then
                !! VARIANCE OF STRAIN;
-               tmp   = F*kice**2*iceh(i,j)/2.0    !!strain conversion factor
+               tmp   = F*kice**2*iceh(i,j)/2.0     !!strain conversion factor
                tmp   = wt_om(w)*S_freq(i,j)*tmp**2 !!strain density
                var_strain(i,j)   = var_strain(i,j)+abs( tmp )
             end if
@@ -407,7 +407,10 @@
                !!this is critical prob if monochromatic wave
    
             !! FLOE BREAKING:
-            BREAK_CRIT  = ( Pstrain.ge.P_crit )!!breaks if larger than this
+            BREAK_CRIT  = ( Pstrain.ge.P_crit ) !! breaks if larger than this
+
+            !! Leave FSD alone if DO_BREAKING==0
+            BREAK_CRIT  = BREAK_CRIT.and.(DO_BREAKING.eq.1)
    
             if (BREAK_CRIT) then
                !! use crest period to work out wavelength

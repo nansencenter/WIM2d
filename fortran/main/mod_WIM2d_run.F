@@ -13,6 +13,7 @@
       !! variables common to subroutines here
       integer  :: SOLVER,ADV_DIM
       integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
+      integer  :: DO_BREAKING !can turn off breaking for testing of waves
 
       real     :: x_ext,y_ext,u_ref,duration
       integer  :: nt
@@ -73,8 +74,9 @@
       real  :: etime
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = 1
-      ADV_DIM  = 2
+      SOLVER      = 1
+      ADV_DIM     = 2
+      DO_BREAKING = 1
 
       DO_CHECK_PROG  = 1
       DO_CHECK_INIT  = 1
@@ -178,11 +180,11 @@
       use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
 
-      !! main code for WIM
-      use mod_wavesice, only:
-     &    amax,amin,CFL,dt    !need these to determine number of time steps
-     &   ,wim_init,wim_step   !main subroutines
-     &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
+!     !! main code for WIM
+!     use mod_wavesice, only:
+!    &    amax,amin,CFL,dt    !need these to determine number of time steps
+!    &   ,wim_init,wim_step   !main subroutines
+!    &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
@@ -201,20 +203,17 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-<<<<<<< HEAD
-      integer,dimension(5),intent(in)     :: int_prams
-         !!SOLVER,ADV_DIM,DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT 
-=======
-      integer,dimension(5),intent(in)     :: int_prams   !!SOLVER,ADV_DIM, CHECK_FINAL,CHECK_PROG,CHECK_INIT
->>>>>>> FETCH_HEAD
-      real,dimension(3),intent(in)        :: real_prams  !!young,visc_rp,duration
-      real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
+      integer,dimension(6),intent(in)     :: int_prams
+      ! SOLVER,ADV_DIM,
+      ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
+      ! DO_BREAKING
 
+      real,dimension(3),intent(in)        :: real_prams  !! young,visc_rp,duration
+      real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
+      real,dimension(nx,ny,5),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy
 
-
-      real     :: PI
-      real,dimension(2) :: wim_prams_in  !!young,visc_rp
+      real              :: PI
+      real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
 
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
@@ -242,6 +241,7 @@
       DO_CHECK_FINAL = int_prams(3)
       DO_CHECK_PROG  = int_prams(4)
       DO_CHECK_INIT  = int_prams(5)
+      DO_BREAKING    = int_prams(6)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
@@ -414,7 +414,7 @@
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SOLVER,ADV_DIM)
+         call wim_step(SOLVER,ADV_DIM,DO_BREAKING)
 
       end do!! n - finish time stepping
 
@@ -602,6 +602,9 @@
       write(3,'(a)'),'*************************************************'
       write(3,'(a)'),'Main parameters:'
       write(3,'(a,i2.2)'),'SOLVER:                           ' ,SOLVER
+      write(3,'(a,i2.2)'),'ADV_DIM:                          ' ,ADV_DIM
+      write(3,'(a,i2.2)'),'DO_BREAKING:                      '          &
+     &   ,DO_BREAKING
       write(3,'(a)'),'*************************************************'
 
       write(3,'(a)'),' '

@@ -51,12 +51,14 @@ real_prams  = None # default real parameters
 if 1:
    # change integer parameters:
    SOLVER      = 1
-   ADV_DIM     = 2
+   ADV_DIM     = 1
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
+   DO_BREAKING = 1
    int_prams   = np.array([SOLVER,ADV_DIM,
-                           CHECK_FINAL,CHECK_PROG,CHECK_INIT])
+                           CHECK_FINAL,CHECK_PROG,CHECK_INIT,
+                           DO_BREAKING])
 
 if 1:
    # change real parameters:
@@ -70,7 +72,6 @@ if 1:
 out_fields,outdir = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
                                     int_prams=int_prams,
                                     real_prams=real_prams)
-
 
 ##########################################################################
 # Make plots

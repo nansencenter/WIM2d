@@ -77,24 +77,39 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       # run wim2d with inputs and outputs
 
       ##########################################################
+      SOLVER      = 1
+      ADV_DIM     = 2
+      CHECK_FINAL = 1
+      CHECK_PROG  = 1
+      CHECK_INIT  = 1
+      DO_BREAKING = 1
+      #
+      int_prams_def  = np.array([SOLVER,ADV_DIM,
+                                 CHECK_FINAL,CHECK_PROG,CHECK_INIT,
+                                 DO_BREAKING])
+
       if int_prams is None:
-         SOLVER      = 1
-         ADV_DIM     = 2
-         CHECK_FINAL = 1
-         CHECK_PROG  = 1
-         CHECK_INIT  = 1
-         int_prams   = np.array([SOLVER,ADV_DIM,
-                                 CHECK_FINAL,CHECK_PROG,CHECK_INIT])
+         int_prams   = int_prams_def
+      elif len(int_prams)!=len(int_prams_def):
+         print('Length of int_prams = '+str(len(int_prams)))
+         print('- should be: '+str(len(int_prams_def)))
+         sys.exit('run_WIM2d.py, line 96')
       ##########################################################
 
       ##########################################################
+      young          = 2.0e9     # Young's modulus [Pa]
+      visc_rp        = 13.0      # Robinson-Palmer damping parameter [Pa/(m/s)] : ~13.0
+      duration_hours = 17.77     # length of simulation [h]
+      #
+      duration       = duration_hours*60*60 # [s]
+      real_prams_def = np.array([young,visc_rp,duration])
+
       if real_prams is None:
-         young          = 2.0e9     # Young's modulus [Pa]
-         visc_rp        = 13.0      # Robinson-Palmer damping parameter [Pa/(m/s)] : ~13.0
-         duration_hours = 17.77     # length of simulation [h]
-         #
-         duration       = duration_hours*60*60 # [s]
-         real_prams     = np.array([young,visc_rp,duration])
+         real_prams  = real_prams_def
+      elif len(real_prams)!=len(real_prams_def):
+         print('Length of real_prams = '+str(len(real_prams)))
+         print('- should be: '+str(len(real_prams_def)))
+         sys.exit('run_WIM2d.py, line 116')
       ##########################################################
 
       ##########################################################
