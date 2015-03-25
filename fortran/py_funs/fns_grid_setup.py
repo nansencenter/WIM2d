@@ -56,10 +56,10 @@ def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=0):
    gf             = grid_fields  # pointer (with short name) to grid_fields
    gf['X']        = np.zeros((nx,ny))
    gf['Y']        = np.zeros((nx,ny))
-   gf['scuy']     = oo*dy
-   gf['scvx']     = oo*dx
-   gf['scp2']     = oo*dx*dy
-   gf['scp2i']    = oo/dx/dy
+   gf['scuy']     = dy*oo
+   gf['scvx']     = dx*oo
+   gf['scp2']     = (dx*dy)*oo
+   gf['scp2i']    = (1./dx/dy)*oo
    gf['LANDMASK'] = np.zeros((nx,ny))
 
    # X,Y:
@@ -138,9 +138,9 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
    elif GRID_OPT is 0:
       # standard 1d setup:
       nx = 150
-      ny = 1
+      ny = 2
       dx = 4.0e3
-      dy = 4.0e3
+      dy = 10*dx
       #
       grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy)
 
@@ -221,9 +221,16 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
       print('Saving test figure : '+fig)
       #
       gf = grid_fields
-      f  = Fplt.cmap_3d(gf['X']/1.0e3,gf['Y']/1.0e3,
-                        gf['LANDMASK'],
-                        ['$x$, km','$y$, km','LANDMASK'])
+
+      if gf['ny']>1:
+         # 2d grid => make colormap of LANDMASK
+         f  = Fplt.cmap_3d(gf['X']/1.0e3,gf['Y']/1.0e3,
+                           gf['LANDMASK'],
+                           ['$x$, km','$y$, km','LANDMASK'])
+      else:
+         # 1d grid => make 1d plot of LANDMASK
+         f  = Fplt.plot_1d(gf['X']/1.0e3,gf['LANDMASK'],
+                           ['$x$, km','LANDMASK'])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close()
       f.clf()
@@ -238,5 +245,5 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
    print(' ')
    ###########################################################
 
-   return
+   return grid_fields,grid_arrays
 ##############################################################
