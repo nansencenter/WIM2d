@@ -24,7 +24,7 @@ ODIR	:=	objs
 MDIR	:=	mods
 
 # header files for "include" statements
-# NB also need to be in VPATH
+# NB needs to be in VPATH and in -I$(HDIR) in calls to compiler
 HDIR	:=	$(src)/header_files
 
 # # optimise code
@@ -114,7 +114,7 @@ all:	py exe mex1 mex2
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
 $(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
-$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o
+$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o		wave_info.h
 $(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
 $(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
 				$(ODIR)/mod_advect.o

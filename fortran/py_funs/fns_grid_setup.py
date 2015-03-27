@@ -138,7 +138,7 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
    elif GRID_OPT is 0:
       # standard 1d setup:
       nx = 150
-      ny = 2
+      ny = 4
       dx = 4.0e3
       dy = 10*dx
       #
