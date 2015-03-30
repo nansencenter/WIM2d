@@ -217,9 +217,9 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
    ###########################################################
    if 1:
       # save test figure:
-      if not os.path.exist('test'):
+      if not os.path.exists('test'):
          os.mkdir('test')
-      if not os.path.exist('test/out_py'):
+      if not os.path.exists('test/out_py'):
          os.mkdir('test/out_py')
       fig   = 'test/out_py/land.png'
       print('Saving test figure : '+fig)
