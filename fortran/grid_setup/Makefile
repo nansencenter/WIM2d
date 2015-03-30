@@ -28,7 +28,7 @@ HDIR	:=	$(src)/header_files
 # # optimise code
 # FCFLAGS=-O
 # check for errors
-FCFLAGS=-g
+FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
 IFLAGS=-I$(MDIR) -I$(HDIR)
