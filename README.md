@@ -56,7 +56,12 @@ SETUP:
          (NB change 'testing' option so that RUN_OPT=1
           is used when calling run_WIM2d.do_run)
 
-3. Grid setup:
+3. Add the folfders fortran/bin & fortan/py_funs to the variable PYTHONPATH
+   eg put this in .bashrc or .bash_profile:
+   export WIM2D_PATH=/Users/timill/GITHUB-REPOSITORIES/WIM2d # define location of repo
+   export PYTHONPATH=$PYTHONPATH:$WIM2D_PATH/fortran/bin:$WIM2D_PATH/fortran/py_funs
+
+Grid setup:
    - same as for (2)
 
    Compile/run main code:

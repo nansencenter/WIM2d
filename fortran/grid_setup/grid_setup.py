@@ -12,8 +12,8 @@ if 1:
 else:
    GRID_OPT = 1 # standard 2d grid configuration
 
-TEST     = 0 # if 1: don't save grid files to ../run/inputs 
-             # if 0: save grid files to test/out_py
+TEST     = 0 # if 0: save grid files to ../run/inputs 
+             # if 1: save grid files to test/out_py
              # *Both options make a plot of the LAND MASK
 
 LAND_OPT = 2
