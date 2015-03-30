@@ -157,7 +157,8 @@
       real  :: cg,q_scat,q_abs,q_tot,src_cos_1,src_sin_1
 
       PI = 4.0*atan(1.0)
-      zi = cmplx(1,0)!sqrt(-1)
+      !zi = cmplx(1,0)!sqrt(-1)
+      zi = cmplx(0,1)!sqrt(-1)
 
       !!weights for integral over direction
       wt_theta = 2*PI/(1.0*ndir)
