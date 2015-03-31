@@ -27,7 +27,7 @@ HDIR	:=	$(src)/header_files
 
 # # optimise code
 # FCFLAGS=-O
-# check for errors
+# check for errors; fPIC is to compile in linux (no effect in mac osx)
 FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
