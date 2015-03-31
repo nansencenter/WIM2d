@@ -54,8 +54,17 @@ if 1:
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
 
-   in_fields   = {'icec':.7*ICEMASK,'iceh':2.*ICEMASK,'dfloe':100.*ICEMASK,
-                  'Hs':3.*WAVEMASK,'Tp':12.*WAVEMASK,'mwd':-90.*WAVEMASK}
+   ########################################################################
+   c_in     = .7     # conc
+   h_in     = 2.     # thickness
+   D_in     = 100.   # initial floe size 
+   Hs_in    = 3.     # initial Hs
+   Tp_in    = 12.    # initial Tp
+   mwd_in   = -90    # initial mean wave direction
+
+   in_fields   = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK,
+                  'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
+   ########################################################################
 
 int_prams   = None # default integer parameters
 real_prams  = None # default real parameters
@@ -86,31 +95,50 @@ out_fields,outdir = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
                                     real_prams=real_prams)
 
 ##########################################################################
-if 0:
-   # get steady state solution # TODO get this working
-   out   = Fbs.solve_boltzmann_ft(width=width,
-            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs)
-##########################################################################
-
-##########################################################################
 # Make plots
 bindir   = outdir+'/binaries'
 figdir   = 'fig_scripts/figs/TC2S'
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
-
-
 ##########################################################################
 grid_prams  = Fdat.fn_check_grid(bindir) # load grid from binaries
 xx          = 1.e-3*grid_prams['X'][:,0]
 labs        = ['x, km','$H_s$, m']
 
-steps2plot  = range(0,300,40)
+##########################################################################
+if 1:
+   # get steady state solution # TODO get this working
+   om          = 2*np.pi/Tp_in
+   # gravity     = 9.81
+   atten_in    = np.array([h_in,om,young,visc_rp])
+   atten_out   = Mwim.atten_youngs(atten_in)
+   alp         = c_in/D_in*atten_out[4]   # scattering "attenuation" [m^{-1}]
+   alp_dis     = 2*c_in*atten_out[0]      # damping [m^{-1}]
+   kwtr        = atten_out[2]
+   cp          = om/kwtr # phase vel (open water) [m/s]
+   cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
+   #
+   N     = pow(2,4)
+   out   = Fbs.solve_boltzmann_ft(width=ice_width,
+            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+
+   nx0         = 200
+   x_ice       = np.linspace(0.,200.,nx0)
+   E_n         = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=[0])
+   Hs_steady   = 4*np.sqrt(E_n[:,0].real)
+
+   fig      = Fplt.plot_1d(1.e-3*(xe+x_ice),Hs_steady,labs=labs,color='m')
+else:
+   fig   = None
+##########################################################################
+
+
+# steps2plot  = range(0,300,40)
+steps2plot  = range(0,140,40)
 cols        = ['k','b','r','g',
                'k','b','r','g',
                'k','b','r','g']
-fig         = None
 
 loop_i   = -1
 for nstep in steps2plot:

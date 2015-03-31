@@ -42,20 +42,23 @@ xmax        = X.max()
 ################################################
 
 ##############################################
-N        = 2**9
-h        = 1.   # thickness [m]
-period   = 10.  # period [s]
+N        = 2**5
+h        = 2.   # thickness [m]
+period   = 12.  # period [s]
 youngs   = 5.e9 # period [s]
 visc_rp  = 0.   # R-P damping parameter [m^s/s]
 #
-Hs       = 1.   # sig wave height [m]
+Hs       = 3.   # sig wave height [m]
 conc     = .7   # concentration [0-1]
-dmean    = 30   # mean floe size [m]
+dmean    = 100  # mean floe size [m]
 #
-om          = np.pi/period
+om          = 2*np.pi/period
 gravity     = 9.81
 atten_in    = np.array([h,om,youngs,visc_rp])
 atten_out   = Mwim.atten_youngs(atten_in)
+# print(atten_in)
+# print(atten_out)
+
 alp         = conc/dmean*atten_out[4]  # scattering "attenuation" [m^{-1}]
 alp_dis     = 2*conc*atten_out[0]      # damping [m^{-1}]
 kwtr        = atten_out[2]
@@ -88,9 +91,9 @@ if 1:
       print('width = '+str(width)+'m')
       print('\n')
       out   = Fbs.solve_boltzmann_ft(width=width,
-               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=None,Hs=Hs)
+               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs)
 
-      if 0:
+      if 1:
          # test edge conditions
          semiinf  = False
          Fbs.test_edge_cons(out,semiinf=semiinf,lhs=True)

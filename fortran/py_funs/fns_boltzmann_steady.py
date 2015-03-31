@@ -22,16 +22,22 @@ def dirspec_inc_spreading(th_vec,inputs=None):
    if inputs is None:
       Hs = 1.
    else:
-      Hs = inputs['Hs']
+      Hs    = inputs['Hs']
+      mwd   = inputs['mwd'] 
+      th0   = -np.pi/180.*(90.+mwd) # from -90 deg -> to 0 rad
+                                    # from   0 deg -> to -pi/2 rad
 
    # incident spectrum:
    # = 2/pi*cos^2(th)
-   cc             = np.cos(th_vec)
+   cc             = np.cos(th_vec-th0)
    D_inc          = 2.0/np.pi*cc**2
    D_inc[cc<0.0]  = 0.0
       # integral=1, so this corresponds to Hs=4*sqrt(1)=4
 
    D_inc = D_inc*pow(Hs/4.,2)
+   # print(th_vec)
+   # print(D_inc)
+   # sys.exit('dirspec_inc_spreading')
 
    return D_inc
 ##############################################
@@ -324,8 +330,8 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
 
    if f_inc is dirspec_inc_plane:
       finc_in  = {'Hs':Hs,'dth':dth}
-   elif f_inc is dirspec_inc_steady: 
-      finc_in  = {'Hs':Hs}
+   elif f_inc is dirspec_inc_spreading: 
+      finc_in  = {'Hs':Hs,'mwd':-90}
    ##############################################
 
    ##############################################
@@ -370,6 +376,11 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
    # OPT   = 0 # isotropic scattering
    # OPT   = 1 # add some directionality
    OPT   = 2 # real coefficients from file
+
+   print('alp = '+str(alp))
+   print('width = '+str(width))
+   print(np.exp(-alp*width))
+   sys.exit('solve_boltzmann_ft')
 
    K_fou,alp   = get_ft_kernel(alp,N,OPT=OPT)
    sn          = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
@@ -551,8 +562,9 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
 
    if f_inc is dirspec_inc_plane:
       finc_in  = {'Hs':Hs,'dth':dth}
-   elif f_inc is dirspec_inc_steady: 
-      finc_in  = {'Hs':Hs}
+
+   elif f_inc is dirspec_inc_spreading: 
+      finc_in  = {'Hs':Hs,'mwd':-90}
    ##############################################
 
    ##############################################
@@ -567,6 +579,11 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
 
       #
       if f_inc is not None:
+         print('solve_boltzmann_ft: finc, input')
+         # print(f_inc)
+         # print(finc_in)
+         # sys.exit()
+         #
          n_inc0         = nn[np.cos(th_vec)>0] # N/2 unknowns
          D_inc          = f_inc(th_vec,finc_in)
          rhs[0:No2]     = D_inc[n_inc0]      # waves to right only
@@ -638,7 +655,7 @@ def test_edge_cons(out,semiinf=True,lhs=True):
    # test LHS edge conditions (semi-infinite)
    print('Test edge conditions:')
 
-   ang   = out['angles'] 
+   ang   = out['angles']
 
    if semiinf:
       figname  = 'fig_scripts/figs/SSboltzmann-EdgeCons-semiinf.png'
