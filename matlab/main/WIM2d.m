@@ -8,13 +8,13 @@ DO_PLOT     = 1;  %% change this to 0
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
-DO_BREAKING = 0   %% if 0, turn off breaking for testing
+DO_BREAKING = 1   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
-OPT      = 3;%%ice-water-land configuration;
+OPT      = 1;%%ice-water-land configuration;
 PLOT_OPT = 2;%%plot option
-DIAG1d   = 1;
+DIAG1d   = 0;
 
 CHK_ATTEN   = 0;%%check by running with old attenuation
 
@@ -354,6 +354,10 @@ elseif 0
    uc    = amin+.7*(amax-amin);
    nt    = round( L/uc/dt );
 else
+   L     = max(X(:))-min(X(:));
+   amin  = min(ag_eff(:));
+   uc    = amin+.7*(amax-amin);
+   %%
    duration_hours = 24;%%long time to test steady state
    nt             = floor(duration_hours*3600/dt);
 end
