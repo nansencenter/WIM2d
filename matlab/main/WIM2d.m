@@ -8,12 +8,13 @@ DO_PLOT     = 1;  %% change this to 0
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
-DO_BREAKING = 1   %% if 0, turn off breaking for testing
+DO_BREAKING = 0   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
-OPT      = 1;%%ice-water-land configuration;
+OPT      = 3;%%ice-water-land configuration;
 PLOT_OPT = 2;%%plot option
+DIAG1d   = 1;
 
 CHK_ATTEN   = 0;%%check by running with old attenuation
 
@@ -67,7 +68,7 @@ if HAVE_WAVES
       HAVE_WAVES  = 0;
    end
 end
-HAVE3       = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
+HAVE3 = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
 if (HAVE3>0)&(HAVE3<3)
    disp(' ');
    disp('*********************************************************************');
@@ -96,10 +97,10 @@ if HAVE_GRID==0
 
    if 1
       nx = 150;
-      ny = 50;
+      ny = 10;
    else
-      nx = 149;
-      ny = 151;
+      nx = 150;
+      ny = 50;
    end
    dx = 4000; % m
    dy = 4000; % m
@@ -206,12 +207,16 @@ if HAVE_WAVES==0
                            'Tp',Tp0);
    end
    wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
+   %%         Hs: [150x10 double]
+   %%         Tp: [150x10 double]
+   %%        mwd: [150x10 double]
+   %%  WAVE_MASK: [150x10 logical]
    WAVE_MASK   = wave_fields.WAVE_MASK;
    wave_stuff  = set_incident_waves(grid_prams,wave_fields);
 end
 
 nw       = wave_stuff.nfreq;     %% number of frequencies
-om_vec       = 2*pi*wave_stuff.freq; %% radial freq
+om_vec   = 2*pi*wave_stuff.freq; %% radial freq
 ndir     = wave_stuff.ndir;      %% number of directions
 wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
@@ -343,11 +348,14 @@ dt    = CFL*dx/max(ag_eff(:));
 if 0
    nt    = 50;
    L     = nt*dt*amax
-else
+elseif 0
    L     = max(X(:))-min(X(:));
    amin  = min(ag_eff(:));
    uc    = amin+.7*(amax-amin);
    nt    = round( L/uc/dt );
+else
+   duration_hours = 24;%%long time to test steady state
+   nt             = floor(duration_hours*3600/dt);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -448,8 +456,38 @@ if DO_PLOT
    end
    %%
    clear s1;
-   %X,Y
-   %GEN_pause
+   %%
+   if DIAG1d==1
+      figure(4),clf;
+      fn_fullscreen;
+      cols     = {'-k','-m','-c','-r','-g','-b'};
+      loop_col = 1;
+      %%
+      subplot(4,1,4);
+      labs1d_4 = {'\itx, \rmkm','c'};
+      fn_plot1d(X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,cols{loop_col});
+      %%
+      subplot(4,1,1);
+      labs1d_1 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
+      fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+      hold on;
+      %%
+      [Ep,Em]  = split_energy(om_vec,wavdir,Sdir);
+      Hp       = 4*sqrt(Ep(:,1));
+      Hm       = 4*sqrt(Em(:,1));
+      %%
+      subplot(4,1,2);
+      labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
+      fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+      hold on;
+      %%
+      subplot(4,1,3);
+      labs1d_3 = {'\itx, \rmkm','{\itH}_{\rm s}^-, m'};
+      fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+      hold on;
+      %%
+      loop_col = loop_col+1;
+   end
    pause(0.1);
 end
 
@@ -734,8 +772,30 @@ for n = 2:nt
             hold off;
          end
 
+         if DIAG1d==1
+            figure(4);
+            subplot(4,1,1);
+            hold on;
+            fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+            %%
+            [Ep,Em]  = split_energy(om_vec,wavdir,Sdir);
+            Hp       = 4*sqrt(Ep(:,1));
+            Hm       = 4*sqrt(Em(:,1));
+            %%
+            subplot(4,1,2);
+            fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+            hold on;
+            %%
+            subplot(4,1,3);
+            fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+            hold on;
+            %%
+            loop_col = loop_col+1;
+            if loop_col>length(cols)
+               loop_col = 1;
+            end
+         end
          clear s1;
-         %GEN_pause;
          pause(0.1);
       end
       %%
@@ -784,6 +844,22 @@ if DO_PLOT%%check exponential attenuation
    plot(X(:,1)/1e3,wave_fields.Hs(:,1),'-k');
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   %%
+   if DIAG1d==1
+      figure(5);
+      clf;
+      fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
+      hold on;
+      %%
+      [Ep,Em]  = split_energy(om_vec,wavdir,Sdir);
+      Hp       = 4*sqrt(Ep(:,1));
+      Hm       = 4*sqrt(Em(:,1));
+      %%
+      fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
+      hold on;
+      fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
+      legend('Total','Fwd','Back');
+   end
 
    if SV_FIG%%save figures
 
@@ -931,3 +1007,77 @@ colorbar;
 GEN_font(gca);
 ttl   = title('{\tau}_{y}, Pa');
 GEN_font(ttl);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function H = fn_plot1d(x,y,labs,col)
+if ~exist('col','var')
+   col   = '-k';
+end
+H  = plot(x,y,col);
+GEN_proc_fig(labs{1},labs{2});
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [Ep,Em] = split_energy(om_vec,wavdir,Sdir)
+%% split energy between fwd and back directions
+
+nw    = length(om_vec);
+ndir  = length(wavdir);
+%%
+sz = size(Sdir);
+nx = sz(1);
+ny = sz(2);
+
+if nw==1
+   wt_om = 1;
+else
+   %%simpson's rule 
+   %%NB needs odd number of points
+   %%NB om_vec needs to be equally spaced
+   dom    = abs(om_vec(2)-om_vec(1));
+   wt_om  = wt_simpsons(nw,dom);
+end
+
+%% integrate over frequencies:
+Edir  = zeros(nx,ny,ndir);
+for w=1:nw
+   Edir  = Edir+wt_om*Sdir(:,:,:,w);
+end
+
+%% integrate over directions (splitting fwd/back):
+th_vec   = -pi/180*(wavdir+90);%%-90 deg (from W) -> 0 radians; 0 deg (from N) -> -pi/2 radians
+dth      = th_vec(2)-th_vec(1);
+jp       = find(cos(th_vec)>=0);
+jm       = find(cos(th_vec)<=0);
+%%
+nd0   = length(jp);
+wt_th = wt_simpsons(nd0,dth);
+%%
+Ep = zeros(nx,ny);
+for jj=1:length(jp)
+   j  = jp(jj);
+   Ep = Ep+wt_th(jj)*Edir(:,:,j);
+end
+%%
+Em = zeros(nx,ny);
+for jj=1:length(jm)
+   j  = jm(jj);
+   Em = Em+wt_th(jj)*Edir(:,:,j);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function wt = wt_simpsons(nw,dom)
+
+if mod(nw,2)==0
+   disp(['Number of frequencies: ',num2str(nw)]);
+   error('Need an odd number of points for integration with Simpson''s rule');
+else
+   wt_simp            = 2+zeros(nw,1);
+   wt_simp([1 end])   = 1;
+   wt_simp(2:2:end-1) = 4;
+   %%
+   wt    = dom/3*wt_simp;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
