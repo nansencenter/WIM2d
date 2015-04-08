@@ -112,24 +112,26 @@ def cmap_3d(x,y,z,labs):
    yl = plt.ylabel(labs[1], fontsize=16)
    yl.set_fontname(fontname)
 
+   ############################################################
    #colorbar:
-   #cbar = plt.colorbar(ax, extend='neither', spacing='proportional',
-                   #orientation='vertical', format="%4.2f")
-   
-   cbar  = plt.colorbar(ax)#,ticks=np.arange(0,1+dc,dc))
-   cbar.set_label(labs[2], size=14)
-   cbar.ax.tick_params(labelsize=14)
-   #plt.locator_params(nbins=4)
-   #
-   cpos     = cbar.ax.get_position().extents
-   cpos[2]  = cpos[2]+.15  # cbar width
-   cpos[1]  = cpos[1]+.21  # lower height
-   cpos[3]  = cpos[3]*.38  # colorbar height
-   cbar.ax.set_position(cpos)         
+   if z.max()!=z.min():
+      # only have colorbar if not constant
+      # - doesn't work on linux otherwise
+      cbar  = plt.colorbar(ax)#,ticks=np.arange(0,1+dc,dc))
+      cbar.set_label(labs[2], size=14)
+      cbar.ax.tick_params(labelsize=14)
+      #plt.locator_params(nbins=4)
+      #
+      cpos     = cbar.ax.get_position().extents
+      cpos[2]  = cpos[2]+.15  # cbar width
+      cpos[1]  = cpos[1]+.21  # lower height
+      cpos[3]  = cpos[3]*.38  # colorbar height
+      cbar.ax.set_position(cpos)         
 
-   tick_locator = ticker.MaxNLocator(nbins=5)
-   cbar.locator = tick_locator
-   cbar.update_ticks()
+      tick_locator = ticker.MaxNLocator(nbins=5)
+      cbar.locator = tick_locator
+      cbar.update_ticks()
+   ############################################################
 
    # fonts of axes:
    for tick in ax.axes.xaxis.get_major_ticks():
