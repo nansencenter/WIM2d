@@ -8,13 +8,14 @@ DO_PLOT     = 1;  %% change this to 0
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
-DO_BREAKING = 1   %% if 0, turn off breaking for testing
+DO_BREAKING = 0   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
-OPT      = 1;%%ice-water-land configuration;
-PLOT_OPT = 2;%%plot option
-DIAG1d   = 0;
+OPT         = 3;%%ice-water-land configuration;
+PLOT_OPT    = 2;%%plot option
+DIAG1d      = 1;
+DIAG1d_OPT  = 1;
 
 CHK_ATTEN   = 0;%%check by running with old attenuation
 
@@ -462,6 +463,7 @@ if DO_PLOT
    clear s1;
    %%
    if DIAG1d==1
+      %% initial
       figure(4),clf;
       fn_fullscreen;
       cols     = {'-k','-m','-c','-r','-g','-b'};
@@ -476,13 +478,24 @@ if DO_PLOT
       fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
       hold on;
       %%
-      [Ep,Em]  = split_energy(om_vec,wavdir,Sdir);
-      Hp       = 4*sqrt(Ep(:,1));
-      Hm       = 4*sqrt(Em(:,1));
+      [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+      Hp                = 4*sqrt(Ep(:,1));
+      Hm                = 4*sqrt(Em(:,1));
+      if DIAG1d_OPT==0
+         Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+      elseif DIAG1d_OPT==1
+         Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+      elseif DIAG1d_OPT==2
+         Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+      end
+      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+      hold on;
       %%
       subplot(4,1,2);
       labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
       fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+      hold on;
+      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
       hold on;
       %%
       subplot(4,1,3);
@@ -777,17 +790,30 @@ for n = 2:nt
          end
 
          if DIAG1d==1
+            %% during run
             figure(4);
             subplot(4,1,1);
             hold on;
             fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+            hold on;
             %%
-            [Ep,Em]  = split_energy(om_vec,wavdir,Sdir);
-            Hp       = 4*sqrt(Ep(:,1));
-            Hm       = 4*sqrt(Em(:,1));
+            [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+            Hp                = 4*sqrt(Ep(:,1));
+            Hm                = 4*sqrt(Em(:,1));
+            if DIAG1d_OPT==0
+               Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+            elseif DIAG1d_OPT==1
+               Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+            elseif DIAG1d_OPT==2
+               Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+            end
+            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+            hold on;
             %%
             subplot(4,1,2);
             fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+            hold on;
+            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
             hold on;
             %%
             subplot(4,1,3);
@@ -850,19 +876,29 @@ if DO_PLOT%%check exponential attenuation
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
    %%
    if DIAG1d==1
+      %% final
       figure(5);
       clf;
       fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
       hold on;
       %%
-      [Ep,Em]  = split_energy(om_vec,wavdir,Sdir);
-      Hp       = 4*sqrt(Ep(:,1));
-      Hm       = 4*sqrt(Em(:,1));
+      [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+      Hp                = 4*sqrt(Ep(:,1));
+      Hm                = 4*sqrt(Em(:,1));
+      if DIAG1d_OPT==0
+         Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+      elseif DIAG1d_OPT==1
+         Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+      elseif DIAG1d_OPT==2
+         Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+      end
+      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
+      hold on;
       %%
       fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
       hold on;
       fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
-      legend('Total','Fwd','Back');
+      legend('Total','Total (Simpson''s)','Fwd','Back');
    end
 
    if SV_FIG%%save figures
@@ -1020,68 +1056,4 @@ if ~exist('col','var')
 end
 H  = plot(x,y,col);
 GEN_proc_fig(labs{1},labs{2});
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [Ep,Em] = split_energy(om_vec,wavdir,Sdir)
-%% split energy between fwd and back directions
-
-nw    = length(om_vec);
-ndir  = length(wavdir);
-%%
-sz = size(Sdir);
-nx = sz(1);
-ny = sz(2);
-
-if nw==1
-   wt_om = 1;
-else
-   %%simpson's rule 
-   %%NB needs odd number of points
-   %%NB om_vec needs to be equally spaced
-   dom    = abs(om_vec(2)-om_vec(1));
-   wt_om  = wt_simpsons(nw,dom);
-end
-
-%% integrate over frequencies:
-Edir  = zeros(nx,ny,ndir);
-for w=1:nw
-   Edir  = Edir+wt_om*Sdir(:,:,:,w);
-end
-
-%% integrate over directions (splitting fwd/back):
-th_vec   = -pi/180*(wavdir+90);%%-90 deg (from W) -> 0 radians; 0 deg (from N) -> -pi/2 radians
-dth      = th_vec(2)-th_vec(1);
-jp       = find(cos(th_vec)>=0);
-jm       = find(cos(th_vec)<=0);
-%%
-nd0   = length(jp);
-wt_th = wt_simpsons(nd0,dth);
-%%
-Ep = zeros(nx,ny);
-for jj=1:length(jp)
-   j  = jp(jj);
-   Ep = Ep+wt_th(jj)*Edir(:,:,j);
-end
-%%
-Em = zeros(nx,ny);
-for jj=1:length(jm)
-   j  = jm(jj);
-   Em = Em+wt_th(jj)*Edir(:,:,j);
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function wt = wt_simpsons(nw,dom)
-
-if mod(nw,2)==0
-   disp(['Number of frequencies: ',num2str(nw)]);
-   error('Need an odd number of points for integration with Simpson''s rule');
-else
-   wt_simp            = 2+zeros(nw,1);
-   wt_simp([1 end])   = 1;
-   wt_simp(2:2:end-1) = 4;
-   %%
-   wt    = dom/3*wt_simp;
-end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
