@@ -6,6 +6,8 @@ bin/test_advect.exe
 
 echo " "
 echo "**********************************************************"
-echo "now run test_advect_F.m in matlab to test results"
+echo "Testing options:"
+echo "1. run test_advect_F.m in matlab"
+echo "2. run test_advect_F.py in python"
 echo "**********************************************************"
 echo " "
