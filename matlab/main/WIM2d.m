@@ -11,6 +11,8 @@ DO_ATTEN    = 1   %% if 0, just advect waves
 DO_BREAKING = 0   %% if 0, turn off breaking for testing
 STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
+REF_Hs_ICE  = 0   %% 1: in ice, give Hs for displacement of the ice;
+                  %% 0: give Hs for displacement of the surrounding water
 
 OPT         = 3;%%ice-water-land configuration;
 PLOT_OPT    = 2;%%plot option
@@ -526,6 +528,8 @@ for n = 2:nt
    %% spectral moments;
    mom0  = zeros(nx,ny);
    mom2  = zeros(nx,ny);
+   mom0w = zeros(nx,ny);
+   mom2w = zeros(nx,ny);
 
    %% wave stresses;
    tau_x = zeros(nx,ny);
@@ -646,7 +650,11 @@ for n = 2:nt
          %% SPECTRAL MOMENTS;
          %%take abs as small errors can make S_freq negative
          mom0(i,j)   = mom0(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2 );
-         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*om_vec(jw)^2*S_freq(i,j)*F^2 );
+         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2*om_vec(jw)^2 );
+
+         %% reference values in water (F=1)
+         mom0w(i,j)  = mom0w(i,j)+abs( wt_om(jw)*S_freq(i,j) );
+         mom2w(i,j)  = mom2w(i,j)+abs( wt_om(jw)*S_freq(i,j)*om_vec(jw)^2 );
 
          if ICE_MASK(i,j)==1
             %% VARIANCE OF STRAIN;
@@ -662,10 +670,19 @@ for n = 2:nt
    %mom0,mom2,wlng_ice,return
 
    %%calc Hs, Tw (into wave_fields.Tp)
-   wave_fields.Hs       = 4*sqrt(mom0);
-   wave_fields.Tp       = 0*X;
-   jnz                  = find(mom2>0);
-   wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+   if REF_Hs_ICE==1
+      %% diagnostic variables Hs/Tp related to ice displacment in ice-covered areas
+      wave_fields.Hs       = 4*sqrt(mom0);%%diagnostic variable - for waves in water
+      wave_fields.Tp       = 0*X;
+      jnz                  = find(mom2>0);
+      wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+   else
+      %% diagnostic variables Hs/Tp related to water displacment in ice-covered areas
+      wave_fields.Hs       = 4*sqrt(mom0w);%%diagnostic variable - for waves in water
+      wave_fields.Tp       = 0*X;
+      jnz                  = find(mom2w>0);
+      wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
+   end
 
    %% wave stresses
    ice_fields.tau_x  = tau_x;
