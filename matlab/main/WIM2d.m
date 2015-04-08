@@ -830,7 +830,7 @@ for n = 2:nt
             subplot(4,1,2);
             fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
             hold on;
-            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
             hold on;
             %%
             subplot(4,1,3);
