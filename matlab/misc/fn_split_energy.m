@@ -23,7 +23,8 @@ end
 %% integrate over frequencies:
 Edir  = zeros(nx,ny,ndir);
 for w=1:nw
-   Edir  = Edir+wt_om*Sdir(:,:,:,w);
+   Edir  = Edir+wt_om*abs(Sdir(:,:,:,w));
+      %%take abs so Sdir is always positive (can become negative due to advection)
 end
 
 %% integrate over directions (splitting fwd/back):
