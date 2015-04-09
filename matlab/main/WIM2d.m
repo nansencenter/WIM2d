@@ -3,7 +3,8 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 % clear;
 
 %DO_SAVE     = 0;
-infile   = 'infile.txt';
+infile         = 'infile.txt';
+infile_version = 1;%%latest infile version
 if ~exist(infile)
    disp('********************************************************')
    disp([infile,' not present'])
@@ -36,14 +37,21 @@ else
    disp(infile)
    disp('********************************************************')
    disp(' ')
-   fid   = fopen(infile);
+   fid               = fopen(infile);
+
+   %%check infile version:
+   infile_version_   = read_next(fid);
+   if infile_version_~=infile_version
+      error(['Infile version number is: ',num2str(infile_version_),' - should be: ',num2str(infile_version)]);
+   end
+
+   %%read in rest of variables:
    while ~feof(fid)
       [x,name] = read_next(fid);
       eval([name,' = x'])
    end
    fclose(fid);
 end
-pause
 
 %%other options
 DO_PLOT     = 1;%% change this to 0

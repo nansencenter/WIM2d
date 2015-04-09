@@ -1,3 +1,4 @@
+1     # infile version number
 0.7   # CFL number
 24    # duration_hours  : length of simulation [h]
 0     # USE_ICE_VEL     : 0 = approx ice group vel by water group vel
