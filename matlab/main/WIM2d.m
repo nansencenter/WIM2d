@@ -37,12 +37,13 @@ else
    disp('********************************************************')
    disp(' ')
    fid   = fopen(infile);
-   nlines   = 12;
-   for j=1:nlines
+   while ~feof(fid)
       [x,name] = read_next(fid);
       eval([name,' = x'])
    end
+   fclose(fid);
 end
+pause
 
 %%other options
 DO_PLOT     = 1;%% change this to 0
