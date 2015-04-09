@@ -13,6 +13,8 @@ if ~exist(infile)
 
    CFL   = .7; %%CFL number
 
+   duration_hours = 24;%%length of time to run simulation for
+
    %%use default options
    USE_ICE_VEL = 0;  %% if 0, approx ice group vel by water group vel;  
    DO_ATTEN    = 1;  %% if 0, just advect waves
@@ -35,12 +37,11 @@ else
    disp('********************************************************')
    disp(' ')
    fid   = fopen(infile);
-   nlines   = 11;
+   nlines   = 12;
    for j=1:nlines
       [x,name] = read_next(fid);
       eval([name,' = x'])
    end
-   pause;
 end
 
 %%other options
@@ -387,7 +388,6 @@ else
    amin  = min(ag_eff(:));
    uc    = amin+.7*(amax-amin);
    %%
-   duration_hours = 24;%%long time to test steady state
    nt             = floor(duration_hours*3600/dt);
 end
 
