@@ -3,25 +3,52 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 % clear;
 
 %DO_SAVE     = 0;
-DO_PLOT     = 1;  %% change this to 0
-                  %% if graphics aren't supported;
-USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
-DO_ATTEN    = 1   %% if 0, just advect waves
-                  %%  without attenuation;
-DO_BREAKING = 0   %% if 0, turn off breaking for testing
-STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
-SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
-REF_Hs_ICE  = 0   %% 1: in ice, give Hs for displacement of the ice;
-                  %% 0: give Hs for displacement of the surrounding water
+infile   = 'infile.txt';
+if ~exist(infile)
+   disp('********************************************************')
+   disp([infile,' not present'])
+   disp('using default options:')
+   disp('********************************************************')
+   disp(' ')
 
-OPT         = 3;%%ice-water-land configuration;
+   CFL   = .7; %%CFL number
+
+   %%use default options
+   USE_ICE_VEL = 0;  %% if 0, approx ice group vel by water group vel;  
+   DO_ATTEN    = 1;  %% if 0, just advect waves
+                     %%  without attenuation;
+   DO_BREAKING = 0;  %% if 0, turn off breaking for testing
+   STEADY      = 1;  %% Steady-state solution: top-up waves inside wave mask
+   SCATMOD     = 1;  %% 0: old way; 1: scatter E isotropically
+   REF_Hs_ICE  = 0;  %% 1: in ice, give Hs for displacement of the ice;
+                     %% 0: give Hs for displacement of the surrounding water
+
+   OPT         = 3;%%ice-water-land configuration;
+   DIAG1d      = 1;
+   DIAG1d_OPT  = 1;
+
+   CHK_ATTEN   = 0;%%check by running with old attenuation
+else
+   disp('********************************************************')
+   disp('reading options from infile:')
+   disp(infile)
+   disp('********************************************************')
+   disp(' ')
+   fid   = fopen(infile);
+   nlines   = 11;
+   for j=1:nlines
+      [x,name] = read_next(fid);
+      eval([name,' = x'])
+   end
+   pause;
+end
+
+%%other options
+DO_PLOT     = 1;%% change this to 0
+                %% if graphics aren't supported;
 PLOT_OPT    = 2;%%plot option
-DIAG1d      = 1;
-DIAG1d_OPT  = 1;
+SV_FIG      = 1;
 
-CHK_ATTEN   = 0;%%check by running with old attenuation
-
-SV_FIG   = 1;
 %if DO_SAVE
 %   filename=['wim2d_out',num2str(Tm),...
 %            's_',num2str(mwd_dim),...
@@ -33,7 +60,6 @@ SV_FIG   = 1;
 %end
 
 %%important settings
-CFL   = .7;
 itest = 24;
 jtest = 1;
 
@@ -258,7 +284,7 @@ Info  = { '------------------------------------';
          ['CFL        = ' num2str(CFL)];
          ['nfreq      = ' num2str(nw)];
          ['ndir       = ' num2str(ndir)];
-         ['SOLVER     = ' num2str(SOLVER)];
+         ['SCATMOD    = ' num2str(SCATMOD)];
          '------------------------------------';
          ' '};
 disp(strvcat(Info));
@@ -380,7 +406,7 @@ Info  = { '------------------------------------';
          ['Hs                 = '  num2str(wave_prams.Hs) ' m'];
          ['nfreq              = '  num2str(nw)];
          ['ndir               = '  num2str(ndir)];
-         ['SOLVER             = '  num2str(SOLVER)];
+         ['SCATMOD            = '  num2str(SCATMOD)];
          [' '];
          ['CFL                = '  num2str(CFL)];
          ['dt                 = '  num2str(dt,'%1.1f')];
@@ -607,20 +633,20 @@ for n = 2:nt
       s1.ICE_MASK    = ice_fields.ICE_MASK;
 
       if ndir==1
-         if SOLVER~=0
-            disp('warning: changing SOLVER option as not enough directions');
+         if SCATMOD~=0
+            disp('warning: changing SCATMOD option as not enough directions');
             disp(['(ndir = ',num2str(ndir)]);
          end
-         SOLVER   = 0;
+         SCATMOD  = 0;
       end
 
-      if SOLVER==0
+      if SCATMOD==0
          %% Simple attenuation scheme - doesn't conserve scattered energy
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
             adv_atten_simple(grid_prams,ice_prams,s1,dt);
          clear s1 S_out;
-      elseif SOLVER==1
-         %% same as SOLVER==0, but scattered energy
+      elseif SCATMOD==1
+         %% same as SCATMOD==0, but scattered energy
          %% is distributed isotropically
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
             adv_atten_isotropic(grid_prams,ice_prams,s1,dt);
@@ -921,15 +947,15 @@ if DO_PLOT%%check exponential attenuation
    if SV_FIG%%save figures
 
       if nw==1
-         if SOLVER==1
+         if SCATMOD==1
             fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
-         elseif SOLVER==0
+         elseif SCATMOD==0
             fig_dir  = 'out/simple_1freq';  %%use this for monochromatic wave
          end
       else
-         if SOLVER==1
+         if SCATMOD==1
             fig_dir  = 'out/isotropic_spec';  %%use this for spectrum
-         elseif SOLVER==0
+         elseif SCATMOD==0
             fig_dir  = 'out/simple_spec';  %%use this for spectrum
          end
       end
@@ -1073,4 +1099,13 @@ if ~exist('col','var')
 end
 H  = plot(x,y,col);
 GEN_proc_fig(labs{1},labs{2});
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [x,name]  = read_next(fid)
+
+lin   = fgets(fid);
+lin2  = strsplit(lin);%%split using spaces
+x     = str2num(lin2{1});%%get 1st thing in line
+name  = lin2{3};
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

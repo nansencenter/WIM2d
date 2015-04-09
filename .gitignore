@@ -27,3 +27,4 @@ fortran/run/fig_scripts/figs
 fortran/run/results/*
 #
 matlab/main/out
+matlab/main/infile.txt
