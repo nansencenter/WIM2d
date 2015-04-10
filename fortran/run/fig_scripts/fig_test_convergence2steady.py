@@ -72,7 +72,7 @@ real_prams  = None # default real parameters
 if 1:
    # change integer parameters:
    SCATMOD     = 1
-   ADV_DIM     = 1
+   ADV_DIM     = 2
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
@@ -200,53 +200,3 @@ if 1:
       fid.write(lin+'\n')
    fid.close()
    print('saving to '+dfil+'...')
-
-# sys.exit('fig_test_convergence2steady.py, L94')
-##########################################################################
-
-# figdir1                 = figdir+'/init/'
-# ice_fields,wave_fields  = Fdat.fn_check_init(bindir)
-# Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir1) # plot initial conditions
-# print("Plots in "+figdir+"/init")
-# print(" ")
-# ##########################################################################
-# 
-# ################################################################
-# # Look at end results:
-# print("Plotting results...")
-# figdir2  = figdir+'/final/'
-# Fplt.fn_plot_final(grid_prams,out_fields,figdir2)
-# print("Plots in "+figdir2+'\n')
-# print(" ")
-# ################################################################
-# 
-# if 1:
-#    ################################################################
-#    # Plot progress files (if they exist)
-#    figdir3     = figdir+'/prog'
-#    prog_files  = os.listdir(bindir+'/prog')
-#    steps       = []
-#    for pf in prog_files:
-#       if '.a'==pf[-2:]:
-#          stepno   = pf[-5:-2]
-#          steps.append(stepno)
-# 
-#    # make dir for progress plots
-#    if (not os.path.exists(figdir3)) and len(steps)>0:
-#       os.mkdir(figdir3)
-# 
-#    # clear old progress plots
-#    old_dirs = os.listdir(figdir3)
-#    for od in old_dirs:
-#       # need this for macs
-#       if od!='.DS_Store':
-#          # os.rmdir(figdir3+'/'+od)
-#          shutil.rmtree(figdir3+'/'+od)
-# 
-#    for stepno in steps:
-#       print("Plotting results at time step "+stepno+" ...")
-#       prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
-#       figdir3_0   = figdir3+'/'+stepno
-#       Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-#       print("Plots in "+figdir3_0+'\n')
-#    ################################################################

@@ -30,11 +30,26 @@ grid_prams  = gf
 # set inputs: (icec,iceh,dfloe), (Hs,Tp,mwd)
 if 1:
 
-   # ice edge
-   xe                   = -220.e3
-   ICEMASK              = 1+0*gf['X']
-   ICEMASK[gf['X']<xe]  = 0.
-   ICEMASK[gfl>0]       = 0.
+   if 0:
+      # ice edge
+      xe                   = -220.e3
+      ICEMASK              = 1+0*gf['X']
+      ICEMASK[gf['X']<xe]  = 0.
+      ICEMASK[gfl>0]       = 0.
+      #
+      c_in  = .7
+      h_in  = 2.
+      D_in  = 300.
+   else:
+      # strip 
+      xe                         = 50.e3
+      ICEMASK                    = 1+0*gf['X']
+      ICEMASK[abs(gf['X'])>xe]   = 0.
+      ICEMASK[gfl>0]             = 0.
+      #
+      c_in  = .7
+      h_in  = 2.
+      D_in  = 100.
 
    # edge of wave mask
    xw                   = -260.e3
@@ -42,8 +57,11 @@ if 1:
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
 
-   in_fields   = {'icec':.7*ICEMASK,'iceh':2.*ICEMASK,'dfloe':300.*ICEMASK,
-                  'Hs':3.*WAVEMASK,'Tp':12.*WAVEMASK,'mwd':-90.*WAVEMASK}
+   Hs_in       = 3
+   Tp_in       = 12
+   mwd_in      = -90
+   in_fields   = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK,
+                  'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
 
 int_prams   = None # default integer parameters
 real_prams  = None # default real parameters
@@ -102,6 +120,7 @@ print(" ")
 if 1:
    ################################################################
    # Plot progress files (if they exist)
+   # - as colormaps
    figdir3     = figdir+'/prog'
    prog_files  = os.listdir(bindir+'/prog')
    steps       = []
@@ -129,3 +148,33 @@ if 1:
       Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
       print("Plots in "+figdir3_0+'\n')
    ################################################################
+
+elif 1:
+   ################################################################
+   # Plot progress files (if they exist)
+   # - as profiles
+   steps2plot  = range(0,600,40)
+   # steps2plot  = range(0,140,40)
+   cols     = ['k','b','r','g','m','c']
+   lstil    = ['-','--','-.',':']
+   Nc       = len(cols)
+   loop_c   = -1
+   loop_s   = 0
+
+   for nstep in steps2plot:
+      out_fields  = Fdat.fn_check_prog(outdir,nstep) # load ice/wave conditions from binaries
+      Hs_n        = out_fields['Hs']
+      #
+      if loop_c==Nc-1:
+         loop_c   = 0
+         loop_s   = loop_s+1
+      else:
+         loop_c   = loop_c+1
+
+      fig      = Fplt.plot_1d(xx,Hs_n,labs=labs,f=fig,color=cols[loop_c],linestyle=lstil[loop_s])
+   #
+   figname  = figdir+'/convergence2steady.png'
+   print('saving to '+figname+'...')
+   plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
+   plt.close()
+   fig.clf()

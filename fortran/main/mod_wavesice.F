@@ -220,6 +220,7 @@
 
 !     !!for testing
 !     real     :: wt,Hs_test1,Hs_test2
+      real  :: E_tot
 
       !!for breaking
       real     :: sig_strain,Pstrain,P_crit,wlng_crest,Dc
@@ -228,8 +229,9 @@
       integer  :: jcrest
       logical  :: BREAK_CRIT
 
-      PI       = 4*atan(1.0)
-      dom      = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
+      PI    = 4*atan(1.0)
+      dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
+      E_tot = 0.
 
       !! spectral moments;
       mom0  = 0.0
@@ -401,6 +403,15 @@
             Tp = 2*PI*sqrt(mom0w/mom2w)
          end where
       end if
+
+      !if ((STEADY.eq.0).and.(DO_BREAKING.eq.0)) then
+         !! test conservation of total energy 
+         E_tot = sum(Hs*Hs)
+         print*,'********************************************'
+         print*,'Total energy [m^2] = ',E_tot
+         print*,'********************************************'
+      !end if
+
 
       !! FINALLY DO FLOE BREAKING;
       do j=1,jj

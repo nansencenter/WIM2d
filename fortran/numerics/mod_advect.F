@@ -82,6 +82,14 @@
       call pad_var(h_pad,h,bc_opt)
 
       if (.false.) then
+         !! confirm in correct subroutine
+         print*,'******************************************'
+         print*,'In waveadv_weno (2d advection)'
+         print*,'nx,ny = ',ii,jj
+         print*,'******************************************'
+      end if
+
+      if (.false.) then
       !if (.true.) then
          !!test padding with zero on boundaries
          stat1    = 'replace'
@@ -480,6 +488,13 @@
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x
       call pad_var_1d(h_pad,h,bc_opt)
+
+      if (.false.) then
+         !! confirm in correct subroutine
+         print*,'******************************************'
+         print*,'In waveadv_weno_1d'
+         print*,'******************************************'
+      endif
 
       if (.false.) then
       !if (.true.) then
