@@ -244,7 +244,7 @@ end
 %%waves
 if HAVE_WAVES==0
    if ~exist('wave_prams','var');
-      Hs0         = 2;
+      Hs0         = 3;
       Tp0         = 12;
       %Tp0         = 6;
       wave_prams  = struct('Hs',Hs0,...
@@ -519,18 +519,24 @@ if DO_PLOT
       %%
       subplot(4,1,1);
       labs1d_1 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
-      fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+      %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+      fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
       hold on;
       %%
       [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-      Hp                = 4*sqrt(Ep(:,1));
-      Hm                = 4*sqrt(Em(:,1));
+      %Hp                = 4*sqrt(Ep(:,1));
+      %Hm                = 4*sqrt(Em(:,1));
+      Hp                = 4*sqrt(mean(Ep,2));
+      Hm                = 4*sqrt(mean(Em,2));
       if DIAG1d_OPT==0
-         Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
       elseif DIAG1d_OPT==1
-         Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+         %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+         Hs2   = 4*sqrt(mean(Et1,2));
       elseif DIAG1d_OPT==2
-         Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         Hs2   = 4*sqrt(mean(Et2,2));
       end
       fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
       hold on;
@@ -853,18 +859,25 @@ for n = 2:nt
             figure(4);
             subplot(4,1,1);
             hold on;
-            fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+            %%
+            %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+            fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
             hold on;
             %%
             [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-            Hp                = 4*sqrt(Ep(:,1));
-            Hm                = 4*sqrt(Em(:,1));
+            %Hp                = 4*sqrt(Ep(:,1));
+            %Hm                = 4*sqrt(Em(:,1));
+            Hp                = 4*sqrt(mean(Ep,2));
+            Hm                = 4*sqrt(mean(Em,2));
             if DIAG1d_OPT==0
-               Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+               %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+               Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
             elseif DIAG1d_OPT==1
-               Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+               %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+               Hs2   = 4*sqrt(mean(Et1,2));
             elseif DIAG1d_OPT==2
-               Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+               %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+               Hs2   = 4*sqrt(mean(Et2,2));
             end
             fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
             hold on;
@@ -938,18 +951,56 @@ if DO_PLOT%%check exponential attenuation
       %% final
       figure(5);
       clf;
-      fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
+
+      COMP_FORTRAN   = 0;%%compare to fortran results
+      if COMP_FORTRAN
+         frun  = '../../fortran/run/';
+
+         %% fortran
+         dfil  = [frun,'fig_scripts/figs/TC2S/test_steady1.dat'];
+         disp(['opening ',dfil,'']);
+         %%
+         fid      = fopen(dfil,'r');
+         columns  = textscan(fid,'%f %f %f');
+         xx_f     = columns{1};
+         Hs_f     = columns{2};
+         fclose(fid);
+         %%
+         plot(xx_f/1e3,Hs_f,'b','linewidth',2);
+         hold on;
+
+         %%steady soln
+         dfil  = [frun,'fig_scripts/figs/TC2S/test_steady2.dat'];
+         disp(['opening ',dfil,'']);
+         %%
+         fid      = fopen(dfil,'r');
+         columns  = textscan(fid,'%f %f %f');
+         xx_f2    = columns{1};
+         Hs_f2    = columns{2};
+         fclose(fid);
+         %%
+         plot(xx_f2/1e3,Hs_f2,'--g','linewidth',2);
+         hold on;
+      end
+
+      %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
+      fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{1});
       hold on;
       %%
       [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-      Hp                = 4*sqrt(Ep(:,1));
-      Hm                = 4*sqrt(Em(:,1));
+      %Hp                = 4*sqrt(Ep(:,1));
+      %Hm                = 4*sqrt(Em(:,1));
+      Hp                = 4*sqrt(mean(Ep,2));
+      Hm                = 4*sqrt(mean(Em,2));
       if DIAG1d_OPT==0
-         Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
       elseif DIAG1d_OPT==1
-         Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+         %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+         Hs2   = 4*sqrt(mean(Et1,2));
       elseif DIAG1d_OPT==2
-         Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         Hs2   = 4*sqrt(mean(Et2,2));
       end
       fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
       hold on;
@@ -957,7 +1008,11 @@ if DO_PLOT%%check exponential attenuation
       fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
       hold on;
       fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
-      legend('Total','Total (Simpson''s)','Fwd','Back');
+      if COMP_FORTRAN
+         legend('Total (fortran)','Total (steady soln)','Total','Total (Simpson''s)','Fwd','Back');
+      else
+         legend('Total','Total (Simpson''s)','Fwd','Back');
+      end
    end
 
    if SV_FIG%%save figures

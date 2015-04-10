@@ -100,10 +100,11 @@ elseif OPT==3
    %%TEST_1d
    %% ice strip in middle
    xm       = max(X(:));
-   ICE_MASK = abs(X)<.3*xm;
+   %ICE_MASK = abs(X)<.3*xm;
+   ICE_MASK = (X>-220e3)&(X<-120e3);
    WTR_MASK = (1-ICE_MASK).*(1-LANDMASK);%%0 on land & ice
    jW       = find(WTR_MASK==1);
-   jI       = find( ICE_MASK==1 );
+   jI       = find(ICE_MASK==1);
 end
 
 cice(jI) = ice_prams.c;%% ice
