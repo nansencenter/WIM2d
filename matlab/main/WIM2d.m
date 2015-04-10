@@ -4,7 +4,8 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 
 %DO_SAVE     = 0;
 infile         = 'infile.txt';
-infile_version = 1;%%latest infile version
+infile_version = 2;%%latest infile version
+
 if ~exist(infile)
    disp('********************************************************')
    disp([infile,' not present'])
@@ -12,7 +13,10 @@ if ~exist(infile)
    disp('********************************************************')
    disp(' ')
 
-   CFL   = .7; %%CFL number
+   CFL      = .7;    %%CFL number
+   nw       = 1;     %% number of frequencies
+   ndir     = 2^5;   %% number of directions
+   DIR_INIT = 1;     %% incident wave spectrum (spreading/delta...)
 
    duration_hours = 24;%%length of time to run simulation for
 
@@ -37,7 +41,8 @@ else
    disp(infile)
    disp('********************************************************')
    disp(' ')
-   fid               = fopen(infile);
+   fid   = fopen(infile);
+   lin   = fgets(fid);%%1st line is header
 
    %%check infile version:
    infile_version_   = read_next(fid);
@@ -251,7 +256,9 @@ if HAVE_WAVES==0
    %%        mwd: [150x10 double]
    %%  WAVE_MASK: [150x10 logical]
    WAVE_MASK   = wave_fields.WAVE_MASK;
-   wave_stuff  = set_incident_waves(grid_prams,wave_fields);
+   %%
+   inc_options = struct('nw',nw,'ndir',ndir,'DIR_INIT',DIR_INIT);
+   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options);
 end
 
 nw       = wave_stuff.nfreq;     %% number of frequencies

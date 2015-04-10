@@ -1,28 +1,32 @@
 %% get_wave_spec.m
 %% Author: Timothy Williams
 %% Date: 20141016, 18:55:20 CEST
-function wave_stuff = set_incident_waves(grid_prams,wave_fields)
+function wave_stuff = set_incident_waves(grid_prams,wave_fields,inc_options)
 
-
-SHARP_DIST  = 0;%%Single direction
-SING_FREQ   = 1;%%Single frequency
+if ~exist('options')
+   %%default options
+   nw       = 1;  %% Single frequency
+   ndir     = 2^4;%% Multiple directions
+   DIR_INIT = 1;  %% cos^2 spreading
+else
+   nw       = inc_options.nw;
+   ndir     = inc_options.ndir;
+   DIR_INIT = inc_options.DIR_INIT;
+end
 
 %%frequency grid:
-if SING_FREQ==1%%single freq
-   nw    = 1;
+if nw==1%%single freq
    T     = max(wave_fields.Tp(:));
    freq  = 1/T;
 else
    f      = 1/25;%0.042;% min freq/ resolution
    f1     = 1/2.5;%0.4;% max freq
-   nw     = 25;% NB needs to be odd for Simpson's rule;
    freq   = linspace(f,f1,nw)';
    om     = 2*pi*freq;
 end
 
 %%direction grid:
-if SHARP_DIST==1
-   ndir     = 1;
+if ndir==1
    wavdir   = -90;
 else
    r        = 4;%%5->32 points
@@ -75,8 +79,8 @@ for i=1:nx
             j0          = find(del>pi);
             del(j0)     = del(j0)-2*pi;
 
-            if SHARP_DIST==0
-               %% Spreading fxn
+            if DIR_INIT==1
+               %% cos^2 spreading fxn
                dir_fac     = (1+cos(2*del))/2/(pi/2); 
                j0          = find(abs(del)>pi/2);
                dir_fac(j0) = 0;

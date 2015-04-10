@@ -1,5 +1,9 @@
+value # <variable name> : explanation
 1     # infile version number
-0.7   # CFL number
+0.7   # CFL             : CFL number (cg*dt/dx)
+1     # nw              : number of frequencies
+32    # ndir            : number of directions
+1     # DIR_INIT        : incident wave spectrum (spreading/delta...)
 24    # duration_hours  : length of simulation [h]
 0     # USE_ICE_VEL     : 0 = approx ice group vel by water group vel
 1     # DO_ATTEN        : 0 = just advect waves without attenuation
