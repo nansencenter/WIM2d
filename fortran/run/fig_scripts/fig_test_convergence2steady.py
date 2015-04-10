@@ -143,8 +143,18 @@ else:
    fig   = None
 ##########################################################################
 
-steps2plot  = range(0,600,40)
-# steps2plot  = range(0,140,40)
+pfiles   = os.listdir(bindir+'/prog')
+pf       = pfiles[-1]
+Nprog    = int(pf[8:-2])
+
+if 0:
+   # compare every stp steps
+   stp         = 40
+   steps2plot  = range(0,Nprog,stp)
+else:
+   # just compare final prog file
+   steps2plot  = [Nprog]
+
 cols     = ['k','b','r','g','m','c']
 lstil    = ['-','--','-.',':']
 Nc       = len(cols)
@@ -153,7 +163,7 @@ loop_s   = 0
 
 for nstep in steps2plot:
    out_fields  = Fdat.fn_check_prog(outdir,nstep) # load ice/wave conditions from binaries
-   Hs_n        = out_fields['Hs']
+   Hs_n        = out_fields['Hs'][:,0]
    #
    if loop_c==Nc-1:
       loop_c   = 0
@@ -168,6 +178,28 @@ print('saving to '+figname+'...')
 plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
 plt.close()
 fig.clf()
+
+if 1:
+   # print to dat-file
+   dfil  = figdir+'/test_steady1.dat'
+   fid   = open(dfil,'w')
+   blk   = 4*' '
+   for loop_x in range(len(xx)):
+      lin   =           ('%f' % (1.e3*xx[loop_x])  )
+      lin   = lin+blk + ('%f' % (Hs_n[loop_x])     )
+      fid.write(lin+'\n')
+   fid.close()
+   print('saving to '+dfil+'...')
+   ##
+   dfil  = figdir+'/test_steady2.dat'
+   fid   = open(dfil,'w')
+   blk   = 4*' '
+   for loop_x in range(len(x_ice)):
+      lin   =           ('%f' % (xe+x_ice[loop_x])  )
+      lin   = lin+blk + ('%f' % (Hs_steady[loop_x])     )
+      fid.write(lin+'\n')
+   fid.close()
+   print('saving to '+dfil+'...')
 
 # sys.exit('fig_test_convergence2steady.py, L94')
 ##########################################################################
