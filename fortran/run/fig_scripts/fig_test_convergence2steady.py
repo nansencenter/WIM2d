@@ -71,13 +71,13 @@ real_prams  = None # default real parameters
 
 if 1:
    # change integer parameters:
-   SOLVER      = 1
+   SCATMOD     = 1
    ADV_DIM     = 1
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
    DO_BREAKING = 0 # no breaking - testing convergence of Hs to steady-state
-   int_prams   = np.array([SOLVER,ADV_DIM,
+   int_prams   = np.array([SCATMOD,ADV_DIM,
                            CHECK_FINAL,CHECK_PROG,CHECK_INIT,
                            DO_BREAKING])
 

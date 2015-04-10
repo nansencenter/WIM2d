@@ -29,7 +29,7 @@ else
    ny = C{1};
    %%
    C        = textscan(bid,'%2.2d %s %s %s %s',1);
-   SOLVER   = C{1};
+   SCATMOD  = C{1};
    %%
    C  = textscan(bid,'%2.2d %s %s %s %s',1);
    nw = C{1};
@@ -55,7 +55,7 @@ else
    s1.tau_y = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
    s1.Hs    = reshape( fread(aid,nx*ny,fmt) ,nx,ny );
    %%
-   s1.SOLVER      = SOLVER;
+   s1.SCATMOD     = SCATMOD;
    s1.n_wave_freq = nw;
    s1.n_wavdir    = ndir;
    %%

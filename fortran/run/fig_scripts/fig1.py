@@ -73,7 +73,7 @@ if 1:
                   'mwd'    : mwd}
 
    # parameters for advection/attenuation
-   SOLVER         = 1
+   SCATMOD        = 1
    ADV_DIM        = 2
    DO_CHECK_FINAL = 0
    DO_CHECK_PROG  = 1
@@ -83,7 +83,7 @@ if 1:
    visc_rp  = 0. #13. 
    duration = 20.*3600 # length of simulation [s]
    
-   int_prams   = np.array([SOLVER,ADV_DIM,DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT])
+   int_prams   = np.array([SCATMOD,ADV_DIM,DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT])
    real_prams  = np.array([young,visc_rp,duration])
 
    # do calculation in fortran:

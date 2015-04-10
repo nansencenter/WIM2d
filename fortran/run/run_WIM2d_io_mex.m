@@ -35,12 +35,12 @@ if nargin==0
    outdir0  = 'out';
    [grid_prams,ice_fields,wave_fields] = fn_check_init(outdir0);
    %%
-   SOLVER      = 1;
+   SCATMOD     = 1;
    ADV_DIM     = 2;
    CHECK_FINAL = 1;
    CHECK_PROG  = 0;
    CHECK_INIT  = 1;
-   int_prams   = [SOLVER,ADV_DIM,...
+   int_prams   = [SCATMOD,ADV_DIM,...
                   CHECK_FINAL,CHECK_PROG,CHECK_INIT];
    %%
    young          = 2.0e9;

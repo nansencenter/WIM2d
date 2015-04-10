@@ -5,7 +5,7 @@ C
 C     CALL:
 C     [Dmax,Hs,Tp,taux,tauy]=...
 C        WIM2d_run_io_mex(c,h,Dmax,Hs,Tp,mwd,int_prams);
-C        int_prams   = [SOLVER,ADV_DIM]
+C        int_prams   = [SCATMOD,ADV_DIM]
 C     
 #endif
 C     

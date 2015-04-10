@@ -11,7 +11,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-      integer  :: SOLVER,ADV_DIM
+      integer  :: SCATMOD,ADV_DIM
       integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
       integer  :: DO_BREAKING !can turn off breaking for testing of waves
 
@@ -74,7 +74,7 @@
       real  :: etime
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER      = 1
+      SCATMOD     = 1
       ADV_DIM     = 2
       DO_BREAKING = 1
 
@@ -204,7 +204,7 @@
       !!variables
       integer,intent(in)                  :: nx,ny
       integer,dimension(6),intent(in)     :: int_prams
-      ! SOLVER,ADV_DIM,
+      ! SCATMOD,ADV_DIM,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
       ! DO_BREAKING
 
@@ -227,7 +227,7 @@
       real  :: etime
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = int_prams(1) ! solver to use for advection/attenuation
+      SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
                               ! 0: scattering treated like attenuation
                               ! 1: directional scattering
       ADV_DIM  = int_prams(2) ! 1d advection option can be useful for checking
@@ -410,17 +410,17 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SOLVER,n-1,0,outdir)
+            call check_prog(SCATMOD,n-1,0,outdir)
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SOLVER,ADV_DIM,DO_BREAKING)
+         call wim_step(SCATMOD,ADV_DIM,DO_BREAKING)
 
       end do!! n - finish time stepping
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
-         call check_prog(SOLVER,n-1,1,outdir)
+         call check_prog(SCATMOD,n-1,1,outdir)
       end if
 
       MIZ_MASK = 0.0
@@ -601,7 +601,7 @@
       write(3,'(a)'),' '
       write(3,'(a)'),'*************************************************'
       write(3,'(a)'),'Main parameters:'
-      write(3,'(a,i2.2)'),'SOLVER:                           ' ,SOLVER
+      write(3,'(a,i2.2)'),'SCATMOD:                          ' ,SCATMOD
       write(3,'(a,i2.2)'),'ADV_DIM:                          ' ,ADV_DIM
       write(3,'(a,i2.2)'),'DO_BREAKING:                      '          &
      &   ,DO_BREAKING

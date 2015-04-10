@@ -51,12 +51,12 @@ elif testing is 2:
 
    if 1:
       # check passing in of integer parameters:
-      SOLVER      = 0
+      SCATMOD      = 0
       ADV_DIM     = 2
       CHECK_FINAL = 1
       CHECK_PROG  = 1
       CHECK_INIT  = 1
-      int_prams   = np.array([SOLVER,ADV_DIM,
+      int_prams   = np.array([SCATMOD,ADV_DIM,
                               CHECK_FINAL,CHECK_PROG,CHECK_INIT])
 
    if 1:
