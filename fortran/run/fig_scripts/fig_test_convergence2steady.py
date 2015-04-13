@@ -25,8 +25,8 @@ import fns_plot_data as Fplt
 # steady state results to compare to:
 import fns_boltzmann_steady   as Fbs
 
-# RUN_OPT  = 2 # rerun then plot
-RUN_OPT  = 3 # plot saved results
+RUN_OPT  = 2 # rerun then plot
+# RUN_OPT  = 3 # plot saved results
 
 gf          = Fdat.fn_check_grid('inputs')
 gfl         = gf['LANDMASK']
