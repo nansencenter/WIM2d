@@ -88,6 +88,7 @@ elseif OPT==1
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
+   Dmax0    = 300;
 
 elseif OPT==2
    %%TEST_1d
@@ -96,6 +97,7 @@ elseif OPT==2
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
+   Dmax0    = 300;
 
 elseif OPT==3
    %%TEST_1d
@@ -106,12 +108,13 @@ elseif OPT==3
    WTR_MASK = (1-ICE_MASK).*(1-LANDMASK);%%0 on land & ice
    jW       = find(WTR_MASK==1);
    jI       = find(ICE_MASK==1);
+   Dmax0    = 100;
 end
 
 cice(jI) = ice_prams.c;%% ice
 cice(jL) = NaN;%% land
 %%
-Dmax(jI) = 250;
+Dmax(jI) = Dmax0;
 Dmax(jL) = NaN;
 %%
 hice(jI) = ice_prams.h;

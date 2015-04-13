@@ -177,7 +177,7 @@ Y        = grid_prams.Y;
 %% Ice/water;
 if HAVE_ICE==0
    h           = 2;
-   c           = 0.75;
+   c           = 0.7;
    visc_rp     = 0;%% Robinson-Palmer damping parameter [~13Pa/(m/s)]
    bc_opt      = 0;%% breaking condition (0=beam;1=Marchenko)
    ice_prams   = struct('c'         ,c,...
@@ -956,7 +956,20 @@ if DO_PLOT%%check exponential attenuation
    %%
    figure(3),clf;
    fn_fullscreen;
-   plot(X(:,1)/1e3,wave_fields.Hs(:,1),'-k');
+   xx = X(:,1);
+   if 1
+      subplot(2,1,2)
+      yy = Y(1,:);
+      xp = -250e3;
+      ix = find(abs(xx-xp)==min(abs(xx-xp)));
+      for loop_ix=1%:length(ix)
+         plot(yy/1e3,wave_fields.Hs(ix(loop_ix),:));
+      end
+      GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+      %%
+      subplot(2,1,1)
+   end
+   plot(xx/1e3,wave_fields.Hs(:,1),'-k');
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
    %%
@@ -983,7 +996,16 @@ if DO_PLOT%%check exponential attenuation
          plot(xx_f/1e3,Hs_f,'b','linewidth',2);
          hold on;
 
+         figure(3);
+         ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
+         subplot(2,1,2)
+         hold on;
+         for loop_ix=1:length(ix)
+            plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
+         end
+
          %%steady soln
+         figure(5);
          dfil  = [frun,'fig_scripts/figs/TC2S/test_steady2.dat'];
          disp(['opening ',dfil,'']);
          %%
@@ -1060,10 +1082,12 @@ if DO_PLOT%%check exponential attenuation
       saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
       saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
 
-      %%fix position so that comparison is easier
       figure(3);
-      pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
-      set(gca,'position',pos);
+      if 0
+         %%fix position so that comparison is easier between computers
+         pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
+         set(gca,'position',pos);
+      end
       saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
       saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
    end
