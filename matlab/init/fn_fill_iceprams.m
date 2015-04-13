@@ -13,7 +13,10 @@ s1.rhowtr   = 1025;  % Ice density      [kg/m^3]
 s1.rhoice   = 922.5; % Ice density      [kg/m^3]
 s1.g        = 9.81;  % Gravity          [m/s^2]
 s1.poisson  = .3;    % Poisson's ratio
-s1.visc_rp  = 13;    % Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+
+if ~isfield(s1,'visc_rp')
+   s1.visc_rp  = 13; % Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+end
 
 %%Brine vol fraction -> Young's modulus and flexural strength
 if 1%%just set

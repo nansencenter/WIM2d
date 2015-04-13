@@ -178,12 +178,23 @@ Y        = grid_prams.Y;
 if HAVE_ICE==0
    h           = 2;
    c           = 0.75;
-   bc_opt      = 0;%%breaking condition (0=beam;1=Marchenko)
-   young_opt   = 0;%%young's modulus option
+   visc_rp     = 0;%% Robinson-Palmer damping parameter [~13Pa/(m/s)]
+   bc_opt      = 0;%% breaking condition (0=beam;1=Marchenko)
    ice_prams   = struct('c'         ,c,...
                         'h'         ,h,...
-                        'bc_opt'    ,bc_opt,...
-                        'young_opt' ,young_opt);
+                        'visc_rp'   ,visc_rp,...
+                        'bc_opt'    ,bc_opt)
+   if 1%%set Young's directly here TODO infile?
+      ice_prams.young      = 5.49e9;%%Young's modulus [Pa]
+      ice_prams.young_opt  = NaN;%%not used
+   else
+      %%Option for selecting Young's modulus
+      %% - only used if Young's modulus not given
+      %% 0: 2e9 [Marchenko estimate]
+      %% 2: Vernon's estimate from brine volume fraction (vbf)
+      %% 1: same as above but with vbf=.1 -> young = 5.49e9 Pa
+      ice_prams.young_opt  = 0;
+   end
    %%
    [ice_fields,ice_prams]  = iceinit(ice_prams,grid_prams,OPT);
    %% ice_fields  = structure:
@@ -198,6 +209,7 @@ if HAVE_ICE==0
    %%               h: 2
    %%           young: 2.000000000000000e+09
    %%          bc_opt: 0
+   %%         visc_rp: 13
    %%          rhowtr: 1.025000000000000e+03
    %%          rhoice: 9.225000000000000e+02
    %%               g: 9.810000000000000
@@ -943,6 +955,7 @@ if DO_PLOT%%check exponential attenuation
    end
    %%
    figure(3),clf;
+   fn_fullscreen;
    plot(X(:,1)/1e3,wave_fields.Hs(:,1),'-k');
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
@@ -950,9 +963,10 @@ if DO_PLOT%%check exponential attenuation
    if DIAG1d==1
       %% final
       figure(5);
+      fn_fullscreen;
       clf;
 
-      COMP_FORTRAN   = 0;%%compare to fortran results
+      COMP_FORTRAN   = 1;%%compare to fortran results
       if COMP_FORTRAN
          frun  = '../../fortran/run/';
 

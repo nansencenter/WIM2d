@@ -1,5 +1,5 @@
 value # <variable name> : explanation
-1     # infile version number
+2     # infile_version_ : infile version number
 0.7   # CFL             : CFL number (cg*dt/dx)
 1     # nw              : number of frequencies
 32    # ndir            : number of directions
