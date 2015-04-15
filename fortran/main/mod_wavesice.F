@@ -409,6 +409,8 @@
          E_tot = sum(Hs*Hs)
          print*,'********************************************'
          print*,'Total energy [m^2] = ',E_tot
+         !print*,'alp nd/d',maxval(atten_nond),maxval(atten_dim)
+         print*,'c1d,dave,dmax',c1d,Dave,maxval(dfloe)
          print*,'********************************************'
       !end if
 
