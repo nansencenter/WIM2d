@@ -13,8 +13,13 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
+
+      !!TODO: make these inputs
+      integer,parameter :: STEADY      = 0
+      integer,parameter :: ADV_OPT     = 0
+         !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
+
       integer,parameter :: REF_Hs_ICE  = 0
-      integer,parameter :: STEADY      = 1
       integer,parameter :: DO_ATTEN    = 1
       integer,parameter :: USE_ICE_VEL = 0
       !!
@@ -342,7 +347,7 @@
             !! Simple attenuation scheme - doesn't conserve scattered energy
             call adv_atten_simple(sdf_dir(:,:,:,w)                      &
      &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM)
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
             !print*,'Spectrum at',itest,jtest
             !print*,S_freq(itest,jtest)
             !print*,sdf_dir(itest,jtest,:,w)
@@ -351,7 +356,7 @@
             !! is distributed isotropically
             call adv_atten_isotropic(sdf_dir(:,:,:,w)                   &
      &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM)
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
          end if
 
          !! integrate stress densities over frequency

@@ -21,15 +21,16 @@
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine get_grid_file()
+      subroutine get_grid_file(indir)
 
       use mod_file_utils, only: rd_afile_2d
 
       implicit none
 
+      character(len=80),intent(in) :: indir
       character(len=80) :: afile
 
-      afile = 'inputs/wim_grid.a'
+      afile = trim(indir)//'/wim_grid.a'
       call rd_afile_2d(afile ,X          ,ii,jj,1)
       call rd_afile_2d(afile ,Y          ,ii,jj,2)
       call rd_afile_2d(afile ,scuy       ,ii,jj,3)

@@ -18,7 +18,7 @@
       real     :: x_ext,y_ext,u_ref,duration
       integer  :: nt
 
-      character(len=80) :: log_file,this_subr,outdir
+      character(len=80) :: log_file,this_subr,outdir,indir
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
      &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
@@ -71,7 +71,10 @@
       integer           :: w,wth
 
       !! function to print time
-      real  :: etime
+      real     :: etime
+
+      !! does infile.txt exist
+      logical  :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SCATMOD     = 1
@@ -84,7 +87,17 @@
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
-      outdir   = 'out'
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!locations of inputs/outputs
+      inquire(file='infile.txt',exist=fex)
+      if (fex) then
+         call read_infile(indir,outdir)
+      else
+         indir    = 'inputs'
+         outdir   = 'out'
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run'
@@ -97,7 +110,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams() ! - ice properties like Young's modulus
-      call get_grid_file() ! - grid: X,Y,LAND_MASK
+      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
       call ice_init()      ! - initial icec,iceh,dfloe
 
       !!incident waves
@@ -225,6 +238,9 @@
 
       !! function to print time
       real  :: etime
+
+      !!does infile.txt exist?
+      logical :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
@@ -249,7 +265,17 @@
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
-      outdir   = "out_io/"
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!locations of inputs/outputs
+      inquire(file='infile.txt',exist=fex)
+      if (fex) then
+         call read_infile(indir,outdir)
+      else
+         indir    = 'inputs'
+         outdir   = 'out_io'
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
@@ -262,7 +288,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
-      call get_grid_file() ! - grid: X,Y,LAND_MASK
+      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
       icec     = in_arrays(:,:,1)
@@ -671,6 +697,24 @@
       close(3)
 
       end subroutine print_log_info
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine read_infile(indir,outdir)
+      !!determines where to read inputs/outputs from
+      
+      implicit none
+      
+      character(len=80),intent(out) :: indir,outdir
+      !character(len=80),intent(in)  :: infile
+      integer,parameter :: fid=99
+
+      open(unit=fid,file='infile.txt',action='read')
+      read(fid,'(a)'), indir
+      read(fid,'(a)'), outdir
+      close(fid)
+
+      end subroutine read_infile
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim2d_run
