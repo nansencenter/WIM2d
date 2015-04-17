@@ -28,3 +28,7 @@ fortran/run/results/*
 #
 matlab/main/out
 matlab/main/infile.txt
+#
+neXtSIM-coupling/results/*
+neXtSIM-coupling/run/test_inputs
+neXtSIM-coupling/run/test_outputs
