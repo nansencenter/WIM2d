@@ -32,3 +32,4 @@ matlab/main/infile.txt
 neXtSIMcoupling/results/*
 neXtSIMcoupling/run/test_inputs
 neXtSIMcoupling/run/test_outputs
+neXtSIMcoupling/run/infile.txt

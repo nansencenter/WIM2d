@@ -1,4 +1,4 @@
-function [simul_out,gridprams]   = wim2sim(simul_out,gridprams)
+function simul_out   = wim2sim(simul_out,mesh,element)
 %% function to call from perform_simul.m (called at end of EB_model_v2.m)
 %% do it round "Time interpolation of the forcings"
 %%    - when Vair and Voce are calculated
@@ -8,28 +8,42 @@ function [simul_out,gridprams]   = wim2sim(simul_out,gridprams)
 %% - Dmax should maybe go into Step1 too (influence damage?)
 %%    - also thermodynamic effect (lat melt - thermo_ow_mex.c)
 
-if ~exist('gridprams','var')
-   %% Get WIM grid from file
-   %% NB needs to be a regular grid in x,y (stere proj coords)
-   gitdir      = getenv('GIT_REPOS');
-   gdir        = [gitdir,'/WIM2d/fortran/run/inputs/'];%%directory with grid files
-   gridprams   = fn_get_grid(gdir);
-end
-
 if ~exist('simul_out','var')
    testdir     = 'test_inputs';
    %testfile    = [testdir,'/simul_out_squaresmall1km_test2_step0.mat'];
-   testfile    = [testdir,'/simul_out_squaresmall1km_test2_step10.mat'];
+   %testfile    = [testdir,'/simul_out_squaresmall1km_test2_step10.mat'];
+   testfile    = [testdir,'/simul_out_squaresmall1km_test15_step0.mat'];
    tf          = load(testfile);
    simul_out   = tf.simul_out;
    clear tf;
 end
 
-if ~exist('mesh','var')
+if ~exist('element','var')
    %[mesh, element, simul_in.ind_node_fix_bnd, simul_in.ind_node_free_bnd, simul_in.ind_element_free_bnd] =... 
    [mesh,element] =...
       importbamg(simul_out.bamg.mesh, simul_out.bamg.geom);
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% determine whether to run WIM:
+if isnan(simul_out.wim.last_call)
+   %% 1st time step
+   %% - run and update last_call
+   simul_out.wim.last_call = simul_out.current_time;
+else
+   time_passed = simul_out.current_time-simul_out.wim.last_call;
+   if time_passed>=simul_out.wim.coupling_freq
+      %% time since last call is >= coupling frequency
+      %% - run and update last_call
+      simul_out.wim.last_call = simul_out.current_time;
+   else
+      %% time since last call is < coupling frequency
+      %% - go back to perform_simul
+      disp('not running WIM yet');
+      return;
+   end
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Interpolate needed stuff from mesh to WIM grid.
@@ -38,7 +52,8 @@ end
 % [x,y]cent: centres of FEM mesh  [km]
 Nn    = length(xvert)%%number of nodes
 Ne    = length(xcent)%%number of elements
-index = element.num_node(:,[1 3 2]);%%row is element number,columns are indices (in xvert) of 3 nodes
+index = element.num_node(:,[1 3 2]);%% row number is element number,
+                                    %% columns are indices (in eg xvert,yvert) of its 3 nodes
 
 %%data on FEM mesh (at centres)
 data        = zeros(length(xcent),3);%%1 col for each field
@@ -52,6 +67,7 @@ else
    data(:,3)   = [];
 end
 
+gridprams   = simul_out.wim.gridprams;
 if 1
    %%interp with ISSM
    griddata = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data);
@@ -69,7 +85,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if 1%%test interp from vertices
+if 0%%test interp from vertices
    data     = simul_out.UM(1:2:end);
    size(data)
    griddata = interp_SIM2WIM_ISSM(gridprams,index,mesh.node.x',mesh.node.y',data);
@@ -78,11 +94,9 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set conc, thickness, Dmax on the WIM grid.
-cice_min = .05;
-Dmax0    = 300;
-ICEMASK  = (cice>cice_min);
+ICEMASK  = (griddata(:,:,1)>simul_out.wim.other_prams.cice_min);
 if INIT_DMAX
-   griddata(:,:,3)   = Dmax0*ICEMASK;
+   griddata(:,:,3)   = simul_out.wim.other_prams.Dmax_pack*ICEMASK;
 end
 %%
 ice_fields  = struct('cice'      ,griddata(:,:,1),...
@@ -90,11 +104,12 @@ ice_fields  = struct('cice'      ,griddata(:,:,1),...
                      'Dmax'      ,griddata(:,:,3),...
                      'ICE_MASK'  ,ICEMASK);
 if 1
-   figure(1);
+   figure(101);
    P  = pcolor(gridprams.X.',gridprams.Y.',ice_fields.cice.');
    colorbar;
    title('conc');
    set(P, 'EdgeColor', 'none');
+   fn_fullscreen;
    GEN_proc_fig('x, km', 'y, km')
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,23 +120,26 @@ end
 wave_fields.WAVE_MASK      = 0*gridprams.X;
 JJ                         = find((gridprams.Y<(-10.0e3-gridprams.X))&(gridprams.LANDMASK==0));
 wave_fields.WAVE_MASK(JJ)  = 1.0;
-wave_fields.Hs             =    3*wave_fields.WAVE_MASK;
-wave_fields.Tp             =   12*wave_fields.WAVE_MASK;;
-wave_fields.mwd            = -135*wave_fields.WAVE_MASK;;
+wave_fields.Hs             =   3*wave_fields.WAVE_MASK;
+wave_fields.Tp             =  12*wave_fields.WAVE_MASK;
+wave_fields.mwd            = 225*wave_fields.WAVE_MASK;%%clockwise from north
 if 1
-   figure(2);
+   figure(102);
    P  = pcolor(gridprams.X.',gridprams.Y.',wave_fields.Hs.');
    colorbar;
    title('H_s');
    set(P, 'EdgeColor', 'none');
+   fn_fullscreen;
    GEN_proc_fig('x, km', 'y, km')
 end
-return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Call WIM2d
-out_fields  = run_WIM2d_io_mex(ice_fields,wave_fields,int_prams,real_prams);
+simul_out.wim.int_prams,simul_out.wim.real_prams
+out_fields  = run_WIM2d_io_mex(ice_fields,wave_fields,...
+                simul_out.wim.int_prams,simul_out.wim.real_prams)
+return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,10 +194,11 @@ function out = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data)
 %%  - ISSM fxn InterpFromMeshToGrid can tell where it is defined by the length of the data
 %% index: row corresponds to element number; columns are indices (in xvert) of 3 nodes
 
+DO_TEST  = 0;
+
 Ne = size(index,1);
 Nn = length(xvert);
 Nd = size(data,1);
-DO_TEST  = 1;
 
 %WIM grid info
 xmin     = 1e-3*min(gridprams.X(:)); % WIM grid xmin (stere proj, km)
@@ -200,8 +219,8 @@ inputs.ymax          = ymax;
 inputs.xposting      = xposting;
 inputs.yposting      = yposting;
 inputs.nlines        = double(nlines);%%inputs need to be doubles
-inputs.ncols         = double(ncols);%%inputs need to be doubles
-inputs.default_value = NaN
+inputs.ncols         = double(ncols); %%inputs need to be doubles
+inputs.default_value = NaN;
 
 if DO_TEST
    if Nd==Ne
@@ -209,14 +228,16 @@ if DO_TEST
       ttl   = 'conc';
       mfil  = 'test_outputs/test_InterpFromMeshToGrid_conc.mat';
       ffil  = 'test_outputs/test_InterpFromMeshToGrid_conc.png';
-      figure(1);
+      figure(101);
    else
       disp('Interpolating from nodes');
       ttl   = 'node disp (x)';
       mfil  = 'test_outputs/test_InterpFromMeshToGrid_UMx.mat';
       ffil  = 'test_outputs/test_InterpFromMeshToGrid_UMx.png';
-      figure(2);
+      figure(102);
    end
+   %%
+   disp(inputs);
    save(mfil,'inputs');
 end
 
