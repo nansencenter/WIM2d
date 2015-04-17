@@ -34,9 +34,9 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% add wim2d paths
-wimdirs{1}  = [xsimdir,'/neXtSIM-git/WIMcoupling'];%%coupling between nextsim and wim
 %%
 wimdir1     = [gitdir,'/WIM2d/fortran'];
+wimdirs{1}  = [wimdir1,'/../neXtSIMcoupling/code'];%%coupling between nextsim and wim
 wimdirs{2}  = [wimdir1,'/bin'];%%mex funs
 wimdirs{3}  = [wimdir1,'/run'];%%interface to mex funs
 wimdirs{4}  = [wimdir1,'/matlab_funs'];
