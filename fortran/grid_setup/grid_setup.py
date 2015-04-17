@@ -7,8 +7,10 @@ CHANGE_GRID    = 1
 CHANGE_WAVES   = 1
 
 # Set grid configuration (see fns_grid_setup.py)
-if 1:
+if 0:
    GRID_OPT = 0 # standard 1d grid configuration
+elif 1:
+   GRID_OPT = 2 # Philipp's small-square
 else:
    GRID_OPT = 1 # standard 2d grid configuration
 

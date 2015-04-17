@@ -1,8 +1,23 @@
 function grid_prams  = fn_get_grid(outdir)
 
-afile    = [outdir,'/binaries/wim_grid.a'];
-bfile    = [outdir,'/binaries/wim_grid.b'];
-afile2   = [outdir,'/binaries/wim_init.a'];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% check if gridfiles exist
+bdir     = [outdir];
+afile    = [bdir,'/wim_grid.a'];
+bfile    = [bdir,'/wim_grid.b'];
+afile2   = [bdir,'/wim_init.a'];
+
+if ~exist(afile)
+   bdir     = [outdir,'/binaries'];
+   afile    = [bdir,'/wim_grid.a'];
+   bfile    = [bdir,'/wim_grid.b'];
+   afile2   = [bdir,'/wim_init.a'];
+end
+
+if ~exist(afile)
+   error([afile,' not present.'])
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 grid_prams  = struct('nx'        ,[],...
                      'ny'        ,[],...
