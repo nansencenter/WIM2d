@@ -70,7 +70,7 @@ end
 gridprams   = simul_out.wim.gridprams;
 if 1
    %%interp with ISSM
-   griddata = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data);
+   [griddata,xWIM,yWIM] = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data);
 else
    %%just set it for now
    cice     = 0*gridprams.X;
@@ -88,7 +88,7 @@ end
 if 0%%test interp from vertices
    data     = simul_out.UM(1:2:end);
    size(data)
-   griddata = interp_SIM2WIM_ISSM(gridprams,index,mesh.node.x',mesh.node.y',data);
+   [griddata,xWIM,yWIM] = interp_SIM2WIM_ISSM(gridprams,index,mesh.node.x',mesh.node.y',data);
    return;
 end
 
@@ -111,7 +111,8 @@ if 1
    set(P, 'EdgeColor', 'none');
    fn_fullscreen;
    daspect([1 1 1]);
-   GEN_proc_fig('x, km', 'y, km')
+   GEN_proc_fig('x, km', 'y, km');
+   drawnow;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -132,7 +133,8 @@ if 1
    set(P, 'EdgeColor', 'none');
    fn_fullscreen;
    daspect([1 1 1]);
-   GEN_proc_fig('x, km', 'y, km')
+   GEN_proc_fig('x, km', 'y, km');
+   drawnow;
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -167,7 +169,7 @@ data(:,1)   = out_fields.Dmax(:);
 data(:,2)   = [];
 %%
 missing_g2m = 0;%missing value - just set to 0 (one of FEM mesh points is out of WIM grid)
-data_mesh   = InterpFromGridToMesh(xWIM,yWIM,data,xcent,ycent,missing_g2m);
+data_mesh   = InterpFromGridToMesh(xWIM,yWIM,data,xvert,yvert,missing_g2m);
 %%
 simul_out.Dmax = data_mesh(:,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,7 +191,7 @@ yc = mean(xy_tricorner(:,:,2),2)/1000;%km: (Ne,1)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function out = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data)
+function [out,x_m,y_m] = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data)
 %% (xvert,yvert): coords of vertices
 %% data (in columns):
 %%  - can be defined at centres or nodes 
