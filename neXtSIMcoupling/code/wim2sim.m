@@ -50,8 +50,8 @@ end
 [xvert,yvert,xcent,ycent] = get_centres(simul_out,mesh,element);
 % [x,y]vert: vertices of FEM mesh [km]
 % [x,y]cent: centres of FEM mesh  [km]
-Nn    = length(xvert)%%number of nodes
-Ne    = length(xcent)%%number of elements
+Nn    = length(xvert);%%number of nodes
+Ne    = length(xcent);%%number of elements
 index = element.num_node(:,[1 3 2]);%% row number is element number,
                                     %% columns are indices (in eg xvert,yvert) of its 3 nodes
 
@@ -110,6 +110,7 @@ if 1
    title('conc');
    set(P, 'EdgeColor', 'none');
    fn_fullscreen;
+   daspect([1 1 1]);
    GEN_proc_fig('x, km', 'y, km')
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,6 +131,7 @@ if 1
    title('H_s');
    set(P, 'EdgeColor', 'none');
    fn_fullscreen;
+   daspect([1 1 1]);
    GEN_proc_fig('x, km', 'y, km')
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
