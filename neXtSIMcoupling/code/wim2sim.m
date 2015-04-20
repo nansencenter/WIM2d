@@ -24,9 +24,10 @@ if ~exist('element','var')
       importbamg(simul_out.bamg.mesh, simul_out.bamg.geom);
 end
 
-TEST_INTERP2GRID     = 0;
-TEST_INTERP2NODES    = 0;
-TEST_INTERP2CENTRES  = 0;
+RUN_WIM              = 0;
+TEST_INTERP2GRID     = 1;
+TEST_INTERP2NODES    = 1;
+TEST_INTERP2CENTRES  = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% determine whether to run WIM:
@@ -112,6 +113,8 @@ if TEST_INTERP2GRID==1
    daspect([1 1 1]);
    GEN_proc_fig('x, km', 'y, km');
    drawnow;
+   %%
+   plot_param(simul_out.c,[],[],'small_square','jet');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -141,56 +144,96 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tfil_wim2sim   = 'test_outputs/wim2sim.mat';
-if 1
+if RUN_WIM==1
    %% Call WIM2d
    simul_out.wim.int_prams,simul_out.wim.real_prams
    out_fields  = run_WIM2d_io_mex(ice_fields,wave_fields,...
                    simul_out.wim.int_prams,simul_out.wim.real_prams)
-   save(tfil_wim2sim,'out_fields');
+   if 1
+      save(tfil_wim2sim,'out_fields');
+   else
+      num_node = element.num_node;
+      save(tfil_wim2sim,'out_fields','gridprams','xcent','ycent','xnode','ynode','num_node');
+   end
 else
    load(tfil_wim2sim);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Interpolate
-%% taux,tauy
-%% onto VERTICES of FEM grid
+simul_out.wim.out.tau_x = out_fields.tau_x;
+simul_out.wim.out.tau_y = out_fields.tau_y;
+simul_out.wim.out.Dmax  = out_fields.Dmax;
+%%
 G2M_METHOD  = 0;
-%%
-missing_g2m = NaN;%missing value - just set to 0 (one of FEM mesh points is out of WIM grid)
-if G2M_METHOD==1
-   %Use InterpFromGridToMesh:
-   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/wrappers/InterpFromGridToMesh/InterpFromGridToMesh.cpp
-   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/c/modules/InterpFromGridToMeshx/InterpFromGridToMeshx.cpp
-   xyWIM       = zeros(Ng,2);
-   xyWIM(:,1)  = gridprams.X(:);
-   xyWIM(:,2)  = gridprams.Y(:);
-   %%
-   data        = zeros(Ng,2);
-   data(:,1)   = out_fields.tau_x(:);
-   data(:,2)   = out_fields.tau_y(:);
-   %%
-   save('test_outputs/for_InterpFromGridToMesh','xyWIM','data','xnode','ynode','missing_g2m');
-   data_mesh   = InterpFromGridToMesh(xyWIM(:,1),xyWIM(:,2),data,xnode,ynode,missing_g2m);
+if 1
+   simul_out   = wim2sim_update_mesh(simul_out,mesh,element);
 else
-   %%use interp2
-   data_names  = {'tau_x','tau_y'};
-   Nd          = length(data_names);
-   data_mesh   = zeros(Nn,Nd);
-   X           = gridprams.X.'/1e3;%take transpose, change to km
-   Y           = gridprams.Y.'/1e3;%take transpose, change to km
-   ifxn        = 'interp2';
-   %ifxn        = 'griddata';
-   for j=1:Nd
-      cmd   = ['tmp = ',ifxn,'(X,Y,out_fields.',data_names{j},'.'',xnode,ynode);'];%transpose data also
-      eval(cmd);
-      data_mesh(:,j) = tmp;
+   %% Interpolate
+   %% taux,tauy
+   %% onto VERTICES of FEM grid
+   if G2M_METHOD==1
+      %Use InterpFromGridToMesh:
+      %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/wrappers/InterpFromGridToMesh/InterpFromGridToMesh.cpp
+      %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/c/modules/InterpFromGridToMeshx/InterpFromGridToMeshx.cpp
+      xyWIM       = zeros(Ng,2);
+      xyWIM(:,1)  = gridprams.X(:);
+      xyWIM(:,2)  = gridprams.Y(:);
+      %%
+      data        = zeros(Ng,2);
+      data(:,1)   = out_fields.tau_x(:);
+      data(:,2)   = out_fields.tau_y(:);
+      %%
+      missing_g2m = NaN;%missing value - just set to 0 (one of FEM mesh points is out of WIM grid)
+      save('test_outputs/for_InterpFromGridToMesh','xyWIM','data','xnode','ynode','missing_g2m');
+      data_mesh   = InterpFromGridToMesh(xyWIM(:,1),xyWIM(:,2),data,xnode,ynode,missing_g2m);
+   else
+      %%use interp2
+      data_names  = {'tau_x','tau_y'};
+      Nd          = length(data_names);
+      data_mesh   = zeros(Nn,Nd);
+      X           = gridprams.X.'/1e3;%take transpose, change to km
+      Y           = gridprams.Y.'/1e3;%take transpose, change to km
+      ifxn        = 'interp2';
+      %ifxn        = 'griddata';
+      for j=1:Nd
+         cmd   = ['tmp = ',ifxn,'(X,Y,out_fields.',data_names{j},'.'',xnode,ynode);'];%transpose data also
+         eval(cmd);
+         data_mesh(:,j) = tmp;
+      end
    end
+   simul_out.wim.wim2nodes.tau_x = data_mesh(:,1);
+   simul_out.wim.wim2nodes.tau_y = data_mesh(:,2);
+
+   %% Interpolate
+   %% Dmax
+   %% onto CENTRES of FEM grid
+   if G2M_METHOD==1
+      %Use InterpFromGridToMesh:
+      %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/wrappers/InterpFromGridToMesh/InterpFromGridToMesh.cpp
+      %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/c/modules/InterpFromGridToMeshx/InterpFromGridToMeshx.cpp
+      data(:,1)   = out_fields.Dmax(:);
+      data(:,2)   = [];
+      data_mesh   = InterpFromGridToMesh(xyWIM(:,1),xyWIM(:,2),data,xcent,ycent,missing_g2m);
+   else
+      %%use interp2
+      data_names  = {'Dmax'};
+      Nd          = length(data_names);
+      data_mesh   = zeros(Ne,Nd);
+      for j=1:Nd
+         cmd   = ['Z = out_fields.',data_names{j},'.'';']%transpose data also
+         eval(cmd);
+         cmd   = ['tmp = ',ifxn,'(X,Y,Z,xcent,ycent);']
+         %cmd   = ['tmp = ',ifxn,'(Y.'',X.'',Z.'',xcent,ycent);']
+         eval(cmd);
+         data_mesh(:,j) = tmp;
+      end
+   end
+   %%
+   simul_out.wim.wim2elements.Dmax = data_mesh(:,1);
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
-simul_out.wim.wim2nodes.tau_x = data_mesh(:,1);
-simul_out.wim.wim2nodes.tau_y = data_mesh(:,2);
+%%
 if TEST_INTERP2NODES==1
    %%plot original value
    fld_names   = {'tau_x','tau_y'};
@@ -215,34 +258,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Interpolate
-%% Dmax
-%% onto CENTRES of FEM grid
-if G2M_METHOD==1
-   %Use InterpFromGridToMesh:
-   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/wrappers/InterpFromGridToMesh/InterpFromGridToMesh.cpp
-   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/c/modules/InterpFromGridToMeshx/InterpFromGridToMeshx.cpp
-   data(:,1)   = out_fields.Dmax(:);
-   data(:,2)   = [];
-   data_mesh   = InterpFromGridToMesh(xyWIM(:,1),xyWIM(:,2),data,xcent,ycent,missing_g2m);
-else
-   %%use interp2
-   data_names  = {'Dmax'};
-   Nd          = length(data_names);
-   data_mesh   = zeros(Ne,Nd);
-   for j=1:Nd
-      cmd   = ['tmp = ',ifxn,'(X,Y,out_fields.',data_names{j},'.'',xcent,ycent);'];
-      eval(cmd);
-      data_mesh(:,j) = tmp;
-   end
-end
-%%
-simul_out.wim.wim2elements.Dmax = data_mesh(:,1);
 if TEST_INTERP2CENTRES==1
    %%plot original value
    figure(103);
    fld_name = 'Dmax';
-   cmd      = ['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');'];
+   cmd      = ['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');']
    eval(cmd);
    colorbar;
    title(fld_name);
@@ -253,7 +273,7 @@ if TEST_INTERP2CENTRES==1
    drawnow;
 
    %%plot interpolated value (at CENTRES)
-   cmd      = ['plot_param(simul_out.wim.wim2elements.',fld_name,',[],[],''small_square'',''jet'')'];
+   cmd      = ['plot_param(simul_out.wim.wim2elements.',fld_name,',[],[],''small_square'',''jet'');']
    eval(cmd);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
