@@ -16,7 +16,7 @@ Nn          = mesh.Nn;
 Ne          = mesh.Ne;
 
 %%get mesh nodes/centres
-[xnode,ynode,xcent,ycent]  = get_meshpoints(simul_out,mesh,element);
+[xnode,ynode,xcent,ycent]  = wim2sim_get_meshpoints(simul_out,mesh,element);
 
 if G2M_METHOD==1
    %Use InterpFromGridToMesh:
@@ -78,18 +78,18 @@ end
 simul_out.wim.wim2elements.Dmax = data_mesh(:,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [xnode,ynode,xcent,ycent] = get_meshpoints(simul_out,mesh,element);
-
-% Adding displacement
-xnode = mesh.node.x' + simul_out.UM(1:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
-ynode = mesh.node.y' + simul_out.UM(2:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
-
-% Compute the position of the 3 nodes
-xy_tricorner(:,:,1) = xnode(element.num_node)*1000;%m: size(Ne,3,1) Ne=no of elements
-xy_tricorner(:,:,2) = ynode(element.num_node)*1000;%m: size(Ne,3,1) Ne=no of elements
-
-% Compute position of the center
-xcent = mean(xy_tricorner(:,:,1),2)/1000;%km: (Ne,1)
-ycent = mean(xy_tricorner(:,:,2),2)/1000;%km: (Ne,1)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% function [xnode,ynode,xcent,ycent] = get_meshpoints(simul_out,mesh,element);
+% 
+% % Adding displacement
+% xnode = mesh.node.x' + simul_out.UM(1:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
+% ynode = mesh.node.y' + simul_out.UM(2:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
+% 
+% % Compute the position of the 3 nodes
+% xy_tricorner(:,:,1) = xnode(element.num_node)*1000;%m: size(Ne,3,1) Ne=no of elements
+% xy_tricorner(:,:,2) = ynode(element.num_node)*1000;%m: size(Ne,3,1) Ne=no of elements
+% 
+% % Compute position of the center
+% xcent = mean(xy_tricorner(:,:,1),2)/1000;%km: (Ne,1)
+% ycent = mean(xy_tricorner(:,:,2),2)/1000;%km: (Ne,1)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
