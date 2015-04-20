@@ -24,6 +24,10 @@ if ~exist('element','var')
       importbamg(simul_out.bamg.mesh, simul_out.bamg.geom);
 end
 
+TEST_INTERP2GRID     = 0;
+TEST_INTERP2NODES    = 0;
+TEST_INTERP2CENTRES  = 0;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% determine whether to run WIM:
 if isnan(simul_out.wim.last_call)
@@ -47,30 +51,31 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Interpolate needed stuff from mesh to WIM grid.
-[xvert,yvert,xcent,ycent] = get_centres(simul_out,mesh,element);
+gridprams                  = simul_out.wim.gridprams;
+[xnode,ynode,xcent,ycent]  = get_meshpoints(simul_out,mesh,element);
 % [x,y]vert: vertices of FEM mesh [km]
 % [x,y]cent: centres of FEM mesh  [km]
-Nn    = length(xvert);%%number of nodes
-Ne    = length(xcent);%%number of elements
-index = element.num_node(:,[1 3 2]);%% row number is element number,
-                                    %% columns are indices (in eg xvert,yvert) of its 3 nodes
+
+Nn    = mesh.Nn;                       %% number of nodes
+Ne    = mesh.Ne;                       %% number of elements
+Ng    = gridprams.nx*gridprams.ny;     %% total number of grid points (WIM grid)
+index = element.num_node(:,[1 3 2]);   %% row number is element number,
+                                       %% columns are indices (in eg xnode,ynode) of its 3 nodes
 
 %%data on FEM mesh (at centres)
-data        = zeros(length(xcent),3);%%1 col for each field
-data(:,1)   = simul_out.c;           %% conc
-data(:,2)   = simul_out.h;           %% thickness
-if isfield(simul_out,'Dmax')
-   INIT_DMAX   = 0;
-   data(:,3)   = simul_out.Dmax;
+data        = zeros(length(xcent),3);  %%1 col for each field
+data(:,1)   = simul_out.c;             %% conc
+data(:,2)   = simul_out.h;             %% thickness
+if simul_out.wim.INIT_DMAX==0
+   data(:,3)   = simul_out.wim.wim2centres.Dmax;
 else
-   INIT_DMAX   = 1;
    data(:,3)   = [];
 end
 
-gridprams   = simul_out.wim.gridprams;
+
 if 1
    %%interp with ISSM
-   [griddata,xWIM,yWIM] = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data);
+   grid_data  = interp_SIM2WIM_ISSM(gridprams,index,xnode,ynode,data);
 else
    %%just set it for now
    cice     = 0*gridprams.X;
@@ -79,32 +84,26 @@ else
    cice(JJ) = .7;
    hice(JJ) = 1;
    %%
-   griddata(:,:,1)   = cice;
-   griddata(:,:,2)   = hice;
+   grid_data(:,:,1)   = cice;
+   grid_data(:,:,2)   = hice;
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if 0%%test interp from vertices
-   data     = simul_out.UM(1:2:end);
-   size(data)
-   [griddata,xWIM,yWIM] = interp_SIM2WIM_ISSM(gridprams,index,mesh.node.x',mesh.node.y',data);
-   return;
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set conc, thickness, Dmax on the WIM grid.
-ICEMASK  = (griddata(:,:,1)>simul_out.wim.other_prams.cice_min);
-if INIT_DMAX
-   griddata(:,:,3)   = simul_out.wim.other_prams.Dmax_pack*ICEMASK;
+ICEMASK  = (grid_data(:,:,1)>simul_out.wim.other_prams.cice_min);
+if simul_out.wim.INIT_DMAX==1
+   grid_data(:,:,3)        = simul_out.wim.other_prams.Dmax_pack*ICEMASK;
+   simul_out.wim.INIT_DMAX = 0;%%Dmax initialised now
 end
 %%
-ice_fields  = struct('cice'      ,griddata(:,:,1),...
-                     'hice'      ,griddata(:,:,2),...
-                     'Dmax'      ,griddata(:,:,3),...
+ice_fields  = struct('cice'      ,grid_data(:,:,1),...
+                     'hice'      ,grid_data(:,:,2),...
+                     'Dmax'      ,grid_data(:,:,3),...
                      'ICE_MASK'  ,ICEMASK);
-if 1
-   figure(101);
+
+if TEST_INTERP2GRID==1
+   figure(91);
    P  = pcolor(gridprams.X.',gridprams.Y.',ice_fields.cice.');
    colorbar;
    title('conc');
@@ -125,8 +124,9 @@ wave_fields.WAVE_MASK(JJ)  = 1.0;
 wave_fields.Hs             =   3*wave_fields.WAVE_MASK;
 wave_fields.Tp             =  12*wave_fields.WAVE_MASK;
 wave_fields.mwd            = 225*wave_fields.WAVE_MASK;%%clockwise from north
-if 1
-   figure(102);
+
+if TEST_INTERP2GRID==1
+   figure(92);
    P  = pcolor(gridprams.X.',gridprams.Y.',wave_fields.Hs.');
    colorbar;
    title('H_s');
@@ -139,69 +139,153 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Call WIM2d
-simul_out.wim.int_prams,simul_out.wim.real_prams
-out_fields  = run_WIM2d_io_mex(ice_fields,wave_fields,...
-                simul_out.wim.int_prams,simul_out.wim.real_prams)
-return;
+
+tfil_wim2sim   = 'test_outputs/wim2sim.mat';
+if 1
+   %% Call WIM2d
+   simul_out.wim.int_prams,simul_out.wim.real_prams
+   out_fields  = run_WIM2d_io_mex(ice_fields,wave_fields,...
+                   simul_out.wim.int_prams,simul_out.wim.real_prams)
+   save(tfil_wim2sim,'out_fields');
+else
+   load(tfil_wim2sim);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Interpolate
 %% taux,tauy
 %% onto VERTICES of FEM grid
-data        = zeros(length(xWIM),2);
-data(:,1)   = out_fields.taux(:);
-data(:,2)   = out_fields.tauy(:);
+G2M_METHOD  = 0;
 %%
-missing_g2m = 0;%missing value - just set to 0 (one of FEM mesh points is out of WIM grid)
-data_mesh   = InterpFromGridToMesh(xWIM,yWIM,data,xvert,yvert,missing_g2m);
+missing_g2m = NaN;%missing value - just set to 0 (one of FEM mesh points is out of WIM grid)
+if G2M_METHOD==1
+   %Use InterpFromGridToMesh:
+   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/wrappers/InterpFromGridToMesh/InterpFromGridToMesh.cpp
+   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/c/modules/InterpFromGridToMeshx/InterpFromGridToMeshx.cpp
+   xyWIM       = zeros(Ng,2);
+   xyWIM(:,1)  = gridprams.X(:);
+   xyWIM(:,2)  = gridprams.Y(:);
+   %%
+   data        = zeros(Ng,2);
+   data(:,1)   = out_fields.tau_x(:);
+   data(:,2)   = out_fields.tau_y(:);
+   %%
+   save('test_outputs/for_InterpFromGridToMesh','xyWIM','data','xnode','ynode','missing_g2m');
+   data_mesh   = InterpFromGridToMesh(xyWIM(:,1),xyWIM(:,2),data,xnode,ynode,missing_g2m);
+else
+   %%use interp2
+   data_names  = {'tau_x','tau_y'};
+   Nd          = length(data_names);
+   data_mesh   = zeros(Nn,Nd);
+   X           = gridprams.X.'/1e3;%take transpose, change to km
+   Y           = gridprams.Y.'/1e3;%take transpose, change to km
+   ifxn        = 'interp2';
+   %ifxn        = 'griddata';
+   for j=1:Nd
+      cmd   = ['tmp = ',ifxn,'(X,Y,out_fields.',data_names{j},'.'',xnode,ynode);'];%transpose data also
+      eval(cmd);
+      data_mesh(:,j) = tmp;
+   end
+end
 %%
-simul_out.taux_waves = data_mesh(:,1);
-simul_out.tauy_waves = data_mesh(:,2);
+simul_out.wim.wim2nodes.tau_x = data_mesh(:,1);
+simul_out.wim.wim2nodes.tau_y = data_mesh(:,2);
+if TEST_INTERP2NODES==1
+   %%plot original value
+   fld_names   = {'tau_x','tau_y'};
+   for j=1:2
+      figure(100+j);
+      fld_name = fld_names{j};
+      cmd      = ['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');'];
+      eval(cmd);
+      colorbar;
+      title(fld_name);
+      set(P, 'EdgeColor', 'none');
+      fn_fullscreen;
+      daspect([1 1 1]);
+      GEN_proc_fig('x, km', 'y, km');
+      drawnow;
+
+      %%plot interpolated value (at NODES)
+      cmd      = ['plot_param(simul_out.wim.wim2nodes.',fld_name,'(element.num_node(:,1)),[],[],''small_square'',''jet'')'];
+      eval(cmd);
+   end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Interpolate
 %% Dmax
 %% onto CENTRES of FEM grid
-data(:,1)   = out_fields.Dmax(:);
-data(:,2)   = [];
+if G2M_METHOD==1
+   %Use InterpFromGridToMesh:
+   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/wrappers/InterpFromGridToMesh/InterpFromGridToMesh.cpp
+   %>/Users/timill/GITHUB-REPOSITORIES/neXtSIM/ISSM-trunk-jpl-svn/src/c/modules/InterpFromGridToMeshx/InterpFromGridToMeshx.cpp
+   data(:,1)   = out_fields.Dmax(:);
+   data(:,2)   = [];
+   data_mesh   = InterpFromGridToMesh(xyWIM(:,1),xyWIM(:,2),data,xcent,ycent,missing_g2m);
+else
+   %%use interp2
+   data_names  = {'Dmax'};
+   Nd          = length(data_names);
+   data_mesh   = zeros(Ne,Nd);
+   for j=1:Nd
+      cmd   = ['tmp = ',ifxn,'(X,Y,out_fields.',data_names{j},'.'',xcent,ycent);'];
+      eval(cmd);
+      data_mesh(:,j) = tmp;
+   end
+end
 %%
-missing_g2m = 0;%missing value - just set to 0 (one of FEM mesh points is out of WIM grid)
-data_mesh   = InterpFromGridToMesh(xWIM,yWIM,data,xvert,yvert,missing_g2m);
-%%
-simul_out.Dmax = data_mesh(:,1);
+simul_out.wim.wim2elements.Dmax = data_mesh(:,1);
+if TEST_INTERP2CENTRES==1
+   %%plot original value
+   figure(103);
+   fld_name = 'Dmax';
+   cmd      = ['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');'];
+   eval(cmd);
+   colorbar;
+   title(fld_name);
+   set(P, 'EdgeColor', 'none');
+   fn_fullscreen;
+   daspect([1 1 1]);
+   GEN_proc_fig('x, km', 'y, km');
+   drawnow;
+
+   %%plot interpolated value (at CENTRES)
+   cmd      = ['plot_param(simul_out.wim.wim2elements.',fld_name,',[],[],''small_square'',''jet'')'];
+   eval(cmd);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [node_x,node_y,xc,yc] = get_centres(simul_out,mesh,element);
+function [xnode,ynode,xcent,ycent] = get_meshpoints(simul_out,mesh,element);
 
 % Adding displacement
-node_x = mesh.node.x' + simul_out.UM(1:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
-node_y = mesh.node.y' + simul_out.UM(2:2:end)*1e-3;% km: (Nn,1) Nn=no of nodes
+xnode = mesh.node.x' + simul_out.UM(1:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
+ynode = mesh.node.y' + simul_out.UM(2:2:end)*1e-3;% km: size(Nn,1) Nn=no of nodes
 
 % Compute the position of the 3 nodes
-xy_tricorner(:,:,1) = node_x(element.num_node)*1000;%m: (Ne,3,1) Ne=no of elements
-xy_tricorner(:,:,2) = node_y(element.num_node)*1000;%m: (Ne,3,1) Ne=no of elements
+xy_tricorner(:,:,1) = xnode(element.num_node)*1000;%m: size(Ne,3,1) Ne=no of elements
+xy_tricorner(:,:,2) = ynode(element.num_node)*1000;%m: size(Ne,3,1) Ne=no of elements
 
 % Compute position of the center
-xc = mean(xy_tricorner(:,:,1),2)/1000;%km: (Ne,1)
-yc = mean(xy_tricorner(:,:,2),2)/1000;%km: (Ne,1)
+xcent = mean(xy_tricorner(:,:,1),2)/1000;%km: (Ne,1)
+ycent = mean(xy_tricorner(:,:,2),2)/1000;%km: (Ne,1)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [out,x_m,y_m] = interp_SIM2WIM_ISSM(gridprams,index,xvert,yvert,data)
-%% (xvert,yvert): coords of vertices
+function [out,x_m,y_m] = interp_SIM2WIM_ISSM(gridprams,index,xnode,ynode,data)
+%% (xnode,ynode): coords of vertices
 %% data (in columns):
 %%  - can be defined at centres or nodes 
 %%  - ISSM fxn InterpFromMeshToGrid can tell where it is defined by the length of the data
-%% index: row corresponds to element number; columns are indices (in xvert) of 3 nodes
+%% index: row corresponds to element number; columns are indices (in xnode) of 3 nodes
 
 DO_TEST  = 0;
 
 Ne = size(index,1);
-Nn = length(xvert);
+Nn = length(xnode);
 Nd = size(data,1);
 
 %WIM grid info
@@ -214,8 +298,8 @@ ncols    = gridprams.nx;             % no of rows in WIM grid
 
 
 %% inputs to interp fxn
-inputs.x             = xvert;
-inputs.y             = yvert;
+inputs.x             = xnode;
+inputs.y             = ynode;
 inputs.data          = data(:,1);
 inputs.index         = index;
 inputs.xmin          = xmin;
@@ -249,26 +333,26 @@ Nfields  = size(data,2);
 out      = zeros(gridprams.nx,gridprams.ny,Nfields);
 for j=1:Nfields
    inputs.data          = data(:,j);
-   [x_m,y_m,griddata]   =...
+   [x_m,y_m,grid_data]   =...
       InterpFromMeshToGrid(inputs.index,inputs.x,inputs.y,inputs.data,...
                            inputs.xmin,inputs.ymax,inputs.xposting,inputs.yposting,inputs.nlines,inputs.ncols,...
                            inputs.default_value);
 
    %x_m is length ncols
    %y_m is length nlines
-   %griddata is size [nlines,ncols]
-   out(:,:,j)  = griddata.';
+   %grid_data is size [nlines,ncols]
+   out(:,:,j)  = grid_data.';
 end
 
 if DO_TEST
    %x_m is length ncols
    %y_m is length nlines
-   %griddata is size [nlines,ncols]
-   size(griddata),size(x_m),size(y_m)
+   %grid_data is size [nlines,ncols]
+   size(grid_data),size(x_m),size(y_m)
    
    %% plot conc
    [Xm,Ym]  = meshgrid(x_m,y_m);
-   P        = pcolor(Xm,Ym,griddata);
+   P        = pcolor(Xm,Ym,grid_data);
    colorbar;
    title(ttl);
    set(P, 'EdgeColor', 'none');

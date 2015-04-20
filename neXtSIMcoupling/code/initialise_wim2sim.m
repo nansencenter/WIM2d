@@ -70,3 +70,4 @@ simul_out.wim.gridprams = fn_get_grid(gdir);
 %% want to call WIM at first time step,
 %% so set last_call to NaN
 simul_out.wim.last_call = NaN;
+simul_out.wim.INIT_DMAX = 1;     %need to initialise Dmax (no restart available)
