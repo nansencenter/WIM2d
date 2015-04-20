@@ -1,4 +1,5 @@
 %%define location of /Data/sim:
+SHOW_WARNING   = 0;
 if exist('/Volumes/sim')
    %% johansen
    data_sim = '/Volumes/sim'
@@ -6,9 +7,11 @@ elseif exist('/Volumes/Tim_Ext_HD2/WORK/neXtSIM')
    %% external hard drive
    data_sim = '/Volumes/Tim_Ext_HD2/WORK/neXtSIM'
 else
-   disp('No paths to neXtSIM data present');
-   disp('- eg may need to connect to johansen (/Data/sim) with cmd+k');
-   disp('  or attach external HD.');
+   SHOW_WARNING   = 1;
+   %%
+   warnings = {'No paths to neXtSIM data present';
+               '- eg may need to connect to johansen (/Data/sim) with cmd+k';
+               '  or attach external HD.'};
 end
 rmpaths;
 
@@ -20,7 +23,7 @@ if strcmp(gitdir,'')
 end
 xsimdir        = [gitdir,'/neXtSIM'];
 nextsim_path   = [xsimdir,'/neXtSIM-trunk-SourceTree'];
-bamg_path      = [xsimdir,'/ISSM-trunk-jpl-svn/lib']
+bamg_path      = [xsimdir,'/ISSM-trunk-jpl-svn/lib'];
 
 %% add local paths
 local_dirs     = {nextsim_path,...
@@ -96,3 +99,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 showpaths;
+
+if SHOW_WARNING==1
+   disp(' ');
+   ll = '***********************************************************************';
+   disp(ll);
+   for j=1:length(warnings)
+      disp(warnings{j});
+   end
+   disp(ll);
+   disp(' ');
+end
