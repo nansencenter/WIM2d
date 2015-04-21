@@ -68,7 +68,7 @@ data        = zeros(length(xcent),3);  %%1 col for each field
 data(:,1)   = simul_out.c;             %% conc
 data(:,2)   = simul_out.h;             %% thickness
 if simul_out.wim.INIT_DMAX==0
-   data(:,3)   = simul_out.wim.wim2centres.Dmax;
+   data(:,3)   = simul_out.wim.ice_on_elements.Dmax;
 else
    data(:,3)   = [];
 end
@@ -76,7 +76,7 @@ end
 
 if 1
    %%interp with ISSM
-   grid_data  = interp_SIM2WIM_ISSM(gridprams,index,xnode,ynode,data);
+   grid_data  = interp_sim2wim_ISSM(gridprams,index,xnode,ynode,data);
 else
    %%just set it for now
    cice     = 0*gridprams.X;
@@ -114,7 +114,8 @@ if TEST_INTERP2GRID==1
    GEN_proc_fig('x, km', 'y, km');
    drawnow;
    %%
-   plot_param(simul_out.c,[],[],'small_square','jet');
+   %plot_param(simul_out.c,[],[],'small_square','jet');
+   plot_mesh_quantities(simul_out.c,mesh,element,'small_square','jet');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -160,21 +161,35 @@ else
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-simul_out.wim.out.tau_x = out_fields.tau_x;
-simul_out.wim.out.tau_y = out_fields.tau_y;
-simul_out.wim.out.Dmax  = out_fields.Dmax;
-%%
-simul_out   = wim2sim_update_mesh(simul_out,mesh,element);
+%% wave quantities that should be interpolated onto FEM nodes
+%% - these should remain referenced to the wave grid
+%% > simul_out.wim.waves_for_nodes:
+simul_out.wim.waves_for_nodes.tau_x = out_fields.tau_x;
+simul_out.wim.waves_for_nodes.tau_y = out_fields.tau_y;
+
+%% ice quantities that should be interpolated onto FEM elements
+%% - these should be advected with the ice
+%% > simul_out.wim.ice_for_elements:
+simul_out.wim.ice_for_elements.Dmax = out_fields.Dmax;
+
+%% need to interp Dmax etc from wave grid,
+%% since waves will have changed them
+INTERP_ICE_ELEMENTS  = 1;
+simul_out            = wim2sim_update_mesh(simul_out,mesh,element);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 if TEST_INTERP2NODES==1
    %%plot original value
-   fld_names   = {'tau_x','tau_y'};
-   for j=1:2
+   %fld_names   = {'tau_x','tau_y'};
+   sname1   = 'simul_out.wim.waves_for_nodes'
+   sname2   = 'simul_out.wim.waves_on_nodes'
+   eval(['fld_names   = fieldnames(',sname1,');']);
+   Nf1   = length(fld_names);
+   for j=1:Nf1
       figure(100+j);
       fld_name = fld_names{j};
-      cmd      = ['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');'];
-      eval(cmd);
+      %eval(['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');']);
+      eval(['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,',sname1,'.',fld_name,'.'');']);
       colorbar;
       title(fld_name);
       set(P, 'EdgeColor', 'none');
@@ -184,8 +199,10 @@ if TEST_INTERP2NODES==1
       drawnow;
 
       %%plot interpolated value (at NODES)
-      cmd      = ['plot_param(simul_out.wim.wim2nodes.',fld_name,'(element.num_node(:,1)),[],[],''small_square'',''jet'')'];
-      eval(cmd);
+      %eval(['plot_param(simul_out.wim.waves_on_nodes.',fld_name,'(element.num_node(:,1)),[],[],''small_square'',''jet'')']);
+      %eval(['plot_mesh_quantities(simul_out.wim.waves_on_nodes.',fld_name,...
+      eval(['plot_mesh_quantities(',sname2,'.',fld_name,...
+               '(element.num_node(:,1)),mesh,element,''small_square'',''jet'');']);
    end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,26 +210,33 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if TEST_INTERP2CENTRES==1
    %%plot original value
-   figure(103);
-   fld_name = 'Dmax';
-   cmd      = ['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,out_fields.',fld_name,'.'');']
-   eval(cmd);
-   colorbar;
-   title(fld_name);
-   set(P, 'EdgeColor', 'none');
-   fn_fullscreen;
-   daspect([1 1 1]);
-   GEN_proc_fig('x, km', 'y, km');
-   drawnow;
+   sname1   = 'simul_out.wim.ice_for_elements'
+   sname2   = 'simul_out.wim.ice_on_elements'
+   eval(['fld_names   = fieldnames(',sname1,');']);
+   Nf2   = length(fld_names);
+   for j=1:Nf2
+      figure(100+Nf1+j);
+      fld_name = fld_names{j};
+      eval(['P  = pcolor(gridprams.X.''/1e3,gridprams.Y.''/1e3,',sname1,'.',fld_name,'.'');']);
+      colorbar;
+      title(fld_name);
+      set(P, 'EdgeColor', 'none');
+      fn_fullscreen;
+      daspect([1 1 1]);
+      GEN_proc_fig('x, km', 'y, km');
+      drawnow;
 
-   %%plot interpolated value (at CENTRES)
-   cmd      = ['plot_param(simul_out.wim.wim2elements.',fld_name,',[],[],''small_square'',''jet'');']
-   eval(cmd);
+      %%plot interpolated value (at CENTRES)
+      %eval(['plot_param(simul_out.wim.ice_on_elements.',fld_name,',[],[],''small_square'',''jet'');']);
+      %eval(['plot_mesh_quantities(simul_out.wim.ice_on_elements.',fld_name,...
+      eval(['plot_mesh_quantities(',sname2,'.',fld_name,...
+            ',mesh,element,''small_square'',''jet'');']);
+   end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [out,x_m,y_m] = interp_SIM2WIM_ISSM(gridprams,index,xnode,ynode,data)
+function [out,x_m,y_m] = interp_sim2wim_ISSM(gridprams,index,xnode,ynode,data)
 %% (xnode,ynode): coords of vertices
 %% data (in columns):
 %%  - can be defined at centres or nodes 
