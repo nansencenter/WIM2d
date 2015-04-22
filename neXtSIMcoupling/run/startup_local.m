@@ -53,12 +53,14 @@ end
 if exist('data_sim','var')
 
    johansen_paths = [data_sim,'/data'];%%+all subdirs
-   topaz_path     = [johansen_paths,'/TOPAZ4/200709_201102'];
-   amsre_path     = [johansen_paths,'/AMSRE_ice_conc/2008/mar']
+   topaz_path     = [johansen_paths,'/TOPAZ4/200709_201102'];%topaz data
+   amsre_path     = [johansen_paths,'/AMSRE_ice_conc/2008/mar'];%ice conc
+   etopo_path     = [johansen_paths,'/BATHYMETRY/etopo1_ice_c_i2'];%%bathymetry
 
    %% add paths
    joh_dirs = {topaz_path,...
-               amsre_path};
+               amsre_path,...
+               etopo_path};
    for loop_i=1:length(joh_dirs)
       addpath(joh_dirs{loop_i});
    end
@@ -111,3 +113,5 @@ if SHOW_WARNING==1
    disp(ll);
    disp(' ');
 end
+
+clear;

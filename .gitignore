@@ -19,6 +19,7 @@ fortran/numerics/test_advection/out/*
 fortran/grid_setup/test/out/*
 fortran/grid_setup/test/out_py/*
 fortran/bin/*
+!fortran/macbin/*
 fortran/header_files/grid_info.h
 fortran/header_files/wave_info.h
 fortran/numerics/test_advection/test_out/*
@@ -30,6 +31,10 @@ matlab/main/out
 matlab/main/infile.txt
 #
 neXtSIMcoupling/results/*
-neXtSIMcoupling/run/test_inputs
-neXtSIMcoupling/run/test_outputs
-neXtSIMcoupling/run/infile.txt
+neXtSIMcoupling/run/*
+
+# include these files from "neXtSIMcoupling/run" in repo
+!neXtSIMcoupling/run/*.m
+!neXtSIMcoupling/run/*.py
+!neXtSIMcoupling/run/*.sh
+!neXtSIMcoupling/run/infiles
