@@ -28,6 +28,7 @@ bamg_path      = [xsimdir,'/ISSM-trunk-jpl-svn/lib'];
 %% add local paths
 local_dirs     = {nextsim_path,...
                   [nextsim_path,'/code'],...
+                  [nextsim_path,'/WIM/code'],...
                   [nextsim_path,'/tools'],...
                   bamg_path};
 for loop_i=1:length(local_dirs)
@@ -39,12 +40,10 @@ end
 %% add wim2d paths
 %%
 wimdir1     = [gitdir,'/WIM2d/fortran'];
-wimdirs{1}  = [wimdir1,'/../neXtSIMcoupling/code'];%%coupling between nextsim and wim
-wimdirs{2}  = [wimdir1,'/../neXtSIMcoupling/tools'];
-wimdirs{3}  = [wimdir1,'/bin'];%%mex funs
-wimdirs{4}  = [wimdir1,'/run'];%%interface to mex funs
-wimdirs{5}  = [wimdir1,'/matlab_funs'];
-wimdirs{6}  = [gitdir,'/matlab/Semi-Infinite-Elastic-Plate/GEN_progs'];
+wimdirs{1}  = [wimdir1,'/bin'];%%mex funs
+wimdirs{2}  = [wimdir1,'/run'];%%interface to mex funs
+wimdirs{3}  = [wimdir1,'/matlab_funs'];
+wimdirs{4}  = [gitdir,'/matlab/Semi-Infinite-Elastic-Plate/GEN_progs'];
 for loop_i=1:length(wimdirs)
    addpath(wimdirs{loop_i});
 end
