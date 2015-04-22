@@ -1,7 +1,8 @@
-import fns_grid_setup as gs
-import os
-import sys
+import os,sys
 import matplotlib.pyplot as plt
+
+sys.path.append('../py_funs')
+import fns_grid_setup as gs
 
 CHANGE_GRID    = 1
 CHANGE_WAVES   = 1
