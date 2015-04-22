@@ -3,7 +3,13 @@
 # run from "../run" folder
 python ../tools/plot_prog.py
 
-MKMOV=$1 # 1, make movies; 0, don't
+if [ $# -eq 1 ]
+then
+   MKMOV=$1 # 1, make movies; 0, don't
+else
+   MKMOV=1 # default is make movie
+fi
+
 if [ $MKMOV -eq 1 ]
 then
    # make movies of these variables:
