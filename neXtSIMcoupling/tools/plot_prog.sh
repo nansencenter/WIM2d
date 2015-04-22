@@ -1,6 +1,7 @@
 # make png figures from progress files
 # (and of initial and final, if wanted)
-python plot_prog.py
+# run from "../run" folder
+python ../tools/plot_prog.py
 
 MKMOV=$1 # 1, make movies; 0, don't
 if [ $MKMOV -eq 1 ]
