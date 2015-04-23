@@ -36,8 +36,8 @@ Versions:
             * sudo ln -s ipython2.7 ipython
 
 - 4. matlab interface (mex) for fortran code
-     - tested with OSX 10.8, matlab 2013a
-     - tested with linux (johansen server), matlab 2012b
+      - tested with OSX 10.8, matlab 2013a
+      - tested with linux (johansen server), matlab 2012b
 
 SETUP:
 
