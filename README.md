@@ -14,7 +14,6 @@ of some other programs)
 Versions:
 - 1. matlab
 - 2. fortran
-
 - 3. ipython interface for fortran code
      - Mac OSX:
          - Install these python packages with macports (needs xcode with command line tools installed):
