@@ -15,11 +15,29 @@ Versions:
 - 1. matlab
 - 2. fortran
 - 3. ipython interface for fortran code
-     - to install ipython and libraries numpy,scipy,matplotlib
-      * see (Ubuntu)   https://github.com/nansencenter/nansat/wiki/Install-libraries-on-Ubuntu
-      * or  (Mac OSX)  https://github.com/nansencenter/nansat/wiki/Install-libraries-on-MacOS
+     - Mac OSX: install with macports (needs xcode with command line tools installed):
+         *sudo port install py27-ipython
+         *sudo port install py27-numpy
+         *sudo port install py27-scipy
+         *sudo port install py27-matplotlib
+
+         These probably aren't needed, but can be used with nansat,
+         and Sentinel1ice, python tools from NERSC for working with satellite images
+         *sudo port install py27-matplotlib-basemap
+         *sudo port install py27-gdal
+         *sudo port install py27-mahotas
+         *sudo port install py27-scikit-image
+         *sudo port install py27-scikit-learn
+         *sudo port install py27-pil
+
+        - NB Make sure macports (i)python is used (check with "which python")
+            * in /opt/local/bin, do
+               *sudo ln -s python2.7  python
+               *sudo ln -s ipython2.7 ipython
+
 - 4. matlab interface (mex) for fortran code
      - tested with OSX 10.8, matlab 2013a
+     - tested with linux (johansen server), matlab 2012b
 
 SETUP:
 
@@ -33,17 +51,18 @@ SETUP:
 
 2. Grid setup:
    - Go to fortran/grid_setup
-     *compile with make or make py
-     *run grid_setup.sh or grid_setup.py respectively
+      *compile with make or make py
+      *do "./grid_setup.sh" or "python grid_setup.py" respectively
+         - or go into ipython and do "run grid_setup.py"
    - ipython script is easier to change (no need to recompile after changing grid)
-      and makes a test plot automatically (look at the land mask)
+      and makes a test plot automatically (plots the land mask)
    - can also look at the land mask in matlab with test/test_grid.m
 
    Compile/run main code:
    - Go to fortran/Build
-     * compile with "make" or "make exe"
+      * compile with "make" or "make exe"
    - Go to fortran/run
-   * run ./run_WIM2d.sh
+      * run ./run_WIM2d.sh
 
    To test/look at results:
    - In matlab:
@@ -66,7 +85,7 @@ Grid setup:
 
    Compile/run main code:
    - Go to fortran/Build
-   * compile with "make py"
+      * compile with "make py"
    - Go to fortran/run
      * In ipython: run ./run_WIM2d.py
           - This also has some plotting to look at results
