@@ -24,15 +24,14 @@ Versions:
 
          - These packages probably aren't needed, but can be used with nansat,
            and Sentinel1ice, python tools from NERSC for working with satellite images
-         * sudo port install py27-matplotlib-basemap
-         * sudo port install py27-gdal
-         * sudo port install py27-mahotas
-         * sudo port install py27-scikit-image
-         * sudo port install py27-scikit-learn
-         * sudo port install py27-pil
+               * sudo port install py27-matplotlib-basemap
+               * sudo port install py27-gdal
+               * sudo port install py27-mahotas
+               * sudo port install py27-scikit-image
+               * sudo port install py27-scikit-learn
+               * sudo port install py27-pil
 
-        - NB Make sure macports (i)python is used (check with "which python"):
-          in /opt/local/bin, do
+         - NB Make sure macports (i)python is used (check with "which python"): in /opt/local/bin, do
             * sudo ln -s python2.7  python
             * sudo ln -s ipython2.7 ipython
 
