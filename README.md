@@ -15,14 +15,15 @@ Versions:
 - 1. matlab
 - 2. fortran
 - 3. ipython interface for fortran code
-     - Mac OSX: install with macports (needs xcode with command line tools installed):
-         * sudo port install py27-ipython
-         * sudo port install py27-numpy
-         * sudo port install py27-scipy
-         * sudo port install py27-matplotlib
+     - Mac OSX:
+         - Install these python packages with macports (needs xcode with command line tools installed):
+            * sudo port install py27-ipython
+            * sudo port install py27-numpy
+            * sudo port install py27-scipy
+            * sudo port install py27-matplotlib
 
-         These probably aren't needed, but can be used with nansat,
-         and Sentinel1ice, python tools from NERSC for working with satellite images
+         - These packages probably aren't needed, but can be used with nansat,
+           and Sentinel1ice, python tools from NERSC for working with satellite images
          * sudo port install py27-matplotlib-basemap
          * sudo port install py27-gdal
          * sudo port install py27-mahotas
