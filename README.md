@@ -16,24 +16,24 @@ Versions:
 - 2. fortran
 - 3. ipython interface for fortran code
      - Mac OSX: install with macports (needs xcode with command line tools installed):
-         *sudo port install py27-ipython
-         *sudo port install py27-numpy
-         *sudo port install py27-scipy
-         *sudo port install py27-matplotlib
+         * sudo port install py27-ipython
+         * sudo port install py27-numpy
+         * sudo port install py27-scipy
+         * sudo port install py27-matplotlib
 
          These probably aren't needed, but can be used with nansat,
          and Sentinel1ice, python tools from NERSC for working with satellite images
-         *sudo port install py27-matplotlib-basemap
-         *sudo port install py27-gdal
-         *sudo port install py27-mahotas
-         *sudo port install py27-scikit-image
-         *sudo port install py27-scikit-learn
-         *sudo port install py27-pil
+         * sudo port install py27-matplotlib-basemap
+         * sudo port install py27-gdal
+         * sudo port install py27-mahotas
+         * sudo port install py27-scikit-image
+         * sudo port install py27-scikit-learn
+         * sudo port install py27-pil
 
-        - NB Make sure macports (i)python is used (check with "which python")
-            * in /opt/local/bin, do
-               *sudo ln -s python2.7  python
-               *sudo ln -s ipython2.7 ipython
+        - NB Make sure macports (i)python is used (check with "which python"):
+          in /opt/local/bin, do
+            * sudo ln -s python2.7  python
+            * sudo ln -s ipython2.7 ipython
 
 - 4. matlab interface (mex) for fortran code
      - tested with OSX 10.8, matlab 2013a
@@ -51,8 +51,8 @@ SETUP:
 
 2. Grid setup:
    - Go to fortran/grid_setup
-      *compile with make or make py
-      *do "./grid_setup.sh" or "python grid_setup.py" respectively
+      * compile with make or make py
+      * do "./grid_setup.sh" or "python grid_setup.py" respectively
          - or go into ipython and do "run grid_setup.py"
    - ipython script is easier to change (no need to recompile after changing grid)
       and makes a test plot automatically (plots the land mask)
