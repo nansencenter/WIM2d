@@ -83,11 +83,11 @@ $(PROG_F): 		$(OBJS)
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/*	$(MDIR)/*
+	rm $(ODIR)/*.o	$(MDIR)/*.mod
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY)	$(ODIR)/*	$(MDIR)/*
+	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY)	$(ODIR)/*.o	$(MDIR)/*.mod
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
