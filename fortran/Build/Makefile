@@ -143,11 +143,11 @@ $(MEX2):		grid_info.h $(OBJ_MAIN)
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/* $(MDIR)/*
+	rm $(ODIR)/*.o $(MDIR)/*.mod
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(ODIR)/* $(MDIR)/* \
+	rm $(ODIR)/*.o $(MDIR)/*.mod
 	   $(bin)/$(TARGET_F) \
 	   $(bin)/$(TARGET_PY).so \
 	   $(bin)/$(TARGET_MEX1) \
