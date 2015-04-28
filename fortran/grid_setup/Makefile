@@ -87,7 +87,7 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY)	$(ODIR)/*.o	$(MDIR)/*.mod
+	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY).so	$(ODIR)/*.o	$(MDIR)/*.mod
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
