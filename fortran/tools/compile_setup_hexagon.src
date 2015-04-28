@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# set compilation environments for hexagon
+# - run this script then type make or make py
+
+if [ $PE_ENV != "GNU" ]
+then
+   echo module unload PrgEnv-cray PrgEnv-pgi PrgEnv-intel
+   module unload PrgEnv-cray PrgEnv-pgi PrgEnv-intel notur
+   echo module load PrgEnv-gnu
+   module load PrgEnv-gnu
+fi
+# 
+# echo module unload PrgEnv-pgi/5.2.40
+# module unload PrgEnv-pgi/5.2.40
+# 
+# echo module unload notur/0.1
+# module unload notur/0.1
+# 
+# echo module load PrgEnv-gnu
+# module load PrgEnv-gnu
+
+echo module unload matlab && module load matlab/2012a
+module unload matlab && module load matlab/2012a
+
+module list
