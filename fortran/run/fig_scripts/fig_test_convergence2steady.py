@@ -23,7 +23,7 @@ import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 # steady state results to compare to:
-import fns_boltzmann_steady   as Fbs
+import fns_boltzmann_steady as Fbs
 
 RUN_OPT  = 2 # rerun then plot
 # RUN_OPT  = 3 # plot saved results
@@ -73,13 +73,15 @@ if 1:
    # change integer parameters:
    SCATMOD     = 1
    ADV_DIM     = 2
+   ADV_OPT     = 2
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
    DO_BREAKING = 0 # no breaking - testing convergence of Hs to steady-state
-   int_prams   = np.array([SCATMOD,ADV_DIM,
+   STEADY      = 1
+   int_prams   = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                            CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                           DO_BREAKING])
+                           DO_BREAKING,STEADY])
 
 if 1:
    # change real parameters:
@@ -180,23 +182,52 @@ plt.close()
 fig.clf()
 
 if 1:
-   # print to dat-file
+   #####################################################
+   # print  time-dep results to dat-file
    dfil  = figdir+'/test_steady1.dat'
-   fid   = open(dfil,'w')
    blk   = 4*' '
+   fid   = open(dfil,'w')
+
+   # header:
+   lin   = []
+   lin.append('# Time-dependant results (end of simulation)\n')
+   lin.append('# Time (h): '+str(duration_hours)+'\n')
+   lin.append('# x (m), Hs (m)'+'\n')
+   lin.append('#####################################################\n')
+   lin.append('\n')
+
+   for loop_h in range(len(lin)):
+      fid.write(lin[loop_h])
+   
+   # results:
    for loop_x in range(len(xx)):
       lin   =           ('%f' % (1.e3*xx[loop_x])  )
       lin   = lin+blk + ('%f' % (Hs_n[loop_x])     )
       fid.write(lin+'\n')
    fid.close()
    print('saving to '+dfil+'...')
-   ##
+   #####################################################
+
+   #####################################################
+   # print  steady-state results to dat-file
    dfil  = figdir+'/test_steady2.dat'
    fid   = open(dfil,'w')
-   blk   = 4*' '
+
+   # header:
+   lin   = []
+   lin.append('# Steady-state results\n')
+   lin.append('# x (m), Hs (m)'+'\n')
+   lin.append('#####################################################\n')
+   lin.append('\n')
+
+   for loop_h in range(len(lin)):
+      fid.write(lin[loop_h])
+
+   # results:
    for loop_x in range(len(x_ice)):
       lin   =           ('%f' % (xe+x_ice[loop_x])  )
       lin   = lin+blk + ('%f' % (Hs_steady[loop_x])     )
       fid.write(lin+'\n')
    fid.close()
    print('saving to '+dfil+'...')
+   #####################################################
