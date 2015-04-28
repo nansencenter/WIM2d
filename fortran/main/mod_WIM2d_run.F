@@ -11,7 +11,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-      integer  :: SCATMOD,ADV_DIM
+      integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
       integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
       integer  :: DO_BREAKING !can turn off breaking for testing of waves
 
@@ -79,7 +79,10 @@
 
       SCATMOD     = 1
       ADV_DIM     = 2
+      ADV_OPT     = 2
+         !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
       DO_BREAKING = 1
+      STEADY      = 1
 
       DO_CHECK_PROG  = 1
       DO_CHECK_INIT  = 1
@@ -120,7 +123,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init()
+      call wim_init(STEADY)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -216,10 +219,10 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-      integer,dimension(6),intent(in)     :: int_prams
-      ! SCATMOD,ADV_DIM,
+      integer,dimension(8),intent(in)     :: int_prams
+      ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! DO_BREAKING
+      ! DO_BREAKING,STEADY
 
       real,dimension(3),intent(in)        :: real_prams  !! young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
@@ -251,13 +254,17 @@
                               ! ie each 'y' row can be a different experiment
                               !    if we use this option
                               !    - in practice we set speed in 'y' dirn to 0.
+      ADV_OPT  = int_prams(3) ! 0, not periodic;
+                              ! 1, periodic in both x,y;
+                              ! 2, periodic in y only;
 
       !! Inputs to determine if results
       !! should be dumped to binaries or not
-      DO_CHECK_FINAL = int_prams(3)
-      DO_CHECK_PROG  = int_prams(4)
-      DO_CHECK_INIT  = int_prams(5)
-      DO_BREAKING    = int_prams(6)
+      DO_CHECK_FINAL = int_prams(4)
+      DO_CHECK_PROG  = int_prams(5)
+      DO_CHECK_INIT  = int_prams(6)
+      DO_BREAKING    = int_prams(7)
+      STEADY         = int_prams(8)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
@@ -337,7 +344,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init()
+      call wim_init(STEADY)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -440,7 +447,8 @@
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SCATMOD,ADV_DIM,DO_BREAKING)
+         call wim_step(SCATMOD,ADV_DIM,ADV_OPT                          &
+     &                 ,DO_BREAKING,STEADY)
 
       end do!! n - finish time stepping
 
@@ -629,8 +637,10 @@
       write(3,'(a)'),'Main parameters:'
       write(3,'(a,i2.2)'),'SCATMOD:                          ' ,SCATMOD
       write(3,'(a,i2.2)'),'ADV_DIM:                          ' ,ADV_DIM
+      write(3,'(a,i2.2)'),'ADV_OPT:                          ' ,ADV_OPT
       write(3,'(a,i2.2)'),'DO_BREAKING:                      '          &
      &   ,DO_BREAKING
+      write(3,'(a,i2.2)'),'STEADY:                           ' ,STEADY
       write(3,'(a)'),'*************************************************'
 
       write(3,'(a)'),' '

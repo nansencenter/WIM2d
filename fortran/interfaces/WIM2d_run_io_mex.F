@@ -50,7 +50,7 @@ C
       mwsize m,n,size
       mwsize m2,n2,size2
       mwsize m3,n3,size3
-      integer,parameter :: ni       = 6   ! length of int_prams
+      integer,parameter :: ni       = 8   ! length of int_prams
       integer,parameter :: nr       = 3   ! length of real_prams
       integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 

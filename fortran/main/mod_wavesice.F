@@ -15,8 +15,8 @@
       !!variables
 
       !!TODO: make these inputs
-      integer,parameter :: STEADY      = 0
-      integer,parameter :: ADV_OPT     = 0
+      !integer,parameter :: STEADY      = 0
+      !integer,parameter :: ADV_OPT     = 0
          !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
 
       integer,parameter :: REF_Hs_ICE  = 0
@@ -40,7 +40,7 @@
 
       contains
 
-      subroutine wim_init()
+      subroutine wim_init(STEADY)
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
@@ -53,7 +53,7 @@
 
       implicit none
 
-
+      integer, intent(in) :: STEADY
       real     :: PI,tmp
       real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
@@ -200,7 +200,8 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(SCATMOD,ADV_DIM,DO_BREAKING)
+      subroutine wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
+     &                     ,DO_BREAKING,STEADY)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -211,7 +212,8 @@
 
       implicit none
 
-      integer,intent(in)   :: SCATMOD,ADV_DIM,DO_BREAKING
+      integer,intent(in)   :: SCATMOD,ADV_DIM,ADV_OPT                   &
+     &                        ,DO_BREAKING,STEADY
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
@@ -254,17 +256,19 @@
       !! top-up waves (with directions that correspond to incident
       !! waves) in appropriate area if STEADY==1
       !! (steady-state solution);
-      do w=1,nw
-      do wth=1,n_wavdir
-         adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
-         if (cos(adv_dir).ge.0.0) then
-            where (WAVE_MASK2.gt.0.0)
-               !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
-                sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
-            end where
-         end if
-      end do
-      end do
+      if (STEADY.eq.1) then
+         do w=1,nw
+         do wth=1,n_wavdir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+      end if
 !     !!test incident waves
 !     i        = 2
 !     j        = 25
@@ -409,7 +413,11 @@
          end where
       end if
 
-      !if ((STEADY.eq.0).and.(DO_BREAKING.eq.0)) then
+      if ((STEADY.eq.0).and.(DO_BREAKING.eq.0)) then
+         !! STEADY==0: not steady-state so E should be conserved until
+         !! it starts to exit the domain?
+         !! TODO Try with periodicity?
+
          !! test conservation of total energy 
          E_tot = sum(Hs*Hs)
          print*,'********************************************'
@@ -417,7 +425,7 @@
          !print*,'alp nd/d',maxval(atten_nond),maxval(atten_dim)
          print*,'c1d,dave,dmax',c1d,Dave,maxval(dfloe)
          print*,'********************************************'
-      !end if
+      end if
 
 
       !! FINALLY DO FLOE BREAKING;

@@ -59,15 +59,17 @@ if ~exist('int_prams','var')
    %% integer parameters
    SCATMOD     = 1;
    ADV_DIM     = 2;
+   ADV_OPT     = 2;
    CHECK_FINAL = 1;
    CHECK_PROG  = 0;
    CHECK_INIT  = 1;
    DO_BREAKING = 1;
+   STEADY      = 1;
    %%
    disp('run_WIM2d_io_mex: using default for int_prams:')
-   int_prams   = [SCATMOD,ADV_DIM,...
+   int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
                   CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
-                  DO_BREAKING]
+                  DO_BREAKING,STEADY]
 end
 
 if ~exist('real_prams','var')
