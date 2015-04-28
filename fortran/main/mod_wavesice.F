@@ -413,6 +413,14 @@
          end where
       end if
 
+      if (.false.) then
+         !!test: print atten coeff
+         print*,'********************************************'
+         print*,'Max atten coeff (per metre):'
+         print*,maxval(atten_dim)
+         print*,'********************************************'
+      end if
+
       if ((STEADY.eq.0).and.(DO_BREAKING.eq.0)) then
          !! STEADY==0: not steady-state so E should be conserved until
          !! it starts to exit the domain?
