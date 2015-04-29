@@ -15,10 +15,14 @@ fortran/run/test/out/*
 fortran/run/fig_scripts/Boltzmann_kernel/out/*
 fortran/run/fig_scripts/datfiles/*
 fortran/run/test/out_io/*
+#
+fortran/bin/*
 fortran/numerics/test_advection/out/*
+#
+fortran/grid_setup/infile_grid.txt
 fortran/grid_setup/test/out/*
 fortran/grid_setup/test/out_py/*
-fortran/bin/*
+#
 !fortran/macbin/*
 fortran/header_files/grid_info.h
 fortran/header_files/wave_info.h
