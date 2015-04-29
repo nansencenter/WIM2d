@@ -5,7 +5,8 @@ import shutil
 import struct
 # import matplotlib.rcsetup as rc
 
-dd   = os.path.abspath("../../fortran")
+wim2d_path=os.getenv('WIM2D_PATH')
+dd   = os.path.abspath(wim2d_path+"/fortran")
 sys.path.append(dd+"/bin")
 sys.path.append(dd+"/py_funs")
 
@@ -21,7 +22,7 @@ if os.path.exists(ifil):
    indir    = lines[0].strip('\n')
    outdir   = lines[1].strip('\n')
 else:
-   indir    = '../../fortran/run/inputs'
+   indir    = wim2d_path+'/fortran/run/inputs'
    outdir   = 'test_outputs/out_io'
 
 grid_prams  = Fdat.fn_check_grid(indir)
