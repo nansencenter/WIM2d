@@ -27,8 +27,8 @@ HDIR	:=	$(src)/header_files
 
 # # optimise code
 # FCFLAGS=-O
-# check for errors
-FCFLAGS=-g
+# check for errors; fPIC is to compile in linux (no effect in mac osx)
+FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
 IFLAGS=-I$(MDIR) -I$(HDIR)
@@ -83,11 +83,11 @@ $(PROG_F): 		$(OBJS)
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/*	$(MDIR)/*
+	rm $(ODIR)/*.o	$(MDIR)/*.mod
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY)	$(ODIR)/*	$(MDIR)/*
+	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY).so	$(ODIR)/*.o	$(MDIR)/*.mod
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

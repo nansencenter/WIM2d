@@ -40,6 +40,7 @@ ice_prams   = fn_fill_iceprams(ice_prams);
 %%               h: 2
 %%           young: 2.000000000000000e+09
 %%          bc_opt: 0
+%%         visc_rp: 13
 %%          rhowtr: 1.025000000000000e+03
 %%          rhoice: 9.225000000000000e+02
 %%               g: 9.810000000000000
@@ -87,6 +88,7 @@ elseif OPT==1
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
+   Dmax0    = 300;
 
 elseif OPT==2
    %%TEST_1d
@@ -95,13 +97,24 @@ elseif OPT==2
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
+   Dmax0    = 300;
 
+elseif OPT==3
+   %%TEST_1d
+   %% ice strip in middle
+   xm       = max(X(:));
+   %ICE_MASK = abs(X)<.3*xm;
+   ICE_MASK = (X>-220e3)&(X<-120e3);
+   WTR_MASK = (1-ICE_MASK).*(1-LANDMASK);%%0 on land & ice
+   jW       = find(WTR_MASK==1);
+   jI       = find(ICE_MASK==1);
+   Dmax0    = 100;
 end
 
 cice(jI) = ice_prams.c;%% ice
 cice(jL) = NaN;%% land
 %%
-Dmax(jI) = 250;
+Dmax(jI) = Dmax0;
 Dmax(jL) = NaN;
 %%
 hice(jI) = ice_prams.h;

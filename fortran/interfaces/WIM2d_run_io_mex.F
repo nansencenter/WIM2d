@@ -5,7 +5,7 @@ C
 C     CALL:
 C     [Dmax,Hs,Tp,taux,tauy]=...
 C        WIM2d_run_io_mex(c,h,Dmax,Hs,Tp,mwd,int_prams);
-C        int_prams   = [SOLVER,ADV_DIM]
+C        int_prams   = [SCATMOD,ADV_DIM]
 C     
 #endif
 C     
@@ -50,8 +50,8 @@ C
       mwsize m,n,size
       mwsize m2,n2,size2
       mwsize m3,n3,size3
-      integer,parameter :: ni       = 5
-      integer,parameter :: nr       = 3
+      integer,parameter :: ni       = 8   ! length of int_prams
+      integer,parameter :: nr       = 3   ! length of real_prams
       integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 
       !!inputs from matlab - need to be double precision

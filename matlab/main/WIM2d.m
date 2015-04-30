@@ -3,6 +3,7 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 % clear;
 
 %DO_SAVE     = 0;
+<<<<<<< HEAD
 DO_PLOT     = 1;  %% change this to 0
                   %% if graphics aren't supported;
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
@@ -14,10 +15,69 @@ SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
 OPT      = 1;%%ice-water-land configuration;
 PLOT_OPT = 1;%%plot option
+=======
+infile         = 'infile.txt';
+infile_version = 2;%%latest infile version
 
-CHK_ATTEN   = 0;%%check by running with old attenuation
+if ~exist(infile)
+   disp('********************************************************')
+   disp([infile,' not present'])
+   disp('using default options:')
+   disp('********************************************************')
+   disp(' ')
 
-SV_FIG   = 1;
+   CFL      = .7;    %%CFL number
+   nw       = 1;     %% number of frequencies
+   ndir     = 2^5;   %% number of directions
+   DIR_INIT = 1;     %% incident wave spectrum (spreading/delta...)
+
+   duration_hours = 24;%%length of time to run simulation for
+
+   %%use default options
+   USE_ICE_VEL = 0;  %% if 0, approx ice group vel by water group vel;  
+   DO_ATTEN    = 1;  %% if 0, just advect waves
+                     %%  without attenuation;
+   DO_BREAKING = 0;  %% if 0, turn off breaking for testing
+   STEADY      = 1;  %% Steady-state solution: top-up waves inside wave mask
+   SCATMOD     = 1;  %% 0: old way; 1: scatter E isotropically
+   REF_Hs_ICE  = 0;  %% 1: in ice, give Hs for displacement of the ice;
+                     %% 0: give Hs for displacement of the surrounding water
+
+   OPT         = 3;%%ice-water-land configuration;
+   DIAG1d      = 1;
+   DIAG1d_OPT  = 1;
+
+   CHK_ATTEN   = 0;%%check by running with old attenuation
+else
+   disp('********************************************************')
+   disp('reading options from infile:')
+   disp(infile)
+   disp('********************************************************')
+   disp(' ')
+   fid   = fopen(infile);
+   lin   = fgets(fid);%%1st line is header
+
+   %%check infile version:
+   infile_version_   = read_next(fid);
+   if infile_version_~=infile_version
+      error(['Infile version number is: ',num2str(infile_version_),' - should be: ',num2str(infile_version)]);
+   end
+
+   %%read in rest of variables:
+   while ~feof(fid)
+      [x,name] = read_next(fid);
+      eval([name,' = x'])
+   end
+   fclose(fid);
+end
+>>>>>>> 81fb2fae1a3d22d5b917472c9302242c9427ed4e
+
+%%other options
+DO_PLOT     = 1;%% change this to 0
+                %% if graphics aren't supported;
+PLOT_OPT    = 2;%%plot option
+SV_FIG      = 1;
+
 %if DO_SAVE
 %   filename=['wim2d_out',num2str(Tm),...
 %            's_',num2str(mwd_dim),...
@@ -29,7 +89,6 @@ SV_FIG   = 1;
 %end
 
 %%important settings
-CFL   = .7;
 itest = 24;
 jtest = 1;
 
@@ -67,7 +126,7 @@ if HAVE_WAVES
       HAVE_WAVES  = 0;
    end
 end
-HAVE3       = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
+HAVE3 = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
 if (HAVE3>0)&(HAVE3<3)
    disp(' ');
    disp('*********************************************************************');
@@ -96,10 +155,10 @@ if HAVE_GRID==0
 
    if 1
       nx = 150;
-      ny = 50;
+      ny = 10;
    else
-      nx = 149;
-      ny = 151;
+      nx = 150;
+      ny = 50;
    end
    dx = 4000; % m
    dy = 4000; % m
@@ -132,6 +191,7 @@ Y        = grid_prams.Y;
 %% Ice/water;
 if HAVE_ICE==0
    h           = 2;
+<<<<<<< HEAD
    c           = 0.75;
    bc_opt      = 0;%%breaking condition (0=beam;1=Marchenko)
    young_opt   = 0;%%young's modulus option
@@ -141,6 +201,26 @@ if HAVE_ICE==0
                      'bc_opt'    ,bc_opt,...
                      'young_opt' ,young_opt,...
                       'visc_rp'   ,visc_rp);
+=======
+   c           = 0.7;
+   visc_rp     = 0;%% Robinson-Palmer damping parameter [~13Pa/(m/s)]
+   bc_opt      = 0;%% breaking condition (0=beam;1=Marchenko)
+   ice_prams   = struct('c'         ,c,...
+                        'h'         ,h,...
+                        'visc_rp'   ,visc_rp,...
+                        'bc_opt'    ,bc_opt)
+   if 1%%set Young's directly here TODO infile?
+      ice_prams.young      = 5.49e9;%%Young's modulus [Pa]
+      ice_prams.young_opt  = NaN;%%not used
+   else
+      %%Option for selecting Young's modulus
+      %% - only used if Young's modulus not given
+      %% 0: 2e9 [Marchenko estimate]
+      %% 2: Vernon's estimate from brine volume fraction (vbf)
+      %% 1: same as above but with vbf=.1 -> young = 5.49e9 Pa
+      ice_prams.young_opt  = 0;
+   end
+>>>>>>> 81fb2fae1a3d22d5b917472c9302242c9427ed4e
    %%
    [ice_fields,ice_prams]  = iceinit(ice_prams,grid_prams,OPT);
    %% ice_fields  = structure:
@@ -155,6 +235,7 @@ if HAVE_ICE==0
    %%               h: 2
    %%           young: 2.000000000000000e+09
    %%          bc_opt: 0
+   %%         visc_rp: 13
    %%          rhowtr: 1.025000000000000e+03
    %%          rhoice: 9.225000000000000e+02
    %%               g: 9.810000000000000
@@ -201,19 +282,25 @@ end
 %%waves
 if HAVE_WAVES==0
    if ~exist('wave_prams','var');
-      Hs0         = 2;
+      Hs0         = 3;
       Tp0         = 12;
       %Tp0         = 6;
       wave_prams  = struct('Hs',Hs0,...
                            'Tp',Tp0);
    end
    wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
+   %%         Hs: [150x10 double]
+   %%         Tp: [150x10 double]
+   %%        mwd: [150x10 double]
+   %%  WAVE_MASK: [150x10 logical]
    WAVE_MASK   = wave_fields.WAVE_MASK;
-   wave_stuff  = set_incident_waves(grid_prams,wave_fields);
+   %%
+   inc_options = struct('nw',nw,'ndir',ndir,'DIR_INIT',DIR_INIT);
+   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options);
 end
 
 nw       = wave_stuff.nfreq;     %% number of frequencies
-om_vec       = 2*pi*wave_stuff.freq; %% radial freq
+om_vec   = 2*pi*wave_stuff.freq; %% radial freq
 ndir     = wave_stuff.ndir;      %% number of directions
 wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
@@ -252,7 +339,7 @@ Info  = { '------------------------------------';
          ['CFL        = ' num2str(CFL)];
          ['nfreq      = ' num2str(nw)];
          ['ndir       = ' num2str(ndir)];
-         ['SOLVER     = ' num2str(SOLVER)];
+         ['SCATMOD    = ' num2str(SCATMOD)];
          '------------------------------------';
          ' '};
 disp(strvcat(Info));
@@ -345,11 +432,17 @@ dt    = CFL*dx/max(ag_eff(:));
 if 0
    nt    = 50;
    L     = nt*dt*amax
-else
+elseif 0
    L     = max(X(:))-min(X(:));
    amin  = min(ag_eff(:));
    uc    = amin+.7*(amax-amin);
    nt    = round( L/uc/dt );
+else
+   L     = max(X(:))-min(X(:));
+   amin  = min(ag_eff(:));
+   uc    = amin+.7*(amax-amin);
+   %%
+   nt             = floor(duration_hours*3600/dt);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -367,7 +460,7 @@ Info  = { '------------------------------------';
          ['Hs                 = '  num2str(wave_prams.Hs) ' m'];
          ['nfreq              = '  num2str(nw)];
          ['ndir               = '  num2str(ndir)];
-         ['SOLVER             = '  num2str(SOLVER)];
+         ['SCATMOD            = '  num2str(SCATMOD)];
          [' '];
          ['CFL                = '  num2str(CFL)];
          ['dt                 = '  num2str(dt,'%1.1f')];
@@ -452,8 +545,56 @@ if DO_PLOT
    end
    %%
    clear s1;
-   %X,Y
-   %GEN_pause
+   %%
+   if DIAG1d==1
+      %% initial
+      figure(4),clf;
+      fn_fullscreen;
+      cols     = {'-k','-m','-c','-r','-g','-b'};
+      loop_col = 1;
+      %%
+      subplot(4,1,4);
+      labs1d_4 = {'\itx, \rmkm','c'};
+      fn_plot1d(X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,cols{loop_col});
+      %%
+      subplot(4,1,1);
+      labs1d_1 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
+      %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+      fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+      hold on;
+      %%
+      [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+      %Hp                = 4*sqrt(Ep(:,1));
+      %Hm                = 4*sqrt(Em(:,1));
+      Hp                = 4*sqrt(mean(Ep,2));
+      Hm                = 4*sqrt(mean(Em,2));
+      if DIAG1d_OPT==0
+         %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+      elseif DIAG1d_OPT==1
+         %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+         Hs2   = 4*sqrt(mean(Et1,2));
+      elseif DIAG1d_OPT==2
+         %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         Hs2   = 4*sqrt(mean(Et2,2));
+      end
+      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+      hold on;
+      %%
+      subplot(4,1,2);
+      labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
+      fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+      hold on;
+      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
+      hold on;
+      %%
+      subplot(4,1,3);
+      labs1d_3 = {'\itx, \rmkm','{\itH}_{\rm s}^-, m'};
+      fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+      hold on;
+      %%
+      loop_col = loop_col+1;
+   end
    pause(0.1);
 end
 
@@ -475,6 +616,8 @@ for n = 2:nt
    %% spectral moments;
    mom0  = zeros(nx,ny);
    mom2  = zeros(nx,ny);
+   mom0w = zeros(nx,ny);
+   mom2w = zeros(nx,ny);
 
    %% wave stresses;
    tau_x = zeros(nx,ny);
@@ -552,20 +695,20 @@ for n = 2:nt
       s1.ICE_MASK    = ice_fields.ICE_MASK;
 
       if ndir==1
-         if SOLVER~=0
-            disp('warning: changing SOLVER option as not enough directions');
+         if SCATMOD~=0
+            disp('warning: changing SCATMOD option as not enough directions');
             disp(['(ndir = ',num2str(ndir)]);
          end
-         SOLVER   = 0;
+         SCATMOD  = 0;
       end
 
-      if SOLVER==0
+      if SCATMOD==0
          %% Simple attenuation scheme - doesn't conserve scattered energy
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
             adv_atten_simple(grid_prams,ice_prams,s1,dt);
          clear s1 S_out;
-      elseif SOLVER==1
-         %% same as SOLVER==0, but scattered energy
+      elseif SCATMOD==1
+         %% same as SCATMOD==0, but scattered energy
          %% is distributed isotropically
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
             adv_atten_isotropic(grid_prams,ice_prams,s1,dt);
@@ -595,7 +738,11 @@ for n = 2:nt
          %% SPECTRAL MOMENTS;
          %%take abs as small errors can make S_freq negative
          mom0(i,j)   = mom0(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2 );
-         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*om_vec(jw)^2*S_freq(i,j)*F^2 );
+         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2*om_vec(jw)^2 );
+
+         %% reference values in water (F=1)
+         mom0w(i,j)  = mom0w(i,j)+abs( wt_om(jw)*S_freq(i,j) );
+         mom2w(i,j)  = mom2w(i,j)+abs( wt_om(jw)*S_freq(i,j)*om_vec(jw)^2 );
 
          if ICE_MASK(i,j)==1
             %% VARIANCE OF STRAIN;
@@ -611,10 +758,19 @@ for n = 2:nt
    %mom0,mom2,wlng_ice,return
 
    %%calc Hs, Tw (into wave_fields.Tp)
-   wave_fields.Hs       = 4*sqrt(mom0);
-   wave_fields.Tp       = 0*X;
-   jnz                  = find(mom2>0);
-   wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+   if REF_Hs_ICE==1
+      %% diagnostic variables Hs/Tp related to ice displacment in ice-covered areas
+      wave_fields.Hs       = 4*sqrt(mom0);%%diagnostic variable - for waves in water
+      wave_fields.Tp       = 0*X;
+      jnz                  = find(mom2>0);
+      wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+   else
+      %% diagnostic variables Hs/Tp related to water displacment in ice-covered areas
+      wave_fields.Hs       = 4*sqrt(mom0w);%%diagnostic variable - for waves in water
+      wave_fields.Tp       = 0*X;
+      jnz                  = find(mom2w>0);
+      wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
+   end
 
    %% wave stresses
    ice_fields.tau_x  = tau_x;
@@ -738,8 +894,50 @@ for n = 2:nt
             hold off;
          end
 
+         if DIAG1d==1
+            %% during run
+            figure(4);
+            subplot(4,1,1);
+            hold on;
+            %%
+            %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+            fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+            hold on;
+            %%
+            [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+            %Hp                = 4*sqrt(Ep(:,1));
+            %Hm                = 4*sqrt(Em(:,1));
+            Hp                = 4*sqrt(mean(Ep,2));
+            Hm                = 4*sqrt(mean(Em,2));
+            if DIAG1d_OPT==0
+               %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+               Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+            elseif DIAG1d_OPT==1
+               %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+               Hs2   = 4*sqrt(mean(Et1,2));
+            elseif DIAG1d_OPT==2
+               %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+               Hs2   = 4*sqrt(mean(Et2,2));
+            end
+            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+            hold on;
+            %%
+            subplot(4,1,2);
+            fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+            hold on;
+            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
+            hold on;
+            %%
+            subplot(4,1,3);
+            fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+            hold on;
+            %%
+            loop_col = loop_col+1;
+            if loop_col>length(cols)
+               loop_col = 1;
+            end
+         end
          clear s1;
-         %GEN_pause;
          pause(0.1);
       end
       %%
@@ -785,22 +983,114 @@ if DO_PLOT%%check exponential attenuation
    end
    %%
    figure(3),clf;
-   plot(X(:,1)/1e3,wave_fields.Hs(:,1),'-k');
+   fn_fullscreen;
+   xx = X(:,1);
+   if 1
+      subplot(2,1,2)
+      yy = Y(1,:);
+      xp = -250e3;
+      ix = find(abs(xx-xp)==min(abs(xx-xp)));
+      for loop_ix=1%:length(ix)
+         plot(yy/1e3,wave_fields.Hs(ix(loop_ix),:));
+      end
+      GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+      %%
+      subplot(2,1,1)
+   end
+   plot(xx/1e3,wave_fields.Hs(:,1),'-k');
    set(gca,'yscale','log');
    GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   %%
+   if DIAG1d==1
+      %% final
+      figure(5);
+      fn_fullscreen;
+      clf;
+
+      COMP_FORTRAN   = 1;%%compare to fortran results
+      if COMP_FORTRAN
+         frun  = '../../fortran/run/';
+
+         %% fortran
+         dfil  = [frun,'fig_scripts/figs/TC2S/test_steady1.dat'];
+         disp(['opening ',dfil,'']);
+         %%
+         fid      = fopen(dfil,'r');
+         columns  = textscan(fid,'%f %f %f');
+         xx_f     = columns{1};
+         Hs_f     = columns{2};
+         fclose(fid);
+         %%
+         plot(xx_f/1e3,Hs_f,'b','linewidth',2);
+         hold on;
+
+         figure(3);
+         ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
+         subplot(2,1,2)
+         hold on;
+         for loop_ix=1:length(ix)
+            plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
+         end
+
+         %%steady soln
+         figure(5);
+         dfil  = [frun,'fig_scripts/figs/TC2S/test_steady2.dat'];
+         disp(['opening ',dfil,'']);
+         %%
+         fid      = fopen(dfil,'r');
+         columns  = textscan(fid,'%f %f %f');
+         xx_f2    = columns{1};
+         Hs_f2    = columns{2};
+         fclose(fid);
+         %%
+         plot(xx_f2/1e3,Hs_f2,'--g','linewidth',2);
+         hold on;
+      end
+
+      %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
+      fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{1});
+      hold on;
+      %%
+      [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+      %Hp                = 4*sqrt(Ep(:,1));
+      %Hm                = 4*sqrt(Em(:,1));
+      Hp                = 4*sqrt(mean(Ep,2));
+      Hm                = 4*sqrt(mean(Em,2));
+      if DIAG1d_OPT==0
+         %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+      elseif DIAG1d_OPT==1
+         %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+         Hs2   = 4*sqrt(mean(Et1,2));
+      elseif DIAG1d_OPT==2
+         %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         Hs2   = 4*sqrt(mean(Et2,2));
+      end
+      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
+      hold on;
+      %%
+      fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
+      hold on;
+      fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
+      if COMP_FORTRAN
+         legend('Total (fortran)','Total (steady soln)','Total','Total (Simpson''s)','Fwd','Back');
+      else
+         legend('Total','Total (Simpson''s)','Fwd','Back');
+      end
+   end
 
    if SV_FIG%%save figures
 
       if nw==1
-         if SOLVER==1
+         if SCATMOD==1
             fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
-         elseif SOLVER==0
+         elseif SCATMOD==0
             fig_dir  = 'out/simple_1freq';  %%use this for monochromatic wave
          end
       else
-         if SOLVER==1
+         if SCATMOD==1
             fig_dir  = 'out/isotropic_spec';  %%use this for spectrum
-         elseif SOLVER==0
+         elseif SCATMOD==0
             fig_dir  = 'out/simple_spec';  %%use this for spectrum
          end
       end
@@ -820,10 +1110,12 @@ if DO_PLOT%%check exponential attenuation
       saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
       saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
 
-      %%fix position so that comparison is easier
       figure(3);
-      pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
-      set(gca,'position',pos);
+      if 0
+         %%fix position so that comparison is easier between computers
+         pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
+         set(gca,'position',pos);
+      end
       saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
       saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
    end
@@ -935,3 +1227,22 @@ colorbar;
 GEN_font(gca);
 ttl   = title('{\tau}_{y}, Pa');
 GEN_font(ttl);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function H = fn_plot1d(x,y,labs,col)
+if ~exist('col','var')
+   col   = '-k';
+end
+H  = plot(x,y,col);
+GEN_proc_fig(labs{1},labs{2});
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [x,name]  = read_next(fid)
+
+lin   = fgets(fid);
+lin2  = strsplit(lin);%%split using spaces
+x     = str2num(lin2{1});%%get 1st thing in line
+name  = lin2{3};
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

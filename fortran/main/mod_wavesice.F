@@ -13,10 +13,14 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer           :: SOLVER
-      integer,parameter :: STEADY      = 1
+
+      !!TODO: make these inputs
+      !integer,parameter :: STEADY      = 0
+      !integer,parameter :: ADV_OPT     = 0
+         !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
+
+      integer,parameter :: REF_Hs_ICE  = 0
       integer,parameter :: DO_ATTEN    = 1
-      integer,parameter :: DO_BREAKING = 1
       integer,parameter :: USE_ICE_VEL = 0
       !!
       real,parameter    :: CFL      = 0.7
@@ -36,7 +40,7 @@
 
       contains
 
-      subroutine wim_init()
+      subroutine wim_init(STEADY)
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
@@ -49,7 +53,7 @@
 
       implicit none
 
-
+      integer, intent(in) :: STEADY
       real     :: PI,tmp
       real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
@@ -196,7 +200,8 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(SOLVER,ADV_DIM)
+      subroutine wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
+     &                     ,DO_BREAKING,STEADY)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -207,11 +212,13 @@
 
       implicit none
 
-      integer,intent(in)   :: SOLVER,ADV_DIM
+      integer,intent(in)   :: SCATMOD,ADV_DIM,ADV_OPT                   &
+     &                        ,DO_BREAKING,STEADY
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
-     &   ,taux_om,tauy_om,tmp1
+     &   ,taux_om,tauy_om,tmp1                                          &
+     &   ,mom0w,mom2w
       integer  :: i,j,w
 
       !!to top up waves
@@ -220,6 +227,7 @@
 
 !     !!for testing
 !     real     :: wt,Hs_test1,Hs_test2
+      real  :: E_tot
 
       !!for breaking
       real     :: sig_strain,Pstrain,P_crit,wlng_crest,Dc
@@ -230,10 +238,13 @@
 
       PI    = 4*atan(1.0)
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
+      E_tot = 0.
 
       !! spectral moments;
       mom0  = 0.0
       mom2  = 0.0
+      mom0w = 0.0
+      mom2w = 0.0
 
       !! wave stresses;
       tau_x = 0.0
@@ -245,17 +256,19 @@
       !! top-up waves (with directions that correspond to incident
       !! waves) in appropriate area if STEADY==1
       !! (steady-state solution);
-      do w=1,nw
-      do wth=1,n_wavdir
-         adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
-         if (cos(adv_dir).ge.0.0) then
-            where (WAVE_MASK2.gt.0.0)
-               !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
-                sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
-            end where
-         end if
-      end do
-      end do
+      if (STEADY.eq.1) then
+         do w=1,nw
+         do wth=1,n_wavdir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+      end if
 !     !!test incident waves
 !     i        = 2
 !     j        = 25
@@ -322,32 +335,32 @@
          end do!! i
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!stop if ndir/SOLVER combo not OK
+         !!stop if ndir/SCATMOD combo not OK
          if (ndir==1) then
-            if (SOLVER.ne.0) then
+            if (SCATMOD.ne.0) then
                print*,'warning: not enough directions'
-               print*,'  for SOLVER option:'
+               print*,'  for SCATMOD option:'
                print*,'  ndir   = ',ndir
-               print*,'  SOLVER = ',SOLVER
+               print*,'  SCATMOD = ',SCATMOD
                STOP
             end if
          end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         if (SOLVER.eq.0) then
+         if (SCATMOD.eq.0) then
             !! Simple attenuation scheme - doesn't conserve scattered energy
             call adv_atten_simple(sdf_dir(:,:,:,w)                      &
      &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM)
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
             !print*,'Spectrum at',itest,jtest
             !print*,S_freq(itest,jtest)
             !print*,sdf_dir(itest,jtest,:,w)
-         elseif (SOLVER.eq.1) then
-            !! same as SOLVER==0, but scattered energy
+         elseif (SCATMOD.eq.1) then
+            !! same as SCATMOD==0, but scattered energy
             !! is distributed isotropically
             call adv_atten_isotropic(sdf_dir(:,:,:,w)                   &
      &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM)
+     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
          end if
 
          !! integrate stress densities over frequency
@@ -368,14 +381,16 @@
             !! SPECTRAL MOMENTS;
             !!take abs as small errors can make S_freq negative
             om          = 2*PI*freq_vec(w)
-            tmp         = wt_om(w)*S_freq(i,j)*F**2
-            mom0(i,j)   = mom0(i,j)+abs( tmp )!!variance of displacement
-            tmp         = wt_om(w)*om**2*S_freq(i,j)*F**2
-            mom2(i,j)   = mom2(i,j)+abs( tmp )!!variance of speed
+            tmp         = wt_om(w)*S_freq(i,j)
+            mom0w(i,j)  = mom0w(i,j)+ abs( tmp )    !!variance of displacement (water)
+            mom0(i,j)   = mom0(i,j) + abs( tmp*F**2 )!!variance of displacement (ice)
+            tmp         = wt_om(w)*om**2*S_freq(i,j)
+            mom2w(i,j)  = mom2w(i,j) + abs( tmp )    !!variance of speed (water)
+            mom2(i,j)   = mom2(i,j)  + abs( tmp*F**2 )!!variance of speed (ice)
 
             if (ICE_MASK(i,j).eq.1.0) then
                !! VARIANCE OF STRAIN;
-               tmp   = F*kice**2*iceh(i,j)/2.0    !!strain conversion factor
+               tmp   = F*kice**2*iceh(i,j)/2.0     !!strain conversion factor
                tmp   = wt_om(w)*S_freq(i,j)*tmp**2 !!strain density
                var_strain(i,j)   = var_strain(i,j)+abs( tmp )
             end if
@@ -384,11 +399,42 @@
 
       end do!! end spectral loop;
 
-      Hs = 4*sqrt(mom0)
-      Tp = 0.0
-      where (mom2.gt.0.0)
-         Tp = 2*PI*sqrt(mom0/mom2)
-      end where
+      if (REF_Hs_ICE.eq.1) then
+         Hs = 4*sqrt(mom0)
+         Tp = 0.0
+         where (mom2.gt.0.0)
+            Tp = 2*PI*sqrt(mom0/mom2)
+         end where
+      else
+         Hs = 4*sqrt(mom0w)
+         Tp = 0.0
+         where (mom2w.gt.0.0)
+            Tp = 2*PI*sqrt(mom0w/mom2w)
+         end where
+      end if
+
+      if (.false.) then
+         !!test: print atten coeff
+         print*,'********************************************'
+         print*,'Max atten coeff (per metre):'
+         print*,maxval(atten_dim)
+         print*,'********************************************'
+      end if
+
+      if ((STEADY.eq.0).and.(DO_BREAKING.eq.0)) then
+         !! STEADY==0: not steady-state so E should be conserved until
+         !! it starts to exit the domain?
+         !! TODO Try with periodicity?
+
+         !! test conservation of total energy 
+         E_tot = sum(Hs*Hs)
+         print*,'********************************************'
+         print*,'Total energy [m^2] = ',E_tot
+         !print*,'alp nd/d',maxval(atten_nond),maxval(atten_dim)
+         print*,'c1d,dave,dmax',c1d,Dave,maxval(dfloe)
+         print*,'********************************************'
+      end if
+
 
       !! FINALLY DO FLOE BREAKING;
       do j=1,jj
@@ -407,7 +453,10 @@
                !!this is critical prob if monochromatic wave
    
             !! FLOE BREAKING:
-            BREAK_CRIT  = ( Pstrain.ge.P_crit )!!breaks if larger than this
+            BREAK_CRIT  = ( Pstrain.ge.P_crit ) !! breaks if larger than this
+
+            !! Leave FSD alone if DO_BREAKING==0
+            BREAK_CRIT  = BREAK_CRIT.and.(DO_BREAKING.eq.1)
    
             if (BREAK_CRIT) then
                !! use crest period to work out wavelength
@@ -570,14 +619,14 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(SOLVER,n,OPT,outdir)
+      subroutine check_prog(SCATMOD,n,OPT,outdir)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)            :: SOLVER,n,OPT
+      integer,intent(in)            :: SCATMOD,n,OPT
       character(len=80),intent(in)  :: outdir
       character(len=80)    :: afile,bfile
       character(len=10)    :: stat1,stat2
@@ -610,7 +659,7 @@
       write(2,112)                                                      &
      &  jj,           "      Record length in y direction (elements)"
       write(2,111)                                                      &
-     &  SOLVER,      "       Option number for solver"
+     &  SCATMOD,      "       Option number for scattering model"
       write(2,111)                                                      &
      &  n_wave_freq, "       Number of wave frequencies"
       write(2,112)                                                      &

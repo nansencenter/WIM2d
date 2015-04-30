@@ -5,7 +5,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_simple(Sdir                                  &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
+     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
       use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
@@ -15,8 +15,6 @@
       implicit none
 
       integer,parameter :: ndir     = n_wavdir
-      integer,parameter :: ADV_OPT  = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
      &   ,intent(inout)    :: Sdir
@@ -25,7 +23,7 @@
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
      &   ,intent(in)       :: ag_eff,atten_dim,damp_dim
       real,intent(in)      :: dt
-      integer,intent(in)   :: ADV_DIM
+      integer,intent(in)   :: ADV_DIM,ADV_OPT
       !!
       integer  :: i,j,wth
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
@@ -120,7 +118,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_isotropic(Sdir                               &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
+     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
       use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
@@ -131,8 +129,6 @@
 
       integer,parameter :: ndir     = n_wavdir
       integer,parameter :: ncs      = nint(ndir/2.0)!!number of sine/cosine coeff's
-      integer,parameter :: ADV_OPT  = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
      &   ,intent(inout)    :: Sdir
@@ -141,7 +137,7 @@
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
      &   ,intent(in)       :: ag_eff,atten_dim,damp_dim
       real,intent(in)      :: dt
-      integer,intent(in)   :: ADV_DIM
+      integer,intent(in)   :: ADV_DIM,ADV_OPT
       !!
       integer                 :: i,j,wth,nth,n,jp1,jm1
       integer,dimension(ndir) :: nvec
@@ -157,7 +153,8 @@
       real  :: cg,q_scat,q_abs,q_tot,src_cos_1,src_sin_1
 
       PI = 4.0*atan(1.0)
-      zi = cmplx(1,0)!sqrt(-1)
+      !zi = cmplx(1,0)!sqrt(-1)
+      zi = cmplx(0,1)!sqrt(-1)
 
       !!weights for integral over direction
       wt_theta = 2*PI/(1.0*ndir)

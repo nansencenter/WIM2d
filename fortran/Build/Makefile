@@ -24,13 +24,13 @@ ODIR	:=	objs
 MDIR	:=	mods
 
 # header files for "include" statements
-# NB also need to be in VPATH
+# NB needs to be in VPATH and in -I$(HDIR) in calls to compiler
 HDIR	:=	$(src)/header_files
 
 # # optimise code
 # FCFLAGS=-O
 # check for errors
-FCFLAGS=-g
+FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
 IFLAGS=-I$(MDIR) -I$(HDIR)
@@ -58,7 +58,7 @@ PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
 # mex function to run non-interactive WIM in matlab
-MX_EXT		:=	mexmaci64
+MX_EXT		:=	mex
 MX1		:=	WIM2d_run_mex
 MEX1		:=	$(src)/interfaces/$(MX1).F
 TARGET_MEX1	:=	$(MX1).$(MX_EXT)
@@ -87,34 +87,39 @@ OBJS		:=      \
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
 $(ODIR)/%.o:	%.F
+	mkdir -p $(ODIR) $(MDIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
 # (default)
 exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 	mv $(TARGET_PY).so $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX1) $(bin)
+	mv $(TARGET_MEX1)* $(bin)
 
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX2) $(bin)
+	mv $(TARGET_MEX2)* $(bin)
 
 all:	py exe mex1 mex2
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
 $(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
-$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o
+$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o		wave_info.h
 $(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
 $(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
 				$(ODIR)/mod_advect.o
@@ -138,11 +143,11 @@ $(MEX2):		grid_info.h $(OBJ_MAIN)
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/* $(MDIR)/*
+	rm $(ODIR)/*.o $(MDIR)/*.mod
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(ODIR)/* $(MDIR)/* \
+	rm $(ODIR)/*.o $(MDIR)/*.mod
 	   $(bin)/$(TARGET_F) \
 	   $(bin)/$(TARGET_PY).so \
 	   $(bin)/$(TARGET_MEX1) \

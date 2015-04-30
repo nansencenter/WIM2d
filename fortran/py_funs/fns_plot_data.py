@@ -112,24 +112,26 @@ def cmap_3d(x,y,z,labs):
    yl = plt.ylabel(labs[1], fontsize=16)
    yl.set_fontname(fontname)
 
+   ############################################################
    #colorbar:
-   #cbar = plt.colorbar(ax, extend='neither', spacing='proportional',
-                   #orientation='vertical', format="%4.2f")
-   
-   cbar  = plt.colorbar(ax)#,ticks=np.arange(0,1+dc,dc))
-   cbar.set_label(labs[2], size=14)
-   cbar.ax.tick_params(labelsize=14)
-   #plt.locator_params(nbins=4)
-   #
-   cpos     = cbar.ax.get_position().extents
-   cpos[2]  = cpos[2]+.15  # cbar width
-   cpos[1]  = cpos[1]+.21  # lower height
-   cpos[3]  = cpos[3]*.38  # colorbar height
-   cbar.ax.set_position(cpos)         
+   if z.max()!=z.min():
+      # only have colorbar if not constant
+      # - doesn't work on linux otherwise
+      cbar  = plt.colorbar(ax)#,ticks=np.arange(0,1+dc,dc))
+      cbar.set_label(labs[2], size=14)
+      cbar.ax.tick_params(labelsize=14)
+      #plt.locator_params(nbins=4)
+      #
+      cpos     = cbar.ax.get_position().extents
+      cpos[2]  = cpos[2]+.15  # cbar width
+      cpos[1]  = cpos[1]+.21  # lower height
+      cpos[3]  = cpos[3]*.38  # colorbar height
+      cbar.ax.set_position(cpos)         
 
-   tick_locator = ticker.MaxNLocator(nbins=5)
-   cbar.locator = tick_locator
-   cbar.update_ticks()
+      tick_locator = ticker.MaxNLocator(nbins=5)
+      cbar.locator = tick_locator
+      cbar.update_ticks()
+   ############################################################
 
    # fonts of axes:
    for tick in ax.axes.xaxis.get_major_ticks():
@@ -148,31 +150,45 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
    if not os.path.exists(figdir):
       os.mkdir(figdir)
 
-   x     = grid_prams['X']/1.0e3
-   y     = grid_prams['Y']/1.0e3
+   x  = grid_prams['X']/1.0e3
+   y  = grid_prams['Y']/1.0e3
+   nx = grid_prams['nx']
+   ny = grid_prams['ny']
 
    # ice fields
-   figs   = Fdat.Ice_Fields(icec='icec.png',iceh='iceh.png',dfloe='Dmax0.png')
-   labs   = Fdat.Ice_Fields(icec='$c$',iceh='$h$, m',dfloe='$D_{max}$, m')
-   keys   = ['icec','iceh','dfloe']
+   # dictionary of figure names
+   figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax0.png'}
+   # dictionary of labels for colorbars
+   labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m'}
+   keys   = labs.keys()
 
    for key in keys:
       fig   = figdir+figs[key]
-      f     = cmap_3d(x,y,ice_fields[key],
-                      ['$x$, km','$y$, km','$c$'])
+      if ny>1:
+         f  = cmap_3d(x,y,ice_fields[key],
+                  ['$x$, km','$y$, km',labs[key]])
+      else:
+         f  = plot_1d(x,ice_fields[key],
+                  ['$x$, km',labs[key]])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close()
       f.clf()
 
    # wave fields
-   figs  = Fdat.Wave_Fields(Hs='Hs0.png',Tp='Tp0.png',mwd='mwd0.png')
-   labs  = Fdat.Wave_Fields('$H_{s}$, m','$T_p$, s','mwd, degrees')
-   keys   = ['Hs','Tp','mwd']
+   # dictionary of figure names
+   figs     = {'Hs':'Hs0.png'    ,'Tp':'Tp0.png'   ,'mwd':'mwd0.png'}
+   # dictionary of labels for colorbars
+   labs  = {'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees'}
+   keys   = labs.keys()
 
    for key in keys:
       fig   = figdir+'/'+figs[key]
-      f     = cmap_3d(x,y,wave_fields[key],
-                      ['$x$, km','$y$, km',labs[key]])
+      if ny>1:
+         f  = cmap_3d(x,y,wave_fields[key],
+               ['$x$, km','$y$, km',labs[key]])
+      else:
+         f  = plot_1d(x,wave_fields[key],
+               ['$x$, km',labs[key]])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close()
       f.clf()
@@ -187,18 +203,25 @@ def fn_plot_final(grid_prams,out_fields,figdir):
    keys  = out_fields.keys()
    x     = grid_prams['X']/1.0e3
    y     = grid_prams['Y']/1.0e3
+   nx    = grid_prams['nx']
+   ny    = grid_prams['ny']
 
    # dictionary of figure names
-   figs  = Fdat.Out_Fields('Dmax.png','taux.png','tauy.png',
-                           'Hs.png','Tp.png',)
+   figs  = {'dfloe':'Dmax.png','taux':'taux.png','tauy':'tauy.png',
+            'Hs':'Hs.png','Tp':'Tp.png'}
+
    # dictionary of labels for colorbars
-   labs  = Fdat.Out_Fields('$D_{max}$, m',
-                           'Stress (x dir.), Pa','Stress (y dir.), Pa',
-                           '$H_s$, m','$T_p$, s')
+   labs  = {'dfloe':'$D_{max}$, m','taux':'Stress (x dir.), Pa','tauy':'Stress (y dir.), Pa',
+            'Hs':'$H_s$, m','Tp':'$T_p$, s'}
+
    for key in keys:
       fig   = figdir+'/'+figs[key]
-      f     = cmap_3d(x,y,out_fields[key],
-               ['$x$, km','$y$, km',labs[key]])
+      if ny>1:
+         f     = cmap_3d(x,y,out_fields[key],
+                  ['$x$, km','$y$, km',labs[key]])
+      else:
+         f     = plot_1d(x,out_fields[key],
+                  ['$x$, km',labs[key]])
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close()
       f.clf()

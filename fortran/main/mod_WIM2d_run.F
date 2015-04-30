@@ -11,13 +11,14 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-      integer  :: SOLVER,ADV_DIM
+      integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
       integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
+      integer  :: DO_BREAKING !can turn off breaking for testing of waves
 
       real     :: x_ext,y_ext,u_ref,duration
       integer  :: nt
 
-      character(len=80) :: log_file,this_subr,outdir
+      character(len=80) :: log_file,this_subr,outdir,indir
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
      &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
@@ -70,11 +71,18 @@
       integer           :: w,wth
 
       !! function to print time
-      real  :: etime
+      real     :: etime
+
+      !! does infile.txt exist
+      logical  :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = 1
-      ADV_DIM  = 2
+      SCATMOD     = 1
+      ADV_DIM     = 2
+      ADV_OPT     = 2
+         !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
+      DO_BREAKING = 1
+      STEADY      = 1
 
       DO_CHECK_PROG  = 1
       DO_CHECK_INIT  = 1
@@ -82,7 +90,17 @@
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
-      outdir   = 'out'
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!locations of inputs/outputs
+      inquire(file='infile.txt',exist=fex)
+      if (fex) then
+         call read_infile(indir,outdir)
+      else
+         indir    = 'inputs'
+         outdir   = 'out'
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run'
@@ -95,7 +113,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams() ! - ice properties like Young's modulus
-      call get_grid_file() ! - grid: X,Y,LAND_MASK
+      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
       call ice_init()      ! - initial icec,iceh,dfloe
 
       !!incident waves
@@ -105,7 +123,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init()
+      call wim_init(STEADY)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -178,11 +196,11 @@
       use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
 
-      !! main code for WIM
-      use mod_wavesice, only:
-     &    amax,amin,CFL,dt    !need these to determine number of time steps
-     &   ,wim_init,wim_step   !main subroutines
-     &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
+!     !! main code for WIM
+!     use mod_wavesice, only:
+!    &    amax,amin,CFL,dt    !need these to determine number of time steps
+!    &   ,wim_init,wim_step   !main subroutines
+!    &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
@@ -201,13 +219,17 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-      integer,dimension(5),intent(in)     :: int_prams   !!SOLVER,ADV_DIM, CHECK_FINAL,CHECK_PROG,CHECK_INIT
-      real,dimension(3),intent(in)        :: real_prams  !!young,visc_rp,duration
-      real,dimension(nx,ny,6),intent(in)  :: in_arrays   !!c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,5),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy
+      integer,dimension(8),intent(in)     :: int_prams
+      ! SCATMOD,ADV_DIM,ADV_OPT,
+      ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
+      ! DO_BREAKING,STEADY
 
-      real     :: PI
-      real,dimension(2) :: wim_prams_in  !!young,visc_rp
+      real,dimension(3),intent(in)        :: real_prams  !! young,visc_rp,duration
+      real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
+      real,dimension(nx,ny,5),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy
+
+      real              :: PI
+      real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
 
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
@@ -219,9 +241,12 @@
 
       !! function to print time
       real  :: etime
+
+      !!does infile.txt exist?
+      logical :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SOLVER   = int_prams(1) ! solver to use for advection/attenuation
+      SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
                               ! 0: scattering treated like attenuation
                               ! 1: directional scattering
       ADV_DIM  = int_prams(2) ! 1d advection option can be useful for checking
@@ -229,12 +254,17 @@
                               ! ie each 'y' row can be a different experiment
                               !    if we use this option
                               !    - in practice we set speed in 'y' dirn to 0.
+      ADV_OPT  = int_prams(3) ! 0, not periodic;
+                              ! 1, periodic in both x,y;
+                              ! 2, periodic in y only;
 
       !! Inputs to determine if results
       !! should be dumped to binaries or not
-      DO_CHECK_FINAL = int_prams(3)
-      DO_CHECK_PROG  = int_prams(4)
-      DO_CHECK_INIT  = int_prams(5)
+      DO_CHECK_FINAL = int_prams(4)
+      DO_CHECK_PROG  = int_prams(5)
+      DO_CHECK_INIT  = int_prams(6)
+      DO_BREAKING    = int_prams(7)
+      STEADY         = int_prams(8)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
@@ -242,7 +272,17 @@
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
-      outdir   = "out_io/"
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!locations of inputs/outputs
+      inquire(file='infile.txt',exist=fex)
+      if (fex) then
+         call read_infile(indir,outdir)
+      else
+         indir    = 'inputs'
+         outdir   = 'out_io'
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
@@ -255,7 +295,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
-      call get_grid_file() ! - grid: X,Y,LAND_MASK
+      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
       icec     = in_arrays(:,:,1)
@@ -304,7 +344,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init()
+      call wim_init(STEADY)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -403,17 +443,18 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SOLVER,n-1,0,outdir)
+            call check_prog(SCATMOD,n-1,0,outdir)
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SOLVER,ADV_DIM)
+         call wim_step(SCATMOD,ADV_DIM,ADV_OPT                          &
+     &                 ,DO_BREAKING,STEADY)
 
       end do!! n - finish time stepping
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
-         call check_prog(SOLVER,n-1,1,outdir)
+         call check_prog(SCATMOD,n-1,1,outdir)
       end if
 
       MIZ_MASK = 0.0
@@ -594,7 +635,12 @@
       write(3,'(a)'),' '
       write(3,'(a)'),'*************************************************'
       write(3,'(a)'),'Main parameters:'
-      write(3,'(a,i2.2)'),'SOLVER:                           ' ,SOLVER
+      write(3,'(a,i2.2)'),'SCATMOD:                          ' ,SCATMOD
+      write(3,'(a,i2.2)'),'ADV_DIM:                          ' ,ADV_DIM
+      write(3,'(a,i2.2)'),'ADV_OPT:                          ' ,ADV_OPT
+      write(3,'(a,i2.2)'),'DO_BREAKING:                      '          &
+     &   ,DO_BREAKING
+      write(3,'(a,i2.2)'),'STEADY:                           ' ,STEADY
       write(3,'(a)'),'*************************************************'
 
       write(3,'(a)'),' '
@@ -661,6 +707,24 @@
       close(3)
 
       end subroutine print_log_info
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine read_infile(indir,outdir)
+      !!determines where to read inputs/outputs from
+      
+      implicit none
+      
+      character(len=80),intent(out) :: indir,outdir
+      !character(len=80),intent(in)  :: infile
+      integer,parameter :: fid=99
+
+      open(unit=fid,file='infile.txt',action='read')
+      read(fid,'(a)'), indir
+      read(fid,'(a)'), outdir
+      close(fid)
+
+      end subroutine read_infile
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim2d_run

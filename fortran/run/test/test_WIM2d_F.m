@@ -94,7 +94,7 @@ if 1
 end
 
 %%these parameters determine where to save figure
-SOLVER   = out_fields.SOLVER;
+SCATMOD  = out_fields.SCATMOD;
 nw       = out_fields.n_wave_freq;
 ndir     = out_fields.n_wavdir;
 disp(out_fields);
@@ -121,15 +121,15 @@ if SV_FIG
 
    %%determine where to save files from parameters
    if nw==1
-      if SOLVER==1
+      if SCATMOD==1
          fig_dir  = [matdir,'/isotropic_1freq'];  %%use this for monochromatic wave
-      elseif SOLVER==0
+      elseif SCATMOD==0
          fig_dir  = [matdir,'out/simple_1freq'];  %%use this for monochromatic wave
       end
    else
-      if SOLVER==1
+      if SCATMOD==1
          fig_dir  = [matdir,'out/isotropic_spec'];  %%use this for spectrum
-      elseif SOLVER==0
+      elseif SCATMOD==0
          fig_dir  = [matdir,'out/simple_spec'];  %%use this for spectrum
       end
    end

@@ -27,11 +27,13 @@ if nargin==0
 end
 
 if OPT==0
-   mwd   = 135;%%waves-from direction
+   mwd   = 135;%%waves-from direction (deg)
 elseif OPT==1
-   mwd   = -90;%%waves-from direction
+   mwd   = -90;%%waves-from direction (deg)
 elseif OPT==2
-   mwd   = 135;%%waves-from direction
+   mwd   = 135;%%waves-from direction (deg)
+elseif OPT==3
+   mwd   = -90;%%waves-from direction (deg)
 end
 
 X  = grid_prams.X;
@@ -49,6 +51,10 @@ elseif OPT==1
    jWV         = find(WAVE_MASK==1);
 elseif OPT==2
    WAVE_MASK   = (X<-.25*xm)|(Y>.25*ym);
+   jWV         = find(WAVE_MASK==1);
+elseif OPT==3
+   %WAVE_MASK   = X<-.75*xm;
+   WAVE_MASK   = X<-260e3;
    jWV         = find(WAVE_MASK==1);
 end
 

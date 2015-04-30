@@ -17,10 +17,9 @@
       real,parameter          :: unif_h            = 2.0
       real,parameter          :: dfloe_pack_init   = 250.0
       
-      !!wave directions and frequencies
-      integer,parameter             :: n_wavdir    = 16
-      integer,parameter             :: n_wave_freq = 25!should be odd (Simpson's rule)
-      !integer,parameter             :: n_wave_freq = 1!should be odd (Simpson's rule)
+      !! set number of wave directions and frequencies in wave_info.h
+      !! - n_wavdir,n_wave_freq (should be odd - Simpson's rule)
+      include "wave_info.h"
       real,dimension(n_wave_freq)   :: freq_vec !set in waves_init
       real,dimension(n_wavdir)      :: wavdir   !set in waves_init
 
