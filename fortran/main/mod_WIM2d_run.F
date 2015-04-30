@@ -541,7 +541,6 @@
       end do
       end do
 
-      return
       end subroutine mex_io_gate
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -559,21 +558,22 @@
       integer                    ,intent(in)    :: nx,ny,ni,nr,nx3d,ny3d
       integer,dimension(ni)      ,intent(in)    :: int_prams
       real,dimension(nr)         ,intent(in)    :: real_prams
-      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d
-      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d
+      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
+      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
 
-      integer                 :: i,j,s
-      real,dimension(nx,ny,6) :: in_arrays
-      real,dimension(nx,ny,5) :: out_arrays
+      integer                    :: i,j,s
+      real,dimension(nx,ny,nx3d) :: in_arrays
+      real,dimension(nx,ny,ny3d) :: out_arrays
 
       in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
 
+      print*,'before wim2d_run_io:',shape(in_arrays),nx,ny,nx3d
       call wim2d_run_io(in_arrays,out_arrays                            &
      &                  ,int_prams,real_prams,nx,ny)
 
-      y3d   = reshape(out_arrays,(/nx*ny*nx3d/))
+      print*,'after wim2d_run_io:',shape(out_arrays),nx,ny,ny3d
+      y3d   = reshape(out_arrays,(/nx*ny*ny3d/))
 
-      return
       end subroutine mex_io_gate_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -627,88 +627,89 @@
 
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
+      integer,parameter :: fid=99
 
       print*,'Printing info to log file: ',trim(log_file)
-      open(unit=3,file=trim(log_file),status = 'replace')
+      open(unit=fid,file=trim(log_file),status = 'replace')
 
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a)'),'Outer subroutine:'
-      write(3,'(a,a)'),'>> ',this_subr
-      write(3,'(a)'),'*************************************************'
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'Outer subroutine:'
+      write(fid,'(a,a)'),'>> ',this_subr
+      write(fid,'(a)'),'***********************************************'
 
-      write(3,'(a)'),' '
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a)'),'Main parameters:'
-      write(3,'(a,i2.2)'),'SCATMOD:                          ' ,SCATMOD
-      write(3,'(a,i2.2)'),'ADV_DIM:                          ' ,ADV_DIM
-      write(3,'(a,i2.2)'),'ADV_OPT:                          ' ,ADV_OPT
-      write(3,'(a,i2.2)'),'DO_BREAKING:                      '          &
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'Main parameters:'
+      write(fid,'(a,i2.2)'),'SCATMOD:                          ',SCATMOD
+      write(fid,'(a,i2.2)'),'ADV_DIM:                          ',ADV_DIM
+      write(fid,'(a,i2.2)'),'ADV_OPT:                          ',ADV_OPT
+      write(fid,'(a,i2.2)'),'DO_BREAKING:                      '        &
      &   ,DO_BREAKING
-      write(3,'(a,i2.2)'),'STEADY:                           ' ,STEADY
-      write(3,'(a)'),'*************************************************'
+      write(fid,'(a,i2.2)'),'STEADY:                           ',STEADY
+      write(fid,'(a)'),'***********************************************'
 
-      write(3,'(a)'),' '
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a)'),'WIM parameters:'
-      write(3,'(a,f4.2)'),'Brine volume fraction:      ',vbf
-      write(3,'(a,e10.3)'),'Youngs modulus (Pa):        ',young
-      write(3,'(a,e10.3)'),'Flexural strength (Pa):     ',sigma_c
-      write(3,'(a,e10.3)'),'Breaking strain:            ',epsc
-      write(3,'(a,f5.2)'),'Damping (Pa.s/m):           ',visc_rp
-      write(3,'(a)'),'*************************************************'
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'WIM parameters:'
+      write(fid,'(a,f4.2)'),'Brine volume fraction:      '  ,vbf
+      write(fid,'(a,e10.3)'),'Youngs modulus (Pa):        ' ,young
+      write(fid,'(a,e10.3)'),'Flexural strength (Pa):     ' ,sigma_c
+      write(fid,'(a,e10.3)'),'Breaking strain:            ' ,epsc
+      write(fid,'(a,f5.2)'),'Damping (Pa.s/m):           '  ,visc_rp
+      write(fid,'(a)'),'***********************************************'
 
-      write(3,'(a)'),' '
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a)'),'Other Parameters:'
-      write(3,'(a,f6.1)'),'Time step (s):                    ' ,dt
-      write(3,'(a,f4.3)'),'CFL number:                       ' ,CFL
-      write(3,'(a,f5.2)'),'Maximum wave group velocity (m/s):' ,amax
-      write(3,'(a,f6.1)'),'Time step (s):                    ' ,dt
-      write(3,'(a,i4.4)'),'Number of time steps:             ' ,nt
-      write(3,'(a,f5.2)'),'Time interval (h):                '          &
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'Other Parameters:'
+      write(fid,'(a,f6.1)'),'Time step (s):                    ' ,dt
+      write(fid,'(a,f4.3)'),'CFL number:                       ' ,CFL
+      write(fid,'(a,f5.2)'),'Maximum wave group velocity (m/s):' ,amax
+      write(fid,'(a,f6.1)'),'Time step (s):                    ' ,dt
+      write(fid,'(a,i4.4)'),'Number of time steps:             ' ,nt
+      write(fid,'(a,f5.2)'),'Time interval (h):                '        &
      &    ,duration/60.0/60.0
-      write(3,'(a)'),'*************************************************'
+      write(fid,'(a)'),'***********************************************'
 
-      write(3,'(a)'),' '
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a,i4.4,a,i4.4)'),'Grid dimensions:                  '   &
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a,i4.4,a,i4.4)'),'Grid dimensions:                  ' &
      &                        ,idm,' ',jdm
-      write(3,'(a,f4.1,a,f4.1)'),'Spatial resolution (km):          '   &
+      write(fid,'(a,f4.1,a,f4.1)'),'Spatial resolution (km):          ' &
      &                        ,dx/1.0e3,' ',dy/1.0e3
-      write(3,'(a,f6.1,a,f6.1)'),'Extent of domain (km):            '   &
+      write(fid,'(a,f6.1,a,f6.1)'),'Extent of domain (km):            ' &
      &                        ,x_ext,' ',y_ext
 
-      write(3,'(a)'),' '
-      write(3,'(a,f5.2)'),'Minimum period (s):               '          &
+      write(fid,'(a)'),' '
+      write(fid,'(a,f5.2)'),'Minimum period (s):               '        &
      &                   ,1.0/freq_vec(nw)
-      write(3,'(a,f5.2)'),'Maximum period (s):               '          &
+      write(fid,'(a,f5.2)'),'Maximum period (s):               '        &
      &                   ,1.0/freq_vec(1)
-      write(3,'(a,i2.2)'),'Number of wave frequencies:       ' , nw
-      write(3,'(a,i3.3)'),'Number of wave directions:        ' , ndir
-      write(3,'(a,f5.2)'),'Directional resolution (degrees): '
+      write(fid,'(a,i2.2)'),'Number of wave frequencies:       ' , nw
+      write(fid,'(a,i3.3)'),'Number of wave directions:        ' , ndir
+      write(fid,'(a,f5.2)'),'Directional resolution (degrees): '
      &                   ,360.0/(1.0*ndir)
-      write(3,'(a)'),'*************************************************'
+      write(fid,'(a)'),'***********************************************'
 
-      write(3,'(a)'),' '
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a)'),'Diagnostics:'
-      write(3,'(a,f6.1)'),'MIZ width (km): ',W_MIZ
-      write(3,'(a,f6.1,a,f6.1)'),'Dmax range in MIZ (m): '              &
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'Diagnostics:'
+      write(fid,'(a,f6.1)'),'MIZ width (km): ',W_MIZ
+      write(fid,'(a,f6.1,a,f6.1)'),'Dmax range in MIZ (m): '            &
      &                          ,Dmax_min,' ',Dmax_max
-      write(3,'(a,e10.3,a,e10.3)'),'tau_x range (Pa): '                 &
+      write(fid,'(a,e10.3,a,e10.3)'),'tau_x range (Pa): '               &
      &                          ,taux_min,' ',taux_max
-      write(3,'(a,e10.3,a,e10.3)'),'tau_y range (Pa): '                 &
+      write(fid,'(a,e10.3,a,e10.3)'),'tau_y range (Pa): '               &
      &                          ,tauy_min,' ',tauy_max
-      write(3,'(a)'),'*************************************************'
+      write(fid,'(a)'),'***********************************************'
 
-      write(3,'(a,f6.1)'),' '
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a,f7.1)'),'Elapsed time (min):',et/60.0
-      write(3,'(a)'),'*************************************************'
-      write(3,'(a)'),' '
+      write(fid,'(a,f6.1)'),' '
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a,f7.1)'),'Elapsed time (min):',et/60.0
+      write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),' '
 
       !!close file
-      close(3)
+      close(fid)
 
       end subroutine print_log_info
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

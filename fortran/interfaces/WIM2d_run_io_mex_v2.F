@@ -26,7 +26,7 @@ C
       mwpointer ip_pr
       mwpointer rp_pr
       integer,parameter :: Nin   = 3   ! no of inputs
-      integer,parameter :: nx3d  = 3   ! size(x3d) = ii*jj*nx3d
+      integer,parameter :: nx3d  = 6   ! size(x3d) = ii*jj*nx3d
       integer,parameter :: ni    = 8   ! length of int_prams
       integer,parameter :: nr    = 3   ! length of real_prams
 
@@ -45,7 +45,7 @@ C
       mwsize m,n,size      !dimensions of x3d         (in)
       mwsize m2,n2,size2   !dimensions of int_prams   (in)
       mwsize m3,n3,size3   !dimensions of real_prams  (in)
-      mwsize size4         !dimensions of y3d         (out)
+      mwsize m4,n4,size4   !dimensions of y3d         (out)
       integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 
       !!inputs from matlab - need to be double precision
@@ -59,8 +59,8 @@ C
       !! - need to be converted to double before passing to matlab (plhs)
       !! - use dble
       real,dimension(ii*jj*ny3d) :: y3d
-      character(len=4)        :: cii,cjj,cj,cm,cn,cdum
-      character(len=80)       :: msg
+      character(len=12)          :: cii,cjj,cj,cm,cn,cdum
+      character(len=80)          :: msg
 
 C     Check for proper number of arguments. 
       if(nrhs .ne. Nin) then
@@ -84,21 +84,28 @@ C     Check for proper number of arguments.
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Get the size of the input arrays.
 
-      !! real_prams
-      do j=3,3
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') nr
-         write(cj,'(i1.1)')  j
-         write(cm,'(i1.1)')  m3
-         write(cn,'(i1.1)')  n3
+      !! x3d
+      do j=1,1
 
-C        matrices should be 1*nr
-         if((m3.ne.1).or.(n3.ne.nr)) then
+         n3d   = ii*jj*nx3d
+         write(cdum,'(i12.12)') n3d
+         write(cii,'(i4.4)') ii
+         write(cii,'(i4.4)') ii
+         write(cjj,'(i4.4)') jj
+         write(cj,'(i1.1)')  j
+         write(cm,'(i4.4)')  mxGetM(prhs(j))
+         write(cn,'(i4.4)')  mxGetN(prhs(j))
+
+C        matrices should be ii*jj
+         critter  = ((mxGetM(prhs(j)).ne.n3d)                            &
+     &               .or.(mxGetN(prhs(j)).ne.1))
+         if (critter) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
-            call mexErrMsgTxt('Input '//cj//' wrong size')
+            k  = mexPrintf(cdum//' x 1\n')
+            call mexErrMsgTxt('Input '//cj//' dimensions should be '    &
+     &                        //cii//' x '//cjj)
          endif
       end do
 
@@ -120,28 +127,21 @@ C        matrices should be 1*ni
          endif
       end do
 
-      !! x3d
-      do j=1,1
-
-         n3d   = ii*jj*nx3d
-         write(cdum,'(i4.4)') n3d
-         write(cii,'(i4.4)') ii
-         write(cii,'(i4.4)') ii
-         write(cjj,'(i4.4)') jj
+      !! real_prams
+      do j=3,3
+         write(cii,'(i4.4)') 1
+         write(cjj,'(i4.4)') nr
          write(cj,'(i1.1)')  j
-         write(cm,'(i4.4)')  mxGetM(prhs(j))
-         write(cn,'(i4.4)')  mxGetN(prhs(j))
+         write(cm,'(i1.1)')  m3
+         write(cn,'(i1.1)')  n3
 
-C        matrices should be ii*jj
-         critter  = ((mxGetM(prhs(j)).ne.n3d)                            &
-     &               .or.(mxGetN(prhs(j)).ne.1))
-         if (critter) then
+C        matrices should be 1*nr
+         if((m3.ne.1).or.(n3.ne.nr)) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cdum//' x 1\n')
-            call mexErrMsgTxt('Input '//cj//' dimensions should be '    &
-     &                        //cii//' x '//cjj)
+            k  = mexPrintf(cii//' x '//cjj//'\n')
+            call mexErrMsgTxt('Input '//cj//' wrong size')
          endif
       end do
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -168,31 +168,30 @@ C     Check to ensure the array is numeric (not strings).
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Create matrix for the return arguments.
-      do j=1,Nout
-         plhs(j)  = mxCreateDoubleMatrix(m,n,0)
-      end do
+      m4       = ii*jj*ny3d
+      n4       = 1
+      size4    = m4*n4
+      plhs(1)  = mxCreateDoubleMatrix(m4,n4,0)
 
       !!pointers to output memory
       y3d_pr   = mxGetPr(plhs(1))
+
+      !! initialise output array
+      y3d = 0.0
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       k  = mexPrintf('Have pointers, about to do computations...\n')
-C     Call the computational subroutine.
-      y3d   = 0.0
+      k  = mexPrintf('Entering mex_io_gate_v2...\n')
 
-      if (.true.) then
-         k  = mexPrintf('Entering mex_io_gate...\n')
-         call mex_io_gate_v2(y3d,real(x3d),nint(ip),real(rp)            &
+      call mex_io_gate_v2(y3d,real(x3d),nint(ip),real(rp)               &
      &                    ,ii,jj,ni,nr,nx3d,ny3d)
-      end if
 
       k  = mexPrintf('Finished computations...\n')
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Load the data into pointers, which are the outputs to MATLAB
-      size4 = ii*jj*ny3d
       call mxCopyReal8ToPtr(dble(y3d),y3d_pr,size4)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
