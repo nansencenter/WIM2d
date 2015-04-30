@@ -14,7 +14,7 @@ C     This is a MEX-file for MATLAB.
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 C-----------------------------------------------------------------------
 C
-      use mod_WIM2d_run, only: mex_io_gate
+      use mod_WIM2d_run, only: mex_io_gate,mex_io_gate_test
       implicit none
 
       mwpointer plhs(*), prhs(*)
@@ -200,7 +200,28 @@ C     Call the computational subroutine.
       y5 = 0.0
       y6 = 0
 
-      if (.true.) then
+      if (.false.) then
+         !!simple test
+         k  = mexPrintf('Doing simple test...\n')
+         y1 = real(x1)**2
+         y2 = real(x2)**2
+         y3 = real(x3)**2
+         y4 = real(x4)**2+real(x5)**2+real(x6)**2
+         y5 = real(x5)**2
+         !!
+         write(msg,'(a,i2.2,a,i2.2,a)') 'int_prams = (',                &
+     &                  nint(ip(1)),',',nint(ip(2)),')\n'
+         k  = mexPrintf(trim(msg))
+         k  = mexPrintf('\n')
+         !!
+         y6 = nint(ip)**2
+      elseif (.false.) then
+         k  = mexPrintf('Entering mex_io_gate_test...\n')
+         call mex_io_gate_test(y1,y2,y3,y4,y5                           &
+     &                         ,real(x1),real(x2),real(x3)              &
+     &                         ,real(x4),real(x5),real(x6)              &
+     &                         ,nint(ip),ii,jj,ni)
+      else
          k  = mexPrintf('Entering mex_io_gate...\n')
          call mex_io_gate(y1,y2,y3,y4,y5                                &
      &                    ,real(x1),real(x2),real(x3)                   &

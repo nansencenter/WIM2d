@@ -57,20 +57,16 @@ TARGET_F	:=	WIM2d.exe
 PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
-# mex function to run interactive WIM in matlab (old version)
+# mex function to run non-interactive WIM in matlab
 MX_EXT		:=	mex
-MX1		:=	WIM2d_run_io_mex
+MX1		:=	WIM2d_run_mex
 MEX1		:=	$(src)/interfaces/$(MX1).F
 TARGET_MEX1	:=	$(MX1).$(MX_EXT)
-# mex function is $(TARGET_MEX1)maci64  for mac OSX
-# mex function is $(TARGET_MEX1)a64 	for linux
 
 # mex function to run interactive WIM in matlab
-MX2		:=	WIM2d_run_io_mex_v2
+MX2		:=	WIM2d_run_io_mex
 MEX2		:=	$(src)/interfaces/$(MX2).F
 TARGET_MEX2	:=	$(MX2).$(MX_EXT)
-# mex function is $(TARGET_MEX2)maci64  for mac OSX
-# mex function is $(TARGET_MEX2)a64 	for linux
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 

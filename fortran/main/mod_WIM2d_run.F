@@ -28,7 +28,7 @@
 
       !!only subroutines are public
       public   :: wim2d_run,wim2d_run_io                                &
-     &            ,mex_io_gate,mex_io_gate_v2
+     &            ,mex_io_gate,mex_io_gate_test 
       
       contains
       
@@ -546,35 +546,31 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine mex_io_gate_v2(y3d,x3d,int_prams,real_prams            &
-     &                  ,nx,ny,ni,nr,nx3d,ny3d)
+      subroutine mex_io_gate_test(y1,y2,y3,y4,y5                        &
+     &                  ,x1,x2,x3,x4,x5,x6,int_prams                    &
+     &                  ,nx,ny,ni)
       
-      !! gateway between run_wim2d_io_mex.m,
+      !! test gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
       !! and wim2d_run_io subroutine in this file
-      !! - 3d arrays hard to do in mex/fortran
+      !! - check in-out for reals and integers
 
       implicit none
 
-      integer                    ,intent(in)    :: nx,ny,ni,nr,nx3d,ny3d
-      integer,dimension(ni)      ,intent(in)    :: int_prams
-      real,dimension(nr)         ,intent(in)    :: real_prams
-      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d
-      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d
+      integer,intent(in)   :: nx,ny,ni,int_prams(ni)
+      real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
+      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5
+      !integer,dimension(ni),intent(out)   :: y5
 
-      integer                 :: i,j,s
-      real,dimension(nx,ny,6) :: in_arrays
-      real,dimension(nx,ny,5) :: out_arrays
-
-      in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
-
-      call wim2d_run_io(in_arrays,out_arrays                            &
-     &                  ,int_prams,real_prams,nx,ny)
-
-      y3d   = reshape(out_arrays,(/nx*ny*nx3d/))
+      y1 = x1**2
+      y2 = x2**2
+      y3 = x3**2
+      y4 = x4**2+x5**2+x6**2
+      !y5 = int_prams**2
+      y5 = x5**2
 
       return
-      end subroutine mex_io_gate_v2
+      end subroutine mex_io_gate_test
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
