@@ -151,11 +151,11 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(ODIR)/*.o $(MDIR)/*.mod
+	rm $(ODIR)/*.o $(MDIR)/*.mod \
 	   $(bin)/$(TARGET_F) \
 	   $(bin)/$(TARGET_PY).so \
-	   $(bin)/$(TARGET_MEX1) \
-	   $(bin)/$(TARGET_MEX2)
+	   $(bin)/$(TARGET_MEX1)* \
+	   $(bin)/$(TARGET_MEX2)*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
