@@ -8,12 +8,12 @@ DO_PLOT     = 1;  %% change this to 0
 USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
 DO_ATTEN    = 1   %% if 0, just advect waves
                   %%  without attenuation;
-DO_BREAKING = 1   %% if 0, turn off breaking for testing
-STEADY      = 1   %% Steady-state solution: top-up waves inside wave mask
+DO_BREAKING = 0   %% if 0, turn off breaking for testing
+STEADY      = 0   %% Steady-state solution: top-up waves inside wave mask
 SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
 
 OPT      = 1;%%ice-water-land configuration;
-PLOT_OPT = 2;%%plot option
+PLOT_OPT = 1;%%plot option
 
 CHK_ATTEN   = 0;%%check by running with old attenuation
 
@@ -135,10 +135,12 @@ if HAVE_ICE==0
    c           = 0.75;
    bc_opt      = 0;%%breaking condition (0=beam;1=Marchenko)
    young_opt   = 0;%%young's modulus option
+   visc_rp     = 0;%%RP viscosity
    ice_prams   = struct('c'         ,c,...
-                        'h'         ,h,...
-                        'bc_opt'    ,bc_opt,...
-                        'young_opt' ,young_opt);
+                     'h'         ,h,...
+                     'bc_opt'    ,bc_opt,...
+                     'young_opt' ,young_opt,...
+                      'visc_rp'   ,visc_rp);
    %%
    [ice_fields,ice_prams]  = iceinit(ice_prams,grid_prams,OPT);
    %% ice_fields  = structure:
@@ -444,6 +446,8 @@ if DO_PLOT
       y_ = [0,0,yc*[1,1],0,0];
       plot(x_,y_,'k');
       plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+      xlabel('$x$, km','interpreter','latex','fontsize',20); 
+      ylabel('$\hat{H}_{s}$, m','interpreter','latex','fontsize',20)
       hold off;
    end
    %%
