@@ -88,38 +88,8 @@ C     Check for proper number of arguments.
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Get the size of the input arrays.
-      do j=8,8
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') nr
-         write(cj,'(i1.1)')  j
-         write(cm,'(i1.1)')  m3
-         write(cn,'(i1.1)')  n3
 
-C        matrices should be 1*nr
-         if((m3.ne.1).or.(n3.ne.nr)) then
-            k  = mexPrintf('Input '//cj//' dimensions:\n')
-            k  = mexPrintf(cm//' x '//cn//'\n')
-            k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
-            call mexErrMsgTxt('Input '//cj//' wrong size')
-         endif
-      end do
-      do j=7,7
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') ni
-         write(cj,'(i1.1)')  j
-         write(cm,'(i1.1)')  m2
-         write(cn,'(i1.1)')  n2
-
-C        matrices should be 1*ni
-         if((m2.ne.1).or.(n2.ne.ni)) then
-            k  = mexPrintf('Input '//cj//' dimensions:\n')
-            k  = mexPrintf(cm//' x '//cn//'\n')
-            k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
-            call mexErrMsgTxt('Input '//cj//' wrong size')
-         endif
-      end do
+      !!2d arrays
       do j=1,6
          write(cii,'(i4.4)') ii
          write(cjj,'(i4.4)') jj
@@ -137,6 +107,42 @@ C        matrices should be ii*jj
             k  = mexPrintf(cii//' x '//cjj//'\n')
             call mexErrMsgTxt('Input '//cj//' dimensions should be '    &
      &                        //cii//' x '//cjj)
+         endif
+      end do
+
+      !!int_prams
+      do j=7,7
+         write(cii,'(i4.4)') 1
+         write(cjj,'(i4.4)') ni
+         write(cj,'(i1.1)')  j
+         write(cm,'(i1.1)')  m2
+         write(cn,'(i1.1)')  n2
+
+C        matrices should be 1*ni
+         if((m2.ne.1).or.(n2.ne.ni)) then
+            k  = mexPrintf('Input '//cj//' dimensions:\n')
+            k  = mexPrintf(cm//' x '//cn//'\n')
+            k  = mexPrintf('Should be:'//'\n')
+            k  = mexPrintf(cii//' x '//cjj//'\n')
+            call mexErrMsgTxt('Input '//cj//' wrong size')
+         endif
+      end do
+
+      !!real_prams
+      do j=8,8
+         write(cii,'(i4.4)') 1
+         write(cjj,'(i4.4)') nr
+         write(cj,'(i1.1)')  j
+         write(cm,'(i1.1)')  m3
+         write(cn,'(i1.1)')  n3
+
+C        matrices should be 1*nr
+         if((m3.ne.1).or.(n3.ne.nr)) then
+            k  = mexPrintf('Input '//cj//' dimensions:\n')
+            k  = mexPrintf(cm//' x '//cn//'\n')
+            k  = mexPrintf('Should be:'//'\n')
+            k  = mexPrintf(cii//' x '//cjj//'\n')
+            call mexErrMsgTxt('Input '//cj//' wrong size')
          endif
       end do
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -200,33 +206,13 @@ C     Call the computational subroutine.
       y5 = 0.0
       y6 = 0
 
-      if (.true.) then
-         k  = mexPrintf('Entering mex_io_gate...\n')
-         call mex_io_gate(y1,y2,y3,y4,y5                                &
-     &                    ,real(x1),real(x2),real(x3)                   &
-     &                    ,real(x4),real(x5),real(x6)                   &
-     &                    ,nint(ip),real(rp),ii,jj,ni,nr)
-      end if
-!     if (DO_TEST.eq.0) then
-!        k  = mexPrintf('Entering mex_io_gate...')
-!        call mex_io_gate(y1,y2,y3,y4,y5                                &
-!    &                    ,real(x1),real(x2),real(x3)                   &
-!    &                    ,real(x4),real(x5),real(x6)                   &
-!    &                    ,nint(ip),ii,jj,ni)
-!     elseif (.false.) then
-!        k  = mexPrintf('Entering mex_io_gate_test...')
-!        call mex_io_gate_test(y1,y2,y3,y4,y6                           &
-!    &                         ,real(x1),real(x2),real(x3)              &
-!    &                         ,real(x4),real(x5),real(x6)              &
-!    &                         ,nint(ip),ii,jj,ni)
-!     else
-!        k  = mexPrintf('Doing simple test...')
-!        y1 = real(x1)**2
-!        y2 = real(x2)**2
-!        y3 = real(x3)**2
-!        y4 = real(x4)**2+real(x5)**2+real(x6)**2
-!        y6 = nint(ip)**2
-!     end if
+      k  = mexPrintf('Entering mex_io_gate...\n')
+
+      call mex_io_gate(y1,y2,y3,y4,y5                                   &
+     &                 ,real(x1),real(x2),real(x3)                      &
+     &                 ,real(x4),real(x5),real(x6)                      &
+     &                 ,nint(ip),real(rp),ii,jj,ni,nr)
+
       k  = mexPrintf('Finished computations...\n')
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
