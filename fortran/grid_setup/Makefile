@@ -79,15 +79,19 @@ all: exe py
 $(PROG_F): 		$(OBJS)
 # $(PROG_PY): 		$(OBJS) 	$(DEPS)
 
-.PHONY: clean
+.PHONY: clean vclean
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/*.o	$(MDIR)/*.mod
+	rm $(ODIR)/*.o \
+	   $(MDIR)/*.mod
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F)	$(bin)/$(TARGET_PY).so	$(ODIR)/*.o	$(MDIR)/*.mod
+	rm $(bin)/$(TARGET_F) \
+	   $(bin)/$(TARGET_PY).so \
+	   $(ODIR)/*.o \
+	   $(MDIR)/*.mod
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

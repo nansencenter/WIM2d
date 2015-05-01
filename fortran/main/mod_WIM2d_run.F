@@ -80,7 +80,7 @@
       SCATMOD     = 1
       ADV_DIM     = 2
       ADV_OPT     = 2
-         !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
+         !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
       DO_BREAKING = 1
       STEADY      = 1
 
