@@ -13,24 +13,15 @@ sys.path.append(dd+"/py_funs")
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-# locations of infiles/outfiles
-ifil  = 'infile.txt'
-if os.path.exists(ifil):
-   iid   = open(ifil,'r')
-   lines = iid.readlines()
-   iid.close()
-   indir    = lines[0].strip('\n')
-   outdir   = lines[1].strip('\n')
-else:
-   indir    = wim2d_path+'/fortran/run/inputs'
-   outdir   = 'test_outputs/out_io'
+# run from root results directory eg out, out_io
+outdir   = os.getcwd()
+bindir   = outdir+'/binaries'
+figdir   = outdir+'/figs'
 
-grid_prams  = Fdat.fn_check_grid(indir)
+grid_prams  = Fdat.fn_check_grid(bindir)
 
 ##########################################################################
 # Make plots
-bindir   = outdir+'/binaries'
-figdir   = outdir+'/figs'
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
