@@ -19,6 +19,8 @@
       integer  :: nt
 
       character(len=80) :: log_file,this_subr,outdir,indir
+      character(len=*),parameter :: infile_dirs = 'infile_dirs.txt'
+      character(len=*),parameter :: infile      = 'infile.txt'
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
      &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
@@ -72,30 +74,23 @@
 
       !! function to print time
       real     :: etime
+      real     :: wim_prams_in(2)
 
-      !! does infile.txt exist
-      logical  :: fex
+      !! does infile* exist?
+      logical  :: fex,fex2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SCATMOD     = 1
-      ADV_DIM     = 2
-      ADV_OPT     = 2
-         !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-      DO_BREAKING = 1
-      STEADY      = 1
-
-      DO_CHECK_PROG  = 1
-      DO_CHECK_INIT  = 1
-      DO_CHECK_FINAL = 1
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
+      !!
+      wim_prams_in   = 0.0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!locations of inputs/outputs
-      inquire(file='infile.txt',exist=fex)
+      inquire(file=infile_dirs,exist=fex)
       if (fex) then
-         call read_infile(indir,outdir)
+         call read_infile_dirs(indir,outdir)
       else
          indir    = 'inputs'
          outdir   = 'out'
@@ -110,9 +105,34 @@
       print*,'****************************************'
       print*,' '
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!initialisation of grid, ice con's
-      call set_wim_prams() ! - ice properties like Young's modulus
+
+      inquire(file=infile,exist=fex2)
+      if (fex2) then
+         call read_infile(wim_prams_in,duration)
+
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!initialisation of grid, ice con's
+         call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
+      else
+         SCATMOD     = 1
+         ADV_DIM     = 2
+         ADV_OPT     = 2
+            !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
+         DO_BREAKING = 1
+         STEADY      = 1
+
+         DO_CHECK_PROG  = 1
+         DO_CHECK_INIT  = 1
+         DO_CHECK_FINAL = 1
+
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !!initialisation of grid, ice con's
+         call set_wim_prams() ! - ice properties like Young's modulus
+
+         !!duration of simulation
+         u_ref    = amin+.7*(amax-amin);
+         duration = 1.0e3*x_ext/u_ref
+      end if
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
       call ice_init()      ! - initial icec,iceh,dfloe
 
@@ -149,11 +169,9 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set number of time steps
-      u_ref    = amin+.7*(amax-amin);
       dt       = CFL*dx/amax
       x_ext    = idm*dx/1.0e3!km
       y_ext    = jdm*dy/1.0e3!km
-      duration = 1.0e3*x_ext/u_ref
       nt       = nint( duration/dt )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -242,21 +260,21 @@
       !! function to print time
       real  :: etime
 
-      !!does infile.txt exist?
+      !! does infile_dirs exist?
       logical :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
-                              ! 0: scattering treated like attenuation
-                              ! 1: directional scattering
-      ADV_DIM  = int_prams(2) ! 1d advection option can be useful for checking
-                              ! and also testing many parameters at once
-                              ! ie each 'y' row can be a different experiment
-                              !    if we use this option
-                              !    - in practice we set speed in 'y' dirn to 0.
-      ADV_OPT  = int_prams(3) ! 0, not periodic;
-                              ! 1, periodic in both x,y;
-                              ! 2, periodic in y only;
+                               ! 0: scattering treated like attenuation
+                               ! 1: directional scattering
+      ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
+                               ! and also testing many parameters at once
+                               ! ie each 'y' row can be a different experiment
+                               !    if we use this option
+                               !    - in practice we set speed in 'y' dirn to 0.
+      ADV_OPT  = int_prams(3)  ! 0, not periodic;
+                               ! 1, periodic in both x,y;
+                               ! 2, periodic in y only;
 
       !! Inputs to determine if results
       !! should be dumped to binaries or not
@@ -275,9 +293,9 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!locations of inputs/outputs
-      inquire(file='infile.txt',exist=fex)
+      inquire(file=infile_dirs,exist=fex)
       if (fex) then
-         call read_infile(indir,outdir)
+         call read_infile_dirs(indir,outdir)
       else
          indir    = 'inputs'
          outdir   = 'out_io'
@@ -715,7 +733,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine read_infile(indir,outdir)
+      subroutine read_infile_dirs(indir,outdir)
       !!determines where to read inputs/outputs from
       
       implicit none
@@ -724,9 +742,63 @@
       !character(len=80),intent(in)  :: infile
       integer,parameter :: fid=99
 
-      open(unit=fid,file='infile.txt',action='read')
+      open(unit=fid,file=infile_dirs,action='read')
       read(fid,'(a)'), indir
       read(fid,'(a)'), outdir
+      close(fid)
+
+      end subroutine read_infile_dirs
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine read_infile(wim_prams_in,duration)
+      !!determines where to read inputs/outputs from
+      
+      implicit none
+      
+      real,intent(out)  :: wim_prams_in(2),duration
+      integer,parameter :: fid=99
+      character(len=80) :: ctmp
+
+      wim_prams_in   = 0.0
+      print*,' '
+      print*,'******************************************************'
+      print*,'Opening infile: ',infile
+
+      open(unit=fid,file=infile,action='read')
+
+      !! int_prams
+      read(fid,'(a)'), ctmp
+      read(fid,'(i2.2,a)'), SCATMOD     ,ctmp
+      print*,'SCATMOD: ',SCATMOD
+      read(fid,'(i2.2,a)'), ADV_DIM     ,ctmp
+      print*,'ADV_DIM: ',ADV_DIM
+      read(fid,'(i2.2,a)'), ADV_OPT     ,ctmp
+      print*,'ADV_OPT: ',ADV_OPT
+      read(fid,'(i2.2,a)'), DO_BREAKING ,ctmp
+      print*,'DO_BREAKING: ',DO_BREAKING
+      read(fid,'(i2.2,a)'), STEADY      ,ctmp
+      print*,'STEADY: ',STEADY
+      !!
+      read(fid,'(i2.2,a)'), DO_CHECK_FINAL,ctmp
+      print*,'DO_CHECK_FINAL: ',DO_CHECK_FINAL
+      read(fid,'(i2.2,a)'), DO_CHECK_PROG ,ctmp
+      print*,'DO_CHECK_PROG: ',DO_CHECK_PROG
+      read(fid,'(i2.2,a)'), DO_CHECK_INIT ,ctmp
+      print*,'DO_CHECK_INIT: ',DO_CHECK_INIT
+
+      !! real_prams
+      read(fid,'(a)'), ctmp
+      read(fid,'(a)'), ctmp
+      read(fid,'(e10.3,a)'),  wim_prams_in(1) ,ctmp
+      print*,"Young's modulus: ",wim_prams_in(1)
+      read(fid,'(f5.2,a)'),   wim_prams_in(2) ,ctmp
+      print*,"RP damping: ",wim_prams_in(2)
+      read(fid,'(f7.2,a)'),   duration        ,ctmp
+      print*,"Duration (s): ",duration
+      print*,'******************************************************'
+      print*,' '
+      !!
       close(fid)
 
       end subroutine read_infile
