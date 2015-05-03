@@ -1,6 +1,3 @@
-      !! test_advection_weno.F
-      !! Author: Timothy Williams
-      !! Date:   20140821, 12:22:17 CEST
       module mod_file_utils
 
       contains
@@ -117,15 +114,27 @@
       real, dimension(nx,ny), intent(out) :: x     !!2d array to read in
       integer, intent(in)                 :: nx,ny !!size of x
       integer, intent(in)                 :: recno !!record no
-      integer                             :: rec_len
+      integer                             :: rec_len,fid
+      logical                             :: fex
 
-      x  = 0.0
+      x     = 0.0
+      fid   = 99
       inquire(IOLENGTH=rec_len) x   !should be 4*nx*ny
 
-      open(unit=1,file=trim(infile),status = 'old',                     &
-     &   form='unformatted', access='direct',recl=rec_len)
-      read(1,rec=recno) x
-      close(1)
+      inquire(file=infile,exist=fex)
+      if (fex) then
+         !print*,'file present: ',infile
+         !print*,'record number: ',recno
+
+         open(unit=fid,file=trim(infile),status = 'old',                &
+     &      form='unformatted', access='direct',recl=rec_len)
+         read(fid,rec=recno) x
+         close(fid)
+      else
+         print*,'file not present: ',infile
+         stop
+      end if
+
 
       end subroutine rd_afile_2d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
