@@ -16,8 +16,14 @@ else
    MKMOV=0 # default is not make movie
 fi
 
-# make png files
+# make png files from progress files
+# (if they exist)
 cd $outdir
+if [ ! -d binaries/progs/000 ]
+then
+   exit
+fi
+
 python $tools/plot_prog.py
 cd $P
 
