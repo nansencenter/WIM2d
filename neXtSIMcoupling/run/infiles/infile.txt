@@ -1,2 +1,0 @@
-/Users/timill/GITHUB-REPOSITORIES/WIM2d/fortran/run/inputs
-test_outputs/out_io
