@@ -70,13 +70,15 @@ if 1:
    # change integer parameters:
    SCATMOD     = 1
    ADV_DIM     = 1
+   ADV_OPT     = 2
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
    DO_BREAKING = 1
-   int_prams   = np.array([SCATMOD,ADV_DIM,
+   STEADY      = 1
+   int_prams   = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                            CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                           DO_BREAKING])
+                           DO_BREAKING,STEADY])
 
 if 1:
    # change real parameters:
