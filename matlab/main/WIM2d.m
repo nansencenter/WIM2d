@@ -3,19 +3,6 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 % clear;
 
 %DO_SAVE     = 0;
-<<<<<<< HEAD
-DO_PLOT     = 1;  %% change this to 0
-                  %% if graphics aren't supported;
-USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
-DO_ATTEN    = 1   %% if 0, just advect waves
-                  %%  without attenuation;
-DO_BREAKING = 0   %% if 0, turn off breaking for testing
-STEADY      = 0   %% Steady-state solution: top-up waves inside wave mask
-SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
-
-OPT      = 1;%%ice-water-land configuration;
-PLOT_OPT = 1;%%plot option
-=======
 infile         = 'infile.txt';
 infile_version = 2;%%latest infile version
 
@@ -70,7 +57,6 @@ else
    end
    fclose(fid);
 end
->>>>>>> 81fb2fae1a3d22d5b917472c9302242c9427ed4e
 
 %%other options
 DO_PLOT     = 1;%% change this to 0
