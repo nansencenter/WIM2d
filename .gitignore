@@ -34,6 +34,7 @@ fortran/run/fig_scripts/figs
 fortran/run/results/*
 #
 matlab/main/out
+matlab/main/log
 matlab/main/infile.txt
 #
 neXtSIMcoupling/results/*
