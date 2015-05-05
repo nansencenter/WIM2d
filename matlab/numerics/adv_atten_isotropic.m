@@ -3,7 +3,7 @@
 %% Date: 20141018, 18:04:46 CEST
 
 function [S,S_freq,tau_x,tau_y] = ...
-   adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt)
+   adv_atten_timestep_isotropic(grid_prams,ice_prams,s1,dt,adv_options)
 
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
@@ -16,17 +16,28 @@ clear s1;
 
 % ADV_OPT  = 0;%%zeros outside real domain
 % ADV_OPT  = 1;%%periodic in x,y
-ADV_OPT  = 2;%%periodic in y only
+% ADV_OPT  = 2;%%periodic in y only
 
 theta = -pi/180*(90+wavdir);%%waves-to, anti-clockwise, radians
 % S0 = S;
 % {wavdir,theta}
 
 %%advection;
-for jth  = 1:ndir
-   u           = ag_eff*cos(theta(jth));
-   v           = ag_eff*sin(theta(jth));
-   S(:,:,jth)  = waveadv_weno(S(:,:,jth),u,v,grid_prams,dt,ADV_OPT);
+if adv_options.ADV_DIM==2
+   %%2d advection
+   for jth  = 1:ndir
+      u           = ag_eff*cos(theta(jth));
+      v           = ag_eff*sin(theta(jth));
+      S(:,:,jth)  = waveadv_weno(S(:,:,jth),u,v,grid_prams,dt,adv_options);
+   end
+else
+   %%1d advection - 1 row at a time
+   for jy=1:ny
+      for jth  = 1:ndir
+         u           = ag_eff*cos(theta(jth));
+         S(:,jy,jth) = waveadv_weno_1d(S(:,jy,jth),u,grid_prams,dt,adv_options);
+      end
+   end
 end
 % S0-S
 % [min(S0(:)),max(S0(:))]

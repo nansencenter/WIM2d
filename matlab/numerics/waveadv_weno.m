@@ -1,4 +1,4 @@
-function h  = waveadv_weno(h,u,v,grid_prams,dt,bc_opt)
+function h  = waveadv_weno(h,u,v,grid_prams,dt,adv_options)
 %% advection_weno.m
 %% Author: Timothy Williams
 %% Date:   20140821, 05:40:03 CEST
@@ -30,6 +30,8 @@ function h  = waveadv_weno(h,u,v,grid_prams,dt,bc_opt)
 %%           - see common_blocks.h;
 %% in:      scp2, scp2i are grid box area at p points, and its inverse;
 %%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+bc_opt   = adv_options.ADV_OPT;
 
 ii       = grid_prams.nx;
 jj       = grid_prams.ny;
