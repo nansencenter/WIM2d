@@ -157,7 +157,7 @@
       zi = cmplx(0,1)!sqrt(-1)
 
       !!weights for integral over direction
-      wt_theta = 2*PI/(1.0*ndir)
+      wt_theta = 2*PI/(1.0*ndir) !!\Delta\theta
 
       !!do advection
       !print*,'Spectrum at',itest,jtest
@@ -205,6 +205,8 @@
             S_th(wth)      = Sdir(i,j,wth)
          end do
          S_fou    = zi
+
+         !! S_fou(1) = \int_0^{2\pi}S(\theta)d\theta
          S_fou(1) = cmplx( sum(wt_theta*S_th) )
 
          if (ICE_MASK(i,j).gt.0.0) then
@@ -274,12 +276,16 @@
             evals_x(1)  = -q_abs
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+            !!S_fou(n) = s_n = \int_0^{2\pi}S(\theta)e^{i*n*\theta}d\theta
             do nth=1,ncs
                S_cos(nth)     = sum(wt_theta*S_th*cos(nth*theta_vec))
                S_sin(nth)     = sum(wt_theta*S_th*sin(nth*theta_vec))
+
+               !! 1<=n<=N/2: e^{i*n*\theta}=\cos(n\theta)+i*\sin(n\theta)
                S_fou(nth+1)   = cmplx(S_cos(nth),S_sin(nth))
 
                !!also need n=-nth index
+               !! N/2<n<=N (n<0): e^{i*n*\theta}=\cos(n\theta)-i*\sin(n\theta)
                n           = ndir+1-nth
                S_fou(n)    = cmplx(S_cos(nth),-S_sin(nth))
             end do
@@ -310,9 +316,12 @@
 
             !!do scattering/attenuation and transform back
             S_fou = S_fou*exp(evals_x*cg*dt)
+            !!S(\theta)=(1/2/\pi)*\sum_n.S_n.e^{-i*n*\theta}
             do wth=1,ndir
-               tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
-     &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
+!              tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
+!    &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
+               tmp1  = realpart(S_fou)*cos(nvec*theta_vec(wth))         &
+     &                -imagpart(S_fou)*sin(nvec*theta_vec(wth))
                !!
                Sdir(i,j,wth)  = 1.0/(2*PI)*sum(tmp1)
                S_th(wth)      = Sdir(i,j,wth)

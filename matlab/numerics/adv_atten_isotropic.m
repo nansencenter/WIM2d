@@ -70,9 +70,10 @@ for i = 1:nx
 for j = 1:ny
    %% atten_dim = ENERGY attenuation coeff [m^{-1}]
    if ICE_MASK(i,j)>0
-      %%scattered energy
+      %%scattering cross-section (m^{-1}):
       q_scat   = atten_dim(i,j);
-      %%absorbed energy:
+
+      %%total absorbed energy (m^{-1}):
       q_tot    = q_scat + damp_dim(i,j);
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,15 +89,17 @@ for j = 1:ny
 
          nvec  = (0:ndir-1)';
          Ex    = exp(1i*nvec*theta');
-         Mft   = Ex*diag(wt_theta);%%S_n = \int e^{n i\theta} S(\theta) d\theta
+         Mft   = Ex*diag(wt_theta);
+
+         %%S_n = \int e^{n i\theta} S(\theta) d\theta
          S_fou = Mft*S_th;
 
          %% get eigenvalues to do attenuation,
          %% & transform back to get attenuated directional spectrum
-         dd       = min(0,K_fou-q_tot);%%stop it >0 due to subtraction errors if q_abs=0
+         evals_x  = min(0,K_fou-q_tot);%%stop it >0 due to subtraction errors if q_abs=0
          cg       = ag_eff(i,j);
-         Mift     = (1/2/pi)*Ex';%%S(\theta_m)=(1/2/pi)*\sum_{n=0} e^{-n i\theta_m} S_n
-         S(i,j,:) = real( Mift*(S_fou.*exp(dd*cg*dt)) );
+         Mift     = (1/2/pi)*Ex';%%S(\theta_m)=(1/2/pi)*\sum_{n=0} e^{n i\theta_m} S_n
+         S(i,j,:) = real( Mift*(S_fou.*exp(evals_x*cg*dt)) );
 
          %%stresses
          jp1         = 2;
@@ -141,7 +144,7 @@ for j = 1:ny
 %           dd2         = diag(DD);
 %           cc          = U'*S_th;                          %%expand in terms of eigenvectors
 %           tst_atten   = [S_th2,U*diag(exp(dd2*cg*dt))*cc] %%exponential attenuation
-%           save('../numerics/testing/test_fou.mat','S_th2','dd','S_th','S_fou',...
+%           save('../numerics/testing/test_fou.mat','S_th2','evals_x','S_th','S_fou',...
 %                'K_fou','M_bolt','q_scat','q_tot','ndir','ag_eff','i','j',...
 %                'tau_x','tau_y','theta');
 %           GEN_pause
@@ -156,8 +159,8 @@ for j = 1:ny
             %% - should be the same as solving in Fourier space
             %% - TODO: check this
             %%   (have same eigenvalues, & 1st eigenvector is the same)
-            dd    = -q_tot*oo(:,1);
-            dd(1) = dd(1)+q_scat;
+            evals_x    = -q_tot*oo(:,1);
+            evals_x(1) = evals_x(1)+q_scat;
 
             %% 1st eigenvector corresponds to same scattering in all directions
             uu = oo(:,1)/sqrt(ndir);
@@ -167,7 +170,7 @@ for j = 1:ny
             U  = [uu,null(uu')];
          else
             [U,D]    = eig(M_bolt);
-            dd       = diag(D);
+            evals_x       = diag(D);
             %GEN_pause;
          end
          S_th        = squeeze(S(i,j,:));
@@ -185,7 +188,7 @@ for j = 1:ny
             %% - we want the stress on the ice
 
          cc       = U'*S_th;                    %%expand in terms of eigenvectors
-         S(i,j,:) = U*diag(exp(dd*cg*dt))*cc;   %%exponential attenuation
+         S(i,j,:) = U*diag(exp(evals_x*cg*dt))*cc;   %%exponential attenuation
       end%%choice of method
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

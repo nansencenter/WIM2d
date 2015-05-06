@@ -1,4 +1,4 @@
-function h  = waveadv_weno(h,u,grid_prams,dt,adv_options)
+function h  = waveadv_weno_1d(h,u,grid_prams,dt,adv_options)
 %% waveadve_weno_1d.m
 %% Author: Timothy Williams
 %% Date:   20150405
@@ -157,9 +157,9 @@ eps   = 1.e-12;
 %     real q0,q1,a0,a1,q
 %     integer i,j,l,im1,im2,ip1,jm1,jm2,jp1
 ful   = zeros(idm+2*nbdy,1);
-%fuh   = zeros(idm+2*nbdy,1);
-fvl   = zeros(idm+2*nbdy,1);
-fvh   = zeros(idm+2*nbdy,1);
+fuh   = zeros(idm+2*nbdy,1);
+%fvl   = zeros(idm+2*nbdy,1);
+%fvh   = zeros(idm+2*nbdy,1);
 gt    = zeros(idm+2*nbdy,1);
 
 %

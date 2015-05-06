@@ -1,6 +1,6 @@
-%% test_advection_weno.m
+%% test_advection_weno_1d.m
 %% Author: Timothy Williams
-%% Date:   20140821, 12:22:17 CEST
+%% Date:   20150505
 clear;
 
 %%boundary conditions:
@@ -45,7 +45,7 @@ for j=1:2%%plot initial h
    ax = plot(X/1e3,h);
    ylim([0 2]);
    GEN_proc_fig('x, km','h(0), m');
-   GEN_pause;
+   %GEN_pause;
 end
 
 for n = 1:nt
