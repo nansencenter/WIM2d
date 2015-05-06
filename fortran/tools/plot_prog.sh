@@ -42,4 +42,8 @@ then
       echo $tools/prog2mp4.sh $vbl
       $tools/prog2mp4.sh $vbl
    done
+else
+   echo To make movie
+   echo cd $outdir/figs/prog
+   echo "$tools/prog2mp4.sh Hs (or Dmax,taux,tauy)"
 fi

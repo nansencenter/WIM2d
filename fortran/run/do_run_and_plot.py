@@ -8,7 +8,8 @@ import struct
 ##
 ## NB run from 'run' directory !!
 ##
-dd   = os.path.abspath("..")
+w2d   = os.getenv('WIM2D_PATH')
+dd    = w2d+'/fortran'
 sys.path.append(dd+"/bin")
 sys.path.append(dd+"/py_funs")
 
@@ -150,6 +151,11 @@ if 1:
       Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
       print("Plots in "+figdir3_0+'\n')
    ################################################################
+
+   print(' ')
+   print("To make a movie of progress images:")
+   print("cd "+figdir+'/prog')
+   print(dd+'/tools/prog2mp4.sh Hs (or Dmax,taux,tauy)')
 
 elif 1:
    ################################################################
