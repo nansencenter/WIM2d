@@ -158,28 +158,35 @@ def get_ft_kernel(alp,N,OPT=0):
 
 ##############################################
 def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
-   # fourier coefficients of kernel:
-   # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
+   # steady state solution - semi-finite width
+   # \pa_t.E + c_g.\pa_x.E=S -> c_g.\pa_x.E=S
+
+   # option for kernel:
    # OPT   = 0 # isotropic scattering
    # OPT   = 1 # add some directionality
    OPT   = 2 # real coefficients from file
 
+   # get fourier coefficients of kernel:
+   # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
    K_fou,alp   = get_ft_kernel(alp,N,OPT=OPT)
    sn          = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
    ##############################################
-   # LH matrix
+   # LH matrix: c_g*cos(theta)*d/dx
    Lmat           = np.zeros((N,N))
-   Lmat[0,1]      = .5
-   Lmat[N-1,N-2]   = .5
+   Lmat[0,1]      = .5*c_g
+   Lmat[N-1,N-2]   = .5*c_g
    for n in range(1,N-1):
-      Lmat[n,[n-1,n+1]] = .5
+      Lmat[n,[n-1,n+1]] = .5*c_g
    ##############################################
 
    ##############################################
-   # get eigenvalues & eigenvectors
+   # RH matrix: S
    Ds       = np.diag(sn)
-   evals,U  = LA.eig(Ds,b=Lmat) # DS*U=\lambda*Lmat*U
+
+   # get eigenvalues & eigenvectors
+   # - solve DS*U=\lambda*Lmat*U
+   evals,U  = LA.eig(Ds,b=Lmat)
    evals    = evals.real        # inv(Lmat)*Ds = real, symmetric => eig's should be real
 
    # sort evals
@@ -374,8 +381,10 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
 
 ##############################################
 def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=None):
-   # fourier coefficients of kernel:
-   # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
+   # steady state solution - finite width
+   # \pa_t.E + c_g.\pa_x.E=S -> c_g.\pa_x.E=S
+
+   # option for kernel:
    OPT   = 0 # isotropic scattering
    # OPT   = 1 # add some directionality
    # OPT   = 2 # real coefficients from file
@@ -385,22 +394,27 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
    # print(np.exp(-alp*width))
    # sys.exit('solve_boltzmann_ft')
 
+   # get fourier coefficients of kernel:
+   # K=\sum_n{ K_n/2/pi*exp(-1i*n*theta) }
    K_fou,alp   = get_ft_kernel(alp,N,OPT=OPT)
    sn          = cg*(K_fou-alp-alp_dis) # Sn=sn*En : coeffs of Ft of source function
 
    ##############################################
-   # LH matrix
+   # LH matrix: c_g*cos(theta)*d/dx
    Lmat           = np.zeros((N,N))
-   Lmat[0,1]      = .5
-   Lmat[N-1,N-2]   = .5
+   Lmat[0,1]      = .5*cg
+   Lmat[N-1,N-2]  = .5*cg
    for n in range(1,N-1):
-      Lmat[n,[n-1,n+1]] = .5
+      Lmat[n,[n-1,n+1]] = .5*cg
    ##############################################
 
    ##############################################
-   # get eigenvalues & eigenvectors
+   # RH matrix: S
    Ds       = np.diag(sn)
-   evals,U  = LA.eig(Ds,b=Lmat) # DS*U=\lambda*Lmat*U
+
+   # get eigenvalues & eigenvectors
+   # - solve DS*U=\lambda*Lmat*U
+   evals,U  = LA.eig(Ds,b=Lmat)
    evals    = evals.real        # inv(Lmat)*Ds = real, symmetric => eig's should be real
 
    # sort evals

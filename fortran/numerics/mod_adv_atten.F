@@ -146,7 +146,7 @@
       real  :: PI,adv_dir,tmp,alp_dim,source
 
       real,dimension(ndir)    :: K_fou,S_th,theta_vec,wt_theta,         &
-     &                              tmp1,dd
+     &                              tmp1,evals_x
       complex,dimension(ndir) :: S_fou
       complex                 :: zi,src_fou_p1,src_fou_m1
       real,dimension(ncs)     :: S_cos,S_sin
@@ -266,11 +266,12 @@
             K_fou    = 0.0
             K_fou(1) = q_scat
 
-            !! dd  = K_fou-q_tot
+            !! evals_x  = K_fou-q_tot
+            !! NB these solve \pa_x.S=evals_x.S
             !! possibly need to be careful to avoid rounding errors
             !! making eigenvalues go >0
-            dd       = -q_tot
-            dd(1)    = -q_abs
+            evals_x     = -q_tot
+            evals_x(1)  = -q_abs
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             do nth=1,ncs
@@ -307,8 +308,8 @@
 !              print*,'tau_x,tau_y',taux_om(i,j),tauy_om(i,j)
 !           end if
 
-            !!do attenuation and transform back
-            S_fou = S_fou*exp(dd*cg*dt)
+            !!do scattering/attenuation and transform back
+            S_fou = S_fou*exp(evals_x*cg*dt)
             do wth=1,ndir
                tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
      &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
