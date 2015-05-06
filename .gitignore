@@ -30,7 +30,10 @@ fortran/header_files/grid_info.h
 fortran/header_files/wave_info.h
 fortran/numerics/test_advection/test_out/*
 fortran/numerics/test_advection/figs/*
-fortran/run/fig_scripts/figs
+fortran/run/fig_scripts/figs/profiles/*
+fortran/run/fig_scripts/figs/*.png
+fortran/run/fig_scripts/figs/TC2S/*
+!fortran/run/fig_scripts/figs/TC2S/do_plot.py
 fortran/run/results/*
 #
 matlab/main/out
