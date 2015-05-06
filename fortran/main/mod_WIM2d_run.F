@@ -43,12 +43,6 @@
       use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
 
-      !! main code for WIM
-      use mod_wavesice, only:
-     &    amax,amin,CFL,dt    !need these to determine number of time steps
-     &   ,wim_init,wim_step   !main subroutines
-     &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
       use mod_wavesice, only:
@@ -59,6 +53,7 @@
             !! - determine number of time steps
             !! - get main subroutines
             !! - get subroutines for dumping fields
+            !! - NB amax,amin,CFL,dt set in wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       implicit none
@@ -129,9 +124,6 @@
          !!initialisation of grid, ice con's
          call set_wim_prams() ! - ice properties like Young's modulus
 
-         !!duration of simulation
-         u_ref    = amin+.7*(amax-amin);
-         duration = 1.0e3*x_ext/u_ref
       end if
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
       call ice_init()      ! - initial icec,iceh,dfloe
@@ -144,6 +136,7 @@
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
       call wim_init(STEADY)
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -172,6 +165,11 @@
       dt       = CFL*dx/amax
       x_ext    = idm*dx/1.0e3!km
       y_ext    = jdm*dy/1.0e3!km
+      if (.not.fex2) then
+         !!duration of simulation
+         u_ref    = amin+.7*(amax-amin)
+         duration = 1.0e3*x_ext/u_ref
+      end if
       nt       = nint( duration/dt )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
