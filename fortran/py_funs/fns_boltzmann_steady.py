@@ -174,10 +174,10 @@ def solve_boltzmann_ft_semiinf(alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs=1.,f_inc=None):
    ##############################################
    # LH matrix: c_g*cos(theta)*d/dx
    Lmat           = np.zeros((N,N))
-   Lmat[0,1]      = .5*c_g
-   Lmat[N-1,N-2]   = .5*c_g
+   Lmat[0,1]      = .5*cg
+   Lmat[N-1,N-2]   = .5*cg
    for n in range(1,N-1):
-      Lmat[n,[n-1,n+1]] = .5*c_g
+      Lmat[n,[n-1,n+1]] = .5*cg
    ##############################################
 
    ##############################################
