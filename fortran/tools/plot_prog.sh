@@ -8,7 +8,7 @@ outdir=$P/out_io # root results directory
 if [ $# -eq 2 ]
 then
    MKMOV=$1 # 1, make movies; 0, don't
-   outdir=$2
+   outdir=$P/$2
 elif [ $# -eq 1 ]
 then
    MKMOV=$1 # 1, make movies; 0, don't
@@ -19,11 +19,15 @@ fi
 # make png files from progress files
 # (if they exist)
 cd $outdir
-if [ ! -d binaries/progs/000 ]
+bindir=$outdir/binaries/prog
+if [ ! -f $bindir/wim_prog000.a ]
 then
+   echo "No prog files in $bindir"
    exit
 fi
 
+echo In `pwd`:
+echo python $tools/plot_prog.py
 python $tools/plot_prog.py
 cd $P
 
