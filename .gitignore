@@ -41,6 +41,7 @@ matlab/main/log
 matlab/main/infile_matlab.txt
 matlab/boltzmann/out/*
 matlab/boltzmann/*.mat
+matlab/boltzmann/solve_boltzmann_numeric.m
 *.m~
 #
 neXtSIMcoupling/results/*
