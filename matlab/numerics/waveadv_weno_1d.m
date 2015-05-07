@@ -75,19 +75,26 @@ end
 %% 1: periodic in i,j
 %% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
 h  = pad_var_1d(h,ADV_OPT,nbdy);
+jtst  = (ii+2*nbdy)+(-12:0);
+%tst1d = h(jtst)
 %plot(h),GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Prediction step
 sao      = weno3pd_v2_1d(h,u,scuy,scp2i,scp2,dt,nbdy);
 margin   = nbdy;
+%tst1d = sao(jtst)
+
+hp = 0*h;
 for i_ = 1-margin:ii+margin
    i     = i_+nbdy;%%1-nbdy->1
    hp(i) = h(i)+dt*sao(i);
 end%i
+%tst1d = hp(jtst)
 
 % --- Correction step
 sao   = weno3pd_v2_1d(hp,u,scuy,scp2i,scp2,dt,nbdy);
+%tst1d = sao(jtst)
 for i_ = 1-margin:ii+margin
    i     = i_+nbdy;%%1-nbdy->1
    h(i)  = .5*(h(i)+hp(i)+dt*sao(i));
@@ -131,15 +138,6 @@ function sao = weno3pd_v2_1d(g,u,scuy,scp2i,scp2,dt,nbdy)
 % --- and v-points, respectively.
 % --- ------------------------------------------------------------------
  
-%     real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::               &
-%    &  g,sao,u,v,scuy,scvx,scp2i,scp2
-%     real dt
-
-%     real cq00,cq01,cq10,cq11,ca0,ca1,eps
-%     parameter (cq00=-1./2.,cq01= 3./2.,                               &
-%    &           cq10= 1./2.,cq11= 1./2.,                               &
-%    &           ca0=1./3.,ca1=2./3.,                                   &
-%    &           eps=1.e-12)
 ii    = size(g,1)-2*nbdy; 
 idm   = ii;
 sao   = 0*g;
@@ -152,37 +150,17 @@ ca0   = 1./3.;
 ca1   = 2./3.;
 eps   = 1.e-12;
 
-%     real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::               &
-%    &  ful,fuh,fvl,fvh,gt
-%     real q0,q1,a0,a1,q
-%     integer i,j,l,im1,im2,ip1,jm1,jm2,jp1
 ful   = zeros(idm+2*nbdy,1);
 fuh   = zeros(idm+2*nbdy,1);
-%fvl   = zeros(idm+2*nbdy,1);
-%fvh   = zeros(idm+2*nbdy,1);
 gt    = zeros(idm+2*nbdy,1);
+jtst  = idm+2*nbdy+(-12:0)';
 
 %
 % --- Compute grid cell boundary fluxes. Split in a low order flux
 % --- (donor cell) and a high order correction flux.
 %
-
-%     do j=0,jj+2
-%       do i=0,ii+2
 for i_ = 0:ii+2
-   i  = i_+nbdy;%%1-nbdy->1
-   %%
-   ful(i)   = 0;
-   fuh(i)   = 0;
-   %fvl(i)   = 0;
-   %fvh(i)   = 0;
-end%i
-
-%     do j=0,jj+1
-%       do i=0,ii+2%%[TW 28.1.2014]
-for i_ = 0:ii+2
-   i  = i_+nbdy;%%1-nbdy->1
-   %%
+   i     = i_+nbdy;%%1-nbdy->1
    im1   = i-1;
  
    if (u(i)>0.)
@@ -215,81 +193,31 @@ for i_ = 0:ii+2
     fuh(i)   = u(i)*(a0*q0+a1*q1)/(a0+a1)*scuy(i)-ful(i);
 
 end%i
-
-%     do j=0,jj+2
-%       jm1=j-1
-%       do i=0,ii+1!![TW 28.1.2014]
-%for i_ = 0:ii+1
-%   i     = i_+nbdy;%%1-nbdy->1
-%   jm1   = j-1;
-%
-%   if (v(i,j)>0.)
-%      %!iv is a water mask (water at point and beneath point);
-%      %!for waves we make it 1 everywhere and mask waves that go on land later;
-%      %!jm2   = jm1-iv(i,jm1);
-%      jm2   = jm1-1;
-%
-%      q0 = cq00*g(i,jm2)+cq01*g(i,jm1);
-%      q1 = cq10*g(i,jm1)+cq11*g(i,j  );
-%
-%      a0 = ca0;
-%      a1 = ca1*(abs(g(i,jm2)-g(i,jm1))+eps)/(abs(g(i,jm1)-g(i,j  ))+eps);
-%
-%      fvl(i,j) = v(i,j)*g(i,jm1)*scvx(i,j);
-%
-%   else
-%      %!jp1   = j+iv(i,j+1);
-%      jp1   = j+1;
-%
-%      q0 = cq11*g(i,jm1)+cq10*g(i,j  );
-%      q1 = cq01*g(i,j  )+cq00*g(i,jp1);
-%
-%      a0 = ca1;
-%      a1 = ca0*(abs(g(i,jm1)-g(i,j  ))+eps)/(abs(g(i,j  )-g(i,jp1))+eps);
-%
-%      fvl(i,j) = v(i,j)*g(i,j  )*scvx(i,j);
-%   end
-%
-%   fvh(i,j) = v(i,j)*(a0*q0+a1*q1)/(a0+a1)*scvx(i,j)-fvl(i,j);
-%end%i
+%tst1d = [ful(jtst),fuh(jtst)]
 
 % --- Update field with low order fluxes.
-%     do j=0,jj+1
-%       do i=0,ii+1!![TW 28.1.2014]
 for i_ = 0:ii+1
    i     = i_+nbdy;%%1-nbdy->1
    %%
-   %gt(i,j)  = g(i,j)-dt*(ful(i+1,j)-ful(i,j) +fvl(i,j+1)-fvl(i,j))*scp2i(i,j);
    gt(i) = g(i)-dt*(ful(i+1)-ful(i))*scp2i(i);%scuy is already inside ful
 end%i
+%tst1d = gt(jtst)
 
 % --- Obtain fluxes with limited high order correction fluxes.
 q  = .25/dt;
-%     do j=1,jj
-%       do i=1,ii+1!![TW 28.1.2014]
 for i_ = 0:ii+1
    i     = i_+nbdy;%%1-nbdy->1
 
-   fuh(i) = ful(i)+max(-q*gt(i)*scp2(i), min( q*gt(i)*scp2(i-1),fuh(i)));
+   fuh(i) = ful(i)+max( -q*gt(i)*scp2(i),...
+                        min(  q*gt(i-1)*scp2(i-1),...
+                              fuh(i)));
 end%i
-
-%     do j=1,jj+1
-%       do i=1,ii!![TW 28.1.2014]
-%for i_ = 0:ii
-%   i     = i_+nbdy;%%1-nbdy->1
-%   j     = j_+nbdy;%%1-nbdy->1
-%
-%   fvh(i,j) = fvl(i,j)+max(-q*gt(i,j  )*scp2(i,j  ), min( q*gt(i,j-1)*scp2(i,j-1),fvh(i,j)));
-%end%i
 
 % --- Compute the spatial advective operator.
-%     do j=1,jj
-%       do i=1,ii!![TW 28.1.2014]
 for i_ = 0:ii
-   i     = i_+nbdy;%%1-nbdy->1
-
-   %sao(i,j) = -(fuh(i+1,j)-fuh(i,j)+fvh(i,j+1)-fvh(i,j))*scp2i(i,j);
-   sao(i) = -(fuh(i+1)-fuh(i))*scp2i(i);
+   i        = i_+nbdy;%%1-nbdy->1
+   sao(i)   = -(fuh(i+1)-fuh(i))*scp2i(i);
 end%i
+%tst1d = sao(jtst)
 
 return
