@@ -3,7 +3,7 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 % clear;
 
 %DO_SAVE     = 0;
-infile         = 'infile.txt';
+infile         = 'infile_matlab.txt';
 infile_version = 3;%%latest infile version
 
 if ~exist(infile)
