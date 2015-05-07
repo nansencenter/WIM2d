@@ -1,10 +1,14 @@
 from matplotlib import pyplot as plt
 import numpy as np
 
-for loop_i in [0,1]:
+for loop_i in [0,1,2]:
    if loop_i==0:
       figname  = 'fig_egHsVsX_steady.png'
       dname    = 'test_steady2.dat'
+      Nh       = 4
+   elif loop_i==1:
+      figname  = 'fig_egHsVsX_steady_FT.png'
+      dname    = 'test_steady2_FT.dat'
       Nh       = 4
    else:
       figname  = 'fig_egHsVsX_timedep.png'
