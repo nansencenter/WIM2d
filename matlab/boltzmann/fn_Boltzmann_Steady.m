@@ -18,7 +18,7 @@
 % SURGE = include surge motion
 % RIGID = rigid disk (inf) or elastic disk (rigidity=10^RIGID)
 % PS    = for PLOT = 1 -> pause(0.2) (PS=1) or pause (PS=0)
-% ISO   = isotropic scattering (0=off)
+% ISO   = isotropic scattering (0=off, otherwise wavenumber in m^{-1})
 % DO_SAVE = save data (1) or not (0)
 %
 % L Bennetts 2013 / Adelaide
@@ -105,19 +105,19 @@ if COMM
  end
  cprintf([0.3,0.3,0.3],['>> ' num2str(100*conc) ' concentration \n'])
  if ~ISO
- if strcmp(fortyp,'freq')
-  cprintf([0.3,0.3,0.3],['>> period = ' num2str(1/lam0) '\n'])
- else
-  cprintf([0.3,0.3,0.3],['>> ' fortyp ' = ' num2str(lam0) '\n'])
+  if strcmp(fortyp,'freq')
+   cprintf([0.3,0.3,0.3],['>> period = ' num2str(1/lam0) '\n'])
+  else
+   cprintf([0.3,0.3,0.3],['>> ' fortyp ' = ' num2str(lam0) '\n'])
+  end
+  cprintf([0.3,0.3,0.3],['>> floe diameter = ' num2str(Param.floe_diam) '\n'])
+  cprintf([0.3,0.3,0.3],['>> ' num2str(Param.thickness) ' thick\n'])
+  cprintf([0.3,0.3,0.3],['>> rigidity = ' sprintf('%0.5g',Param.E) '\n'])
+  cprintf([0.3,0.3,0.3],['>>> Vertical modes = ' int2str(Param.Ndtm) '\n'])
+ else%ISO
+  cprintf([0.3,0.3,0.3],['>>> Isotropic scattering = ' num2str(ISO) 'm^{-1}\n'])
  end
- cprintf([0.3,0.3,0.3],['>> floe diameter = ' num2str(Param.floe_diam) '\n'])
- cprintf([0.3,0.3,0.3],['>> ' num2str(Param.thickness) ' thick\n'])
- cprintf([0.3,0.3,0.3],['>> rigidity = ' sprintf('%0.5g',Param.E) '\n'])
- cprintf([0.3,0.3,0.3],['>>> Vertical modes = ' int2str(Param.Ndtm) '\n'])
- else
-  cprintf([0.3,0.3,0.3],['>>> Isotropic scattering = ' num2str(ISO) '\n'])
- end
- cprintf([0.3,0.3,0.3],['>>> angular reslution = ' int2str(th_res) '\n'])
+ cprintf([0.3,0.3,0.3],['>>> angular resolution = ' int2str(th_res) '\n'])
 end
 
 if DO_SAVE
@@ -130,16 +130,16 @@ if DO_SAVE
  end
  what_prb = [what_prb '>> ' num2str(100*conc) ' concentration \n'];
  if ~ISO
- if strcmp(fortyp,'freq')
-  what_prb = [what_prb '>> period = ' num2str(1/lam0) '\n'];
- else
-  what_prb = [what_prb '>> ' fortyp ' = ' num2str(lam0) '\n'];
- end
- what_prb = [what_prb '>> floe diameter = ' num2str(Param.floe_diam) '\n'];
- what_prb = [what_prb '>> ' num2str(Param.thickness) ' thick\n'];
- what_prb = [what_prb '>> rigidity = ' sprintf('%0.5g',Param.E) '\n'];
- what_prb = [what_prb '>>> Vertical modes = ' int2str(Param.Ndtm) '\n'];
- else
+  if strcmp(fortyp,'freq')
+   what_prb = [what_prb '>> period = ' num2str(1/lam0) '\n'];
+  else
+   what_prb = [what_prb '>> ' fortyp ' = ' num2str(lam0) '\n'];
+  end
+  what_prb = [what_prb '>> floe diameter = ' num2str(Param.floe_diam) '\n'];
+  what_prb = [what_prb '>> ' num2str(Param.thickness) ' thick\n'];
+  what_prb = [what_prb '>> rigidity = ' sprintf('%0.5g',Param.E) '\n'];
+  what_prb = [what_prb '>>> Vertical modes = ' int2str(Param.Ndtm) '\n'];
+ else%ISO
   what_prb = [what_prb '>>> Isotropic scattering = ' num2str(ISO) '\n'];
  end
  what_prb = [what_prb '>>> angular reslution = ' int2str(th_res) '\n'];
@@ -152,7 +152,10 @@ if ISO==0
   RIGID, SURGE, 0);
 else
  out(1).name  = 'E';
- out(1).value = ISO/length(th_vec) + 0*th_vec;
+ %out(1).value = ISO/length(th_vec) + 0*th_vec;
+ out(1).value = ISO/2/pi + 0*th_vec;
+   %% TW: multiply by dx=2*pi/Ndir later
+   %% => final R_mat1 = dx*(ISO/2/pi)*ones(Ndir,Ndir) = (ISO/Ndir)*ones(Ndir,Ndir)
 end
 
 for loop_out=1:length(out)
@@ -202,11 +205,21 @@ if ~DTYP
  else
   R_mat0 = -sum(R_mat1,1) + absorb;
  end
- R_mat = conc*(diag(R_mat0)+R_mat1)/pi/((Param.floe_diam/2)^2);
+
+ if ISO==0
+    %% concentration factor for Boltzmann problem
+    cfac = conc/pi/((Param.floe_diam/2)^2);
+ else
+    %% don't need concentration factor for isotropic case
+    cfac = 1;
+ end
+ R_mat = cfac*(diag(R_mat0)+R_mat1);
  
  if DO_SAVE 
-  K = conc*(R_mat1)/pi/((Param.floe_diam/2)^2);
-  alpha = conc*(R_mat0(1,1))/pi/((Param.floe_diam/2)^2);
+  %K     = conc*(R_mat1)/pi/((Param.floe_diam/2)^2);
+  %alpha = conc*(R_mat0(1,1))/pi/((Param.floe_diam/2)^2);
+  K      = cfac*(R_mat1);
+  alpha  = cfac*(R_mat0(1,1));
   
   save(sv_file,'th_vec','K','alpha','-append')
   
@@ -326,109 +339,109 @@ if ~DTYP
   %%%%%%%%%%%%%%%
   if absorb==0 %%
   %%%%%%%%%%%%%%% 
-   
-  %%% S(x)=b0*(x*v0+u0) + c0*v0 + Sum c+(n)*exp(D+(n)*x)*v+ + Sum c-(n)*exp(D-(n)*(x-w))*v-
-  %%%                              n                           n
-  %%%
-  %%% where D+=[Ip] and D-=[Im]
-  %%%
-  %%% v0 regular eigenvector corresponding to 0 eval (multiplicity 2)
-  %%% u0 generalised evec:
-  %%%                      (R_mat-0*L_mat)*u0=L_mat*v0
-  %%%
-  %%% SL(0)=S0 and SR(w)=S1
-  %%%
-  %%% where SL=S[incs] and SR=S[refs] 
-  
-  [Im,Ip,Iz0,Iz1] = fn_ArrangeEvals(D,0);
-  
-  n0=length([Im;Iz0]); n1=length([Ip;Iz1]);
-  
-  if or(n0~=length(incs),n1~=length(refs))
-   cprintf('magenta',['>>> Check evals: ' fortyp '=' num2str(lam0) '\n'])
-  end
-  
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %%% Generalised evalue for lam=0 %%%
-  [VR,DR]=eig(R_mat); DR=diag(DR);
-  
-  % Find zero eval
-  [~,i0]=min(abs(DR)); 
-  
-  % Solve R_mat*u0=L_mat*v0 => DR*(VR\u0)=VR\L_mat*v0;
-  %
-  % Pick 1st zero eval of R_mat-lam*L_mat (arbitrary)
-  
-  v0 = V(:,Iz0);
-  
-  u0=0*v0;
-  
-  dum_v = VR\L_mat*v0;
-  
-  for lp=1:length(u0)
-   if lp~=i0
-    u0(lp)=dum_v(lp)/DR(lp);
-   end
-  end
-  
-  u0 = VR*u0;
-  
-  %plot(th_vec,R_mat*u0-L_mat*v0)
-  
-  clear dum_v VR DR
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
-  %%% Rearrange
-  V = V(:,[Iz0,Im.',Ip.']);
-  D0 = D([Im]); D1 = D([Ip]);
     
-  Vbc = zeros(length(th_vec));
-  %%% BCs for x=0
-  EDbc = [1;1;exp(D0*0);exp(-D1*wth)];
-  Vbc(incs,:) = [u0(incs),V(incs,:)]*diag(EDbc); clear EDbc
-  
-  %%% BCs for x=wth
-  EDbc = [1;1;exp(D0*wth);exp(D1*0)];
-  Vbc(refs,:) = [wth*v0(refs)+u0(refs),V(refs,:)]*diag(EDbc); clear EDbc
-  
-  c = Vbc\Ibc; clear Vbc Ibc
+   %%% S(x)=b0*(x*v0+u0) + c0*v0 + Sum c+(n)*exp(D+(n)*x)*v+ + Sum c-(n)*exp(D-(n)*(x-w))*v-
+   %%%                              n                           n
+   %%%
+   %%% where D+=[Ip] and D-=[Im]
+   %%%
+   %%% v0 regular eigenvector corresponding to 0 eval (multiplicity 2)
+   %%% u0 generalised evec:
+   %%%                      (R_mat-0*L_mat)*u0=L_mat*v0
+   %%%
+   %%% SL(0)=S0 and SR(w)=S1
+   %%%
+   %%% where SL=S[incs] and SR=S[refs] 
+   
+   [Im,Ip,Iz0,Iz1] = fn_ArrangeEvals(D,0);
+   
+   n0=length([Im;Iz0]); n1=length([Ip;Iz1]);
+   
+   if or(n0~=length(incs),n1~=length(refs))
+    cprintf('magenta',['>>> Check evals: ' fortyp '=' num2str(lam0) '\n'])
+   end
+   
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%% Generalised evalue for lam=0 %%%
+   [VR,DR]=eig(R_mat); DR=diag(DR);
+   
+   % Find zero eval
+   [~,i0]=min(abs(DR)); 
+   
+   % Solve R_mat*u0=L_mat*v0 => DR*(VR\u0)=VR\L_mat*v0;
+   %
+   % Pick 1st zero eval of R_mat-lam*L_mat (arbitrary)
+   
+   v0 = V(:,Iz0);
+   
+   u0=0*v0;
+   
+   dum_v = VR\L_mat*v0;
+   
+   for lp=1:length(u0)
+    if lp~=i0
+     u0(lp)=dum_v(lp)/DR(lp);
+    end
+   end
+   
+   u0 = VR*u0;
+   
+   %plot(th_vec,R_mat*u0-L_mat*v0)
+   
+   clear dum_v VR DR
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   
+   %%% Rearrange
+   V = V(:,[Iz0,Im.',Ip.']);
+   D0 = D([Im]); D1 = D([Ip]);
+     
+   Vbc = zeros(length(th_vec));
+   %%% BCs for x=0
+   EDbc = [1;1;exp(D0*0);exp(-D1*wth)];
+   Vbc(incs,:) = [u0(incs),V(incs,:)]*diag(EDbc); clear EDbc
+   
+   %%% BCs for x=wth
+   EDbc = [1;1;exp(D0*wth);exp(D1*0)];
+   Vbc(refs,:) = [wth*v0(refs)+u0(refs),V(refs,:)]*diag(EDbc); clear EDbc
+   
+   c = Vbc\Ibc; clear Vbc Ibc
   
   %%%%%%%
   else %%
   %%%%%%% 
   
-  %%% S(x)=Sum c+(n)*exp(D+(n)*x)*v+ + Sum c-(n)*exp(D-(n)*(x-w))*v-
-  %%%       n                             n
-  %%%
-  %%% where D+=[Im] and D-=[Ip]
-  %%%
-  %%% SL(0)=S0 and SR(w)=S1
-  %%%
-  %%% where SL=S[incs] and SR=S[refs] 
-  
-  [Im,Ip] = fn_ArrangeEvals(D,1);
-  
-  n0=length([Im]); n1=length([Ip]);
-  
-  if or(n0~=length(incs),n1~=length(refs))
-   cprintf('magenta',['>>> Check evals: ' fortyp '=' num2str(lam0) '\n'])
-  end
+   %%% S(x)=Sum c+(n)*exp(D+(n)*x)*v+ + Sum c-(n)*exp(D-(n)*(x-w))*v-
+   %%%       n                             n
+   %%%
+   %%% where D+=[Im] and D-=[Ip]
+   %%%
+   %%% SL(0)=S0 and SR(w)=S1
+   %%%
+   %%% where SL=S[incs] and SR=S[refs] 
+   
+   [Im,Ip] = fn_ArrangeEvals(D,1);
+   
+   n0=length([Im]); n1=length([Ip]);
+   
+   if or(n0~=length(incs),n1~=length(refs))
+    cprintf('magenta',['>>> Check evals: ' fortyp '=' num2str(lam0) '\n'])
+   end
 
-  %%% Rearrange
-  V = [V(:,[Im]),V(:,[Ip])];
-  D0 = D([Im]); D1 = D([Ip]);
-    
-  Vbc = zeros(length(th_vec));
-  %%% BCs for x=0
-  EDbc = [exp(D0*0);exp(-D1*wth)];
-  Vbc(incs,:) = V(incs,:)*diag(EDbc); clear EDbc
-  
-  %%% BCs for x=wth
-  EDbc = [exp(D0*wth);exp(D1*0)];
-  Vbc(refs,:) = V(refs,:)*diag(EDbc); clear EDbc
-  
-  c = Vbc\Ibc; clear Vbc Ibc
+   %%% Rearrange
+   V = [V(:,[Im]),V(:,[Ip])];
+   D0 = D([Im]); D1 = D([Ip]);
+     
+   Vbc = zeros(length(th_vec));
+   %%% BCs for x=0
+   EDbc = [exp(D0*0);exp(-D1*wth)];
+   Vbc(incs,:) = V(incs,:)*diag(EDbc); clear EDbc
+   
+   %%% BCs for x=wth
+   EDbc = [exp(D0*wth);exp(D1*0)];
+   Vbc(refs,:) = V(refs,:)*diag(EDbc); clear EDbc
+   
+   c = Vbc\Ibc; clear Vbc Ibc
   
   end % END IF absorb==0
   
@@ -460,51 +473,51 @@ if PLOT
    if absorb==0 %%
    %%%%%%%%%%%%%%% 
    
-   for loop_x=1:length(x)
-    I = Vx*diag(exp(D([Im;Iz])*x(loop_x)))*c0;
-    if ~isempty(find(abs(imag(I))>tol))
-     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-      num2str(max(abs(imag(I)))), '\n'])
+    for loop_x=1:length(x)
+     I = Vx*diag(exp(D([Im;Iz])*x(loop_x)))*c0;
+     if ~isempty(find(abs(imag(I))>tol))
+      cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+       num2str(max(abs(imag(I)))), '\n'])
+     end
+     I = [I(end);I];
+     plot(gca,[-pi,th_vec]/pi,real(I))
+     set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+     title(['x=' num2str(x(loop_x))])
+     xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+     if PS==0
+      cprintf('m',['>> paused: hit any key to continue \n'])
+      pause
+     else
+      pause(PS)
+     end
     end
-    I = [I(end);I];
-    plot(gca,[-pi,th_vec]/pi,real(I))
-    set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-    title(['x=' num2str(x(loop_x))])
-    xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-    if PS==0
-     cprintf('m',['>> paused: hit any key to continue \n'])
-     pause
-    else
-     pause(PS)
-    end
-   end
-   close(gcf)
-   if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
+    close(gcf)
+    if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
    
    %%%%%%%
    else %% absorb~=0
    %%%%%%%
    
-   for loop_x=1:length(x)
-    I = Vx*diag(exp(D(Im)*x(loop_x)))*c0;
-    if ~isempty(find(abs(imag(I))>tol))
-     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-      num2str(max(abs(imag(I)))), '\n'])
+    for loop_x=1:length(x)
+     I = Vx*diag(exp(D(Im)*x(loop_x)))*c0;
+     if ~isempty(find(abs(imag(I))>tol))
+      cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+       num2str(max(abs(imag(I)))), '\n'])
+     end
+     I = [I(end);I];
+     plot(gca,[-pi,th_vec]/pi,real(I))
+     set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+     title(['x=' num2str(x(loop_x))])
+     xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+     if PS==0
+      cprintf('m',['>> paused: hit any key to continue \n'])
+      pause
+     else
+      pause(PS)
+     end
     end
-    I = [I(end);I];
-    plot(gca,[-pi,th_vec]/pi,real(I))
-    set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-    title(['x=' num2str(x(loop_x))])
-    xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-    if PS==0
-     cprintf('m',['>> paused: hit any key to continue \n'])
-     pause
-    else
-     pause(PS)
-    end
-   end
-   close(gcf)
-   if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
+    close(gcf)
+    if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
    
    end % END IF absorb ==0
    
@@ -557,48 +570,48 @@ if PLOT
    if PLOT==1
    %%%%%%%%%%%%%%% 
    if absorb==0 %% 
-   %%%%%%%%%%%%%%%
-   for loop_x=1:length(x)
-    I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-    if ~isempty(find(abs(imag(I))>tol))
-     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-      num2str(max(abs(imag(I)))), '\n'])
+    %%%%%%%%%%%%%%%
+    for loop_x=1:length(x)
+     I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+     if ~isempty(find(abs(imag(I))>tol))
+      cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+       num2str(max(abs(imag(I)))), '\n'])
+     end
+     I = [I(end);I];
+     plot(gca,[-pi,th_vec]/pi,real(I))
+     set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+     title(['x=' num2str(x(loop_x))])
+     xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+     %set(gca,'yscale','log')
+     if PS==0
+      cprintf('m',['>> paused: hit any key to continue \n'])
+      pause
+     else
+      pause(PS)
+     end
     end
-    I = [I(end);I];
-    plot(gca,[-pi,th_vec]/pi,real(I))
-    set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-    title(['x=' num2str(x(loop_x))])
-    xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-    %set(gca,'yscale','log')
-    if PS==0
-     cprintf('m',['>> paused: hit any key to continue \n'])
-     pause
-    else
-     pause(PS)
-    end
-   end
    %%%%%%%
    else %%
    %%%%%%% 
-   for loop_x=1:length(x)
-    I = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-    if ~isempty(find(abs(imag(I))>tol))
-     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-      num2str(max(abs(imag(I)))), '\n'])
+    for loop_x=1:length(x)
+     I = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+     if ~isempty(find(abs(imag(I))>tol))
+      cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+       num2str(max(abs(imag(I)))), '\n'])
+     end
+     I = [I(end);I];
+     plot(gca,[-pi,th_vec]/pi,real(I))
+     set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+     title(['x=' num2str(x(loop_x))])
+     xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+     %set(gca,'yscale','log')
+     if PS==0
+      cprintf('m',['>> paused: hit any key to continue \n'])
+      pause
+     else
+      pause(PS)
+     end
     end
-    I = [I(end);I];
-    plot(gca,[-pi,th_vec]/pi,real(I))
-    set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-    title(['x=' num2str(x(loop_x))])
-    xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-    %set(gca,'yscale','log')
-    if PS==0
-     cprintf('m',['>> paused: hit any key to continue \n'])
-     pause
-    else
-     pause(PS)
-    end
-   end
    
    end % END IF absorb==0
    
@@ -691,37 +704,37 @@ if strcmp(wth,'inf')
 else
  %%%%%%%%%%%%%%%
  if absorb==0 %%
- %%%%%%%%%%%%%%%
- I0 = [0*v0(incs)+u0(incs),V(incs,:)]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
- I  = [wth*v0(incs)+u0(incs),V(incs,:)]*diag([1;1;exp(D0*wth);...
-  exp(D1*(wth-wth))])*c;
- if ~isempty(find(abs(imag([I;I0]))>tol))
-  cprintf('red',['Check I and I0: ', int2str(loop_x), ', ', ...
-   num2str(max(abs(imag(I)))), '\n'])
- end
- j0 = find(th_vec(incs)==0);
- T0 = real(I(j0))/real(I0(j0));
- Tx = sum(cos(th_vec(incs)).*real(I.'))/...
-  sum(cos(th_vec(incs)).*real(I0.'));
- Tf = sum(real(I.'))/sum(real(I0.'));
- TN = sum(real(I(jj0).'))/sum(real(I0(jj0).'));
+  %%%%%%%%%%%%%%%
+  I0 = [0*v0(incs)+u0(incs),V(incs,:)]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
+  I  = [wth*v0(incs)+u0(incs),V(incs,:)]*diag([1;1;exp(D0*wth);...
+   exp(D1*(wth-wth))])*c;
+  if ~isempty(find(abs(imag([I;I0]))>tol))
+   cprintf('red',['Check I and I0: ', int2str(loop_x), ', ', ...
+    num2str(max(abs(imag(I)))), '\n'])
+  end
+  j0 = find(th_vec(incs)==0);
+  T0 = real(I(j0))/real(I0(j0));
+  Tx = sum(cos(th_vec(incs)).*real(I.'))/...
+   sum(cos(th_vec(incs)).*real(I0.'));
+  Tf = sum(real(I.'))/sum(real(I0.'));
+  TN = sum(real(I(jj0).'))/sum(real(I0(jj0).'));
  
  %%%%%%%
  else %%
  %%%%%%% 
- I0 = V(incs,:)*diag([exp(D0*0);exp(D1*(0-wth))])*c;
- I  = V(incs,:)*diag([exp(D0*Param.MIZ_length);...
-  exp(D1*(Param.MIZ_length-wth))])*c;
- if ~isempty(find(abs(imag([I;I0]))>tol))
-  cprintf('red',['Check I and I0: ', int2str(loop_x), ', ', ...
-   num2str(max(abs(imag(I)))), '\n'])
- end
- j0 = find(th_vec(incs)==0);
- T0 = real(I(j0))/real(I0(j0));
- Tx = sum(cos(th_vec(incs)).*real(I.'))/...
-  sum(cos(th_vec(incs)).*real(I0.'));
- Tf = sum(real(I.'))/sum(real(I0.'));
- TN = sum(real(I(jj0).'))/sum(real(I0(jj0).'));
+  I0 = V(incs,:)*diag([exp(D0*0);exp(D1*(0-wth))])*c;
+  I  = V(incs,:)*diag([exp(D0*Param.MIZ_length);...
+   exp(D1*(Param.MIZ_length-wth))])*c;
+  if ~isempty(find(abs(imag([I;I0]))>tol))
+   cprintf('red',['Check I and I0: ', int2str(loop_x), ', ', ...
+    num2str(max(abs(imag(I)))), '\n'])
+  end
+  j0 = find(th_vec(incs)==0);
+  T0 = real(I(j0))/real(I0(j0));
+  Tx = sum(cos(th_vec(incs)).*real(I.'))/...
+   sum(cos(th_vec(incs)).*real(I0.'));
+  Tf = sum(real(I.'))/sum(real(I0.'));
+  TN = sum(real(I(jj0).'))/sum(real(I0(jj0).'));
  end % END IF absorb==0
 end % END IF wth=inf
 
