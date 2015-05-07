@@ -5,6 +5,9 @@
 function [S,S_freq,tau_x,tau_y] = ...
    adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt,adv_options)
 
+nx = grid_prams.nx;
+ny = grid_prams.ny;
+
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
 S           = s1.Sdir;%% size(S)=[nx,ny,ndir] - do 1 freq at a time;
