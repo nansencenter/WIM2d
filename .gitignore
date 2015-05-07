@@ -39,6 +39,8 @@ fortran/run/results/*
 matlab/main/out
 matlab/main/log
 matlab/main/infile_matlab.txt
+matlab/boltzmann/out/*
+matlab/boltzmann/*.mat
 *.m~
 #
 neXtSIMcoupling/results/*
