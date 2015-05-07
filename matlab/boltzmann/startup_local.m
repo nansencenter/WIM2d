@@ -1,3 +1,6 @@
 addpath('misc');
 addpath('roots');
-issm  = getenv('ISSM_DIR')
+issmdir  = getenv('ISSM_DIR');
+if strcmp(issmdir,'')
+   rmpath([issmdir,'/externalpackages/matlab/install/toolbox/local']);
+end
