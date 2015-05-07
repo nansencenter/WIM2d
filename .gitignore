@@ -39,6 +39,7 @@ fortran/run/results/*
 matlab/main/out
 matlab/main/log
 matlab/main/infile_matlab.txt
+*.m~
 #
 neXtSIMcoupling/results/*
 neXtSIMcoupling/run/*
