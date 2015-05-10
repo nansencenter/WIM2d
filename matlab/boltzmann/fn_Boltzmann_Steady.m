@@ -121,15 +121,19 @@ if COMM
 end
 
 if DO_SAVE
+ clockout = clock; yr=clockout(1); mt=clockout(2); dy=clockout(3); 
+ hr=clockout(4); mn=clockout(5); clear clockout
  what_prb = ['<-------- Boltzmann steady ------->\n' ...
   '>> ' fn_inc '\n'];
+ what_prb = [what_prb '>> ' int2str(dy) '/' int2str(mt) '/' int2str(yr) ...
+  ' ' int2str(hr) ':' int2str(mn) '\n']; clear yr mn dy hr mn
  if strcmp(wth,'inf')
   what_prb = [what_prb '>> semi-inf problem \n'];
  else
   what_prb = [what_prb '>> width = ' num2str(wth) '\n'];
  end
- what_prb = [what_prb '>> ' num2str(100*conc) ' concentration \n'];
  if ~ISO
+  what_prb = [what_prb '>> ' num2str(100*conc) ' concentration \n'];
  if strcmp(fortyp,'freq')
   what_prb = [what_prb '>> period = ' num2str(1/lam0) '\n'];
  else
@@ -173,84 +177,57 @@ end % end loop_out
 %%% FINITE DIFFERENCE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~DTYP
-    
- % Nb. This is the trap rule (because it's periodic)
- 
- dx = 2*pi/length(th_vec);
+% Nb. This is the trap rule (because it's periodic)
 
- L_mat = cos(th_vec);
- L_mat = diag(L_mat);
- 
+dx = 2*pi/length(th_vec);
+
+L_mat = cos(th_vec);
+L_mat = diag(L_mat);
+
+%%% IF NON_ISOTROPIC %%%
+if ~ISO %%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%%%%%%
  R_mat1 = zeros(length(th_vec));
  mk = 2*th_res-1; %+1;
  for loop_th=1:2*th_res-2
-  R_mat1(loop_th,:) = [S(mk:end),S(1:mk-1)];   
+  R_mat1(loop_th,:) = [S(mk:end),S(1:mk-1)];
   mk=mk-1;
  end
  R_mat1(2*th_res-1,:) = S; %+1
  mk=length(th_vec);
  for loop_th=2*th_res+0:length(th_vec)
-  R_mat1(loop_th,:) = [S(mk:end),S(1:mk-1)]; 
+  R_mat1(loop_th,:) = [S(mk:end),S(1:mk-1)];
   mk=mk-1;
  end
  clear mk
  R_mat1 = dx*R_mat1;
  
- if 0
-  R_mat0 = -beta + absorb + 0*S;
- else
-  R_mat0 = -sum(R_mat1,1) + absorb;
+ %%% ISOTROPOIC %%%
+else %%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%
+ 
+ for loop_th=1:length(th_vec)
+  R_mat1(loop_th,:) = S;
  end
- R_mat = conc*(diag(R_mat0)+R_mat1)/pi/((Param.floe_diam/2)^2);
  
- if DO_SAVE 
-  K = conc*(R_mat1)/pi/((Param.floe_diam/2)^2);
-  alpha = conc*(R_mat0(1,1))/pi/((Param.floe_diam/2)^2);
-  
-  save(sv_file,'th_vec','K','alpha','-append')
-  
-  clear K alpha 
- end % END DO_SAVE
- 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FOURIER SERIES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
- 
-else 
- 
- cprintf('green','!!!This code has not been checked!!!\n')
-
-%  N = (length(S_Fou(:,1))-1)/2;
-% 
-%  L_mat = zeros(2*N+1); R_mat1 = L_mat;
-% 
-%  L_mat(1,2)=0.5; L_mat(2*N+1,2*N)=0.5;
-% 
-%  for loop_N=2:2*N
-%   L_mat(loop_N,loop_N-1)=0.5; L_mat(loop_N,loop_N+1)=0.5;
-%  end
-% 
-%  R_mat0 = -beta*ones(1,2*N+1);
-% 
-%  count_n=-N;
-%  for loop_N=1:2*N+1
-%   count_p=-N;   
-%   for loop_in=1:2*N+1
-%    count_q = count_p-count_n;
-%    if and(count_q>=-N,count_q<=N)
-%     R_mat1(loop_N,loop_N) = R_mat1(loop_N,loop_N) + ...
-%       S_Fou(loop_in,N+1+count_q);
-%    end
-%    count_p=count_p+1;
-%   end
-%   count_n=count_n+1;
-%  end
-%  
-%  R_mat = conc*(diag(R_mat0)+2*pi*R_mat1)/pi/(GeomDisk(3)^2);
-
 end
 
+if 0
+ R_mat0 = -beta + absorb + 0*S;
+else
+ R_mat0 = -sum(R_mat1,1) + absorb;
+end
+R_mat = conc*(diag(R_mat0)+R_mat1)/pi/((Param.floe_diam/2)^2);
+
+if DO_SAVE
+ K = conc*(R_mat1)/pi/((Param.floe_diam/2)^2);
+ alpha = conc*(R_mat0(1,1))/pi/((Param.floe_diam/2)^2);
+ 
+ save(sv_file,'th_vec','K','alpha','-append')
+ 
+ clear K alpha
+end % END DO_SAVE
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 2. Eigenvalues & eigenvectors %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -618,8 +595,8 @@ if PLOT
       I = [I(end);I];
       H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
      end
-     plot(x,H_vec,col); set(gca,'box','on')
-     xlabel('x','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+     plot(x/1e3,H_vec,col); set(gca,'box','on')
+     xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
     %%%%%%%
     else %%
     %%%%%%%
@@ -632,8 +609,8 @@ if PLOT
      I = [I(end);I];
      H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
     end
-    plot(x,H_vec,col); set(gca,'box','on')
-    xlabel('x','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+    plot(x/1e3,H_vec,col); set(gca,'box','on')
+    xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
     end % END IF absorb==0
    end % END IF PLOT==
   end % ENF IF wth==inf
