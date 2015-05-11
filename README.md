@@ -14,13 +14,14 @@ of some other programs)
 Versions:
 - 1. matlab
 - 2. fortran
-- 3. ipython interface for fortran code
+- 3. ipython interface for fortran code (+ ffmpeg to combine jpg/png into mp4 movies) 
      - Mac OSX:
          - Install these python packages with macports (needs xcode with command line tools installed):
             * sudo port install py27-ipython
             * sudo port install py27-numpy
             * sudo port install py27-scipy
             * sudo port install py27-matplotlib
+            * sudo port install ffmpeg
 
          - These packages probably aren't needed, but can be used with nansat,
            and Sentinel1ice, python tools from NERSC for working with satellite images
@@ -34,6 +35,7 @@ Versions:
          - NB Make sure macports (i)python is used (check with "which python"): in /opt/local/bin, do
             * sudo ln -s python2.7  python
             * sudo ln -s ipython2.7 ipython
+            * sudo ln -s f2py-2.7  f2py
 
 - 4. matlab interface (mex) for fortran code
       - tested with OSX 10.8, matlab 2013a

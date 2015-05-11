@@ -125,18 +125,32 @@ if 1:
    cp          = om/kwtr # phase vel (open water) [m/s]
    cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
    #
-   N     = pow(2,4)
-   out   = Fbs.solve_boltzmann_ft(width=ice_width,
-            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+   N     = pow(2,7);
+   nx0         = 1.e3
+   x_ice       = np.linspace(0.,ice_width,nx0)
+   if 1:
+      # solve in Fourier space
+      meth  = '_FT'
+      out   = Fbs.solve_boltzmann_ft(width=ice_width,
+               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+      #
+      E_n         = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=[0])
+      Hs_steady   = 4*np.sqrt(E_n[:,0].real)
+   else:
+      # solve in position space
+      meth  = ''
+      out   = Fbs.solve_boltzmann(width=ice_width,
+               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+      #
+      E_th        = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=range(N))
+      dtheta      = 2*np.pi/float(N)
+      E0          = dtheta*E_th.sum(1) # integrate over directions
+      Hs_steady   = 4*np.sqrt(E0.real)
 
    # alp2  = out['inputs'][0]
    # print(alp,alp2)
    # sys.exit('fig_test_convergence2steady')
 
-   nx0         = 1.e3
-   x_ice       = np.linspace(0.,ice_width,nx0)
-   E_n         = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=[0])
-   Hs_steady   = 4*np.sqrt(E_n[:,0].real)
 
    # print(x_ice)
    # print(Hs_steady)
@@ -175,7 +189,7 @@ for nstep in steps2plot:
 
    fig      = Fplt.plot_1d(xx,Hs_n,labs=labs,f=fig,color=cols[loop_c],linestyle=lstil[loop_s])
 #
-figname  = figdir+'/convergence2steady.png'
+figname  = figdir+'/convergence2steady'+meth+'.png'
 print('saving to '+figname+'...')
 plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
 plt.close()
@@ -210,7 +224,7 @@ if 1:
 
    #####################################################
    # print  steady-state results to dat-file
-   dfil  = figdir+'/test_steady2.dat'
+   dfil  = figdir+'/test_steady2'+meth+'.dat'
    fid   = open(dfil,'w')
 
    # header:

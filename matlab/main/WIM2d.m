@@ -3,21 +3,8 @@ function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
 % clear;
 
 %DO_SAVE     = 0;
-<<<<<<< HEAD
-DO_PLOT     = 1;  %% change this to 0
-                  %% if graphics aren't supported;
-USE_ICE_VEL = 0   %% if 0, approx ice group vel by water group vel;  
-DO_ATTEN    = 1   %% if 0, just advect waves
-                  %%  without attenuation;
-DO_BREAKING = 0   %% if 0, turn off breaking for testing
-STEADY      = 0   %% Steady-state solution: top-up waves inside wave mask
-SOLVER      = 1   %% 0: old way; 1: scatter E isotropically
-
-OPT      = 1;%%ice-water-land configuration;
-PLOT_OPT = 1;%%plot option
-=======
-infile         = 'infile.txt';
-infile_version = 2;%%latest infile version
+infile         = 'infile_matlab.txt';
+infile_version = 3;%%latest infile version
 
 if ~exist(infile)
    disp('********************************************************')
@@ -70,13 +57,41 @@ else
    end
    fclose(fid);
 end
->>>>>>> 81fb2fae1a3d22d5b917472c9302242c9427ed4e
 
 %%other options
 DO_PLOT     = 1;%% change this to 0
                 %% if graphics aren't supported;
 PLOT_OPT    = 2;%%plot option
 SV_FIG      = 1;
+adv_options = struct('ADV_DIM',ADV_DIM,...
+                     'ADV_OPT',ADV_OPT);
+
+%% make a log file similar to fortran file
+log_dir  = 'log';
+if ~exist('log','dir')
+   eval(['!mkdir ',log_dir]);
+end
+log_file    = [log_dir,'/WIM2d_matlab.log'];
+this_subr   = mfilename();
+
+%%open log file for writing (clear contents)
+logid       = fopen(log_file,'w');
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n','Outer subroutine:');
+fprintf(logid,'%s%s%s\n','>> ',this_subr,'.m');
+fprintf(logid,'%s\n','***********************************************');
+
+fprintf(logid,'%s\n',' ');
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n','Main parameters:');
+fprintf(logid,'%s%2.2d\n','SCATMOD:                          ',SCATMOD);
+fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',ADV_DIM);
+fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',ADV_OPT);
+fprintf(logid,'%s%2.2d\n','DO_BREAKING:                      ',DO_BREAKING);
+fprintf(logid,'%s%2.2d\n','STEADY:                           ',STEADY);
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n',' ');
+fclose(logid);
 
 %if DO_SAVE
 %   filename=['wim2d_out',num2str(Tm),...
@@ -96,14 +111,10 @@ format long
 
 disp('Initialization')
 
-%% Environment
-% homedir = '/home/nersc/dany';
-% wavedir = [homedir,'/waves'];
-% mizdir  = [homedir,'/validation/miz'];
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%check what inputs we are given;
 HAVE_GRID   = exist('grid_prams','var');
+
 HAVE_ICE    = exist('ice_fields','var');
 if HAVE_ICE
    if ~isfield(ice_fields,'cice')
@@ -117,6 +128,7 @@ if HAVE_ICE
       ice_prams   = fn_fill_iceprams(ice_prams);
    end
 end
+
 HAVE_WAVES  = exist('wave_prams','var');
 if HAVE_WAVES
    %%check if full info is given or just partial info;
@@ -126,8 +138,9 @@ if HAVE_WAVES
       HAVE_WAVES  = 0;
    end
 end
+
 HAVE3 = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
-if (HAVE3>0)&(HAVE3<3)
+if (0<HAVE3)&(HAVE3<3)
    disp(' ');
    disp('*********************************************************************');
    disp('Please specify all 3 of ''grid_prams'',''ice_fields'',''wave_fields''');
@@ -163,6 +176,7 @@ if HAVE_GRID==0
    dx = 4000; % m
    dy = 4000; % m
    %%
+
    grid_prams  = struct('nx',nx,'ny',ny,...
                         'dx',dx,'dy',dy);
    grid_prams  = get_grid(grid_prams,OPT);
@@ -191,17 +205,6 @@ Y        = grid_prams.Y;
 %% Ice/water;
 if HAVE_ICE==0
    h           = 2;
-<<<<<<< HEAD
-   c           = 0.75;
-   bc_opt      = 0;%%breaking condition (0=beam;1=Marchenko)
-   young_opt   = 0;%%young's modulus option
-   visc_rp     = 0;%%RP viscosity
-   ice_prams   = struct('c'         ,c,...
-                     'h'         ,h,...
-                     'bc_opt'    ,bc_opt,...
-                     'young_opt' ,young_opt,...
-                      'visc_rp'   ,visc_rp);
-=======
    c           = 0.7;
    visc_rp     = 0;%% Robinson-Palmer damping parameter [~13Pa/(m/s)]
    bc_opt      = 0;%% breaking condition (0=beam;1=Marchenko)
@@ -216,11 +219,10 @@ if HAVE_ICE==0
       %%Option for selecting Young's modulus
       %% - only used if Young's modulus not given
       %% 0: 2e9 [Marchenko estimate]
-      %% 2: Vernon's estimate from brine volume fraction (vbf)
-      %% 1: same as above but with vbf=.1 -> young = 5.49e9 Pa
+      %% 1: Vernon's estimate from brine volume fraction (vbf)
+      %% 2: same as above but with vbf=.1 -> young = 5.49e9 Pa
       ice_prams.young_opt  = 0;
    end
->>>>>>> 81fb2fae1a3d22d5b917472c9302242c9427ed4e
    %%
    [ice_fields,ice_prams]  = iceinit(ice_prams,grid_prams,OPT);
    %% ice_fields  = structure:
@@ -278,6 +280,19 @@ if 0
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%append to log file
+logid = fopen(log_file,'a');
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n','WIM parameters:');
+fprintf(logid,'%s%4.2f\n','Brine volume fraction:       ' ,ice_prams.vbf);
+fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
+fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
+fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
+fprintf(logid,'%s%5.2f\n','Damping (Pa.s/m):           '  ,ice_prams.visc_rp);
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n','');
+fclose(logid);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%waves
 if HAVE_WAVES==0
@@ -296,7 +311,7 @@ if HAVE_WAVES==0
    WAVE_MASK   = wave_fields.WAVE_MASK;
    %%
    inc_options = struct('nw',nw,'ndir',ndir,'DIR_INIT',DIR_INIT);
-   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options);
+   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options)
 end
 
 nw       = wave_stuff.nfreq;     %% number of frequencies
@@ -483,6 +498,39 @@ t0       = now;   %%days
 t0_fac   = 24*60; %%days to minutes
 brkcrt  = zeros(nx,ny,nt);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%append to log file
+logid = fopen(log_file,'a');
+fprintf(logid,'%s\n',' ');
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n','Other Parameters:');
+fprintf(logid,'%s%6.1f\n','Time step (s):                    ' ,dt);
+fprintf(logid,'%s%4.3f\n','CFL number:                       ' ,CFL);
+fprintf(logid,'%s%5.2f\n','Maximum wave group velocity (m/s):' ,amax);
+fprintf(logid,'%s%6.1f\n','Time step (s):                    ' ,dt);
+fprintf(logid,'%s%4.4d\n','Number of time steps:             ',nt);
+fprintf(logid,'%s%5.2f\n','Time interval (h):                ',nt*dt/3600 );
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n',' ');
+
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s%4.4d%s%4.4d\n','Grid dimensions:                  ' ,...
+   nx,' ',ny);
+fprintf(logid,'%s%4.1f%s%4.1f\n','Spatial resolution (km):          ' ,...
+   dx/1.0e3,' ',dy/1.0e3);
+fprintf(logid,'%s%4.1f%s%4.1f\n','Extent of domain   (km):          ' ,...
+   nx*dx/1.0e3,' ',nx*dy/1.0e3);
+
+fprintf(logid,'%s\n',' ');
+fprintf(logid,'%s%5.2f\n','Minimum period (s):               ',1/max(wave_stuff.freq) );
+fprintf(logid,'%s%5.2f\n','Maximum period (s):               ',1/max(wave_stuff.freq) );
+fprintf(logid,'%s%4.4d\n','Number of wave frequencies:       ',nw);
+fprintf(logid,'%s%4.4d\n','Number of wave directions:        ',ndir);
+fprintf(logid,'%s%5.2f\n','Directional resolution (degrees): ',360.0/(1.0*ndir) );
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n',' ');
+fclose(logid);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% define weights for numerical quadrature;
@@ -705,13 +753,13 @@ for n = 2:nt
       if SCATMOD==0
          %% Simple attenuation scheme - doesn't conserve scattered energy
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-            adv_atten_simple(grid_prams,ice_prams,s1,dt);
+            adv_atten_simple(grid_prams,ice_prams,s1,dt,adv_options);
          clear s1 S_out;
       elseif SCATMOD==1
          %% same as SCATMOD==0, but scattered energy
          %% is distributed isotropically
          [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-            adv_atten_isotropic(grid_prams,ice_prams,s1,dt);
+            adv_atten_isotropic(grid_prams,ice_prams,s1,dt,adv_options);
          clear s1 S_out;
       end
 
@@ -956,19 +1004,50 @@ for n = 2:nt
 
 end%% end time loop
 
-if OPT==1
+t1 = now;
+
+if (OPT==1)|(OPT==3)
    Dmax_j   = Dmax(:,1);
-   jmiz     = find((Dmax_j>0)&(Dmax_j<250))
+   jmiz     = find((Dmax_j>0)&(Dmax_j<250));
    Wmiz     = dx/1e3*length(jmiz);
+   %%
+   Dmax_min = min(Dmax_j);
+   Dmax_max = max(Dmax_j);
+   %%
    disp(' ');
    disp(['MIZ width = ',num2str(Wmiz),' km']);
 end
 
+taux_min = min(ice_fields.tau_x(:))
 taux_max = max(ice_fields.tau_x(:))
+tauy_min = min(ice_fields.tau_x(:))
 tauy_max = max(ice_fields.tau_y(:))
 disp(['max tau_x = ',num2str(taux_max),' Pa']);
 disp(['max tau_y = ',num2str(tauy_max),' Pa']);
 disp(' ');
+
+%%append to log file
+logid = fopen(log_file,'a');
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n','Diagnostics:');
+if (OPT==1)|(OPT==3)
+   fprintf(logid,'%s%6.1f\n','MIZ width (km): ',Wmiz);
+   fprintf(logid,'%s%6.1f%s%6.1f\n','Dmax range in MIZ (m): ',...
+      Dmax_min,' ',Dmax_max);
+end
+fprintf(logid,'%s%10.3e%s%10.3e\n','tau_x range (Pa): ',...
+   taux_min,' ',taux_max);
+fprintf(logid,'%s%10.3e%s%10.3e\n','tau_y range (Pa): ',...
+   tauy_min,' ',tauy_max);
+fprintf(logid,'%s\n','***********************************************');
+
+fprintf(logid,'%s,\n',' ');
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s,%7.1f\n','Elapsed time (min):',t0_fac*(t1-t0));
+fprintf(logid,'%s\n','***********************************************');
+fprintf(logid,'%s\n',' ');
+fclose(logid);
+
 
 if DO_PLOT%%check exponential attenuation
    figure(2),clf;

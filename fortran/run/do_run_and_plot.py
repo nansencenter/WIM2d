@@ -8,7 +8,8 @@ import struct
 ##
 ## NB run from 'run' directory !!
 ##
-dd   = os.path.abspath("..")
+w2d   = os.getenv('WIM2D_PATH')
+dd    = w2d+'/fortran'
 sys.path.append(dd+"/bin")
 sys.path.append(dd+"/py_funs")
 
@@ -70,13 +71,15 @@ if 1:
    # change integer parameters:
    SCATMOD     = 1
    ADV_DIM     = 1
+   ADV_OPT     = 2
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
    DO_BREAKING = 1
-   int_prams   = np.array([SCATMOD,ADV_DIM,
+   STEADY      = 1
+   int_prams   = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                            CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                           DO_BREAKING])
+                           DO_BREAKING,STEADY])
 
 if 1:
    # change real parameters:
@@ -148,6 +151,11 @@ if 1:
       Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
       print("Plots in "+figdir3_0+'\n')
    ################################################################
+
+   print(' ')
+   print("To make a movie of progress images:")
+   print("cd "+figdir+'/prog')
+   print(dd+'/tools/prog2mp4.sh Hs (or Dmax,taux,tauy)')
 
 elif 1:
    ################################################################

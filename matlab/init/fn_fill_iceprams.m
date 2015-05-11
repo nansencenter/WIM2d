@@ -39,10 +39,10 @@ end
 if ~isfield(s1,'young');
    if s1.young_opt==0%%just set it
       s1.young = 2e9;      %%lower ~ Marchenko
-   elseif s1.young_opt==1%%just set it
-      s1.young = 5.49e9;   %%higher ~ Vernon's guess (s1.vb=.1)
-   elseif s1.young_opt==2%%Vernon's est from vbf
+   elseif s1.young_opt==1%%Vernon's est from vbf
       s1.young = 10e9*(1-3.51*s1.vbf)-1e9;          % Young's modulus [Pa]
+   elseif s1.young_opt==2%%just set it
+      s1.young = 5.49e9;   %%higher ~ Vernon's guess (s1.vbf=.1)
    end
 end
 
