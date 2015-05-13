@@ -1087,43 +1087,66 @@ if DO_PLOT%%check exponential attenuation
       clf;
 
       COMP_FORTRAN   = 1;%%compare to fortran results
+      dfiles         = {};
+      leg_text       = {};
+      fortcols       = {};
       if COMP_FORTRAN
-         frun  = '../../fortran/run/';
+         frun        = '../../fortran/run/';
+         fdir        = [frun,'/fig_scripts/figs/TC2S/'];%%location of text files with fortran results
 
-         %% fortran
-         dfil  = [frun,'fig_scripts/figs/TC2S/test_steady1.dat'];
-         disp(['opening ',dfil,'']);
-         %%
-         fid      = fopen(dfil,'r');
-         columns  = textscan(fid,'%f %f %f');
-         xx_f     = columns{1};
-         Hs_f     = columns{2};
-         fclose(fid);
-         %%
-         plot(xx_f/1e3,Hs_f,'b','linewidth',2);
-         hold on;
+         % time-dep results (from fortran code)
+         dfiles  {end+1} = 'test_steady1.dat';  % file name
+         leg_text{end+1} = '''F77 (time-dep)''';    % legend text
+         fortcols{end+1} = 'b';                 % colour
 
-         figure(3);
-         ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
-         subplot(2,1,2)
-         hold on;
-         for loop_ix=1:length(ix)
-            plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
+
+         % steady-state results (from python code)
+         dfiles  {end+1} = 'test_steady2.dat';  % file name
+         leg_text{end+1} = '''python (steady)''';   % legend text
+         fortcols{end+1} = '--g';               % colour
+
+         % % steady-state results (from python code v2)
+         % dfiles  {end+1} = 'test_steady2_FT.dat';   % file name
+         % leg_text{end+1} = '''python (steady, v2)''';   % legend text
+         % fortcols{end+1} = 'c';                     % colour
+
+
+         for k=1:length(dfiles)
+            dfil  = [fdir,'/',dfiles{k}];
+            disp(['opening ',dfil,'']);
+            fid   = fopen(dfil,'r');
+
+            %% search for hash lines
+            found_hash  = 0;
+            while ~found_hash
+               lin   = fgets(fid);
+               if length(lin>5)
+                  found_hash  = strcmp(lin(1:5),'#####');
+               end
+            end
+
+            %%skip one more line, then get data;
+            fgets(fid);
+            columns  = textscan(fid,'%f %f');
+            xx_f     = columns{1};
+            Hs_f     = columns{2};
+            fclose(fid);
+
+            plot(xx_f/1e3,Hs_f,fortcols{k},'linewidth',2);
+            hold on;
+
+            %% check y-dependance
+            if k==1
+               figure(3);
+               ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
+               subplot(2,1,2)
+               hold on;
+               for loop_ix=1:length(ix)
+                  plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
+               end
+               figure(5);
+            end
          end
-
-         %%steady soln
-         figure(5);
-         dfil  = [frun,'fig_scripts/figs/TC2S/test_steady2.dat'];
-         disp(['opening ',dfil,'']);
-         %%
-         fid      = fopen(dfil,'r');
-         columns  = textscan(fid,'%f %f %f');
-         xx_f2    = columns{1};
-         Hs_f2    = columns{2};
-         fclose(fid);
-         %%
-         plot(xx_f2/1e3,Hs_f2,'--g','linewidth',2);
-         hold on;
       end
 
       %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
@@ -1136,26 +1159,34 @@ if DO_PLOT%%check exponential attenuation
       Hp                = 4*sqrt(mean(Ep,2));
       Hm                = 4*sqrt(mean(Em,2));
       if DIAG1d_OPT==0
-         %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
-         Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+         %Hs2               = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+         Hs2               = 4*sqrt(mean(Ep,2)+mean(Em,2));
+         leg_text{end+1}   = '''Total''';
       elseif DIAG1d_OPT==1
-         %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
-         Hs2   = 4*sqrt(mean(Et1,2));
+         %Hs2               = 4*sqrt(Et1(:,1));%%check const panel integration
+         Hs2               = 4*sqrt(mean(Et1,2));
+         leg_text{end+1}   = '''Total''';
       elseif DIAG1d_OPT==2
-         %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
-         Hs2   = 4*sqrt(mean(Et2,2));
+         %Hs2               = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+         Hs2               = 4*sqrt(mean(Et2,2));
+         leg_text{end+1}   = '''Total (Simpson''s)''';
       end
+
       fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
       hold on;
       %%
       fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
+      leg_text{end+1}   = '''Fwd''';
       hold on;
       fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
-      if COMP_FORTRAN
-         legend('Total (fortran)','Total (steady soln)','Total','Total (Simpson''s)','Fwd','Back');
-      else
-         legend('Total','Total (Simpson''s)','Fwd','Back');
+      leg_text{end+1}   = '''Back''';
+
+      cmd   = 'legend(';
+      for k=1:length(leg_text)
+         cmd   = [cmd,leg_text{k},','];
       end
+      cmd(end:end+1) = ');';
+      eval(cmd);
    end
 
    if SV_FIG%%save figures
