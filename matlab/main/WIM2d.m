@@ -1181,6 +1181,7 @@ if DO_PLOT%%check exponential attenuation
       fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
       leg_text{end+1}   = '''Back''';
 
+      %% make legend
       cmd   = 'legend(';
       for k=1:length(leg_text)
          cmd   = [cmd,leg_text{k},','];
