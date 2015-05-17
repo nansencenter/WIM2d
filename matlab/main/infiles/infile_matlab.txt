@@ -13,7 +13,7 @@ value # <variable name> : explanation
 2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
 2     # ADV_DIM         : Dimension of advection (1/2) TODO: use this
 0     # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice; 0 = give Hs for displacement of the surrounding water
-1     # OPT             : ice-water-land configuration
+1     # OPT             : ice-water-land configuration (see iceinit.m for definitions)
 0     # DIAG1d          : do 1-d diagnostics (eg plot profile of Hs)
 1     # DIAG1d_OPT      : options for 1-d diagnostics
 0     # CHK_ATTEN       : check by running with old attenuation

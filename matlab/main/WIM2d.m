@@ -1096,18 +1096,18 @@ if DO_PLOT%%check exponential attenuation
 
          % time-dep results (from fortran code)
          dfiles  {end+1} = 'test_steady1.dat';  % file name
-         leg_text{end+1} = '''F77 (time-dep)''';    % legend text
+         leg_text{end+1} = 'F77 (time-dep)';    % legend text
          fortcols{end+1} = 'b';                 % colour
 
 
          % steady-state results (from python code)
          dfiles  {end+1} = 'test_steady2.dat';  % file name
-         leg_text{end+1} = '''python (steady)''';   % legend text
+         leg_text{end+1} = 'python (steady)';   % legend text
          fortcols{end+1} = '--g';               % colour
 
          % % steady-state results (from python code v2)
          % dfiles  {end+1} = 'test_steady2_FT.dat';   % file name
-         % leg_text{end+1} = '''python (steady, v2)''';   % legend text
+         % leg_text{end+1} = 'python (steady, v2)';   % legend text
          % fortcols{end+1} = 'c';                     % colour
 
 
@@ -1120,7 +1120,7 @@ if DO_PLOT%%check exponential attenuation
             found_hash  = 0;
             while ~found_hash
                lin   = fgets(fid);
-               if length(lin>5)
+               if length(lin>=5)
                   found_hash  = strcmp(lin(1:5),'#####');
                end
             end
@@ -1151,40 +1151,43 @@ if DO_PLOT%%check exponential attenuation
 
       %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
       fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{1});
+      leg_text{end+1}   = 'Total';
       hold on;
       %%
-      [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-      %Hp                = 4*sqrt(Ep(:,1));
-      %Hm                = 4*sqrt(Em(:,1));
-      Hp                = 4*sqrt(mean(Ep,2));
-      Hm                = 4*sqrt(mean(Em,2));
-      if DIAG1d_OPT==0
-         %Hs2               = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
-         Hs2               = 4*sqrt(mean(Ep,2)+mean(Em,2));
-         leg_text{end+1}   = '''Total''';
-      elseif DIAG1d_OPT==1
-         %Hs2               = 4*sqrt(Et1(:,1));%%check const panel integration
-         Hs2               = 4*sqrt(mean(Et1,2));
-         leg_text{end+1}   = '''Total''';
-      elseif DIAG1d_OPT==2
-         %Hs2               = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
-         Hs2               = 4*sqrt(mean(Et2,2));
-         leg_text{end+1}   = '''Total (Simpson''s)''';
-      end
+      if 0
+         [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+         %Hp                = 4*sqrt(Ep(:,1));
+         %Hm                = 4*sqrt(Em(:,1));
+         Hp                = 4*sqrt(mean(Ep,2));
+         Hm                = 4*sqrt(mean(Em,2));
+         if DIAG1d_OPT==0
+            %Hs2               = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+            Hs2               = 4*sqrt(mean(Ep,2)+mean(Em,2));
+            leg_text{end+1}   = 'Total (test 1)';
+         elseif DIAG1d_OPT==1
+            %Hs2               = 4*sqrt(Et1(:,1));%%check const panel integration
+            Hs2               = 4*sqrt(mean(Et1,2));
+            leg_text{end+1}   = 'Total (test 2)';
+         elseif DIAG1d_OPT==2
+            %Hs2               = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+            Hs2               = 4*sqrt(mean(Et2,2));
+            leg_text{end+1}   = 'Total (Simpson''s)';
+         end
 
-      fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
-      hold on;
+         fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
+         hold on;
+      end
       %%
       fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
-      leg_text{end+1}   = '''Fwd''';
+      leg_text{end+1}   = 'Fwd';
       hold on;
       fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
-      leg_text{end+1}   = '''Back''';
+      leg_text{end+1}   = 'Back';
 
       %% make legend
       cmd   = 'legend(';
       for k=1:length(leg_text)
-         cmd   = [cmd,leg_text{k},','];
+         cmd   = [cmd,'''',leg_text{k},''','];
       end
       cmd(end:end+1) = ');';
       eval(cmd);
