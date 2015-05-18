@@ -1105,48 +1105,59 @@ if DO_PLOT%%check exponential attenuation
          leg_text{end+1} = 'python (steady)';   % legend text
          fortcols{end+1} = '--g';               % colour
 
-         % % steady-state results (from python code v2)
-         % dfiles  {end+1} = 'test_steady2_FT.dat';   % file name
-         % leg_text{end+1} = 'python (steady, v2)';   % legend text
-         % fortcols{end+1} = 'c';                     % colour
+         % steady-state results (from python code v2)
+         dfiles  {end+1} = 'test_steady2_FT.dat';   % file name
+         leg_text{end+1} = 'python (steady, v2)';   % legend text
+         fortcols{end+1} = '--c';                   % colour
 
-
+         leg_text_used  = {};
+         fortcols_used  = {};
          for k=1:length(dfiles)
             dfil  = [fdir,'/',dfiles{k}];
-            disp(['opening ',dfil,'']);
-            fid   = fopen(dfil,'r');
+            if exist(dfil)
+               leg_text_used{end+1} = leg_text{k};
+               fortcols_used{end+1} = fortcols{k};
+               %%
+               disp(['opening ',dfil,'']);
+               fid   = fopen(dfil,'r');
 
-            %% search for hash lines
-            found_hash  = 0;
-            while ~found_hash
-               lin   = fgets(fid);
-               if length(lin>=5)
-                  found_hash  = strcmp(lin(1:5),'#####');
+               %% search for hash lines
+               found_hash  = 0;
+               while ~found_hash
+                  lin   = fgets(fid);
+                  if length(lin>=5)
+                     found_hash  = strcmp(lin(1:5),'#####');
+                  end
                end
-            end
 
-            %%skip one more line, then get data;
-            fgets(fid);
-            columns  = textscan(fid,'%f %f');
-            xx_f     = columns{1};
-            Hs_f     = columns{2};
-            fclose(fid);
+               %%skip one more line, then get data;
+               fgets(fid);
+               columns  = textscan(fid,'%f %f');
+               xx_f     = columns{1};
+               Hs_f     = columns{2};
+               fclose(fid);
 
-            plot(xx_f/1e3,Hs_f,fortcols{k},'linewidth',2);
-            hold on;
-
-            %% check y-dependance
-            if k==1
-               figure(3);
-               ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
-               subplot(2,1,2)
+               plot(xx_f/1e3,Hs_f,fortcols{k},'linewidth',2);
                hold on;
-               for loop_ix=1:length(ix)
-                  plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
+
+               %% check y-dependance
+               if k==1
+                  figure(3);
+                  ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
+                  subplot(2,1,2)
+                  hold on;
+                  for loop_ix=1:length(ix)
+                     plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
+                  end
+                  figure(5);
                end
-               figure(5);
+            else
+               disp([dfil,' not present']);
+               disp('To create, run fig_scripts/fig_test_convergence2steady.py');
             end
          end
+         leg_text = leg_text_used;
+         fortcols = fortcols_used;
       end
 
       %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
