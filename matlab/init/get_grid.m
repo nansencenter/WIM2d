@@ -51,6 +51,8 @@ elseif OPT==2
    y0             = -.5*ym;
    j0             = find((X>x0)&(Y<y0));
    LANDMASK(j0)   = 1;
+elseif OPT==3
+   %%no land
 end
 
 grid_prams.X         = X;

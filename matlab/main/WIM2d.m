@@ -598,7 +598,7 @@ if DO_PLOT
       %% initial
       figure(4),clf;
       fn_fullscreen;
-      cols     = {'-k','-m','-c','-r','-g','-b'};
+      cols     = {'-k','-c','-m','-r','-g','-b'};
       loop_col = 1;
       %%
       subplot(4,1,4);
@@ -1086,34 +1086,40 @@ if DO_PLOT%%check exponential attenuation
       fn_fullscreen;
       clf;
 
-      COMP_FORTRAN   = 1;%%compare to fortran results
-      dfiles         = {};
-      leg_text       = {};
-      fortcols       = {};
-      if COMP_FORTRAN
+      COMP_STEADY = 1;%%compare to fortran results
+      dfiles      = {};
+      leg_text    = {};
+      fortcols    = {};
+      if COMP_STEADY
          frun        = '../../fortran/run/';
          fdir        = [frun,'/fig_scripts/figs/TC2S/'];%%location of text files with fortran results
+         mdir        = '../boltzmann/out/';
 
          % time-dep results (from fortran code)
-         dfiles  {end+1} = 'test_steady1.dat';  % file name
-         leg_text{end+1} = 'F77 (time-dep)';    % legend text
-         fortcols{end+1} = 'b';                 % colour
+         dfiles  {end+1} = [fdir,'/test_steady1.dat']; % file name
+         leg_text{end+1} = 'F77 (time-dep)';          % legend text
+         fortcols{end+1} = 'b';                       % colour
 
 
          % steady-state results (from python code)
-         dfiles  {end+1} = 'test_steady2.dat';  % file name
-         leg_text{end+1} = 'python (steady)';   % legend text
-         fortcols{end+1} = '--g';               % colour
+         dfiles  {end+1} = [fdir,'/test_steady2.dat']; % file name
+         leg_text{end+1} = 'python (steady)';         % legend text
+         fortcols{end+1} = '--g';                     % colour
 
          % steady-state results (from python code v2)
-         dfiles  {end+1} = 'test_steady2_FT.dat';   % file name
-         leg_text{end+1} = 'python (steady, v2)';   % legend text
-         fortcols{end+1} = '--c';                   % colour
+         dfiles  {end+1} = [fdir,'/test_steady2_FT.dat']; % file name
+         leg_text{end+1} = 'python (steady, v2)';        % legend text
+         fortcols{end+1} = '--c';                        % colour
+
+         % steady-state results (from matlab code)
+         dfiles  {end+1} = [mdir,'/test_steady_mat.dat']; % file name
+         leg_text{end+1} = 'matlab (steady)';            % legend text
+         fortcols{end+1} = '--m';                        % colour
 
          leg_text_used  = {};
          fortcols_used  = {};
          for k=1:length(dfiles)
-            dfil  = [fdir,'/',dfiles{k}];
+            dfil  = dfiles{k};
             if exist(dfil)
                leg_text_used{end+1} = leg_text{k};
                fortcols_used{end+1} = fortcols{k};
@@ -1153,15 +1159,18 @@ if DO_PLOT%%check exponential attenuation
                end
             else
                disp([dfil,' not present']);
-               disp('To create, run fig_scripts/fig_test_convergence2steady.py');
+               disp('To create, run ../../fortran/run/fig_scripts/fig_test_convergence2steady.py');
+               disp('or ../boltmann/fig_Boltzmann_Steady.m');
             end
          end
          leg_text = leg_text_used;
          fortcols = fortcols_used;
       end
 
+      fcols    = cols;
+      fcols{1} = '-r';
       %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
-      fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{1});
+      fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,fcols{1});
       leg_text{end+1}   = 'Total';
       hold on;
       %%
@@ -1185,14 +1194,14 @@ if DO_PLOT%%check exponential attenuation
             leg_text{end+1}   = 'Total (Simpson''s)';
          end
 
-         fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{1}]);
+         fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',fcols{1}]);
          hold on;
       end
       %%
-      fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,cols{2});
+      fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,fcols{2});
       leg_text{end+1}   = 'Fwd';
       hold on;
-      fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,cols{3});
+      fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,fcols{3});
       leg_text{end+1}   = 'Back';
 
       %% make legend
