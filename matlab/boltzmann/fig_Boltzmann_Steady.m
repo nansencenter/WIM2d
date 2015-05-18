@@ -78,6 +78,25 @@ if 1
    yl = ylabel('H_s, m');
    set(xl,'fontname','Times','fontsize',14);
    set(yl,'fontname','Times','fontsize',14);
+
+   %% print to dat-file:
+   dfile_mat   = 'out/test_steady_mat.dat';
+   disp(' ');
+   disp('Saving steady-state results from fn_Boltzmann_[Steady/calcEdir].m to:');
+   disp(dfile_mat);
+   disp(' ');
+   fid   = fopen(dfile_mat,'w');
+   fprintf(fid,'%s\n','# Steady-state results');
+   fprintf(fid,'%s\n','# >> fig_Boltzmann_Steady.m -> fn_Boltzmann_Steady.m -> fn_Boltzmann_calcEdir.m');
+   fprintf(fid,'%s\n','# x (m), Hs (m)');
+   fprintf(fid,'%s\n','###############################################');
+   fprintf(fid,'%s\n',' ');
+
+   %% print data:
+   for loop_x=1:length(xvec_ss)
+      fprintf(fid,'%f%s%f\n',xvec_ss(loop_x),'    ',Hs_ss(loop_x));
+   end
+   fclose(fid);
 end
 
 %% add plots made by python/fortran code
