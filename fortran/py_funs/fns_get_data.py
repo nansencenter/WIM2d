@@ -10,9 +10,15 @@ def get_array(fid,nx,ny,fmt_size=4):
    #   > default = 4 (real*4/single precision)
    recs     = nx*ny
    rec_size = recs*fmt_size
-   ##
+   #
+   if fmt_size==4:
+      fmt_py   = 'f' # python string for single
+   else:
+      fmt_py   = 'd' # python string for double
+
+
    data  = fid.read(rec_size)
-   fld   = struct.unpack(recs*'f',data)
+   fld   = struct.unpack(recs*fmt_py,data)
    fld   = np.array(fld)
    fld   = fld.reshape((ny,nx)).transpose()  # need to transpose because of differences between
                                              # python/c and fortran/matlab 
