@@ -4,9 +4,10 @@ import sys
 import struct
 
 ##############################################################
-def get_array(fid,nx,ny):
-   #routine to get the array from the .a (binary) file
-   fmt_size = 4               # real*4 so 4B per number 
+def get_array(fid,nx,ny,fmt_size=4):
+   # routine to get the array from the .a (binary) file
+   # * fmt_size = size in bytes of each entry)
+   #   > default = 4 (real*4/single precision)
    recs     = nx*ny
    rec_size = recs*fmt_size
    ##
