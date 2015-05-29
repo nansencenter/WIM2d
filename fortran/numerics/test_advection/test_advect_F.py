@@ -89,7 +89,7 @@ for bfil in files:
                fac      = ym/2/1.e3
                plt.plot(xx/1.e3,y3/1.e3,'k')
                fac      = fac*np.exp(n*alp*dt)
-               plt.plot(xx/1.e3,h[:,10]*fac,'--k')
+               plt.plot(xx/1.e3,h[:,-1]*fac,'--k')
 
          #############################################################
          # elif OPT==2:
