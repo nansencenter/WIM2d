@@ -347,6 +347,8 @@
          end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         !! Transport waves and attenuate them
          if (SCATMOD.eq.0) then
             !! Simple attenuation scheme - doesn't conserve scattered energy
             call adv_atten_simple(sdf_dir(:,:,:,w)                      &
@@ -362,6 +364,7 @@
      &         ,S_freq,taux_om,tauy_om                                  &
      &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
          end if
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          !! integrate stress densities over frequency
          !! TODO: check if this is correct for ice-covered water

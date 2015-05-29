@@ -418,11 +418,11 @@
       call print_log_info()
 
       !! put in same order as binary outputs:
-      out_arrays(:,:,1) = dfloe
-      out_arrays(:,:,2) = tau_x
-      out_arrays(:,:,3) = tau_y
-      out_arrays(:,:,4) = Hs
-      out_arrays(:,:,5) = Tp
+      out_arrays(:,:,1) = dfloe     ! maximum floe size
+      out_arrays(:,:,2) = tau_x     ! wave stress (x dirn)
+      out_arrays(:,:,3) = tau_y     ! wave stress (y dirn)
+      out_arrays(:,:,4) = Hs        ! significant wave height
+      out_arrays(:,:,5) = Tp        ! mean wave period
 
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -451,7 +451,7 @@
 
       !nt = 13!stop at a certain point for testing
       !nt = 10*nt!extend to see true steady state
-      reps  = 10!frequency of dumping
+      reps  = 10!frequency of dumping (every 10 time steps dump binary file)
 
       do n=1,nt
 
