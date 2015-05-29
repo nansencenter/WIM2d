@@ -23,10 +23,10 @@ import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 # steady state results to compare to:
-import fns_boltzmann_steady   as Fbs
+import fns_boltzmann_steady as Fbs
 
-# RUN_OPT  = 2 # rerun then plot
-RUN_OPT  = 3 # plot saved results
+RUN_OPT  = 2 # rerun then plot
+# RUN_OPT  = 3 # plot saved results
 
 gf          = Fdat.fn_check_grid('inputs')
 gfl         = gf['LANDMASK']
@@ -71,21 +71,23 @@ real_prams  = None # default real parameters
 
 if 1:
    # change integer parameters:
-   SOLVER      = 1
-   ADV_DIM     = 1
+   SCATMOD     = 1
+   ADV_DIM     = 2
+   ADV_OPT     = 2
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
    DO_BREAKING = 0 # no breaking - testing convergence of Hs to steady-state
-   int_prams   = np.array([SOLVER,ADV_DIM,
+   STEADY      = 1
+   int_prams   = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                            CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                           DO_BREAKING])
+                           DO_BREAKING,STEADY])
 
 if 1:
    # change real parameters:
-   young          = 5.0e9
+   young          = 5.49e9
    visc_rp        = 0.0
-   duration_hours = 48.0
+   duration_hours = 72.0
    duration       = duration_hours*60*60
    real_prams     = np.array([young,visc_rp,duration])
 
@@ -123,18 +125,32 @@ if 1:
    cp          = om/kwtr # phase vel (open water) [m/s]
    cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
    #
-   N     = pow(2,4)
-   out   = Fbs.solve_boltzmann_ft(width=ice_width,
-            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+   N     = pow(2,7);
+   nx0         = 1.e3
+   x_ice       = np.linspace(0.,ice_width,nx0)
+   if 1:
+      # solve in Fourier space
+      meth  = '_FT'
+      out   = Fbs.solve_boltzmann_ft(width=ice_width,
+               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+      #
+      E_n         = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=[0])
+      Hs_steady   = 4*np.sqrt(E_n[:,0].real)
+   else:
+      # solve in position space
+      meth  = ''
+      out   = Fbs.solve_boltzmann(width=ice_width,
+               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+      #
+      E_th        = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=range(N))
+      dtheta      = 2*np.pi/float(N)
+      E0          = dtheta*E_th.sum(1) # integrate over directions
+      Hs_steady   = 4*np.sqrt(E0.real)
 
    # alp2  = out['inputs'][0]
    # print(alp,alp2)
    # sys.exit('fig_test_convergence2steady')
 
-   nx0         = 1.e3
-   x_ice       = np.linspace(0.,ice_width,nx0)
-   E_n         = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=[0])
-   Hs_steady   = 4*np.sqrt(E_n[:,0].real)
 
    # print(x_ice)
    # print(Hs_steady)
@@ -143,8 +159,18 @@ else:
    fig   = None
 ##########################################################################
 
-steps2plot  = range(0,600,40)
-# steps2plot  = range(0,140,40)
+pfiles   = os.listdir(bindir+'/prog')
+pf       = pfiles[-1]
+Nprog    = int(pf[8:-2])
+
+if 0:
+   # compare every stp steps
+   stp         = 40
+   steps2plot  = range(0,Nprog,stp)
+else:
+   # just compare final prog file
+   steps2plot  = [Nprog]
+
 cols     = ['k','b','r','g','m','c']
 lstil    = ['-','--','-.',':']
 Nc       = len(cols)
@@ -153,7 +179,7 @@ loop_s   = 0
 
 for nstep in steps2plot:
    out_fields  = Fdat.fn_check_prog(outdir,nstep) # load ice/wave conditions from binaries
-   Hs_n        = out_fields['Hs']
+   Hs_n        = out_fields['Hs'][:,0]
    #
    if loop_c==Nc-1:
       loop_c   = 0
@@ -163,58 +189,59 @@ for nstep in steps2plot:
 
    fig      = Fplt.plot_1d(xx,Hs_n,labs=labs,f=fig,color=cols[loop_c],linestyle=lstil[loop_s])
 #
-figname  = figdir+'/convergence2steady.png'
+figname  = figdir+'/convergence2steady'+meth+'.png'
 print('saving to '+figname+'...')
 plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
 plt.close()
 fig.clf()
 
-# sys.exit('fig_test_convergence2steady.py, L94')
-##########################################################################
+if 1:
+   #####################################################
+   # print  time-dep results to dat-file
+   dfil  = figdir+'/test_steady1.dat'
+   blk   = 4*' '
+   fid   = open(dfil,'w')
 
-# figdir1                 = figdir+'/init/'
-# ice_fields,wave_fields  = Fdat.fn_check_init(bindir)
-# Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir1) # plot initial conditions
-# print("Plots in "+figdir+"/init")
-# print(" ")
-# ##########################################################################
-# 
-# ################################################################
-# # Look at end results:
-# print("Plotting results...")
-# figdir2  = figdir+'/final/'
-# Fplt.fn_plot_final(grid_prams,out_fields,figdir2)
-# print("Plots in "+figdir2+'\n')
-# print(" ")
-# ################################################################
-# 
-# if 1:
-#    ################################################################
-#    # Plot progress files (if they exist)
-#    figdir3     = figdir+'/prog'
-#    prog_files  = os.listdir(bindir+'/prog')
-#    steps       = []
-#    for pf in prog_files:
-#       if '.a'==pf[-2:]:
-#          stepno   = pf[-5:-2]
-#          steps.append(stepno)
-# 
-#    # make dir for progress plots
-#    if (not os.path.exists(figdir3)) and len(steps)>0:
-#       os.mkdir(figdir3)
-# 
-#    # clear old progress plots
-#    old_dirs = os.listdir(figdir3)
-#    for od in old_dirs:
-#       # need this for macs
-#       if od!='.DS_Store':
-#          # os.rmdir(figdir3+'/'+od)
-#          shutil.rmtree(figdir3+'/'+od)
-# 
-#    for stepno in steps:
-#       print("Plotting results at time step "+stepno+" ...")
-#       prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
-#       figdir3_0   = figdir3+'/'+stepno
-#       Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-#       print("Plots in "+figdir3_0+'\n')
-#    ################################################################
+   # header:
+   lin   = []
+   lin.append('# Time-dependant results (end of simulation)\n')
+   lin.append('# Time (h): '+str(duration_hours)+'\n')
+   lin.append('# x (m), Hs (m)'+'\n')
+   lin.append('#####################################################\n')
+   lin.append('\n')
+
+   for loop_h in range(len(lin)):
+      fid.write(lin[loop_h])
+   
+   # results:
+   for loop_x in range(len(xx)):
+      lin   =           ('%f' % (1.e3*xx[loop_x])  )
+      lin   = lin+blk + ('%f' % (Hs_n[loop_x])     )
+      fid.write(lin+'\n')
+   fid.close()
+   print('saving to '+dfil+'...')
+   #####################################################
+
+   #####################################################
+   # print  steady-state results to dat-file
+   dfil  = figdir+'/test_steady2'+meth+'.dat'
+   fid   = open(dfil,'w')
+
+   # header:
+   lin   = []
+   lin.append('# Steady-state results\n')
+   lin.append('# x (m), Hs (m)'+'\n')
+   lin.append('#####################################################\n')
+   lin.append('\n')
+
+   for loop_h in range(len(lin)):
+      fid.write(lin[loop_h])
+
+   # results:
+   for loop_x in range(len(x_ice)):
+      lin   =           ('%f' % (xe+x_ice[loop_x])  )
+      lin   = lin+blk + ('%f' % (Hs_steady[loop_x])     )
+      fid.write(lin+'\n')
+   fid.close()
+   print('saving to '+dfil+'...')
+   #####################################################

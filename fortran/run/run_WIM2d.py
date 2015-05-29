@@ -77,16 +77,18 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       # run wim2d with inputs and outputs
 
       ##########################################################
-      SOLVER      = 1
+      SCATMOD     = 1
       ADV_DIM     = 2
+      ADV_OPT     = 2
       CHECK_FINAL = 1
       CHECK_PROG  = 1
       CHECK_INIT  = 1
       DO_BREAKING = 1
+      STEADY      = 1
       #
-      int_prams_def  = np.array([SOLVER,ADV_DIM,
+      int_prams_def  = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                                  CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                                 DO_BREAKING])
+                                 DO_BREAKING,STEADY])
 
       if int_prams is None:
          int_prams   = int_prams_def

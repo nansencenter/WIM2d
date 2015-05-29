@@ -38,31 +38,31 @@ OPT   = 1;
 CFL   = .4;
 
 if OPT==1
-   uc          = 30;%const speed m/s
-   xc          = 2*xm/3;
-   %theta       = 180;%wave-to direction [deg] - to left
-   theta       = 135;%wave-to direction [deg] - up and to the left
-   %theta       = 0;%wave-to direction [deg] - to right
-   u           = 0*X+uc*cos(pi/180*theta);
-   v           = 0*X+uc*sin(pi/180*theta);
-   h           = 0*X;
+   uc      = 30;%const speed m/s
+   xc      = 2*xm/3;
+   %theta   = 180;%wave-to direction [deg] - to left
+   theta   = 135;%wave-to direction [deg] - up and to the left
+   %theta   = 0;%wave-to direction [deg] - to right
+   u       = 0*X+uc*cos(pi/180*theta);
+   v       = 0*X+uc*sin(pi/180*theta);
+   h       = 0*X;
    h(X>xc) = 1;
    %%
-   dt          = CFL*dx/uc;
-   nt          = 2*xm/(uc*dt);
+   dt = CFL*dx/uc;
+   nt = 2*xm/(uc*dt);
    if bc_opt==1
       nt = 2*nt;
    end
 elseif OPT==2
-   uc          = 30;%const speed m/s
-   xc          = 2*xm/3;
-   u           = -uc*X/xm;
-   v           = 0*X;
-   h           = 0*X;
+   uc      = 30;%const speed m/s
+   xc      = 2*xm/3;
+   u       = -uc*X/xm;
+   v       = 0*X;
+   h       = 0*X;
    h(X>xc) = 1;
    %%
-   dt          = CFL*dx/uc;
-   nt          = 2*xm/(uc*dt);
+   dt = CFL*dx/uc;
+   nt = 2*xm/(uc*dt);
 elseif OPT==3
    Rm    = xm/3;
    Ym    = ym/12;

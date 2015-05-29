@@ -1,0 +1,19 @@
+value # <variable name> : explanation
+3     # infile_version_ : infile version number (DON'T CHANGE, UNLESS CHANGING STRUCTURE OF FILE)
+0.7   # CFL             : CFL number (cg*dt/dx)
+1     # nw              : number of frequencies
+32    # ndir            : number of directions
+1     # DIR_INIT        : incident wave spectrum (spreading=1/delta=0...)
+24    # duration_hours  : length of simulation [h]
+0     # USE_ICE_VEL     : 0 = approx ice group vel by water group vel
+1     # DO_ATTEN        : 0 = just advect waves without attenuation
+1     # DO_BREAKING     : 0 = turn off breaking for testing
+1     # STEADY          : 1 = Steady-state solution, top-up waves inside wave mask
+1     # SCATMOD         : Scattering model: 0 = old way; 1 = scatter E isotropically
+2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
+2     # ADV_DIM         : Dimension of advection (1/2) TODO: use this
+0     # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice; 0 = give Hs for displacement of the surrounding water
+1     # OPT             : ice-water-land configuration (see iceinit.m for definitions)
+0     # DIAG1d          : do 1-d diagnostics (eg plot profile of Hs)
+1     # DIAG1d_OPT      : options for 1-d diagnostics
+0     # CHK_ATTEN       : check by running with old attenuation

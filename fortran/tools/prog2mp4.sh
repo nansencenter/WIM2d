@@ -1,16 +1,16 @@
-if [ $# -eq 0 ]
+P=`pwd`
+
+if [ $# -eq 1 ]
 then
-   vbl='Hs'
-else
    vbl=$1
+else
+   vbl='Hs'
 fi
 
-P=`pwd`
-outdir=$P/out_io/figs/prog
 mkdir tmp
 
 n=-1
-for stepdir in $outdir/*
+for stepdir in $P/*
 do
    if [ ! -f $stepdir ]
    then
@@ -30,7 +30,7 @@ echo ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv4
 ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
 
 #clean up
-outdir2=$outdir/../prog_movies
+outdir2=$P/../prog_movies
 mkdir -p $outdir2
 mv $mov $outdir2
 cd ..

@@ -53,7 +53,8 @@ elseif OPT==2
    WAVE_MASK   = (X<-.25*xm)|(Y>.25*ym);
    jWV         = find(WAVE_MASK==1);
 elseif OPT==3
-   WAVE_MASK   = X<-.75*xm;
+   %WAVE_MASK   = X<-.75*xm;
+   WAVE_MASK   = X<-260e3;
    jWV         = find(WAVE_MASK==1);
 end
 

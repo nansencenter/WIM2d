@@ -65,17 +65,23 @@ OBJS		:=	\
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
 $(ODIR)/%.o:	%.F
+	mkdir -p $(ODIR)
+	mkdir -p $(MDIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
-default: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
+	mkdir -p $(bin)
 	cp $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJS)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
+	mkdir -p $(bin)
 	cp $(TARGET_PY).so $(bin)
+
+all: exe py
 
 # DEPENDENCIES
 #

@@ -13,7 +13,10 @@ s1.rhowtr   = 1025;  % Ice density      [kg/m^3]
 s1.rhoice   = 922.5; % Ice density      [kg/m^3]
 s1.g        = 9.81;  % Gravity          [m/s^2]
 s1.poisson  = .3;    % Poisson's ratio
-s1.visc_rp  = 13;    % Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+
+if ~isfield(s1,'visc_rp')
+ s1.visc_rp  = 13;    % Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+end
 
 %%Brine vol fraction -> Young's modulus and flexural strength
 if 1%%just set
@@ -36,10 +39,10 @@ end
 if ~isfield(s1,'young');
    if s1.young_opt==0%%just set it
       s1.young = 2e9;      %%lower ~ Marchenko
-   elseif s1.young_opt==1%%just set it
-      s1.young = 5.49e9;   %%higher ~ Vernon's guess (s1.vb=.1)
-   elseif s1.young_opt==2%%Vernon's est from vbf
+   elseif s1.young_opt==1%%Vernon's est from vbf
       s1.young = 10e9*(1-3.51*s1.vbf)-1e9;          % Young's modulus [Pa]
+   elseif s1.young_opt==2%%just set it
+      s1.young = 5.49e9;   %%higher ~ Vernon's guess (s1.vbf=.1)
    end
 end
 

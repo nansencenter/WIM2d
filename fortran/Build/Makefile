@@ -57,16 +57,20 @@ TARGET_F	:=	WIM2d.exe
 PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
-# mex function to run non-interactive WIM in matlab
-MX_EXT		:=	mexmaci64
-MX1		:=	WIM2d_run_mex
+# mex function to run interactive WIM in matlab (old version)
+MX_EXT		:=	mex
+MX1		:=	WIM2d_run_io_mex
 MEX1		:=	$(src)/interfaces/$(MX1).F
 TARGET_MEX1	:=	$(MX1).$(MX_EXT)
+# mex function is $(TARGET_MEX1)maci64  for mac OSX
+# mex function is $(TARGET_MEX1)a64 	for linux
 
 # mex function to run interactive WIM in matlab
-MX2		:=	WIM2d_run_io_mex
+MX2		:=	WIM2d_run_io_mex_v2
 MEX2		:=	$(src)/interfaces/$(MX2).F
 TARGET_MEX2	:=	$(MX2).$(MX_EXT)
+# mex function is $(TARGET_MEX2)maci64  for mac OSX
+# mex function is $(TARGET_MEX2)a64 	for linux
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
@@ -87,27 +91,32 @@ OBJS		:=      \
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
 $(ODIR)/%.o:	%.F
+	mkdir -p $(ODIR) $(MDIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
 # (default)
 exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 	mv $(TARGET_PY).so $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX1) $(bin)
+	mv $(TARGET_MEX1)* $(bin)
 
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX2) $(bin)
+	mv $(TARGET_MEX2)* $(bin)
 
 all:	py exe mex1 mex2
 
@@ -138,15 +147,15 @@ $(MEX2):		grid_info.h $(OBJ_MAIN)
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/* $(MDIR)/*
+	rm $(ODIR)/*.o $(MDIR)/*.mod
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(ODIR)/* $(MDIR)/* \
+	rm $(ODIR)/*.o $(MDIR)/*.mod \
 	   $(bin)/$(TARGET_F) \
 	   $(bin)/$(TARGET_PY).so \
-	   $(bin)/$(TARGET_MEX1) \
-	   $(bin)/$(TARGET_MEX2)
+	   $(bin)/$(TARGET_MEX1)* \
+	   $(bin)/$(TARGET_MEX2)*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

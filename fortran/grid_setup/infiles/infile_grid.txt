@@ -1,0 +1,1 @@
+2  # GRID_OPT: 0, std 1d config; 1, std 2d config; 2, Philipp's "squaresmall" config

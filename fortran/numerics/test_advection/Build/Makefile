@@ -22,8 +22,8 @@ VPATH 		:=	..:$(numerics):$(src)/misc:$(src)/init:$(HDIR)
 FCFLAGS=-g -I$(MDIR) -I$(HDIR)
 FCFLAGS2=-J$(MDIR)
 
-PROG=$(ODIR)/test_advect.o 
-PROG_1d=$(ODIR)/test_advect_1d.o 
+PROG=$(ODIR)/p_test_advect.o 
+PROG_1d=$(ODIR)/p_test_advect_1d.o 
 
 OBJS=\
      $(ODIR)/mod_file_utils.o \
@@ -38,7 +38,8 @@ $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(FCFLAGS2)
 
 # Link objects to make executable $(TARGET)
-default: $(PROG) $(OBJS)
+# Default is 2d advection code
+2d: $(PROG) $(OBJS)
 	mkdir -p $(bin)
 	$(FC) -o $(TARGET) $^ $(FCFLAGS)
 	mv $(TARGET) $(bin)

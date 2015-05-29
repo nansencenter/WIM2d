@@ -5,7 +5,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_simple(Sdir                                  &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
+     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
       use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
@@ -15,8 +15,6 @@
       implicit none
 
       integer,parameter :: ndir     = n_wavdir
-      integer,parameter :: ADV_OPT  = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
      &   ,intent(inout)    :: Sdir
@@ -25,7 +23,7 @@
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
      &   ,intent(in)       :: ag_eff,atten_dim,damp_dim
       real,intent(in)      :: dt
-      integer,intent(in)   :: ADV_DIM
+      integer,intent(in)   :: ADV_DIM,ADV_OPT
       !!
       integer  :: i,j,wth
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
@@ -120,7 +118,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine adv_atten_isotropic(Sdir                               &
      &   ,Sfreq,taux_om,tauy_om                                         &
-     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM)
+     &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
       use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
@@ -131,8 +129,6 @@
 
       integer,parameter :: ndir     = n_wavdir
       integer,parameter :: ncs      = nint(ndir/2.0)!!number of sine/cosine coeff's
-      integer,parameter :: ADV_OPT  = 2
-         !1: periodic in x,y; 2: periodic in y only; 0: not periodic
       !!
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,ndir)
      &   ,intent(inout)    :: Sdir
@@ -141,7 +137,7 @@
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy)                   &
      &   ,intent(in)       :: ag_eff,atten_dim,damp_dim
       real,intent(in)      :: dt
-      integer,intent(in)   :: ADV_DIM
+      integer,intent(in)   :: ADV_DIM,ADV_OPT
       !!
       integer                 :: i,j,wth,nth,n,jp1,jm1
       integer,dimension(ndir) :: nvec
@@ -150,7 +146,7 @@
       real  :: PI,adv_dir,tmp,alp_dim,source
 
       real,dimension(ndir)    :: K_fou,S_th,theta_vec,wt_theta,         &
-     &                              tmp1,dd
+     &                              tmp1,evals_x
       complex,dimension(ndir) :: S_fou
       complex                 :: zi,src_fou_p1,src_fou_m1
       real,dimension(ncs)     :: S_cos,S_sin
@@ -161,7 +157,7 @@
       zi = cmplx(0,1)!sqrt(-1)
 
       !!weights for integral over direction
-      wt_theta = 2*PI/(1.0*ndir)
+      wt_theta = 2*PI/(1.0*ndir) !!\Delta\theta
 
       !!do advection
       !print*,'Spectrum at',itest,jtest
@@ -209,6 +205,8 @@
             S_th(wth)      = Sdir(i,j,wth)
          end do
          S_fou    = zi
+
+         !! S_fou(1) = \int_0^{2\pi}S(\theta)d\theta
          S_fou(1) = cmplx( sum(wt_theta*S_th) )
 
          if (ICE_MASK(i,j).gt.0.0) then
@@ -270,19 +268,24 @@
             K_fou    = 0.0
             K_fou(1) = q_scat
 
-            !! dd  = K_fou-q_tot
+            !! evals_x  = K_fou-q_tot
+            !! NB these solve \pa_x.S=evals_x.S
             !! possibly need to be careful to avoid rounding errors
             !! making eigenvalues go >0
-            dd       = -q_tot
-            dd(1)    = -q_abs
+            evals_x     = -q_tot
+            evals_x(1)  = -q_abs
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+            !!S_fou(n) = s_n = \int_0^{2\pi}S(\theta)e^{i*n*\theta}d\theta
             do nth=1,ncs
                S_cos(nth)     = sum(wt_theta*S_th*cos(nth*theta_vec))
                S_sin(nth)     = sum(wt_theta*S_th*sin(nth*theta_vec))
+
+               !! 1<=n<=N/2: e^{i*n*\theta}=\cos(n\theta)+i*\sin(n\theta)
                S_fou(nth+1)   = cmplx(S_cos(nth),S_sin(nth))
 
                !!also need n=-nth index
+               !! N/2<n<=N (n<0): e^{i*n*\theta}=\cos(n\theta)-i*\sin(n\theta)
                n           = ndir+1-nth
                S_fou(n)    = cmplx(S_cos(nth),-S_sin(nth))
             end do
@@ -311,11 +314,14 @@
 !              print*,'tau_x,tau_y',taux_om(i,j),tauy_om(i,j)
 !           end if
 
-            !!do attenuation and transform back
-            S_fou = S_fou*exp(dd*cg*dt)
+            !!do scattering/attenuation and transform back
+            S_fou = S_fou*exp(evals_x*cg*dt)
+            !!S(\theta)=(1/2/\pi)*\sum_n.S_n.e^{-i*n*\theta}
             do wth=1,ndir
-               tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
-     &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
+!              tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
+!    &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
+               tmp1  = realpart(S_fou)*cos(nvec*theta_vec(wth))         &
+     &                -imagpart(S_fou)*sin(nvec*theta_vec(wth))
                !!
                Sdir(i,j,wth)  = 1.0/(2*PI)*sum(tmp1)
                S_th(wth)      = Sdir(i,j,wth)
