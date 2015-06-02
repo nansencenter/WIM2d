@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-I. # include directory = "."
 DEPS=RTparam_hardcoded.h RTparam_fast.h # dependencies
 OBJ=RTparam_outer.o RTparam_fast.o RTparam_hardcoded.o 
-TARGET=a.out
+TARGET=test_atten.app
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
