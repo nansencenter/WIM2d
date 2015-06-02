@@ -140,6 +140,8 @@ int Amn_fxn_L1(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -280,6 +282,8 @@ int Amn_fxn_L2(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -420,6 +424,8 @@ int Amn_fxn_L3(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -560,6 +566,8 @@ int Amn_fxn_L4(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -623,6 +631,8 @@ int Amn_fxn_L5(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -763,6 +773,8 @@ int Amn_fxn_H1(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -903,6 +915,8 @@ int Amn_fxn_H2(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -1043,6 +1057,8 @@ int Amn_fxn_H3(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -1183,6 +1199,8 @@ int Amn_fxn_H4(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 
@@ -1257,6 +1275,8 @@ int Amn_fxn_H5(double *chebys,int ncol) {
   for(i=0;i<M;i++) {
      chebys[i] = Amn[i][ncol];
   }
+
+  return 0;
 }
 /***********************************************/
 

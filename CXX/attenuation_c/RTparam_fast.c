@@ -575,7 +575,7 @@ int OP_chebinterp2d(double *z,double tx,double ty,
    *z = z0;
    //printf("\n(in OP_chebinterp2d) output (z) = %f\n",*z);
 
-   return;
+   return 0;
 }
 
 /***********************************************/
@@ -617,5 +617,6 @@ int RTparam_get_ac(double *ac2,double *modT2,double *argR2,double *argT2,
   *argR2 = argR;
   *argT2 = argT;
 
+   return 0;
 }
 /***********************************************/
