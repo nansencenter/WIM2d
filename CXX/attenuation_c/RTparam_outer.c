@@ -132,6 +132,8 @@ int RTparam_outer(double *damping,double *kice,double *kwtr,double *int_adm,
 /*******************************************************************/
 //%%function [ki,BG2,avc]=gen_root_ice(del,H,guess)
 //finds the root of the ice dispersion relation nearest to 'guess'.
+//Newton-Rhapson method solver
+//of f  = Lam*k*sinh(k*H)-cosh(k*H) = 0, Lam=k^4+del
 int gen_root_ice(double *ki2, double *BG2,double *avc,
                  double del, double H,double guess) {
 //int gen_root_ice(double *, double *,double *,
@@ -171,8 +173,10 @@ int gen_root_ice(double *ki2, double *BG2,double *avc,
 }
 
 /*******************************************************************/
-//function [kw,BG1]=gen_root_wtr(del,H,guess)
-//%% finds the root of the water dispersion relation nearest to 'guess'.
+//%%function [kw,BG1]=gen_root_wtr(del,H,guess)
+//finds the root of the water dispersion relation nearest to 'guess'.
+//Newton-Rhapson method solver
+//of f  = del*k*sinh(k*H)-cosh(k*H) = 0
 int gen_root_wtr(double *kw2, double *BG1,
                  double del, double H,double guess) {
 
