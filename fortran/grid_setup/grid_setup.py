@@ -51,9 +51,21 @@ if CHANGE_GRID:
    print('**************************************************')
 
 if CHANGE_WAVES:
+
    # change number of wave frequencies and directions
-   nfreq = 1
-   ndir  = 16
+   if 0:
+      # multiple frequencies, directions
+      nfreq = 25
+      ndir  = 16
+   elif 1:
+      # single frequency, multiple directions
+      nfreq = 1
+      ndir  = 16
+   else:
+      # multiple frequencies, 1 dirn
+      nfreq = 25
+      ndir  = 1
+
    hfil  = '../header_files/wave_info.h'
 
    print(' ')

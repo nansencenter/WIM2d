@@ -5,21 +5,24 @@
 
       implicit none
 
-      real,parameter :: Hs_inc   = 2.0
-      real,parameter :: Tp_inc   = 12.0
-      real           :: mwd_inc                       !mwd - set in waves_init
+      ! parameters
+      ! used to set waves over pre-defined WAVE_MASK in non-IO version of code
+      real,parameter :: Hs_inc   = 2.0    !! significant wave height
+      real,parameter :: Tp_inc   = 12.0   !! mean period
+      real           :: mwd_inc  = -90.   !! waves-from direction
 
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine waves_init()
+      subroutine waves_init(SET_WAVES)
 
       use mod_common_wim
 
       implicit none
 
+      logical,intent(in)   :: SET_WAVES
       integer  :: i,j,w,wth
-      real     :: xm,ym
+      real     :: xm,x0,x_edge
       logical  :: critter
 
       integer,parameter :: nw    = n_wave_freq
@@ -37,10 +40,8 @@
       !!set frequency grid
       print*,'***************************************'
       print*,'In waves_init,n_wave_freq=',nw
-      if (nw.eq.1) then
-         freq_vec(1) = 1.0/Tp_inc
-         print*,'freq,T',freq_vec(1),1.0/freq_vec(1)
-      else
+      if (nw.ne.1) then
+         !!multiple frequencies
          fmin  = 1/Tmax
          fmax  = 1/Tmin
          df    = (fmax-fmin)/(n_wave_freq-1.0)
@@ -50,22 +51,39 @@
             freq_vec(w) = fmin+(w-1)*df
             !print*,freq_vec(w)
          end do
+      elseif (SET_WAVES) then
+         freq_vec(1) = 1.0/Tp_inc
+         print*,'Single frequency - setting it now:'
+         print*,'freq = ',freq_vec(1)
+         print*,'period = ',1.0/freq_vec(1)
+      else
+         print*,'Single frequency - not setting it yet '//              &
+     &   '(IO version of code)'
       end if
       print*,'***************************************'
       print*,' '
 
       !!set directional grid
-      mwd_inc  = -90.0!!waves-from direction
-
-      if (ndir.eq.1) then
-         wavdir(1)   = mwd_inc
-      else
+      if (ndir.ne.1) then
          theta_max   = 90.0
          theta_min   = -270.0
          dtheta      = (theta_min-theta_max)/(1.0*ndir)
          do wth=1,ndir
             wavdir(wth) = theta_max+(wth-1)*dtheta
          end do
+      elseif (SET_WAVES) then
+         print*,'***************************************'
+         print*,'Single wave direction - setting it now:'
+         print*,'direction (from) = ',wavdir(1)
+         print*,'***************************************'
+         print*,' '
+         wavdir(1)   = mwd_inc
+      else
+         print*,'***************************************'
+         print*,'Single wave direction - not setting it yet '//         &
+     &   '(IO version of code)'
+         print*,'***************************************'
+         print*,' '
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
@@ -73,21 +91,45 @@
       !! Set WAVEMASK & wave info
       !! TODO: enable reading this in from file?
 
-      xm = maxval(X)
-      ym = maxval(Y)
-      !!
-      WAVE_MASK   = 0.0
-      Hs          = 0.0
-      Tp          = 0.0
-      mwd         = 0.0
+      if (SET_WAVES) then
 
-      !!column of land on right
-      where (X.lt.-.8*xm)
-         WAVE_MASK   = 1.0
-         Hs          = Hs_inc
-         Tp          = Tp_inc
-         mwd         = mwd_inc
-      end where
+         !! non-IO version of code
+         !! - setting wave mask, Hs, Tp, mwd here
+         print*,'***************************************'
+         print*,'In waves_init:'
+         print*,'setting WAVE_MASK, Hs, Tp, mwd'
+         print*,'***************************************'
+         print*,' '
+
+         xm       = maxval(X)
+         x0       = minval(X)
+         x_edge  = .5*(x0+xm)-.8*(.5*(xm-x0))
+         !!
+         WAVE_MASK   = 0.0
+         Hs          = 0.0
+         Tp          = 0.0
+         mwd         = 0.0
+
+         !!strip where waves are initially defined on left
+         where (X.lt.x_edge)
+            WAVE_MASK   = 1.0
+            Hs          = Hs_inc
+            Tp          = Tp_inc
+            mwd         = mwd_inc
+         end where
+
+      else
+
+         !! IO version of code
+         !! - don't set wave mask, Hs, Tp, mwd here
+         print*,'***************************************'
+         print*,'In waves_init:'
+         print*,'Set WAVE_MASK, Hs, Tp, mwd later'
+         print*,'(IO version of code)'
+         print*,'***************************************'
+         print*,' '
+
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       end subroutine waves_init
@@ -178,13 +220,16 @@
 
       implicit none
 
-      real,dimension(ii,jj)   :: Rsq
-      real     :: x0,y0,NL,R0,xm
+      real     :: x0,xm,x_edge
       
       WTR_MASK = 0.0
-      !!column of land on right
+      !! strip of water on left
+      !! - NB waves not everywhere yet
+      !! - see WAVE_MASK definition
       xm       = maxval(X)
-      where (X.lt.-.7*xm)
+      x0       = minval(X)
+      x_edge  = .5*(x0+xm)-.7*(.5*(xm-x0))
+      where (X.lt.x_edge)
          WTR_MASK = 1.0
       end where
 

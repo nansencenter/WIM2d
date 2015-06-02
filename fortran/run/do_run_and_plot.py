@@ -14,7 +14,6 @@ sys.path.append(dd+"/bin")
 sys.path.append(dd+"/py_funs")
 
 import run_WIM2d     as Rwim
-import WIM2d_f2py    as Mwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
@@ -90,6 +89,7 @@ if 1:
    real_prams     = np.array([young,visc_rp,duration])
 
 
+# call gateway between python and pre-compiled f2py module
 out_fields,outdir = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
                                     int_prams=int_prams,
                                     real_prams=real_prams)

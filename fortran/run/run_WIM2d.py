@@ -1,17 +1,18 @@
-import numpy as np
-import os
-import sys
-
-dd   = os.path.abspath("..")
-sys.path.append(dd+"/bin")
-sys.path.append(dd+"/misc_py")
-
-import WIM2d_f2py as Mwim
-import fns_get_data as Fdat
-import fns_plot_data as Fplt
-
 ################################################################
 def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
+
+   import numpy as np
+   import os
+   import sys
+
+   dd   = os.path.abspath("..")
+   sys.path.append(dd+"/bin")
+   sys.path.append(dd+"/misc_py")
+
+   import WIM2d_f2py as Mwim # fortran code compiled with f2py
+   import fns_get_data as Fdat
+   import fns_plot_data as Fplt
+
    run_dict = {0: 'old version (no in/out)',
                1: 'look at saved results of no in/out run',
                2: 'in/out',
