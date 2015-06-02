@@ -8,27 +8,25 @@ namespace
     const size_t SUCCESS = 0;
 } // namespace
 
-BOOST_STRONG_TYPEDEF(unsigned, Unsigned)
+// BOOST_STRONG_TYPEDEF(unsigned, Unsigned)
 
-namespace po = boost::program_options;
+// namespace po = boost::program_options;
+
+namespace WIMOPT
+{
+    po::options_description descrOptions();
+} // WIMOPT
 
 int main(int argc, char** argv )
 {
 
-    po::options_description desc("Options");
+    using namespace WIMOPT;
 
-    desc.add_options()
-        ("help", "Print help messages")
-        ("nx", po::value<int>()->default_value( 150 ), "number of subdomains in X")
-        ("ny", po::value<int>()->default_value( 4 ), "number of subdomains in Y")
-        ("nz", po::value<int>()->default_value( 1 ), "number of subdomains in Z")
-        ;
-
+    po::options_description desc = descrOptions();
     po::variables_map vm;
 
     try
     {
-
         po::store(po::parse_command_line(argc, argv, desc),vm);
 
         if ( vm.count("help")  )
@@ -36,6 +34,20 @@ int main(int argc, char** argv )
             std::cout << "Basic Command Line Parameter Application" <<"\n"
                       << desc << "\n";
             return SUCCESS;
+        }
+
+        if ( vm.count( "config-file" ) )
+        {
+            if ( fs::exists( vm["config-file"].as<std::string>() ) )
+            {
+                std::ifstream ifs( vm["config-file"].as<std::string>().c_str() );
+                po::store( parse_config_file( ifs, desc, true ), vm );
+                po::notify( vm );
+            }
+            else
+            {
+                std::cout << "Cannot found " << "config-file" << "\n";
+            }
         }
 
         po::notify(vm);
@@ -50,18 +62,35 @@ int main(int argc, char** argv )
 
     std::cout<<"nx= "<< vm["nx"]. template as<int>() <<"\n";
     std::cout<<"ny= "<< vm["ny"]. template as<int>() <<"\n";
-    std::cout<<"nz= "<< vm["nz"]. template as<int>() <<"\n";
+    std::cout<<"wim.nz= "<< vm["wim.nz"]. template as<int>() <<"\n";
 
-   //  // std::cout<<"run starts\n";
-
-    WimDiscr<> wim2d;
+    WimDiscr<> wim2d(vm);
     wim2d.readFile("wim_grid.a",150,4);
 
     auto X = wim2d.getX();
 
-    // for (int i = 0; i < X.size(); i++)
-    //    for (int j = 0; j < X[i].size(); j++)
-    //       std::cout << "Element[" << i << "," << j << "]= " << X[i][j] << std::endl;
+    for (int i = 0; i < X.size(); i++)
+       for (int j = 0; j < X[i].size(); j++)
+          std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
 
-    wim2d.writeFile("grid.bin",150,4);
+
+
+    auto Y = wim2d.getY();
+
+    for (int i = 0; i < Y.size(); i++)
+       for (int j = 0; j < Y[i].size(); j++)
+          std::cout << "Y[" << i << "," << j << "]= " << Y[i][j] << std::endl;
+
+
+
+    std::cout<<"PI= "<< float(PI) <<"\n";
+
+    wim2d.writeFile("grid.bin");
+
+    // test init
+    wim2d.wimInit();
+
+    // test step
+    wim2d.wimStep();
+
 }
