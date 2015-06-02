@@ -1,4 +1,4 @@
-PRG_NAME=prog_wim2d
+PRG_NAME=prog_wim2d.app
 SOURCES=\
 	main.cpp \
 	options.cpp
