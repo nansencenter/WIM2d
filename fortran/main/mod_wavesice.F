@@ -89,7 +89,7 @@
 
          w  = 0
          do while ((w+2).lt.nw)
-            w  = w+2
+            w           = w+2
             wt_simp(w)  = 4.0
          end do
       
@@ -262,9 +262,16 @@
             adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
             if (cos(adv_dir).ge.0.0) then
                where (WAVE_MASK2.gt.0.0)
-                  !sdf_dir(i,j,J_STEADY,:) = sdf_inc(i,j,J_STEADY,:)
                    sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
                end where
+               !slower way to do above test:
+               !do j=1,jj
+               !do i=1,ii
+               !if (WAVE_MASK2(i,j)==1.0) then
+               !    sdf_dir(i,j,wth,w)   = sdf_inc(i,j,wth,w)
+               !end if
+               !end do
+               !end do
             end if
          end do
          end do

@@ -63,8 +63,9 @@
       !!
       real     :: PI
 
-      integer,parameter :: ndir  = n_wavdir
-      integer,parameter :: nw    = n_wave_freq
+      logical,parameter :: SET_WAVES   = .true.
+      integer,parameter :: ndir        = n_wavdir
+      integer,parameter :: nw          = n_wave_freq
       integer           :: w,wth
 
       !! function to print time
@@ -128,10 +129,15 @@
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
       call ice_init()      ! - initial icec,iceh,dfloe
 
-      !!incident waves
-      call waves_init()    ! - initial Tp,Hs,mwd
-      call set_inc_waves() ! - fill in the incident wave spectrum
-                           !   with a Bretschneider spectrum
+      !! set wave grid
+      !! SET_WAVES = .true. so also set initial Tp,Hs,mwd,WAVE_MASK
+      call waves_init(SET_WAVES)
+
+      !! create full incident wave spectrum
+      !! - use preset wave parameters (Tp,Hs,mwd,WAVE_MASK)
+      !!   to fill in the incident wave spectrum
+      !!   with a Bretschneider spectrum
+      call set_inc_waves()
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
@@ -247,6 +253,7 @@
       real              :: PI
       real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
 
+      logical,parameter :: SET_WAVES   = .false.
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
@@ -322,10 +329,12 @@
          ICE_MASK = 1.0
       end where
 
-      call waves_init()
+      !! set wave grid
+      !! SET_WAVES = .false. so don't set initial Tp,Hs,mwd,WAVE_MASK as well
+      call waves_init(SET_WAVES)
 
-      !! override incident waves from inputs
-      !! - still need waves_init to set freq_vec
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! set incident waves from inputs
       Hs          = in_arrays(:,:,4)
       Tp          = in_arrays(:,:,5)
       mwd         = in_arrays(:,:,6)
@@ -341,7 +350,7 @@
          Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
          freq_vec(1) = 1.0/Tmean
          !!
-         Tvar  = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
+         Tvar     = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
          Tstdev   = sqrt(Tvar)
          print*,'std dev of peak periods : ',Tstdev
          !!
@@ -355,8 +364,31 @@
          end if
       end if
 
-      call set_inc_waves()       ! - fill in the incident wave spectrum
-                                 !   with a Bretschneider spectrum
+      if (ndir.eq.1) then
+         !!single frequency:
+         !!-set it to mean over the wave mask
+         wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
+         !!
+         Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
+         Tstdev   = sqrt(Tvar)
+         print*,'std dev of wave directions : ',Tstdev
+         !!
+         if (abs(Tstdev).gt.1.0e-2) then
+            print*,'***********************************************'
+            print*,'warning: trying to run multiple directions'
+            print*,'  with n_wavdir = 1'
+            print*,'***********************************************'
+            print*,' '
+            STOP
+         end if
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !! create full incident wave spectrum
+      !! - use preset wave parameters (Tp,Hs,mwd,WAVE_MASK)
+      !!   to fill in the incident wave spectrum
+      !!   with a Bretschneider spectrum
+      call set_inc_waves()
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
