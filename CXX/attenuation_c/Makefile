@@ -1,7 +1,8 @@
-CC=gcc
+CC=clang-3.6
 CFLAGS=-I. # include directory = "."
+CFLAGS += -I/usr/include -lm
 DEPS=RTparam_hardcoded.h RTparam_fast.h # dependencies
-OBJ=RTparam_outer.o RTparam_fast.o RTparam_hardcoded.o 
+OBJ=RTparam_outer.o RTparam_fast.o RTparam_hardcoded.o
 TARGET=test_atten.app
 
 %.o: %.c $(DEPS)

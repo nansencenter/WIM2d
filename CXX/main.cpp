@@ -15,7 +15,7 @@ namespace
 namespace WIMOPT
 {
     po::options_description descrOptions();
-} // WIMOPT
+}// WIMOPT
 
 int main(int argc, char** argv )
 {
