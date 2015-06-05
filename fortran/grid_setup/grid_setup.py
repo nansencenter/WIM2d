@@ -57,7 +57,7 @@ if CHANGE_WAVES:
    elif 1:
       # single frequency, multiple directions
       nfreq = 1
-      ndir  = 16
+      ndir  = 64
    else:
       # multiple frequencies, 1 dirn
       nfreq = 25
@@ -68,6 +68,8 @@ if CHANGE_WAVES:
    print(' ')
    print('**************************************************')
    print('Changing number of wave frequencies and directions:')
+   print('nfreq : '+str(nfreq))
+   print('ndir  : '+str(ndir))
    print('editing '+hfil)
    print('**************************************************')
    print(' ')

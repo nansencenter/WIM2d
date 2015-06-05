@@ -72,7 +72,7 @@ real_prams  = None # default real parameters
 if 1:
    # change integer parameters:
    SCATMOD     = 1
-   ADV_DIM     = 2
+   ADV_DIM     = 1
    ADV_OPT     = 2
    CHECK_FINAL = 1
    CHECK_PROG  = 1
