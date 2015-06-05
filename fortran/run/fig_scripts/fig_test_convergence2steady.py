@@ -39,7 +39,7 @@ grid_prams  = gf
 if 1:
 
    # ice band of finite width
-   xe                   = -220.e3
+   xe                   = 50.e3
    ICEMASK              = 1+0*gf['X']
    ICEMASK[gf['X']<xe]  = 0.
    ICEMASK[gfl>0]       = 0.
@@ -49,7 +49,7 @@ if 1:
    ICEMASK[gf['X']>(xe+ice_width)]  = 0.
 
    # edge of wave mask
-   xw                   = -260.e3
+   xw                   = 30.e3
    WAVEMASK             = 1+0*gf['X']
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
