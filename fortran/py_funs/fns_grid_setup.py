@@ -42,12 +42,10 @@ def _get_grid_arrays_SmallSquare(diag_length,resolution):
 ###########################################################
 
 ###########################################################
-def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=0):
+def _get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
 
-   vx = np.array(range(0,nx))*dx
-   vx = vx-vx.mean()
-   vy = np.array(range(0,ny))*dy
-   vy = vy-vy.mean()
+   vx = x0+np.array(range(0,nx))*dx
+   vy = y0+np.array(range(0,ny))*dy
    oo = np.ones((nx,ny))
 
    grid_arrays = np.zeros((nx,ny,7))
@@ -71,12 +69,15 @@ def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=0):
    # LANDMASK:
    if LAND_OPT is 1:
       # standard 2d setup (works with the standard 1d/2d grids):
-      gf['LANDMASK'][113:,:]  = 1.0
+      xl                         = x0+.9*(vx.max()-x0)
+      gf['LANDMASK'][vx>xl,:]   = 1.0
+      print('\nLand in last 10% of domain\n')
    elif LAND_OPT is 2:
       # standard 2d, but with an island
-      xc = -190.e3
-      yc = 0.e3
-      Rc = 45.e3
+      xc = vx.mean()
+      yc = vy.mean()
+      Rc = .1*(vy.max()-y0)
+
       for i in range(nx):
          for j in range(ny):
             x  = gf['X'][i,j]
@@ -84,6 +85,9 @@ def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=0):
             R  = np.sqrt(pow(x-xc,2)+pow(y-yc,2))
             if R<Rc:
                gf['LANDMASK'][i,j]  = 1.
+      print('\nMaking island\n')
+   else:
+      print('\nNo land present\n')
    ###########################################################
 
    ###########################################################
@@ -99,7 +103,7 @@ def _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=0):
 ###########################################################
 
 ###########################################################
-def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
+def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
 
    if TEST==1:
       # test
@@ -126,14 +130,29 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
 
    ###########################################################
    # set grid configurations
-   if GRID_OPT is -1:
-      # test:
-      nx = 10
-      ny = 4
-      dx = 3.0e3
-      dy = 3.0e3
+   if type(GRID_OPT)==type('string'):
+      # read in parameters from infile
+      infile   = GRID_OPT
+      print('using infile '+infile+' for parameters\n')
+
+      fid      = open(infile)
+      lines    = fid.readlines()
+      fid.close()
+
+      # get values as floats 1st, then convert some to integers
+      params   = []
+      for lin in lines:
+         lin2  = lin.split()
+         params.append(float(lin2[0]))
+      nx,ny,dx,dy,x0,y0,LAND_OPT = params
+
+      # convert some parameters to integers
+      nx          = int(nx)
+      ny          = int(ny)
+      LAND_OPT    = int(LAND_OPT)
       #
-      grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy)
+      grid_arrays,grid_fields = _get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
+            dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    elif GRID_OPT is 0:
       # standard 1d setup:
@@ -141,8 +160,11 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
       ny = 4
       dx = 4.0e3
       dy = 10*dx
+      x0 = 0.
+      y0 = 0.
       #
-      grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy)
+      grid_arrays,grid_fields = _get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
+            dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    elif GRID_OPT is 1:
       # standard 2d setup:
@@ -150,8 +172,11 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=1):
       ny = 50
       dx = 4.0e3
       dy = 4.0e3
+      x0 = 0.
+      y0 = 0.
       #
-      grid_arrays,grid_fields = _get_grid_arrays(nx,ny,dx,dy,LAND_OPT=LAND_OPT)
+      grid_arrays,grid_fields = _get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
+            dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    elif GRID_OPT is 2:
       # to use with Philipp's "small-square" grid

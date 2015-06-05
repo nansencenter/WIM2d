@@ -1,1 +1,7 @@
-2  # GRID_OPT: 0, std 1d config; 1, std 2d config; 2, Philipp's "squaresmall" config
+150   # nx - number of grid cells in x dirn
+10    # ny - number of grid cells in y dirn
+4.e3  # dx - x resolution
+40.e3 # dy - y resolution
+0.    # x0 - 1st grid cell in x dirn
+0.    # y0 - 1st grid cell in y dirn
+0     # LAND_OPT - land option: 0, no land; 1, land at right hand end; 2, island in middle
