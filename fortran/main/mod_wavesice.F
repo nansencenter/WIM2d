@@ -413,15 +413,18 @@
          Hs = 4*sqrt(mom0)
          Tp = 0.0
          where (mom2.gt.0.0)
-            Tp = 2*PI*sqrt(mom0/mom2)
+            Tp    = 2*PI*sqrt(mom0/mom2)
+            !mwd   = -90. -180./PI*(mom_dir/mom0)!mwd (waves-from in degrees)
          end where
       else
          Hs = 4*sqrt(mom0w)
          Tp = 0.0
          where (mom2w.gt.0.0)
             Tp = 2*PI*sqrt(mom0w/mom2w)
+            !mwd   = -90. -180./PI*(mom_dir_w/mom0w)!mwd (waves-from in degrees)
          end where
       end if
+      call calc_mwd(REF_Hs_ICE)
 
       if (.false.) then
          !!test: print atten coeff
@@ -503,6 +506,133 @@
       end do!!end spatial loop i in x;
          
       end subroutine wim_step
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine do_wim_integrals(REF_Hs_ICE_)
+
+      ! already used at top
+!     use mod_common_wim,only: Hs,Tp,mwd,WAVE_MASK,                     &
+!    &      sdf_dir,freq_vec,wavdir
+
+      implicit none
+      include "wave_info.h"
+
+      integer,intent(in)      :: REF_Hs_ICE_
+      real,dimension(idm,jdm) :: mom0,mom2,mom_dir
+      real,dimension(idm,jdm) :: Sfreq,mom_dir0,F
+      integer                 :: w,wth
+      real                    :: adv_dir,PI,wt_theta,om
+
+      PI = 4*atan(1.0)
+      if (ndir.eq.1) then
+         wt_theta = 1.
+      else
+         wt_theta = 2.*PI/real(ndir)
+      end if
+
+      !! spectral moments;
+      mom0     = 0.0
+      mom2     = 0.0
+      mom_dir  = 0.0 !! for mwd
+
+      do w=1,n_wave_freq
+
+         om       = 2.*PI*freq_vec(w)
+         Sfreq    = 0.  ! freq spec
+         mom_dir0 = 0.  ! freq integral for mwd
+
+         do wth=1,n_wavdir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            Sfreq    = Sfreq     + wt_theta*sdf_dir(:,:,wth,w)
+            mom_dir0 = mom_dir0  + wt_theta*sdf_dir(:,:,wth,w)*adv_dir
+         end do! wth
+
+         if (REF_Hs_ICE_.eq.1) then
+            !! calc for ice
+            F  = disp_ratio(:,:,w)
+         else
+            F  = 1.
+         end if
+         mom0     = mom0    + abs( wt_om(w)*F*F*Sfreq       )
+         mom2     = mom2    + abs( wt_om(w)*F*F*Sfreq*om**2 )
+         mom_dir  = mom_dir + abs( wt_om(w)*F*F*mom_dir0    )
+
+      end do! w
+
+      Hs          = 0.
+      Tp          = 0.
+      mwd         = 0.
+      WAVE_MASK   = 0.
+
+      where (mom2*mom2>0.)
+         WAVE_MASK   = 1.
+         Hs          = 4.*sqrt(mom0)
+         Tp          = 2.*PI*sqrt(mom0/mom2)
+         mwd         = -90. -180./PI*(mom_dir/mom0)!mwd (waves-from in degrees)
+            !adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+      end where
+
+      end subroutine do_wim_integrals
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine calc_mwd(REF_Hs_ICE_)
+
+      ! already used at top
+!     use mod_common_wim,only: mwd                                      &
+!    &      sdf_dir,freq_vec,wavdir
+
+      implicit none
+      include "wave_info.h"
+
+      integer,intent(in)      :: REF_Hs_ICE_
+      real,dimension(idm,jdm) :: mom0,mom_dir
+      real,dimension(idm,jdm) :: Sfreq,mom_dir0,F
+      integer                 :: w,wth
+      real                    :: adv_dir,PI,wt_theta,om
+
+      PI = 4*atan(1.0)
+      if (ndir.eq.1) then
+         wt_theta = 1.
+      else
+         wt_theta = 2.*PI/real(ndir)
+      end if
+
+      !! spectral moments;
+      mom0     = 0.0
+      mom_dir  = 0.0 !! for mwd
+
+      do w=1,n_wave_freq
+
+         om       = 2.*PI*freq_vec(w)
+         Sfreq    = 0.  ! freq spec
+         mom_dir0 = 0.  ! freq integral for mwd
+
+         do wth=1,n_wavdir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            Sfreq    = Sfreq     + wt_theta*sdf_dir(:,:,wth,w)
+            mom_dir0 = mom_dir0  + wt_theta*sdf_dir(:,:,wth,w)*adv_dir
+         end do! wth
+
+         if (REF_Hs_ICE_.eq.1) then
+            !! calc for ice
+            F  = disp_ratio(:,:,w)
+         else
+            F  = 1.
+         end if
+         mom0     = mom0    + abs( wt_om(w)*F*F*Sfreq    )
+         mom_dir  = mom_dir + abs( wt_om(w)*F*F*mom_dir0 )
+
+      end do! w
+
+      mwd   = 0.!problematic?
+      where (mom0>0.)
+         mwd         = -90. -180./PI*(mom_dir/mom0)!mwd (waves-from in degrees)
+            !adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+      end where
+
+      end subroutine calc_mwd
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
