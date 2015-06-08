@@ -30,7 +30,7 @@ OBJS=\
      $(ODIR)/mod_gridinfo.o \
      $(ODIR)/mod_advect.o
 
-TARGET=test_advect.exe
+TARGET=test_advect.exec
 
 # Create objects by compiling their respective .F files
 $(ODIR)/%.o:	%.F

@@ -1,7 +1,7 @@
 *.swp
 *.o
 *.mod
-*.exe
+*.exec
 *.so
 *.pyc
 *fort.6

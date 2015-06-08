@@ -38,11 +38,9 @@ OFLAGS=-J$(MDIR)
 # Flags for f2py
 F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 
-# fortran program to run WIM
-# - executable called by run_WIM2d.sh
-#   (cd ../run; ./run_WIM2d.sh)
+# fortran program to test attenuation
 PROG_F		:=	$(ODIR)/test_atten.o
-TARGET_F	:=	test_atten.exe
+TARGET_F	:=	test_atten.exec
 
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path

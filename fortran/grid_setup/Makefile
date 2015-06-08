@@ -43,7 +43,7 @@ F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 # - executable called by run_WIM2d.sh
 #   (cd ../run; ./run_WIM2d.sh)
 PROG_F		:=	$(ODIR)/p_save_grid.o
-TARGET_F	:=	grid_setup.exe
+TARGET_F	:=	grid_setup.exec
 
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path

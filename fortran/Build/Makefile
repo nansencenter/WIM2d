@@ -48,7 +48,7 @@ MEX_FLAGS=-largeArrayDims $(IFLAGS)
 # - executable called by run_WIM2d.sh
 #   (cd ../run; ./run_WIM2d.sh)
 PROG_F		:=	$(ODIR)/p_WIM2d.o
-TARGET_F	:=	WIM2d.exe
+TARGET_F	:=	WIM2d.exec
 
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path
