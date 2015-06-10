@@ -137,7 +137,7 @@ $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 $(OBJ_MAIN):			$(OBJS)
 
 $(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
-$(PROG_PY): 		$(OBJS)
+$(PROG_PY): 		grid_info.h	wave_info.h		$(OBJS)
 
 $(MEX1):		grid_info.h $(OBJ_MAIN)
 

@@ -49,6 +49,9 @@ if CHANGE_GRID:
 
 if CHANGE_WAVES:
 
+   Tmin  = 2.5 # min period
+   Tmax  = 25  # max period
+
    # change number of wave frequencies and directions
    if 0:
       # multiple frequencies, directions
@@ -78,15 +81,24 @@ if CHANGE_WAVES:
    wave_info.h should look like this:
    integer,parameter :: n_wavdir    = 16
    integer,parameter :: n_wave_freq = 1!should be odd (Simpson's rule)
+
+   real,parameter :: Tmin  = 2.5
+   real,parameter :: Tmax  = 25.0
    """
 
    spc   = 6*' ' # F77 indent
    str1  = 'integer,parameter :: n_wavdir    = '
    str2  = 'integer,parameter :: n_wave_freq = '
    str3  = "!should be odd (Simpson's rule)"
+   str4  = 'real,parameter :: Tmin  = '
+   str5  = 'real,parameter :: Tmax  = '
+
 
    # write file
    hf = open(hfil,'w')
    hf.write(spc+str1+str(ndir)+'\n')
-   hf.write(spc+str2+str(nfreq)+str3)
+   hf.write(spc+str2+str(nfreq)+str3+'\n')
+   hf.write('\n')
+   hf.write(spc+str4+str(Tmin)+'\n')
+   hf.write(spc+str5+str(Tmax)+'\n')
    hf.close()

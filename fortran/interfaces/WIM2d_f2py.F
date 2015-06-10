@@ -35,6 +35,55 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine wim2d_dimensions(nx,ny,nw,ndir)
+
+      implicit none
+
+      include "grid_info.h"
+      include "wave_info.h"
+
+      integer, intent(out) :: nx,ny,nw,ndir
+
+      nx    = ii
+      ny    = jj
+      nw    = n_wave_freq
+      ndir  = n_wavdir
+
+      end subroutine wim2d_dimensions
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine wim2d_freq_vec(nw,freq_vec)
+
+      implicit none
+
+      include "wave_info.h"
+
+      integer, intent(in)  :: nw
+      real,    intent(out) :: freq_vec(nw)
+
+      real     :: freq,fmin,fmax,df
+      integer  :: w
+
+      freq_vec = -1.
+      if (nw.gt.1) then
+
+         fmin     = 1./Tmax
+         fmax     = 1./Tmin
+         df       = (fmax-fmin)/real(nw-1)
+         freq     = fmin
+
+         do w=1,nw
+            freq_vec(w) = freq
+            freq        = freq+df
+         end do
+                  
+      end if
+
+      end subroutine wim2d_freq_vec
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine atten_youngs(outputs,inputs)
       use mod_wim_prams, only: gravity
 
