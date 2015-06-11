@@ -16,7 +16,7 @@ def _get_grid_arrays_SmallSquare(diag_length,resolution):
 
    dx    = resolution
    nx    = int(np.floor(diag_length/resolution))
-   out   = _get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
+   out   = get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
 
    # fix landmask
    gf    = out[1]
@@ -42,7 +42,7 @@ def _get_grid_arrays_SmallSquare(diag_length,resolution):
 ###########################################################
 
 ###########################################################
-def _get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
+def get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
 
    vx = x0+np.array(range(0,nx))*dx
    vy = y0+np.array(range(0,ny))*dy
@@ -151,7 +151,7 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       ny          = int(ny)
       LAND_OPT    = int(LAND_OPT)
       #
-      grid_arrays,grid_fields = _get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
+      grid_arrays,grid_fields = get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
             dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    elif GRID_OPT is 0:
@@ -163,7 +163,7 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       x0 = 0.
       y0 = 0.
       #
-      grid_arrays,grid_fields = _get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
+      grid_arrays,grid_fields = get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
             dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    elif GRID_OPT is 1:
@@ -175,7 +175,7 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       x0 = 0.
       y0 = 0.
       #
-      grid_arrays,grid_fields = _get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
+      grid_arrays,grid_fields = get_grid_arrays(x0=x0,y0=y0,nx=nx,ny=ny,\
             dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    elif GRID_OPT is 2:
