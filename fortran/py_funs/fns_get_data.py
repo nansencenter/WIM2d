@@ -173,6 +173,52 @@ def fn_check_init(outdir):
 ##############################################################
 
 ##############################################################
+def fn_read_general_bin(afile):
+   # routine to get output fields from binary files:
+   bfile = afile[:-2]+'.b'
+
+   ###########################################################
+   # get dimensions and variable names from .b file
+   bid   = open(bfile,'r')
+   lines = bid.readlines()
+   bid.close()
+
+   nxline   = lines[1].split()
+   nyline   = lines[2].split()
+   nx       = int(nxline[0])
+   ny       = int(nyline[0])
+
+   Nlines   = len(lines)
+   for n in range(3,Nlines):
+      lin   = lines[n]
+      if 'Record number and name:' in lin:
+         n0 = n+1
+         break
+
+   keys  = []
+   for n in range(n0,Nlines):
+      lin   = lines[n]
+      vname = lin.split()[1]
+      keys.append(vname)
+   ###########################################################
+
+   ###########################################################
+   # can now read data from .a file
+   aid   = open(afile,'rb')
+   ##
+   out   = {}
+   ##
+   for key in keys:
+      out.update({key:get_array(aid,nx,ny)})
+
+   aid.close()
+   ###########################################################
+   
+   # outputs
+   return out
+##############################################################
+
+##############################################################
 def fn_check_out_bin(outdir):
    # routine to get output fields from binary files:
    afile    = outdir+'/wim_out.a'
