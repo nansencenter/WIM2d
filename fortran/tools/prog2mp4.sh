@@ -1,4 +1,4 @@
-P=`pwd`
+P=`pwd` # run from figs/prog/ folder
 
 if [ $# -eq 1 ]
 then
@@ -37,5 +37,5 @@ cd ..
 rm -r tmp
 
 # play the movie (mac)
-echo open -a /Applications/QuickTime\ Player.app "$outdir2/$mov"
+echo open -a /Applications/QuickTime\\ Player.app "$outdir2/$mov"
 open -a /Applications/QuickTime\ Player.app "$outdir2/$mov"

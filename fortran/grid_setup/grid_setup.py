@@ -19,17 +19,14 @@ else:
 infile   = 'infile_grid.txt'
 if os.path.exists(infile):
    # read in GRID_OPT from file:
-   fid      = open(infile,'r')
-   lines    = fid.readlines()
-   fid.close()
-   GRID_OPT = int(lines[0].split()[0])
+   GRID_OPT = infile
 #############################################################
 
 TEST     = 0 # if 0: save grid files to ../run/inputs (correct place for rest of model to find)
              # if 1: save grid files to test/out_py (for testing: rest of model can't find outputs)
              # *Both options make a plot of the LAND MASK
 
-LAND_OPT = 2
+LAND_OPT = 0
 grid_fields,grid_arrays = gs.grid_setup(GRID_OPT=GRID_OPT,TEST=TEST,LAND_OPT=LAND_OPT)
 
 if CHANGE_GRID:
@@ -60,7 +57,7 @@ if CHANGE_WAVES:
    elif 1:
       # single frequency, multiple directions
       nfreq = 1
-      ndir  = 16
+      ndir  = 64
    else:
       # multiple frequencies, 1 dirn
       nfreq = 25
@@ -71,6 +68,8 @@ if CHANGE_WAVES:
    print(' ')
    print('**************************************************')
    print('Changing number of wave frequencies and directions:')
+   print('nfreq : '+str(nfreq))
+   print('ndir  : '+str(ndir))
    print('editing '+hfil)
    print('**************************************************')
    print(' ')

@@ -83,6 +83,13 @@ if 1:
          figdir3_0   = figdir3+'/'+stepno
          Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
          print("Plots in "+figdir3_0+'\n')
+
+      print('**********************************************************************')
+      print('to make movie, go to figs/prog and type')
+      print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs')
+      print('or')
+      print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax')
+      print('**********************************************************************\n')
       ################################################################
 
    elif 1:

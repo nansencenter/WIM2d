@@ -29,7 +29,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!only subroutines are public
-      public   :: wim2d_run,wim2d_run_io                                &
+      public   :: wim2d_run,wim2d_run_io,wim2d_run_vSdir                &
      &            ,mex_io_gate,mex_io_gate_v2
 
       contains
@@ -365,7 +365,7 @@
       end if
 
       if (ndir.eq.1) then
-         !!single frequency:
+         !!single direction:
          !!-set it to mean over the wave mask
          wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
          !!
@@ -458,6 +458,218 @@
 
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine wim2d_run_vSdir(Sdir_io,in_arrays,out_arrays           &
+     &                       ,int_prams,real_prams,nx,ny)
+
+      use mod_gridinfo     !! grid info
+      use mod_wim_prams    !! ice parameters
+      use mod_wim_init     !! initial wave fields
+      use mod_common_wim   !! initial ice fields
+      use mod_adv_atten    !! advection routine
+
+!     !! main code for WIM
+!     use mod_wavesice, only:
+!    &    amax,amin,CFL,dt    !need these to determine number of time steps
+!    &   ,wim_init,wim_step   !main subroutines
+!    &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! import main code for WIM
+      use mod_wavesice, only:
+     &    amax,amin,CFL,dt                                              &
+     &   ,wim_init,wim_step                                             &
+     &   ,check_grid,check_init,check_prog                              &
+     &   ,do_wim_integrals
+            !! need these to:
+            !! - determine number of time steps
+            !! - get main subroutines
+            !! - get subroutines for dumping fields
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      implicit none
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!variables
+      integer,parameter                :: ndir  = n_wavdir
+      integer,parameter                :: nw    = n_wave_freq
+      integer,intent(in)               :: nx,ny
+      integer,dimension(7),intent(in)  :: int_prams
+      ! SCATMOD,ADV_DIM,ADV_OPT,
+      ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
+      ! DO_BREAKING
+
+      real,dimension(nx,ny,ndir,nw),intent(inout)  :: Sdir_io  !! pass in/out directional spec
+      real,dimension(nx,ny,3),intent(in)  :: in_arrays         !! c,h,Dmax
+      real,dimension(nx,ny,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
+      real,dimension(3),intent(in)        :: real_prams        !! young,visc_rp,duration
+
+      real              :: PI
+      real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
+
+      logical,parameter :: SET_WAVES   = .false.
+      integer           :: w,wth
+
+      real,parameter    :: min_conc = 0.05
+
+      real  :: Tmean,Tvar,Tstdev
+
+      !! function to print time
+      real  :: etime
+
+      !! does infile_dirs exist?
+      logical :: fex
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
+                               ! 0: scattering treated like attenuation
+                               ! 1: directional scattering
+      ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
+                               ! and also testing many parameters at once
+                               ! ie each 'y' row can be a different experiment
+                               !    if we use this option
+                               !    - in practice we set speed in 'y' dirn to 0.
+      ADV_OPT  = int_prams(3)  ! 0, not periodic;
+                               ! 1, periodic in both x,y;
+                               ! 2, periodic in y only;
+
+      !! Inputs to determine if results
+      !! should be dumped to binaries or not
+      DO_CHECK_FINAL = int_prams(4)
+      DO_CHECK_PROG  = int_prams(5)
+      DO_CHECK_INIT  = int_prams(6)
+      DO_BREAKING    = int_prams(7)
+
+      !!real inputs
+      wim_prams_in   = real_prams(1:2)    !!young,visc_rp
+      duration       = real_prams(3)      !!length of sim [s]
+
+      PI       = 4.0*atan(1.0)
+      et       = etime(tictoc)!!startup etime
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!locations of inputs/outputs
+      inquire(file=infile_dirs,exist=fex)
+      if (fex) then
+         call read_infile_dirs(indir,outdir)
+      else
+         indir    = 'inputs'
+         outdir   = 'out_io'
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      log_file    = trim(outdir)//"/log/wim2d.log"
+      this_subr   = 'wim2d_run_io'
+
+      print*,'****************************************'
+      print*,'Initialising...'
+      print*,'****************************************'
+      print*,' '
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!initialisation of grid, ice con's
+      call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
+      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
+
+      !!ice conditions from inputs
+      icec     = in_arrays(:,:,1)
+      iceh     = in_arrays(:,:,2)
+      dfloe    = in_arrays(:,:,3)
+      ICE_MASK = 0.0
+      where (icec.gt.min_conc)
+         ICE_MASK = 1.0
+      end where
+
+      !! set wave grid
+      !! SET_WAVES = .false. so don't set initial Tp,Hs,mwd,WAVE_MASK as well
+      call waves_init(SET_WAVES)
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! get dir spec directly from Sdir_io
+      sdf_dir  = Sdir_io
+      call do_wim_integrals(0) ! calc Hs,Tp,mwd,WAVE_MASK from sdf_dir
+         !! The "0" means it is relative to the water (displacement is
+         !!  not reducedin the ice)
+
+      if (ndir.eq.1) then
+         !!single direction:
+         !!-set it to mean over the wave mask
+         wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
+         !!
+         Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
+         Tstdev   = sqrt(Tvar)
+         print*,'std dev of wave directions : ',Tstdev
+         !!
+         if (abs(Tstdev).gt.1.0e-2) then
+            print*,'***********************************************'
+            print*,'warning: trying to run multiple directions'
+            print*,'  with n_wavdir = 1'
+            print*,'***********************************************'
+            print*,' '
+            STOP
+         end if
+      end if
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! initialise WIM (mod_wavesice)
+      !! set the attenuation coefficients;
+      call wim_init(STEADY)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      if (DO_CHECK_INIT.eq.1) then
+         call check_grid(outdir)
+         call check_init(outdir)
+      end if
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!set number of time steps
+      dt    = CFL*dx/amax
+      x_ext = idm*dx/1.0e3!km
+      y_ext = jdm*dy/1.0e3!km
+      nt    = nint(duration/dt)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!print info
+      call print_screen_info()
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      print*,'Beginning main integration...'
+      call wim2d_run_common()
+
+      et = etime(tictoc)!!finish etime
+      print*,' '
+      print*,'******************************************************'
+      print*,'run of 2d WIM2d finished'
+      !print *,'Elapsed time (s):',et
+      print *,'Elapsed time (min):',et/60.0                             !&
+!    &       ,', user:', tictoc(1),                                     &
+!    &       ,', sys:' ,tictoc(2)
+      print*,'******************************************************'
+      print*,' '
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!print info to screen again
+      call print_screen_info()
+
+      !!print  some outputs to log file
+      call print_log_info()
+
+      !! put in same order as binary outputs:
+      out_arrays(:,:,1) = dfloe     ! maximum floe size
+      out_arrays(:,:,2) = tau_x     ! wave stress (x dirn)
+      out_arrays(:,:,3) = tau_y     ! wave stress (y dirn)
+      out_arrays(:,:,4) = Hs        ! significant wave height
+      out_arrays(:,:,5) = Tp        ! mean wave period
+      !out_arrays(:,:,6) = mwd       ! mean wave direction
+
+      !! output
+      Sdir_io  = sdf_dir
+
+      end subroutine wim2d_run_vSdir
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wim2d_run_common()
