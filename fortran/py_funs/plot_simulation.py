@@ -18,7 +18,7 @@ def plot_simulation(outdir='.',infile_grid=None,PLOT_INIT=0,PLOT_PROG_OPT=0):
    import fns_plot_data as Fplt
 
    # Make plots
-   bindir   = outdir+'/binaries' # wim_init.[ab],wim_out.[ab],"prog" directory with wim_prog???.[ab] 
+   bindir   = outdir+'/binaries' # wim_init.[ab],wim_out.[ab],"prog" directory with wim_prog???.[ab]
    figdir   = outdir+'/figs'     # where to save files
 
    if infile_grid is None:
@@ -34,7 +34,7 @@ def plot_simulation(outdir='.',infile_grid=None,PLOT_INIT=0,PLOT_PROG_OPT=0):
       dx = 4.0e3
       dy = 40.e3
       LAND_OPT = 0# no land
-      grid_arrays,grid_prams = get_grid_arrays(\
+      grid_arrays,grid_prams = gs.get_grid_arrays(\
          x0=x0,y0=y0,nx=nx,ny=ny,dx=dx,dy=dy,LAND_OPT=LAND_OPT)
 
    ##########################################################################

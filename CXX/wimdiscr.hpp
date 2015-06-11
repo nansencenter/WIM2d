@@ -54,6 +54,7 @@ public:
     void writeFile (std::string const& fileout, array2_type const& arrayout) const;
     void wimInit();
     void wimStep();
+    void wimRun();
     void floeScaling(value_type const& dmax, value_type& dave);
     void advAttenSimple(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_om,array2_type& tauy_om, array2_type& ag2d_eff);
     void advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_om,array2_type& tauy_om, array2_type& ag2d_eff);
@@ -894,6 +895,14 @@ WimDiscr<T>::wimStep()
 
 }
 
+
+template<typename T>
+void
+WimDiscr<T>::wimRun()
+{
+    value_type x_ext, y_ext, u_ref, duration;
+    int nt;
+}
 
 template<typename T>
 void
