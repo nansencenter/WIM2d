@@ -13,7 +13,7 @@
 #define MAXIT 100
 
 
-
+#if 0
 
 /*construct main function*/
 int main() {
@@ -68,6 +68,8 @@ int main() {
   printf("\noutput: Arg[T]    = %0.9e\n", argT);
 }
 
+#endif
+
 //function [damping,kice,kwtr,int_adm,...
 //            alp_scat,modT,argR,argT] =...
 //               RT_param_outer(h,om,E,visc_rp,guess)
@@ -105,20 +107,20 @@ int RTparam_outer(double *damping,double *kice,double *kwtr,double *int_adm,
    //[ki,BG2,avc]   = gen_root_ice(varpi,H_nd,guess*L);
    gen_root_ice(&ki,&BG2,&avc,varpi,H_nd,guess*L);
    *kice = ki/L;
-   
+
    //get wavenumber for water;
    varpi = 1/alp_nd;
    Hw_nd = H_nd+zeta_nd;
    //[kw,BG1] = gen_root_wtr(varpi,Hw_nd,alp_nd);
    gen_root_wtr(&kw,&BG1,varpi,Hw_nd,alp_nd);
    *kwtr  = kw/L;
-   
+
    //get intrinsic admittance;
    //|R|^2+int_adm*|T|^2=1
    printf("\noutput: BG1   = %0.9e\n", BG1);
    printf("\noutput: BG2   = %0.9e\n", BG2);
    *int_adm  = BG1/BG2;
-   
+
    //get viscous attenuation;
    visc_rp_nd  = visc_rp/rhow/om/L;
    damping_nd  = avc*visc_rp_nd;
@@ -149,7 +151,7 @@ int gen_root_ice(double *ki2, double *BG2,double *avc,
    //dk    = NR_corr_term(k0,del,H,fac);
    NR_corr_term(&dk,&Lam,&Lampr,k0,del,H,fac);
    ki = k0-dk;
-  
+
    while(fabs(dk) > EPS) {
      k0 = ki;
 
@@ -158,7 +160,7 @@ int gen_root_ice(double *ki2, double *BG2,double *avc,
      NR_corr_term(&dk,&Lam,&Lampr,k0,del,H,fac);
      ki = k0-dk;
    }
-  
+
    //Call dispersion relation function;
    //[dk,Lam,Lampr] = NR_corr_term(ki,del,H,fac);
    NR_corr_term(&dk,&Lam,&Lampr,ki,del,H,fac);
@@ -213,7 +215,7 @@ int gen_root_wtr(double *kw2, double *BG1,
 }
 
 // function [dk,Lam,Lampr] = NR_corr_term(k,del,H,fac)
-// %% dk=f/f_k, where f has the same zeros as of the dispersion function, 
+// %% dk=f/f_k, where f has the same zeros as of the dispersion function,
 // %% is the correction term in the Newton-Rhapson method for finding zeros in f.
 int NR_corr_term(double *dk,double *Lam2,double *Lampr2,
                  double k, double del, double H,double fac) {

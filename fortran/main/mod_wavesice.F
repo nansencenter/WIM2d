@@ -92,7 +92,7 @@
             w           = w+2
             wt_simp(w)  = 4.0
          end do
-      
+
          !!NB om needs to be equally spaced;
          dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
          wt_om = dom/3.0*wt_simp
@@ -125,7 +125,7 @@
       om    = 2*PI*freq_vec(1)
 
       do w=1,nw
-         
+
          do j=1,jj
          do i=1,ii
          if (ICE_MASK(i,j).eq.1.0) then
@@ -336,7 +336,7 @@
 !                   print*,'q_abs  (1/m)  = ',damp_dim(i,j)
 !                   print*,' '
 !                end if
-               
+
             end if
          end do!! j
          end do!! i
@@ -436,7 +436,7 @@
          !! it starts to exit the domain?
          !! TODO Try with periodicity?
 
-         !! test conservation of total energy 
+         !! test conservation of total energy
          E_tot = sum(Hs*Hs)
          print*,'********************************************'
          print*,'Total energy [m^2] = ',E_tot
@@ -452,22 +452,22 @@
          if ((ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
             !! only try breaking if ice is present
             !!  & some waves have arrived;
-   
+
             !! significant strain amp
             sig_strain  = 2*sqrt(var_strain(i,j))
-   
+
             !! probability of critical strain
             !! being exceeded from Rayleigh distribution;
             Pstrain  = exp( -epsc**2/(2*var_strain(i,j)) )
             P_crit   = (1-DO_BREAKING)+exp(-1.0)
                !!this is critical prob if monochromatic wave
-   
+
             !! FLOE BREAKING:
             BREAK_CRIT  = ( Pstrain.ge.P_crit ) !! breaks if larger than this
 
             !! Leave FSD alone if DO_BREAKING==0
             BREAK_CRIT  = BREAK_CRIT.and.(DO_BREAKING.eq.1)
-   
+
             if (BREAK_CRIT) then
                !! use crest period to work out wavelength
                !! - interpolate using pre-calc'd wavelengths
@@ -487,21 +487,21 @@
                   lam2        = wlng_ice(i,j,jcrest+1)
                   wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom
                end if
-   
+
                !!change dfloe if wavelength/2 is shorter than it
                !!(keeping it bigger than Dmin)
                Dc          = max(Dmin,wlng_crest/2.0)
                dfloe(i,j)  = min(Dc,dfloe(i,j))
 
             end if!! end breaking action;
-   
+
          elseif (WTR_MASK(i,j).eq.1.0) then!! only water present
             dfloe(i,j)  = 0.0
          end if
-         
+
       end do!! end spatial loop j in y;
       end do!!end spatial loop i in x;
-         
+
       end subroutine wim_step
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -522,8 +522,8 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)  
- 112  format(i3.3,a)  
+ 111  format(i2.2,a)
+ 112  format(i3.3,a)
  113  format(a)
 
       !! write .b file (description of stuff in .a file)
@@ -585,8 +585,8 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)  
- 112  format(i3.3,a)  
+ 111  format(i2.2,a)
+ 112  format(i3.3,a)
  113  format(a)
 
       !! write .b file (description of stuff in .a file)
@@ -712,24 +712,24 @@
 
       real,    intent(out) :: Dave
       real,    intent(in)  :: dmax
-      integer              :: m,mm 
+      integer              :: m,mm
       real                 :: n,nsum,nd,ndsum,r,dfac
 
-      mm    = 0  
+      mm    = 0
       r     = dmax/dmin
 
       !print*,' '
       !print*,'dmax,dmin',dmax,dmin
       !print*,'r,mm',r,mm
 
-      do while ( r .gt. xi ) 
-         r  = r/xi 
-         mm = mm+1 
+      do while ( r .gt. xi )
+         r  = r/xi
+         mm = mm+1
          !print*,'r,mm',r,mm
          !print*,' '
       end do
 
-      if ( mm .gt. 0 ) then 
+      if ( mm .gt. 0 ) then
          n     = 0.0
          nsum  = 0.0
          nd    = 0.0

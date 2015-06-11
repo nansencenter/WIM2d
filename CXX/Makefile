@@ -1,58 +1,103 @@
-PRG_NAME=prog_wim2d.app
-SOURCES=\
-	main.cpp \
-	options.cpp
-
-
-
-# CXX = clang++-3.6
-# CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -Wall -fPIC -stdlib=libstdc++ -MMD -MP -lm -v #-lboost_program_options #-v
-# # CXXFLAGS += -I headers
-# LDFLAGS += -lboost_program_options -lboost_system -lboost_filesystem -I/opt/local/boost-1.58/include/boost # -L/usr/lib -lboost_program_options
-
+PROGNAME=prog_wim2d.exec
 
 CXX = g++-4.8
 CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC -MMD -MP -lm -v #-Wall
+CXXFLAGS += -I headers -I .
 LDFLAGS += -lboost_program_options -lboost_filesystem -lboost_system
 
-#CFLAGS = -O3 -Wall
-#LDFLAGS += -lboost_program_options -lboost_system -lboost_filesystem
-#LDFLAGS += -I/opt/local/boost-1.58/include -L/opt/local/boost-1.58/lib  # -L/usr/lib -lboost_program_options
-#LDLIBS = lboost_program_options -lboost_filesystem -lboost_system
-# -include $(all_objs:.o=.d)
 
-DEPS=$(patsubst %.cpp,%.d,$(SOURCES))
-OBJECTS=$(patsubst %.cpp,%.o,$(SOURCES))
+CC = gcc-4.8
+CFLAGS += -std=c++0x -pedantic -Wno-inline -fPIC -MMD -MP -lm -v #-Wall
+CFLAGS += -I headers -I .
+
+
+# SRC = \
+# 	main.cpp \
+# 	options.cpp
+
+
+# CSRCDIR=src
+# CCSRC=\
+# 	$(CSRCDIR)/RTparam_outer.c \
+# 	$(CSRCDIR)/RTparam_fast.c \
+# 	$(CSRCDIR)/RTparam_hardcoded.c
+
+
+EXEC=$(PROGNAME)
+OBJECTDIR=objs/
+BINARYDIR=bin/
+
+# C++ files
+CXXSRCDIR=.
+CXXSRC=$(wildcard $(CXXSRCDIR)/*.cpp)
+OBJS=$(CXXSRC:.cpp=.o)
+DEPS=$(CXXSRC:.cpp=.d)
+
+OBJS:=$(addprefix $(OBJECTDIR), $(OBJS))
+DEPS:=$(addprefix $(OBJECTDIR), $(DEPS))
+
+# C files
+CCSRCDIR=src
+CCSRC=$(wildcard $(CCSRCDIR)/*.c)
+CCOBJS=$(CCSRC:.c=.o)
+CCDEPS=$(CCSRC:.c=.d)
+
+CCOBJS:=$(addprefix $(OBJECTDIR), $(CCOBJS))
+CCDEPS:=$(addprefix $(OBJECTDIR), $(CCDEPS))
+
 
 
 # Rules to always execute.
 .PHONY: all clean mrproper
 
 # Default action.
-all: $(PRG_NAME)
+all: $(EXEC)
 
 # Delete the object files.
 clean:
-	$(RM) $(OBJECTS) $(DEPS)
+	$(RM) $(OBJS) $(DEPS) $(CCOBJS) $(CCDEPS)
 
-# Delete the object files and the compiled program.
 mrproper: clean
-	$(RM) $(PRG_NAME)
-
-# Linkage.
-# $(PRG_NAME): $(OBJECTS)
-# 	$(CXX) $(LDFLAGS) -o $@ $^
+	$(RM) $(BINARYDIR)$(PROGNAME)
 
 
-$(PRG_NAME) : $(OBJECTS)
-	$(CXX) $(CXXLAGS) -o $@ $^ $(LDFLAGS)
+default: $(CCOBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(OBJECTDIR)%.o: %.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+
+
+$(PROGNAME): $(OBJS) $(CCOBJS)
+	@mkdir -p $(BINARYDIR)
+	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$@ $^ $(LDFLAGS)
+
+$(OBJECTDIR)%.o: %.cpp
+	$(CXX) -o $@ -c $< $(CXXFLAGS)
 
 
 # The compilation depends on this Makefile.
-$(OBJECTS): Makefile
+$(OBJS): Makefile
 
 -include $(DEPS)
 
 
-#g++ -std=c++11 main.cpp options.cpp -o test -lboost_program_options -lboost_system -lboost_filesystem -v
-#g++ main.cpp -o first -lboost_program_options -v
+# .PHONY: all clean mrproper
+
+# # Delete the object files.
+# clean:
+# 	$(RM) -rf $(OBJECTDIR)*
+
+# # Delete the executable
+# mrproper: clean
+# 	$(RM) -f $(BINARYDIR)$(EXEC)
+
+
+# hello: $(DIR_OBJS)
+# 	$(CXX) $(CXXLAGS) -o $@ $^ $(LDFLAGS)
+
+# $(DIR_OBJ)%.o: %.cpp
+# 	$(CXX) -o $@ -c $< $(CFLAGS)
+
+#$(CXX) -o $@ $^ $(LDFLAGS)

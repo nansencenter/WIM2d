@@ -254,14 +254,10 @@
 ! --- (donor cell) and a high order correction flux.
 !
 !$OMP PARALLEL DO
-      do j=0,jj+2
-        do i=0,ii+2
-          ful(i,j)=0.
-          fuh(i,j)=0.
-          fvl(i,j)=0.
-          fvh(i,j)=0.
-        enddo
-      enddo
+      ful=0.
+      fuh=0.
+      fvl=0.
+      fvh=0.
 !$OMP END PARALLEL DO
 !
 !      call xctilr(g, 1,1, 3,3, halo_ps)
@@ -281,8 +277,10 @@
             !im2   = im1-iu(im1,j)
             im2=im1-1
 !
-            q0=cq00*g(im2,j)+cq01*g(im1,j)
-            q1=cq10*g(im1,j)+cq11*g(i  ,j)
+            ! wave to right
+            ! dont use very right point
+            q0=cq00*g(im2,j)+cq01*g(im1,j) ! im2=i-2: -2=1-nbdy -> ii, all the way to left; im1=i-1: -1=1-nbdy+1 -> ii+1
+            q1=cq10*g(im1,j)+cq11*g(i  ,j)! i : 0-> ii+2, 1 before right, im1=i-1: -1=1-nbdy+1 -> ii+1
 !
             a0=ca0
             a1=ca1*(abs(g(im2,j)-g(im1,j))+eps)                         &
@@ -295,8 +293,10 @@
             !ip1=i+iu(i+1,j)
             ip1=i+1
 !
-            q0=cq11*g(im1,j)+cq10*g(i  ,j)
-            q1=cq01*g(i  ,j)+cq00*g(ip1,j)
+            ! wave to left
+            ! dont use very left point
+            q0=cq11*g(im1,j)+cq10*g(i  ,j)!im1, one after left
+            q1=cq01*g(i  ,j)+cq00*g(ip1,j)!ip1=i+1: 1 -> ii+3 , all the way to right 
 !
             a0=ca1
             a1=ca0*(abs(g(im1,j)-g(i  ,j))+eps)                         &

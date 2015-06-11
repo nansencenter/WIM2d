@@ -31,9 +31,9 @@
       !!only subroutines are public
       public   :: wim2d_run,wim2d_run_io                                &
      &            ,mex_io_gate,mex_io_gate_v2
-      
+
       contains
-      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wim2d_run
 
@@ -92,7 +92,7 @@
          outdir   = 'out'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
+
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run'
 
@@ -196,7 +196,7 @@
 !    &       ,', sys:' ,tictoc(2)
       print*,'******************************************************'
       print*,' '
-      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info to screen again
@@ -306,7 +306,7 @@
          outdir   = 'out_io'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
+
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
 
@@ -545,7 +545,7 @@
      &                  ,x1,x2,x3,x4,x5,x6                              &
      &                  ,int_prams,real_prams                           &
      &                  ,nx,ny,ni,nr)
-      
+
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
       !! and wim2d_run_io subroutine in this file
@@ -595,7 +595,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mex_io_gate_v2(y3d,x3d,int_prams,real_prams            &
      &                  ,nx,ny,ni,nr,nx3d,ny3d)
-      
+
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
       !! and wim2d_run_io subroutine in this file
@@ -765,9 +765,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine read_infile_dirs(indir,outdir)
       !!determines where to read inputs/outputs from
-      
+
       implicit none
-      
+
       character(len=80),intent(out) :: indir,outdir
       !character(len=80),intent(in)  :: infile
       integer,parameter :: fid=99
@@ -783,9 +783,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine read_infile(wim_prams_in,duration)
       !!determines where to read inputs/outputs from
-      
+
       implicit none
-      
+
       real,intent(out)  :: wim_prams_in(2),duration
       integer,parameter :: fid=99
       character(len=80) :: ctmp

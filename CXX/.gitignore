@@ -1,4 +1,4 @@
 # object files
 *.d
 *.o
-*.app
+*.exec

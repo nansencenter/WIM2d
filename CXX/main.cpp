@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
 
-#include "wimdiscr.hpp"
+#include <wimdiscr.hpp>
 
 namespace
 {
@@ -10,7 +10,7 @@ namespace
 
 // BOOST_STRONG_TYPEDEF(unsigned, Unsigned)
 
-// namespace po = boost::program_options;
+namespace po = boost::program_options;
 
 namespace WIMOPT
 {
@@ -64,33 +64,32 @@ int main(int argc, char** argv )
     std::cout<<"ny= "<< vm["ny"]. template as<int>() <<"\n";
     std::cout<<"wim.nz= "<< vm["wim.nz"]. template as<int>() <<"\n";
 
-    WimDiscr<> wim2d(vm);
-    wim2d.readFile("wim_grid.a",150,4);
+    typedef float value_type;
 
-    auto X = wim2d.getX();
-
-    for (int i = 0; i < X.size(); i++)
-       for (int j = 0; j < X[i].size(); j++)
-          std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
-
-
-
-    auto Y = wim2d.getY();
-
-    for (int i = 0; i < Y.size(); i++)
-       for (int j = 0; j < Y[i].size(); j++)
-          std::cout << "Y[" << i << "," << j << "]= " << Y[i][j] << std::endl;
-
-
-
-    std::cout<<"PI= "<< float(PI) <<"\n";
-
-    wim2d.writeFile("grid.bin");
+    WimDiscr<value_type> wim2d(vm);
 
     // test init
     wim2d.wimInit();
 
+    wim2d.readFile("wim_grid.a");//,150,4);
+    auto X = wim2d.getX();
+
+    // for (int i = 0; i < X.shape()[0]; i++)
+    //     for (int j = 0; j < X.shape()[1]; j++)
+    //         std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
+
     // test step
     wim2d.wimStep();
+
+
+    std::cout<<"PI= "<< float(PI) <<"\n";
+    wim2d.writeFile("results.bin",X);
+
+    // value_type dmax = 100.;
+    // value_type dave;
+
+    // wim2d.floeScaling(dmax,dave);
+
+    // std::cout<<"DAVE= "<< dave <<"\n";
 
 }
