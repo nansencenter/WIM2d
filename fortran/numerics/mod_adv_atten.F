@@ -45,17 +45,19 @@
          if (ADV_DIM.eq.2) then
             !! normal 2d advection
             vwave = ag_eff*sin(adv_dir)
+
+            !!advect
+            call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
          else
             !! * in some situations where no variation is expected
             !! in the 'y' dirn, we can ignore the speed in this
             !! dirn
             !! * this can also be used to do multiple 1d results at once
             !!   - ie each row can be a different 1d expt
-            vwave = 0.0
-         end if
 
-         !!advect
-         call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
+            !!advect
+            call waveadv_weno_1d(Sdir(:,:,wth),uwave,dt,ADV_OPT)
+         end if
       end do
 !     print*,'ag,adv_dir      ',ag_eff(itest,jtest),adv_dir
 !     print*,'u,v of wave     ',uwave(itest,jtest),vwave(itest,jtest)
@@ -172,17 +174,19 @@
          if (ADV_DIM.eq.2) then
             !! normal 2d advection
             vwave = ag_eff*sin(adv_dir)
+
+            !!advect
+            call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
          else
             !! * in some situations where no variation is expected
             !! in the 'y' dirn, we can ignore the speed in this
             !! dirn
             !! * this can also be used to do multiple 1d results at once
             !!   - ie each row can be a different 1d expt
-            vwave = 0.0
-         end if
 
-         !!advect
-         call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
+            !!advect
+            call waveadv_weno_1d(Sdir(:,:,wth),uwave,dt,ADV_OPT)
+         end if
 
          !!useful later
          theta_vec(wth) = adv_dir
