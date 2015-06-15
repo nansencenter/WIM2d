@@ -20,7 +20,9 @@ fi
 # (if they exist)
 cd $outdir
 bindir=$outdir/binaries/prog
-if [ ! -f $bindir/wim_prog000.a ]
+
+afiles=($bindir/wim_prog*.a)
+if [ ${#afiles[@]} -eq 0 ]
 then
    echo "No prog files in $bindir"
    exit
