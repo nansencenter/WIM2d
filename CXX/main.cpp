@@ -8,8 +8,6 @@ namespace
     const size_t SUCCESS = 0;
 } // namespace
 
-// BOOST_STRONG_TYPEDEF(unsigned, Unsigned)
-
 namespace po = boost::program_options;
 
 namespace WIMOPT
@@ -21,6 +19,7 @@ int main(int argc, char** argv )
 {
 
     using namespace WIMOPT;
+    using namespace WIM2D;
 
     po::options_description desc = descrOptions();
     po::variables_map vm;
@@ -60,36 +59,25 @@ int main(int argc, char** argv )
         return ERROR_IN_COMMAND_LINE;
     }
 
-    std::cout<<"nx= "<< vm["nx"]. template as<int>() <<"\n";
-    std::cout<<"ny= "<< vm["ny"]. template as<int>() <<"\n";
-    std::cout<<"wim.nz= "<< vm["wim.nz"]. template as<int>() <<"\n";
+    // instantiation of wim2d
+    WimDiscr<float> wim2d(vm);
 
-    typedef float value_type;
+    //wim2d.readFile("wim_grid.a");
 
-    WimDiscr<value_type> wim2d(vm);
+    // generation and saving of the grid
+    //wim2d.wimGrid();
 
-    // test init
-    wim2d.wimInit();
-
-    wim2d.readFile("wim_grid.a");//,150,4);
-    auto X = wim2d.getX();
-
+    // auto X = wim2d.getX();
     // for (int i = 0; i < X.shape()[0]; i++)
     //     for (int j = 0; j < X.shape()[1]; j++)
     //         std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
 
-    // test step
-    wim2d.wimStep();
+    // initialization of wim2d
+    wim2d.wimInit();
 
+    //wim2d.advAttenIsotropic();
 
-    std::cout<<"PI= "<< float(PI) <<"\n";
-    wim2d.writeFile("results.bin",X);
-
-    // value_type dmax = 100.;
-    // value_type dave;
-
-    // wim2d.floeScaling(dmax,dave);
-
-    // std::cout<<"DAVE= "<< dave <<"\n";
+    // run the simulation
+    wim2d.wimRun();
 
 }

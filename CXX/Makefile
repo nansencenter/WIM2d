@@ -10,7 +10,6 @@ CC = gcc-4.8
 CFLAGS += -std=c++0x -pedantic -Wno-inline -fPIC -MMD -MP -lm -v #-Wall
 CFLAGS += -I headers -I .
 
-
 # SRC = \
 # 	main.cpp \
 # 	options.cpp
