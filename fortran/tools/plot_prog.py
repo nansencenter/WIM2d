@@ -55,7 +55,8 @@ if 1:
    steps       = []
    for pf in prog_files:
       if '.a'==pf[-2:]:
-         stepno   = pf[-5:-2]
+         # stepno   = pf[-5:-2]
+         stepno   = pf.strip('wim_prog').strip('.a')
          steps.append(stepno)
 
    Nprogs   = len(steps)
