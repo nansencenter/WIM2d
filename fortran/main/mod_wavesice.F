@@ -660,7 +660,7 @@
       open(unit=2,file=trim(bfile),status = 'replace')
 
       write(2,111)                                                      &
-     &  5,          "       Number of records"
+     &  7,          "       Number of records"
       write(2,112)                                                      &
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
@@ -723,7 +723,7 @@
       open(unit=2,file=trim(bfile),status = 'replace')
 
       write(2,111)                                                      &
-     &  5,          "       Number of records"
+     &  6,          "       Number of records"
       write(2,112)                                                      &
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
@@ -793,7 +793,7 @@
       open(unit=2,file=trim(bfile),status = 'replace')
 
       write(2,111)                                                      &
-     &  4,           "       Number of records"
+     &  5,           "       Number of records"
       write(2,112)                                                      &
      &  ii,           "      Record length in x direction (elements)"
       write(2,112)                                                      &

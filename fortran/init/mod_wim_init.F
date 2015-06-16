@@ -55,6 +55,7 @@
          print*,'freq = ',freq_vec(1)
          print*,'period = ',1.0/freq_vec(1)
       else
+         print*,freq_vec
          print*,'Single frequency - not setting it yet '//              &
      &   '(IO version of code)'
       end if

@@ -460,8 +460,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_vSdir(Sdir_io,in_arrays,out_arrays           &
-     &                       ,int_prams,real_prams,nx,ny)
+      subroutine wim2d_run_vSdir(out_arrays,int_prams,real_prams)
 
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
@@ -494,15 +493,12 @@
       !!variables
       integer,parameter                :: ndir  = n_wavdir
       integer,parameter                :: nw    = n_wave_freq
-      integer,intent(in)               :: nx,ny
-      integer,dimension(7),intent(in)  :: int_prams
+      integer,dimension(8),intent(in)  :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! DO_BREAKING
+      ! DO_BREAKING,STEADY
 
-      real,dimension(nx,ny,ndir,nw),intent(inout)  :: Sdir_io  !! pass in/out directional spec
-      real,dimension(nx,ny,3),intent(in)  :: in_arrays         !! c,h,Dmax
-      real,dimension(nx,ny,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
+      real,dimension(ii,jj,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
       real,dimension(3),intent(in)        :: real_prams        !! young,visc_rp,duration
 
       real              :: PI
@@ -540,10 +536,11 @@
       DO_CHECK_PROG  = int_prams(5)
       DO_CHECK_INIT  = int_prams(6)
       DO_BREAKING    = int_prams(7)
+      STEADY         = int_prams(8)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
-      duration       = real_prams(3)      !!length of sim [s]
+      duration       = real_prams(3)      !!length of simulation [s]
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -555,7 +552,7 @@
          call read_infile_dirs(indir,outdir)
       else
          indir    = 'inputs'
-         outdir   = 'out_io'
+         outdir   = 'out_2'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
@@ -567,15 +564,14 @@
       print*,'****************************************'
       print*,' '
 
+      print*,freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
-      !!ice conditions from inputs
-      icec     = in_arrays(:,:,1)
-      iceh     = in_arrays(:,:,2)
-      dfloe    = in_arrays(:,:,3)
+      !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
+      !! > icec,iceh,dfloe
       ICE_MASK = 0.0
       where (icec.gt.min_conc)
          ICE_MASK = 1.0
@@ -584,13 +580,14 @@
       !! set wave grid
       !! SET_WAVES = .false. so don't set initial Tp,Hs,mwd,WAVE_MASK as well
       call waves_init(SET_WAVES)
+      print*,freq_vec
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! get dir spec directly from Sdir_io
-      sdf_dir  = Sdir_io
+      !! get dir spec directly from Sdir_io in WIM2d_f2py
+
       call do_wim_integrals(0) ! calc Hs,Tp,mwd,WAVE_MASK from sdf_dir
          !! The "0" means it is relative to the water (displacement is
-         !!  not reducedin the ice)
+         !!  not reduced in the ice)
 
       if (ndir.eq.1) then
          !!single direction:
@@ -618,7 +615,10 @@
       call wim_init(STEADY)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      print*,DO_CHECK_INIT
       if (DO_CHECK_INIT.eq.1) then
+         print*,'Saving initial conditions to '//outdir//'/binaries'
+         print*,' '
          call check_grid(outdir)
          call check_init(outdir)
       end if
@@ -663,9 +663,6 @@
       out_arrays(:,:,4) = Hs        ! significant wave height
       out_arrays(:,:,5) = Tp        ! mean wave period
       !out_arrays(:,:,6) = mwd       ! mean wave direction
-
-      !! output
-      Sdir_io  = sdf_dir
 
       end subroutine wim2d_run_vSdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

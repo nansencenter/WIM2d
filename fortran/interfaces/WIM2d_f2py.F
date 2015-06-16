@@ -35,6 +35,62 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine py_wim2d_run_vSdir(Sdir_io2,out_arrays,                &
+     &                  Sdir_io,ice_arrays                              &
+     &                  ,int_prams,real_prams,Tp_io,mwd_io              &
+     &                  ,ndir,nw,nx,ny)
+
+      use mod_common_wim,  only: icec,iceh,dfloe,sdf_dir,               &
+     &                           freq_vec,wavdir
+      use mod_wim2d_run,   only: wim2d_run_vSdir
+
+      implicit none
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! array dimensions (detected by python but need to declare them)
+      integer,intent(in)   :: nx,ny,ndir,nw
+!f2py intent(hide)   :: nx,ny
+
+      !!arrays
+      real,dimension(nx,ny,3),intent(in)        :: ice_arrays  !! pass in  icec,iceh,dfloe
+      real,dimension(nx,ny,5),intent(out)       :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_io     !! pass in/out directional spec
+      real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2    !! pass in/out directional spec
+
+      !! parameters
+      real,intent(in)      :: real_prams(3),Tp_io,mwd_io
+      integer,intent(in)   :: int_prams(8)
+
+      !! initial ice conditions
+      icec     = ice_arrays(:,:,1)
+      iceh     = ice_arrays(:,:,2)
+      dfloe    = ice_arrays(:,:,3)
+
+      !! get input directional wave spectrum
+      ! sdf_dir  = Sdir_io
+      sdf_dir  = reshape(Sdir_io,(/nx,ny,ndir,nw/))
+
+      print*,nw,(nw.eq.1),Tp_io
+      if (nw.eq.1) then
+         freq_vec(1) = 1./Tp_io
+         print*,Tp_io,freq_vec
+      end if
+      if (ndir.eq.1) then
+         wavdir(1)   = mwd_io
+         print*,mwd_io
+      end if
+
+      call wim2d_run_vSdir(out_arrays,int_prams,real_prams)
+
+      !! get updated directional wave spectrum
+      ! Sdir_io  = sdf_dir
+      Sdir_io2 = reshape(sdf_dir,(/nx*ny*ndir*nw/))
+
+
+      end subroutine py_wim2d_run_vSdir
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wim2d_dimensions(nx,ny,nw,ndir)
 
       implicit none
