@@ -30,7 +30,7 @@
 
       !!only subroutines are public
       public   :: wim2d_run,wim2d_run_io,wim2d_run_vSdir                &
-     &            ,mex_io_gate,mex_io_gate_v2
+     &            ,mex_io_gate,mex_io_gate_v2,mex_io_gate_vSdir
       
       contains
       
@@ -834,6 +834,68 @@
 
       end subroutine mex_io_gate_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine mex_io_gate_vSdir(xy4d,y3d,x3d,int_prams,real_prams    &
+     &                  ,Tp_io,mwd_io,ni,nr,nx3d,ny3d,nxy4d)
+      
+      !! gateway between run_wim2d_io_mex.m,
+      !! mex function WIM2d_run_io_mex.F,
+      !! and wim2d_run_io subroutine in this file
+      !! - 3d arrays hard to do in mex/fortran
+
+      use mod_common_wim, only: freq_vec,wavdir,sdf_dir                 &
+     &                          ,icec,iceh,dfloe
+
+      implicit none
+
+      include "grid_info.h"
+      include "wave_info.h"
+
+      integer,parameter :: nx    = ii
+      integer,parameter :: ny    = jj
+      integer,parameter :: nw    = n_wave_freq
+      integer,parameter :: ndir  = n_wavdir
+      integer                    ,intent(in)    :: ni,nr,nx3d,ny3d,nxy4d
+      real                       ,intent(in)    :: Tp_io,mwd_io
+      integer,dimension(ni)      ,intent(in)    :: int_prams
+      real,dimension(nr)         ,intent(in)    :: real_prams
+      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
+      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
+      real,dimension(nx*ny*nxy4d),intent(inout) :: xy4d !4d input array (Sdir)
+
+      integer  :: i,j,s
+      real,dimension(nx,ny,nx3d) :: in_arrays
+      real,dimension(nx,ny,ny3d) :: out_arrays
+
+      !! initial ice conditions
+      in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
+      icec        = in_arrays(:,:,1)
+      iceh        = in_arrays(:,:,2)
+      dfloe       = in_arrays(:,:,3)
+
+      !! get input directional wave spectrum
+      ! sdf_dir  = Sdir_io
+      sdf_dir  = reshape(xy4d,(/nx,ny,ndir,nw/))
+
+      print*,nw,(nw.eq.1),Tp_io
+      if (nw.eq.1) then
+         freq_vec(1) = 1./Tp_io
+         print*,Tp_io,freq_vec
+      end if
+      if (ndir.eq.1) then
+         wavdir(1)   = mwd_io
+         print*,mwd_io
+      end if
+
+      call wim2d_run_vSdir(out_arrays,int_prams,real_prams)
+
+      !! get updated directional wave spectrum
+      ! Sdir_io  = sdf_dir
+      xy4d  = reshape(sdf_dir,(/nx*ny*ndir*nw/))
+      y3d   = reshape(out_arrays,(/nx*ny*ny3d/))
+
+      end subroutine mex_io_gate_vSdir
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine print_screen_info()

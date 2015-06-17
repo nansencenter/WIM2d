@@ -72,6 +72,13 @@ TARGET_MEX2	:=	$(MX2).$(MX_EXT)
 # mex function is $(TARGET_MEX2)maci64  for mac OSX
 # mex function is $(TARGET_MEX2)a64 	for linux
 
+# mex function to run interactive WIM in matlab
+MX3		:=	WIM2d_run_io_mex_vSdir
+MEX3		:=	$(src)/interfaces/$(MX3).F
+TARGET_MEX3	:=	$(MX3).$(MX_EXT)
+# mex function is $(TARGET_MEX2)maci64  for mac OSX
+# mex function is $(TARGET_MEX2)a64 	for linux
+
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
 OBJS		:=      \
@@ -118,7 +125,12 @@ mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX2)* $(bin)
 
-all:	py exe mex1 mex2
+mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
+	$(MXC) $(MEX_FLAGS) $^
+	mv $(TARGET_MEX3)* $(bin)
+
+all:	py exe mex1 mex2 mex3
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
