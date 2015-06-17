@@ -41,7 +41,7 @@ if 1:
       h_in  = 2.
       D_in  = 300.
    else:
-      # strip 
+      # strip
       strip_width = 100.e3
       xe          = .5*(gf['X'].min()+gf['X'].max())\
                      -.7*.5*(-gf['X'].min()+gf['X'].max())
@@ -96,7 +96,8 @@ if 1:
 
 
 # call gateway between python and pre-compiled f2py module
-out_fields,outdir = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0)
+out_fields,outdir = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0,\
+                                       int_prams=int_prams,real_prams=real_prams)
 
 ##########################################################################
 # Make plots

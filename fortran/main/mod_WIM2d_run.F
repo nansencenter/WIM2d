@@ -564,7 +564,7 @@
       print*,'****************************************'
       print*,' '
 
-      print*,freq_vec
+      !print*,freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
@@ -580,7 +580,13 @@
       !! set wave grid
       !! SET_WAVES = .false. so don't set initial Tp,Hs,mwd,WAVE_MASK as well
       call waves_init(SET_WAVES)
-      print*,freq_vec
+      !print*,freq_vec
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! initialise WIM (mod_wavesice)
+      !! set the attenuation coefficients;
+      call wim_init(STEADY)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get dir spec directly from Sdir_io in WIM2d_f2py
@@ -588,6 +594,7 @@
       call do_wim_integrals(0) ! calc Hs,Tp,mwd,WAVE_MASK from sdf_dir
          !! The "0" means it is relative to the water (displacement is
          !!  not reduced in the ice)
+      !print*,minval(Hs),maxval(Hs)
 
       if (ndir.eq.1) then
          !!single direction:
@@ -609,15 +616,9 @@
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! initialise WIM (mod_wavesice)
-      !! set the attenuation coefficients;
-      call wim_init(STEADY)
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      print*,DO_CHECK_INIT
       if (DO_CHECK_INIT.eq.1) then
-         print*,'Saving initial conditions to '//outdir//'/binaries'
+         print*,'Saving initial conditions to '//                       &
+     &            trim(outdir)//'/binaries'
          print*,' '
          call check_grid(outdir)
          call check_init(outdir)

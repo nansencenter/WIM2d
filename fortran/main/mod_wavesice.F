@@ -32,7 +32,7 @@
       real,dimension(idm,jdm)    :: WAVE_MASK2
       real,dimension(idm,jdm,nw) ::                                     &
      &   ag_eff,ap_eff,wlng_ice,atten_nond,damping,disp_ratio
-      real,dimension(nw)   :: wt_om,T
+      real,dimension(nw)   :: wt_om
 
       !!needed by outer routine
       real     :: amin,amax,dt
@@ -46,10 +46,8 @@
       !! - need to do this each time ice is updated
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams    !! ice parameters
-      use mod_wim_init     !! initial wave fields
-      use mod_common_wim   !! initial ice fields
-!     use mod_adv_atten    !! advection routine
+      use mod_wim_prams,   only: young,visc_rp,gravity   !! ice parameters
+      use mod_common_wim,  only: ICE_MASK,iceh           !! initial ice fields
 
       implicit none
 
@@ -109,11 +107,10 @@
 
       !! Water wavelength and wave speed
       !! is a function only of wave period
-      T        = 1.0/freq_vec
       wlng     = gravity/(2*PI*freq_vec**2)
       ap       = sqrt(gravity*wlng/(2*PI))   ! Phase speed
       ag       = ap/2.0                      ! Group speed
-      !print*,'T,wlng,ag,ap',T,wlng,ag,ap
+      !print*,'period,wlng,ag,ap',1./freq_vec,wlng,ag,ap
 
       ag_eff      = 0.0
       ap_eff      = 0.0
@@ -554,12 +551,14 @@
          else
             F  = 1.
          end if
-         mom0     = mom0    + abs( wt_om(w)*F*F*Sfreq       )
+         mom0     = mom0    + abs( wt_om(w)*F*F*Sfreq       )!should be >0
          mom2     = mom2    + abs( wt_om(w)*F*F*Sfreq*om**2 )
          mom_dir  = mom_dir + abs( wt_om(w)*F*F*mom_dir0    )
 
       end do! w
 
+      !print*,minval(disp_ratio),minval(mom0),minval(mom2)
+      !print*,maxval(disp_ratio),maxval(mom0),maxval(mom2)
       Hs          = 0.
       Tp          = 0.
       mwd         = 0.
@@ -572,6 +571,9 @@
          mwd         = -90. -180./PI*(mom_dir/mom0)!mwd (waves-from in degrees)
             !adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
       end where
+      !print*,minval(Hs),minval(Tp),minval(mwd),minval(WAVE_MASK)
+      !print*,maxval(Hs),maxval(Tp),maxval(mwd),maxval(WAVE_MASK)
+      !stop
 
       end subroutine do_wim_integrals
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

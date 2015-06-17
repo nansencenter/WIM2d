@@ -96,7 +96,7 @@ def cmap_3d_V1d(x,y,z,labs,ADD_CONTS=1,fmt='%4.1f'):
 #######################################################################
 
 #######################################################################
-def cmap_3d(x,y,z,labs):
+def cmap_3d(x,y,z,labs,zlims=None):
    # f  = plt.figure(figsize=[6,6],dpi=50)
    # plt.pcolor(grid_prams.X,grid_prams.Y,ice_fields.icec,cmap=cm.jet,vmax=Vmax,vmin=Vmin)
 
@@ -104,8 +104,25 @@ def cmap_3d(x,y,z,labs):
    fontname = 'serif'
    # fontname = 'sans-serif'
 
+   if zlims is not None:
+      vmin=zlims[0]
+      vmax=zlims[1]
+   else:
+      vmax  = z.max()
+      vmin  = z.min()
+      dv    = vmax-vmin
+
+      if dv==0:
+         # z is const
+         vv    = z.mean()
+         vmin  = vmin-.1*vv
+         vmax  = vmax+.1*vv
+      else:
+         vmin  = vmin-.1*dv
+         vmax  = vmax+.1*dv
+
    f  = plt.figure()
-   ax = plt.pcolor(x,y,z)
+   ax = plt.pcolor(x,y,z,vmin=vmin,vmax=vmax)
    ax.axes.set_aspect('equal')
    xl = plt.xlabel(labs[0], fontsize=16)
    xl.set_fontname(fontname)

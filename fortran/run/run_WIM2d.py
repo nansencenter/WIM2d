@@ -63,7 +63,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       print(" ")
 
       Mwim.py_wim2d_run()
-      
+
       print(" ")
       print("###################################################")
       print("Finished call to wim2d_run:")
@@ -201,7 +201,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       print("Running WIM with input/output")
       print("###################################################")
       print(" ")
-      
+
       out_arrays  = Mwim.py_wim2d_run_io(in_arrays,int_prams,real_prams)
 
       print(" ")
@@ -225,7 +225,9 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
 ################################################################
 
 ################################################################
-def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_prams=None,real_prams=None):
+def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
+                    Tp_single_freq=12.,mwd_single_dir=-90.,\
+                    int_prams=None,real_prams=None):
 
    import numpy as np
    import os
@@ -264,7 +266,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
       if not os.path.exists(dirj):
          os.makedirs(dirj)
 
-   if RUN_OPT%2 is 0:
+   if RUN_OPT is 0:
       # if RUN_OPT is 0 or 2
       # clear out old progress files
       dd    = os.path.abspath(outdir+"/binaries/prog")
@@ -353,8 +355,10 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
             Tp    = wave_fields['Tp']
             mwd   = wave_fields['mwd']
             #
-            Tmean    = np.mean(Tp [Hs>0])
-            dir_mean = np.mean(mwd[Hs>0])
+            Tmean           = np.mean(Tp [Hs>0])
+            Tp_single_freq  = Tmean
+            dir_mean        = np.mean(mwd[Hs>0])
+            mwd_single_dir  = dir_mean
 
             ##########################################################
             if nfreq==1:
@@ -365,7 +369,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
                   print('Expected one frequency, but')
                   print('std dev (Tp) = '+str(stdev)+'s')
                   print('mean    (Tp) = '+str(Tmean) +'s')
-                  
+
                   raise ValueError('Tp array not consistent with 1 frequency')
             ##########################################################
 
@@ -378,7 +382,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
                   print('Expected one direction, but')
                   print('std dev (mwd) = '+str(stdev)+'degrees')
                   print('mean    (mwd) = '+str(dir_mean) +'degrees')
-                  
+
                   raise ValueError('mwd array not consistent with 1 direction')
             ##########################################################
 
@@ -405,11 +409,11 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
                         theta_max   = 90.0
                         theta_min   = -270.0
                         dtheta      = (theta_min-theta_max)/float(ndir) #<0
-                        
+                        wavdir      = theta_max+np.arange(ndir)*dtheta
+
                         # modify spectrum depending on direction
                         for wth in range(ndir):
-                           wavdir   = theta_max+wth*dtheta
-                           chi      = PI/180.0*(wavdir-mwd[i,j])
+                           chi      = PI/180.0*(wavdir[wth]-mwd[i,j])
 
                            if (np.cos(chi)>0.0):
                               theta_fac   = 2.0/PI*pow(np.cos(chi),2)
@@ -418,6 +422,19 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
 
                            sdf_dir[i,j,wth,:]   = sdf_dir[i,j,wth,:]*theta_fac
                      #########################################################
+
+                     if 0:
+                        # test spectrum is defined OK
+                        sq  = np.squeeze(sdf_dir[i,j,:,0])
+                        m0  = np.sum(sq)*abs((PI/180.)*dtheta)
+                        print(i,j)
+                        print(4*np.sqrt(m0),Hs[i,j])
+                        #
+                        import matplotlib.pyplot as plt
+                        plt.plot(wavdir/180.,sq)
+                        plt.show()
+                        #
+                        sys.exit()
 
             del wave_fields # finished setting sdf_dir from wave_fields
          else:
@@ -431,12 +448,12 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,int_pra
       print("Running WIM with sdf_dir inputted")
       print("###################################################")
       print(" ")
-      
-      print(Tmean,dir_mean)
+
+      print(Tp_single_freq,mwd_single_dir)
       sdf_dir              = sdf_dir.reshape(sdf_dir.size,order='fortran')
       sdf_dir              = np.array(sdf_dir,dtype='float32')
       sdf_dir2,out_arrays  = Mwim.py_wim2d_run_vsdir(sdf_dir,ice_arrays,\
-                                                     int_prams,real_prams,Tmean,dir_mean,\
+                                                     int_prams,real_prams,Tp_single_freq,mwd_single_dir,\
                                                      ndir,nfreq)
       sdf_dir2             = sdf_dir2.reshape((nx,ny,ndir,nfreq),order='fortran')
 
