@@ -28,8 +28,6 @@
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
 
-      real,parameter :: Tmin  = 2.5
-      real,parameter :: Tmax  = 25.0
       real           :: fmin,fmax,df
       real           :: theta_min,theta_max,dtheta
       real           :: PI
@@ -57,6 +55,7 @@
          print*,'freq = ',freq_vec(1)
          print*,'period = ',1.0/freq_vec(1)
       else
+         print*,freq_vec
          print*,'Single frequency - not setting it yet '//              &
      &   '(IO version of code)'
       end if

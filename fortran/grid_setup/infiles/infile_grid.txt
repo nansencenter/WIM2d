@@ -1,3 +1,4 @@
+1     # infile version number
 150   # nx - number of grid cells in x dirn
 10    # ny - number of grid cells in y dirn
 4.e3  # dx - x resolution

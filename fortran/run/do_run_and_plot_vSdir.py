@@ -30,8 +30,10 @@ if 1:
 
    if 0:
       # ice edge
-      xe                   = -220.e3
-      ICEMASK              = 1+0*gf['X']
+      xe       = .5*(gf['X'].min()+gf['X'].max())\
+                  -.7*.5*(-gf['X'].min()+gf['X'].max())
+      ICEMASK  = 1+0*gf['X']
+      #
       ICEMASK[gf['X']<xe]  = 0.
       ICEMASK[gfl>0]       = 0.
       #
@@ -39,27 +41,33 @@ if 1:
       h_in  = 2.
       D_in  = 300.
    else:
-      # strip 
-      xe                         = 50.e3
-      ICEMASK                    = 1+0*gf['X']
-      ICEMASK[abs(gf['X'])>xe]   = 0.
-      ICEMASK[gfl>0]             = 0.
+      # strip
+      strip_width = 100.e3
+      xe          = .5*(gf['X'].min()+gf['X'].max())\
+                     -.7*.5*(-gf['X'].min()+gf['X'].max())
+      ICEMASK     = 1+0*gf['X']
+      #
+      ICEMASK[abs(gf['X'])<xe]               = 0.
+      ICEMASK[abs(gf['X'])>xe+strip_width]   = 0.
+      ICEMASK[gfl>0]                         = 0. # 0 on land
       #
       c_in  = .7
       h_in  = 2.
       D_in  = 100.
 
+   ice_fields0 = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK}
+
    # edge of wave mask
-   xw                   = -260.e3
+   xw                   = .5*(gf['X'].min()+gf['X'].max())\
+                           -.8*.5*(-gf['X'].min()+gf['X'].max())
    WAVEMASK             = 1+0*gf['X']
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
 
-   Hs_in       = 3
-   Tp_in       = 12
-   mwd_in      = -90
-   in_fields   = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK,
-                  'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
+   Hs_in          = 3
+   Tp_in          = 12
+   mwd_in         = -90
+   wave_fields0   = {'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
 
 int_prams   = None # default integer parameters
 real_prams  = None # default real parameters
@@ -88,9 +96,8 @@ if 1:
 
 
 # call gateway between python and pre-compiled f2py module
-out_fields,outdir = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
-                                    int_prams=int_prams,
-                                    real_prams=real_prams)
+out_fields,outdir = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0,\
+                                       int_prams=int_prams,real_prams=real_prams)
 
 ##########################################################################
 # Make plots
@@ -118,7 +125,7 @@ print("Plots in "+figdir2+'\n')
 print(" ")
 ################################################################
 
-if 1:
+if 0:
    ################################################################
    # Plot progress files (if they exist)
    # - as colormaps
@@ -127,7 +134,7 @@ if 1:
    steps       = []
    for pf in prog_files:
       if '.a'==pf[-2:]:
-         stepno   = pf[-5:-2]
+         stepno   = pf.strip('wim_prog').strip('.a')
          steps.append(stepno)
 
    # make dir for progress plots
@@ -155,7 +162,7 @@ if 1:
    print("cd "+figdir+'/prog')
    print(dd+'/tools/prog2mp4.sh Hs (or Dmax,taux,tauy)')
 
-elif 1:
+elif 0:
    ################################################################
    # Plot progress files (if they exist)
    # - as profiles

@@ -8,7 +8,7 @@ rm -f $outdir/binaries/prog/*
 
 # run model
 w2d=$WIM2D_PATH
-$w2d/fortran/bin/WIM2d.exe
+$w2d/fortran/bin/WIM2d.exec
 
 if [ $# -eq 0 ]
 then

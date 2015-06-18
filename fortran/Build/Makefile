@@ -48,7 +48,7 @@ MEX_FLAGS=-largeArrayDims $(IFLAGS)
 # - executable called by run_WIM2d.sh
 #   (cd ../run; ./run_WIM2d.sh)
 PROG_F		:=	$(ODIR)/p_WIM2d.o
-TARGET_F	:=	WIM2d.exe
+TARGET_F	:=	WIM2d.exec
 
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path
@@ -69,6 +69,13 @@ TARGET_MEX1	:=	$(MX1).$(MX_EXT)
 MX2		:=	WIM2d_run_io_mex_v2
 MEX2		:=	$(src)/interfaces/$(MX2).F
 TARGET_MEX2	:=	$(MX2).$(MX_EXT)
+# mex function is $(TARGET_MEX2)maci64  for mac OSX
+# mex function is $(TARGET_MEX2)a64 	for linux
+
+# mex function to run interactive WIM in matlab
+MX3		:=	WIM2d_run_io_mex_vSdir
+MEX3		:=	$(src)/interfaces/$(MX3).F
+TARGET_MEX3	:=	$(MX3).$(MX_EXT)
 # mex function is $(TARGET_MEX2)maci64  for mac OSX
 # mex function is $(TARGET_MEX2)a64 	for linux
 
@@ -118,7 +125,12 @@ mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX2)* $(bin)
 
-all:	py exe mex1 mex2
+mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
+	$(MXC) $(MEX_FLAGS) $^
+	mv $(TARGET_MEX3)* $(bin)
+
+all:	py exe mex1 mex2 mex3
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
@@ -137,7 +149,7 @@ $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 $(OBJ_MAIN):			$(OBJS)
 
 $(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
-$(PROG_PY): 		$(OBJS)
+$(PROG_PY): 		grid_info.h	wave_info.h		$(OBJS)
 
 $(MEX1):		grid_info.h $(OBJ_MAIN)
 

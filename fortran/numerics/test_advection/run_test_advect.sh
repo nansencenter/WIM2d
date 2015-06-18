@@ -2,7 +2,7 @@
 mkdir -p out test_out
 rm out/* test_out/*
 
-bin/test_advect.exe
+bin/test_advect.exec
 
 echo " "
 echo "**********************************************************"

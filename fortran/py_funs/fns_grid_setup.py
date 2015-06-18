@@ -139,9 +139,18 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       lines    = fid.readlines()
       fid.close()
 
+      # check version number
+      Vno   = 1
+      vno   = int(lines[0].split()[0])
+      if vno!=Vno:
+         s1 = '\nWrong version of '+infile
+         s2 = '\nCurrent version number is '+str(vno)
+         s3 = '\nVersion number should be  '+str(Vno)+'\n'
+         raise ValueError(s1+s2+s3)
+
       # get values as floats 1st, then convert some to integers
       params   = []
-      for lin in lines:
+      for lin in lines[1:]:
          lin2  = lin.split()
          params.append(float(lin2[0]))
       nx,ny,dx,dy,x0,y0,LAND_OPT = params
