@@ -1,14 +1,14 @@
 #include "fintrf.h"
 C
 #if 0
-C     
+C
 C     CALL:
 C     [Sdir_io,out_arrays]=...
 C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,int_prams,...
 C                               real_prams,Tp_io,mwd_io);
-C     
+C
 #endif
-C     
+C
 C     This is a MEX-file for MATLAB.
 
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
@@ -78,7 +78,7 @@ C
       character(len=12)             :: cii,cjj,cj,cm,cn,cdum
       character(len=80)             :: msg
 
-C     Check for proper number of arguments. 
+C     Check for proper number of arguments.
       if(nrhs .ne. Nin) then
          write(cdum,'(i2.2)') Nin
          call mexErrMsgTxt(trim(cdum)//' inputs required.')
@@ -230,7 +230,7 @@ C        matrices should be 1*1
          endif
       end do
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
+
 C     Check to ensure the array is numeric (not strings).
       do j=1,Nin
          write(cj,'(i1.1)')  j

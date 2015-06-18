@@ -8,23 +8,26 @@ if nargin==0
    do_test  = 1;
    OPT      = 1;
    %%
+   x0 = 0.0;
+   y0 = 0.0;
    ii = 49;
    jj = 51;
    dx = 4e3;%m
    dy = 4e3;%m
    %%
-   grid_prams  = struct('nx',ii,'ny',jj,...
+   grid_prams  = struct('x0',x0,'y0',y0,...
+                        'nx',ii,'ny',jj,...
                         'dx',dx,'dy',dy);
 end
+xm = grid_prams.x0;
+ym = grid_prams.y0;
 ii = grid_prams.nx;
 jj = grid_prams.ny;
 dx = grid_prams.dx;
 dy = grid_prams.dy;
 
-xm = (ii+1)/2*dx;%%x\in[-xm,xm]
-ym = (jj+1)/2*dy;%%y\in[-ym,ym]
-xx = -xm+dx*(1:ii)';
-yy = -ym+dy*(1:jj)';
+xx = xm+dx*(1:ii)';
+yy = ym+dy*(1:jj)';
 %
 [Y,X] = meshgrid(yy,xx);%%x~i,y~j
 R     = sqrt(X.^2+Y.^2);

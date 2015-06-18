@@ -16,7 +16,7 @@ end
 
 %%frequency grid:
 if nw==1%%single freq
-   T     = max(wave_fields.Tp(:));
+   T     = max(wave_fields.Tp(:))
    freq  = 1/T;
 else
    f      = 1/25;%0.042;% min freq/ resolution

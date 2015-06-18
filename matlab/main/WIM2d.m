@@ -35,6 +35,8 @@ if ~exist(infile)
    DIAG1d_OPT  = 1;
 
    CHK_ATTEN   = 0;%%check by running with old attenuation
+   ADV_DIM     = 1;%% 1d or 2d advection
+   ADV_OPT     = 2;%% periodicity (boundary conditions for advection)
 else
    disp('********************************************************')
    disp('reading options from infile:')
@@ -59,9 +61,15 @@ else
 end
 
 %%other options
-DO_PLOT     = 1;%% change this to 0
-                %% if graphics aren't supported;
-PLOT_OPT    = 2;%%plot option
+%% test/use mex functions with this option
+MEX_OPT  = 0;
+
+%% TURN ON/OFF PLOTTING:
+%% change these to 0 if graphics aren't supported;
+PLOT_INIT   = 1;
+PLOT_PROG   = 0;
+PLOT_FINAL  = 1;
+PLOT_OPT    = 2;%%plot option (only used if doing plotting)
 SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...
                      'ADV_OPT',ADV_OPT);
@@ -113,6 +121,30 @@ disp('Initialization')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%check what inputs we are given;
+if MEX_OPT>0
+   addpath('../../fortran/matlab_funs/');
+   addpath('../../fortran/bin/');%%path to mex function
+   rundir   = '../../fortran/run'
+   if MEX_OPT==1
+      outdir   = [rundir,'/out_io'];
+   elseif MEX_OPT==2
+      outdir   = [rundir,'/out_2'];
+   end
+
+   %% get grid
+   grid_prams     = fn_get_grid([rundir,'/inputs']);
+   grid_prams.x0  = min(grid_prams.X(:));
+   grid_prams.y0  = min(grid_prams.Y(:));
+
+   if 0
+      %% get initial conditions from fortran run
+      [grid_prams,ice_fields,wave_fields] = fn_check_init(outdir);
+      %ice_prams   = struct('c'        ,'given',...
+      %                     'h'        ,'given',...
+      %                     'bc_opt'   ,0,...
+      %                     'young_opt',1);
+   end
+end
 HAVE_GRID   = exist('grid_prams','var');
 
 HAVE_ICE    = exist('ice_fields','var');
@@ -173,14 +205,19 @@ if HAVE_GRID==0
       nx = 150;
       ny = 50;
    end
-   dx = 4000; % m
-   dy = 4000; % m
+   x0 = 0.;    % m
+   y0 = 0.;    % m
+   dx = 4000;  % m
+   dy = 4000;  % m
    %%
 
-   grid_prams  = struct('nx',nx,'ny',ny,...
+   grid_prams  = struct('x0',x0,'y0',y0,...
+                        'nx',nx,'ny',ny,...
                         'dx',dx,'dy',dy);
    grid_prams  = get_grid(grid_prams,OPT);
    %% grid_prams  = structure, eg:
+   %%        x0: 0
+   %%        y0: 0
    %%        nx: 51
    %%        ny: 51
    %%        dx: 4000
@@ -304,6 +341,7 @@ if HAVE_WAVES==0
                            'Tp',Tp0);
    end
    wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
+   %% structure eg:
    %%         Hs: [150x10 double]
    %%         Tp: [150x10 double]
    %%        mwd: [150x10 double]
@@ -441,8 +479,8 @@ end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-amax  = max(ag_eff(:))
-dt    = CFL*dx/max(ag_eff(:)); 
+amax     = max(ag_eff(:))
+dt       = CFL*dx/max(ag_eff(:)); 
 
 if 0
    nt    = 50;
@@ -457,8 +495,9 @@ else
    amin  = min(ag_eff(:));
    uc    = amin+.7*(amax-amin);
    %%
-   nt             = floor(duration_hours*3600/dt);
+   nt = floor(duration_hours*3600/dt);
 end
+duration = nt*dt%%duration in seconds;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display parameters
@@ -480,7 +519,7 @@ Info  = { '------------------------------------';
          ['CFL                = '  num2str(CFL)];
          ['dt                 = '  num2str(dt,'%1.1f')];
          ['nt                 = '  num2str(nt)];
-         ['Time interval      = '  num2str(nt*dt/3600,'%1.1f') 'h'];
+         ['Time interval      = '  num2str(duration/3600,'%1.1f') 'h'];
          [' '];
          ['nx                 = '  num2str(nx)];
          ['ny                 = '  num2str(ny)];
@@ -554,7 +593,7 @@ else
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if DO_PLOT
+if PLOT_INIT
    %%
    figure(1),clf;
    fn_fullscreen;
@@ -644,370 +683,412 @@ if DO_PLOT
       loop_col = loop_col+1;
    end
    pause(0.1);
+   %pause;
 end
 
 disp('beginning main integration...');
-%% also give progress report every 'reps' time
-%%  steps;
-%reps  = nt+1;%%go straight through without reporting back or plotting
-reps  = 50;
-GET_OUT  = 1;
-if GET_OUT
-   Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
-   Dmax_all(:,:,1)  = Dmax;
-end
+if MEX_OPT==1
 
-%nt = 13%%stop straight away for testing
-for n = 2:nt
-   disp([n nt])
+   disp('Running fortran code with mex function: run_WIM2d_io_mex_v2');
+   real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
+   CHECK_FINAL = 1;
+   CHECK_PROG  = 1;
+   CHECK_INIT  = 1;
+   int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
+                  CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
+                  DO_BREAKING,STEADY];
+   in_arrays   = zeros(nx,ny,6);
+   in_arrays(:,:,1)  = ice_fields.cice;
+   in_arrays(:,:,2)  = ice_fields.hice;
+   in_arrays(:,:,3)  = ice_fields.Dmax;
+   in_arrays(:,:,4)  = wave_fields.Hs;
+   in_arrays(:,:,5)  = wave_fields.Tp;
+   in_arrays(:,:,6)  = wave_fields.mwd;
 
-   %% spectral moments;
-   mom0  = zeros(nx,ny);
-   mom2  = zeros(nx,ny);
-   mom0w = zeros(nx,ny);
-   mom2w = zeros(nx,ny);
+   %% make the call!
+   prep_mex_dirs('out_io')
+   tic;
+   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),int_prams,real_prams);
+   toc;
 
-   %% wave stresses;
-   tau_x = zeros(nx,ny);
-   tau_y = zeros(nx,ny);
+   %% extract outputs
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   Nout        = length(fldnames);
+   out_arrays  = reshape(out_arrays,[nx,ny,Nout]);
+   for j=1:3
+      ice_fields.(fldnames{j})   = out_arrays(:,:,j);
+   end
+   for j=4:5
+      wave_fields.(fldnames{j})  = out_arrays(:,:,j);
+   end
 
-   %% variances of stress and strain;
-   var_stress     = zeros(nx,ny);
-   var_strain     = zeros(nx,ny);
+%elseif MEX_OPT==2
+%   disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
+else
+   disp('Running pure matlab code');
 
-   % %% test integrals;
-   % var_boundary   = cell(1,length(Jy_boundary));
-   % for r=1:length(Jy_boundary)
-   %    var_boundary{r}   = 0;
-   % end
-   % var_boundary0  = var_boundary;  
-   %%
-   for jw   = 1:nw
+   %% also give progress report every 'reps' time
+   %%  steps;
+   %reps  = nt+1;%%go straight through without reporting back or plotting
+   reps  = 50;
+   GET_OUT  = 1;
+   if GET_OUT
+      Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
+      Dmax_all(:,:,1)  = Dmax;
+   end
 
-      %% CALC DIMENSIONAL ATTEN COEFF;
-      atten_dim   = 0*X;
-      damp_dim    = 0*X;
-      for i = 1:nx
-      for j = 1:ny
+   %nt = 13%%stop straight away for testing
+   for n = 2:nt
+      disp([n nt])
 
-         %%top-up waves in wave mask if STEADY==1
-         %%(steady-state solution);
-         if WAVE_MASK(i,j)>0 & STEADY==1
-            Sdir(i,j,J_STEADY,:)  = S_inc(i,j,J_STEADY,:);
+      %% spectral moments;
+      mom0  = zeros(nx,ny);
+      mom2  = zeros(nx,ny);
+      mom0w = zeros(nx,ny);
+      mom2w = zeros(nx,ny);
+
+      %% wave stresses;
+      tau_x = zeros(nx,ny);
+      tau_y = zeros(nx,ny);
+
+      %% variances of stress and strain;
+      var_stress     = zeros(nx,ny);
+      var_strain     = zeros(nx,ny);
+
+      % %% test integrals;
+      % var_boundary   = cell(1,length(Jy_boundary));
+      % for r=1:length(Jy_boundary)
+      %    var_boundary{r}   = 0;
+      % end
+      % var_boundary0  = var_boundary;  
+      %%
+      for jw   = 1:nw
+
+         %% CALC DIMENSIONAL ATTEN COEFF;
+         atten_dim   = 0*X;
+         damp_dim    = 0*X;
+         for i = 1:nx
+         for j = 1:ny
+
+            %%top-up waves in wave mask if STEADY==1
+            %%(steady-state solution);
+            if WAVE_MASK(i,j)>0 & STEADY==1
+               Sdir(i,j,J_STEADY,:)  = S_inc(i,j,J_STEADY,:);
+            end
+            
+            if ICE_MASK(i,j)>0 & DO_ATTEN==1
+
+               %% get expected no of floes met per unit
+               %%  distance if travelling in a line;
+               if Dmax(i,j) < 200
+                  %%power law distribution
+                  Dave  = floe_scaling(fragility,xi,...
+                           Dmin,Dmax(i,j));
+               else
+                  %% uniform lengths
+                  Dave  = Dmax(i,j);
+               end
+               c1d = cice(i,j)/Dave;%% floes per unit length;
+
+               %% ENERGY attenuation coeff;
+               atten_dim(i,j) = atten_nond(i,j,jw)*c1d;%%scattering
+               damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j);%%damping
+
+   %           if (i==itest)&(j==jtest)
+   %              disp(['Hs (pre)   = ',num2str(wave_fields.Hs(i,j)),' m']);
+   %              disp(['Tp (pre)   = ',num2str(wave_fields.Tp(i,j)),' s']);
+   %              disp(['Dmax       = ',num2str(Dmax(i,j)),' m']);
+   %              disp(['Dave       = ',num2str(Dave),' m']);
+   %              disp(['c1d        = ',num2str(c1d)]);
+   %              disp(['q_scat     = ',num2str(atten_dim(i,j),'%7.7e'),' /m']);
+   %              disp(['q_abs      = ',num2str(damp_dim(i,j),'%7.7e'),' /m']);
+   %           end
+
+            end
+         end% j
+         end% i
+         % max(ag_eff(:))
+         % max(atten_dim(:))
+         % max(damp_dim(:))
+         %1e3*max(ag_eff(:))*max(atten_dim(:))
+         % GEN_pause
+
+         s1.ndir        = ndir;
+         s1.wavdir      = wavdir;
+         %s1.Sdir        = reshape( Sdir(:,:,jw,:), nx,ny,ndir);
+         s1.Sdir        = Sdir(:,:,:,jw);
+         s1.ag_eff      = ag_eff(:,:,jw);
+         s1.atten_dim   = atten_dim;
+         s1.damp_dim    = damp_dim;
+         s1.ICE_MASK    = ice_fields.ICE_MASK;
+
+         if ndir==1
+            if SCATMOD~=0
+               disp('warning: changing SCATMOD option as not enough directions');
+               disp(['(ndir = ',num2str(ndir)]);
+            end
+            SCATMOD  = 0;
+         end
+
+         if SCATMOD==0
+            %% Simple attenuation scheme - doesn't conserve scattered energy
+            [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
+               adv_atten_simple(grid_prams,ice_prams,s1,dt,adv_options);
+            clear s1 S_out;
+         elseif SCATMOD==1
+            %% same as SCATMOD==0, but scattered energy
+            %% is distributed isotropically
+            [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
+               adv_atten_isotropic(grid_prams,ice_prams,s1,dt,adv_options);
+            clear s1 S_out;
+         end
+
+         %% integrate stress densities over frequency
+         %% TODO: check if this is correct for ice-covered water
+         tmp   = rho_wtr*g*tau_x_om./ap_eff(:,:,jw);  %%[Pa*s]
+         tau_x = tau_x+wt_om(jw)*tmp;                 %%[Pa]
+         tmp   = rho_wtr*g*tau_y_om./ap_eff(:,:,jw);  %%[Pa*s]
+         tau_y = tau_y+wt_om(jw)*tmp;                 %%[Pa]
+         clear tmp;
+         %GEN_pause
+
+         %% INTEGRALS FOR BREAKING PROB:
+         for i = 1:nx
+         for j = 1:ny
+
+            %% INTEGRATE SPECTRUM OVER DIRECTION;
+            %S_freq   = wt_theta'*squeeze(Sdir(i,j,jw,:));
+
+            %% convert from water amp's to ice amp's;
+            F     = disp_ratio(i,j,jw);%%|T| also
+            k_ice = 2*pi/wlng_ice(i,j,jw);
+
+            %% SPECTRAL MOMENTS;
+            %%take abs as small errors can make S_freq negative
+            mom0(i,j)   = mom0(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2 );
+            mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2*om_vec(jw)^2 );
+
+            %% reference values in water (F=1)
+            mom0w(i,j)  = mom0w(i,j)+abs( wt_om(jw)*S_freq(i,j) );
+            mom2w(i,j)  = mom2w(i,j)+abs( wt_om(jw)*S_freq(i,j)*om_vec(jw)^2 );
+
+            if ICE_MASK(i,j)==1
+               %% VARIANCE OF STRAIN;
+               strain_density    = abs( S_freq(i,j)*F^2*...
+                                     (k_ice^2*hice(i,j)/2)^2 );
+               var_strain(i,j)   = var_strain(i,j)+...
+                                    + wt_om(jw)*strain_density;
+            end
+         end%% end spatial loop x;
+         end%% end spatial loop y;
+
+      end%% end spectral loop;
+      %mom0,mom2,wlng_ice,return
+
+      %%calc Hs, Tw (into wave_fields.Tp)
+      if REF_Hs_ICE==1
+         %% diagnostic variables Hs/Tp related to ice displacment in ice-covered areas
+         wave_fields.Hs       = 4*sqrt(mom0);%%diagnostic variable - for waves in water
+         wave_fields.Tp       = 0*X;
+         jnz                  = find(mom2>0);
+         wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+      else
+         %% diagnostic variables Hs/Tp related to water displacment in ice-covered areas
+         wave_fields.Hs       = 4*sqrt(mom0w);%%diagnostic variable - for waves in water
+         wave_fields.Tp       = 0*X;
+         jnz                  = find(mom2w>0);
+         wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
+      end
+
+      %% wave stresses
+      ice_fields.tau_x  = tau_x;
+      ice_fields.tau_y  = tau_y;
+
+      %% FINALLY DO FLOE BREAKING;
+      for i=1:nx
+      for j=1:ny
+         if ICE_MASK(i,j)==1 & mom0(i,j)>0
+            %% only try breaking if ice is present
+            %%  & some waves have arrived;
+
+            %% significant strain amp
+            sig_strain  = 2*sqrt(var_strain(i,j));
+
+            %%  probability of critical strain
+            %%  being exceeded from Rayleigh distribution;
+            Pstrain  = exp( -strain_c^2/(2*var_strain(i,j)) );
+            P_crit   = (1-DO_BREAKING)+exp(-1);%%this is critical prob if monochromatic wave
+
+            %% FLOE BREAKING:
+            BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
+            brkcrt(i,j,n)  = BREAK_CRIT;
+
+            if BREAK_CRIT
+               %% use crest period to work out wavelength
+               %% - half this is max poss floe length;
+               T_crit   = wave_fields.Tp(i,j);
+               if 0
+                  %%get wavelength directly
+                  wlng_crest  = ...
+                     GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young);
+               else
+                  %% interpolate (to check fortran code)
+                  %% NB slight difference due to RT_param_outer
+                  %% using finite depth wavelength approx to
+                  %% inifinit depth one
+                  om       = 2*pi/T_crit;
+                  om_min   = om_vec(1);
+                  om_max   = om_vec(end);
+                  if (om<=om_min)
+                     wlng_crest  = wlng_ice(i,j,1);
+                     %tst_crest   = [wlng_crest,...
+                     %   GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young)]
+                  elseif (om>=om_max)
+                     wlng_crest  = wlng_ice(i,j,nw);
+                  else
+                     jcrest      = floor((om-om_min+dom)/dom);
+                     om1         = 2*PI*freq_vec(jcrest);
+                     lam1        = wlng_ice(i,j,jcrest);
+                     lam2        = wlng_ice(i,j,jcrest+1);
+                     wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom;
+                  end
+               end
+
+               Dc          = max(Dmin,wlng_crest/2);
+               Dmax(i,j)   = min(Dc,Dmax(i,j));
+            end%% end breaking action;
+
+            if 0%i==11 & j==1
+               BREAK_CRIT
+               Dmax(i,j)
+            end
+
+         elseif WTR_MASK(i,j)==1%% only water present
+            Dmax(i,j)   = 0;
          end
          
-         if ICE_MASK(i,j)>0 & DO_ATTEN==1
+      end%% end spatial loop j in y;
+      end%% end spatial loop i in x;
 
-            %% get expected no of floes met per unit
-            %%  distance if travelling in a line;
-            if Dmax(i,j) < 200
-               %%power law distribution
-               Dave  = floe_scaling(fragility,xi,...
-                        Dmin,Dmax(i,j));
+      ice_fields.Dmax   = Dmax;
+      jmiz              = find((Dmax>0)&(Dmax<250));
+      % {jmiz}
+
+      %% progress report;
+      if round(n/reps)==(n/reps)
+         if GET_OUT
+            Dmax_all(:,:,n/reps) = Dmax;
+         end
+         disp([num2str(n),...
+               ' time steps done, out of ',...
+                  num2str(nt)]);
+         %%
+         t1    = now;
+         disp(['time taken (mins): ',...
+               num2str(t0_fac*(t1-t0))]);
+
+         disp(strvcat(Info));
+
+         if PLOT_PROG
+            figure(2),clf;
+            %%
+            if PLOT_OPT==1
+               s1 = struct('dir',wave_stuff.dirs(jdir),...
+                           'period',Tc,...
+                           'Sdir',Sdir(:,:,jdir,jchq));
+               fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
             else
-               %% uniform lengths
-               Dave  = Dmax(i,j);
+               fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
+                  Dmax,ice_fields.tau_y);
             end
-            c1d = cice(i,j)/Dave;%% floes per unit length;
 
-            %% ENERGY attenuation coeff;
-            atten_dim(i,j) = atten_nond(i,j,jw)*c1d;%%scattering
-            damp_dim(i,j)  = 2*damping(i,j,jw)*cice(i,j);%%damping
+            if OPT==1
+               subplot(2,2,1);
+               hold on;
+               x0 = min(X(:))+uc*n*dt;
+               x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
+               % {uc,x0/1e3,x1/1e3}
+               yc = .3*max(Y(:))/1e3;
+               x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+               y_ = [0,0,yc*[1,1],0,0];
+               plot(x_,y_,'k');
+               plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+               hold off;
+               %%
+               subplot(2,2,2);
+               hold on;
+               plot(x_,y_,'k');
+               plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+               hold off;
+            end
 
-%           if (i==itest)&(j==jtest)
-%              disp(['Hs (pre)   = ',num2str(wave_fields.Hs(i,j)),' m']);
-%              disp(['Tp (pre)   = ',num2str(wave_fields.Tp(i,j)),' s']);
-%              disp(['Dmax       = ',num2str(Dmax(i,j)),' m']);
-%              disp(['Dave       = ',num2str(Dave),' m']);
-%              disp(['c1d        = ',num2str(c1d)]);
-%              disp(['q_scat     = ',num2str(atten_dim(i,j),'%7.7e'),' /m']);
-%              disp(['q_abs      = ',num2str(damp_dim(i,j),'%7.7e'),' /m']);
-%           end
-
-         end
-      end% j
-      end% i
-      % max(ag_eff(:))
-      % max(atten_dim(:))
-      % max(damp_dim(:))
-      %1e3*max(ag_eff(:))*max(atten_dim(:))
-      % GEN_pause
-
-      s1.ndir        = ndir;
-      s1.wavdir      = wavdir;
-      %s1.Sdir        = reshape( Sdir(:,:,jw,:), nx,ny,ndir);
-      s1.Sdir        = Sdir(:,:,:,jw);
-      s1.ag_eff      = ag_eff(:,:,jw);
-      s1.atten_dim   = atten_dim;
-      s1.damp_dim    = damp_dim;
-      s1.ICE_MASK    = ice_fields.ICE_MASK;
-
-      if ndir==1
-         if SCATMOD~=0
-            disp('warning: changing SCATMOD option as not enough directions');
-            disp(['(ndir = ',num2str(ndir)]);
-         end
-         SCATMOD  = 0;
-      end
-
-      if SCATMOD==0
-         %% Simple attenuation scheme - doesn't conserve scattered energy
-         [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-            adv_atten_simple(grid_prams,ice_prams,s1,dt,adv_options);
-         clear s1 S_out;
-      elseif SCATMOD==1
-         %% same as SCATMOD==0, but scattered energy
-         %% is distributed isotropically
-         [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-            adv_atten_isotropic(grid_prams,ice_prams,s1,dt,adv_options);
-         clear s1 S_out;
-      end
-
-      %% integrate stress densities over frequency
-      %% TODO: check if this is correct for ice-covered water
-      tmp   = rho_wtr*g*tau_x_om./ap_eff(:,:,jw);  %%[Pa*s]
-      tau_x = tau_x+wt_om(jw)*tmp;                 %%[Pa]
-      tmp   = rho_wtr*g*tau_y_om./ap_eff(:,:,jw);  %%[Pa*s]
-      tau_y = tau_y+wt_om(jw)*tmp;                 %%[Pa]
-      clear tmp;
-      %GEN_pause
-
-      %% INTEGRALS FOR BREAKING PROB:
-      for i = 1:nx
-      for j = 1:ny
-
-         %% INTEGRATE SPECTRUM OVER DIRECTION;
-         %S_freq   = wt_theta'*squeeze(Sdir(i,j,jw,:));
-
-         %% convert from water amp's to ice amp's;
-         F     = disp_ratio(i,j,jw);%%|T| also
-         k_ice = 2*pi/wlng_ice(i,j,jw);
-
-         %% SPECTRAL MOMENTS;
-         %%take abs as small errors can make S_freq negative
-         mom0(i,j)   = mom0(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2 );
-         mom2(i,j)   = mom2(i,j)+abs( wt_om(jw)*S_freq(i,j)*F^2*om_vec(jw)^2 );
-
-         %% reference values in water (F=1)
-         mom0w(i,j)  = mom0w(i,j)+abs( wt_om(jw)*S_freq(i,j) );
-         mom2w(i,j)  = mom2w(i,j)+abs( wt_om(jw)*S_freq(i,j)*om_vec(jw)^2 );
-
-         if ICE_MASK(i,j)==1
-            %% VARIANCE OF STRAIN;
-            strain_density    = abs( S_freq(i,j)*F^2*...
-                                  (k_ice^2*hice(i,j)/2)^2 );
-            var_strain(i,j)   = var_strain(i,j)+...
-                                 + wt_om(jw)*strain_density;
-         end
-      end%% end spatial loop x;
-      end%% end spatial loop y;
-
-   end%% end spectral loop;
-   %mom0,mom2,wlng_ice,return
-
-   %%calc Hs, Tw (into wave_fields.Tp)
-   if REF_Hs_ICE==1
-      %% diagnostic variables Hs/Tp related to ice displacment in ice-covered areas
-      wave_fields.Hs       = 4*sqrt(mom0);%%diagnostic variable - for waves in water
-      wave_fields.Tp       = 0*X;
-      jnz                  = find(mom2>0);
-      wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
-   else
-      %% diagnostic variables Hs/Tp related to water displacment in ice-covered areas
-      wave_fields.Hs       = 4*sqrt(mom0w);%%diagnostic variable - for waves in water
-      wave_fields.Tp       = 0*X;
-      jnz                  = find(mom2w>0);
-      wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
-   end
-
-   %% wave stresses
-   ice_fields.tau_x  = tau_x;
-   ice_fields.tau_y  = tau_y;
-
-   %% FINALLY DO FLOE BREAKING;
-   for i=1:nx
-   for j=1:ny
-      if ICE_MASK(i,j)==1 & mom0(i,j)>0
-         %% only try breaking if ice is present
-         %%  & some waves have arrived;
-
-         %% significant strain amp
-         sig_strain  = 2*sqrt(var_strain(i,j));
-
-         %%  probability of critical strain
-         %%  being exceeded from Rayleigh distribution;
-         Pstrain  = exp( -strain_c^2/(2*var_strain(i,j)) );
-         P_crit   = (1-DO_BREAKING)+exp(-1);%%this is critical prob if monochromatic wave
-
-         %% FLOE BREAKING:
-         BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
-         brkcrt(i,j,n)  = BREAK_CRIT;
-
-         if BREAK_CRIT
-            %% use crest period to work out wavelength
-            %% - half this is max poss floe length;
-            T_crit   = wave_fields.Tp(i,j);
-            if 0
-               %%get wavelength directly
-               wlng_crest  = ...
-                  GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young);
-            else
-               %% interpolate (to check fortran code)
-               %% NB slight difference due to RT_param_outer
-               %% using finite depth wavelength approx to
-               %% inifinit depth one
-               om       = 2*pi/T_crit;
-               om_min   = om_vec(1);
-               om_max   = om_vec(end);
-               if (om<=om_min)
-                  wlng_crest  = wlng_ice(i,j,1);
-                  %tst_crest   = [wlng_crest,...
-                  %   GEN_get_ice_wavelength(hice(i,j),T_crit,Inf,young)]
-               elseif (om>=om_max)
-                  wlng_crest  = wlng_ice(i,j,nw);
-               else
-                  jcrest      = floor((om-om_min+dom)/dom);
-                  om1         = 2*PI*freq_vec(jcrest);
-                  lam1        = wlng_ice(i,j,jcrest);
-                  lam2        = wlng_ice(i,j,jcrest+1);
-                  wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom;
+            if DIAG1d==1
+               %% during run
+               figure(4);
+               subplot(4,1,1);
+               hold on;
+               %%
+               %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+               fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+               hold on;
+               %%
+               [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+               %Hp                = 4*sqrt(Ep(:,1));
+               %Hm                = 4*sqrt(Em(:,1));
+               Hp                = 4*sqrt(mean(Ep,2));
+               Hm                = 4*sqrt(mean(Em,2));
+               if DIAG1d_OPT==0
+                  %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+                  Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+               elseif DIAG1d_OPT==1
+                  %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+                  Hs2   = 4*sqrt(mean(Et1,2));
+               elseif DIAG1d_OPT==2
+                  %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+                  Hs2   = 4*sqrt(mean(Et2,2));
+               end
+               fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+               hold on;
+               %%
+               subplot(4,1,2);
+               fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+               hold on;
+               fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
+               hold on;
+               %%
+               subplot(4,1,3);
+               fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+               hold on;
+               %%
+               loop_col = loop_col+1;
+               if loop_col>length(cols)
+                  loop_col = 1;
                end
             end
-
-            Dc          = max(Dmin,wlng_crest/2);
-            Dmax(i,j)   = min(Dc,Dmax(i,j));
-         end%% end breaking action;
-
-         if 0%i==11 & j==1
-            BREAK_CRIT
-            Dmax(i,j)
+            clear s1;
+            pause(0.1);
          end
-
-      elseif WTR_MASK(i,j)==1%% only water present
-         Dmax(i,j)   = 0;
-      end
-      
-   end%% end spatial loop j in y;
-   end%% end spatial loop i in x;
-
-   ice_fields.Dmax   = Dmax;
-   jmiz              = find((Dmax>0)&(Dmax<250));
-   % {jmiz}
-
-   %% progress report;
-   if round(n/reps)==(n/reps)
-      if GET_OUT
-         Dmax_all(:,:,n/reps) = Dmax;
-      end
-      disp([num2str(n),...
-            ' time steps done, out of ',...
-               num2str(nt)]);
-      %%
-      t1    = now;
-      disp(['time taken (mins): ',...
-            num2str(t0_fac*(t1-t0))]);
-
-      disp(strvcat(Info));
-
-      if DO_PLOT
-         figure(2),clf;
          %%
-         if PLOT_OPT==1
-            s1 = struct('dir',wave_stuff.dirs(jdir),...
-                        'period',Tc,...
-                        'Sdir',Sdir(:,:,jdir,jchq));
-            fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
-         else
-            fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
-               Dmax,ice_fields.tau_y);
+         if 0
+            Jlook = nx-16+(1:16);
+            Dmax(edge:edge+9,Jlook)
          end
-
-         if OPT==1
-            subplot(2,2,1);
-            hold on;
-            x0 = min(X(:))+uc*n*dt;
-            x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
-            % {uc,x0/1e3,x1/1e3}
-            yc = .3*max(Y(:))/1e3;
-            x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
-            y_ = [0,0,yc*[1,1],0,0];
-            plot(x_,y_,'k');
-            plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-            hold off;
-            %%
-            subplot(2,2,2);
-            hold on;
-            plot(x_,y_,'k');
-            plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-            hold off;
-         end
-
-         if DIAG1d==1
-            %% during run
-            figure(4);
-            subplot(4,1,1);
-            hold on;
-            %%
-            %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
-            fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
-            hold on;
-            %%
-            [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-            %Hp                = 4*sqrt(Ep(:,1));
-            %Hm                = 4*sqrt(Em(:,1));
-            Hp                = 4*sqrt(mean(Ep,2));
-            Hm                = 4*sqrt(mean(Em,2));
-            if DIAG1d_OPT==0
-               %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
-               Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
-            elseif DIAG1d_OPT==1
-               %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
-               Hs2   = 4*sqrt(mean(Et1,2));
-            elseif DIAG1d_OPT==2
-               %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
-               Hs2   = 4*sqrt(mean(Et2,2));
-            end
-            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
-            hold on;
-            %%
-            subplot(4,1,2);
-            fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
-            hold on;
-            fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
-            hold on;
-            %%
-            subplot(4,1,3);
-            fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
-            hold on;
-            %%
-            loop_col = loop_col+1;
-            if loop_col>length(cols)
-               loop_col = 1;
-            end
-         end
-         clear s1;
-         pause(0.1);
       end
-      %%
-      if 0
-         Jlook = nx-16+(1:16);
-         Dmax(edge:edge+9,Jlook)
+
+
+      for jw=[]%11
+      [n,T(jw)],%[ag_ice(jw,1:11,1)]
+      testSatt=S(1:11,1,jw,jmwd)
+      pause
       end
-   end
 
-
-   for jw=[]%11
-   [n,T(jw)],%[ag_ice(jw,1:11,1)]
-   testSatt=S(1:11,1,jw,jmwd)
-   pause
-   end
-
-end%% end time loop
+   end%% end time loop
+end%%MEX_OPT==0 option
 
 t1 = now;
 
 if (OPT==1)|(OPT==3)
-   Dmax_j   = Dmax(:,1);
+   Dmax_j   = ice_fields.Dmax(:,1);
    jmiz     = find((Dmax_j>0)&(Dmax_j<250));
    Wmiz     = dx/1e3*length(jmiz);
    %%
@@ -1049,7 +1130,7 @@ fprintf(logid,'%s\n',' ');
 fclose(logid);
 
 
-if DO_PLOT%%check exponential attenuation
+if PLOT_FINAL%%check exponential attenuation
    figure(2),clf;
    if PLOT_OPT==1
       s1 = struct('dir',wave_stuff.dirs(jdir),...
@@ -1086,7 +1167,7 @@ if DO_PLOT%%check exponential attenuation
       fn_fullscreen;
       clf;
 
-      COMP_STEADY = 1;%%compare to fortran results
+      COMP_STEADY = 0;%%compare to fortran results
       dfiles      = {};
       leg_text    = {};
       fortcols    = {};
@@ -1379,4 +1460,25 @@ lin   = fgets(fid);
 lin2  = strsplit(lin);%%split using spaces
 x     = str2num(lin2{1});%%get 1st thing in line
 name  = lin2{3};
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function prep_mex_dirs(outdir)
+%% mex function saves results as binary files:
+%% needs some directories to exist - otherwise it crashes
+
+if ~exist(outdir,'dir')
+   eval(['!mkdir ',outdir]);
+end
+
+odirs = {[outdir,'/binaries'],...
+         [outdir,'/binaries/prog'],...
+         [outdir,'/figs'],...
+         [outdir,'/figs/prog']};
+for j=1:length(odirs)
+   outdir   = odirs{j};
+   if ~exist(outdir,'dir')
+      eval(['!mkdir ',outdir]);
+   end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

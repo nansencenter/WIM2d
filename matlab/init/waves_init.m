@@ -12,7 +12,8 @@ if nargin==0
    dx          = 4e3;
    %%
    OPT         = 0;
-   grid_prams  = struct('nx',nx,'ny',nx,...
+   grid_prams  = struct('x0',0,'y0',0,...
+                        'nx',nx,'ny',nx,...
                         'dx',dx,'dy',dx);
    grid_prams  = get_grid(grid_prams,OPT)
    %%
@@ -36,25 +37,31 @@ elseif OPT==3
    mwd   = -90;%%waves-from direction (deg)
 end
 
-X  = grid_prams.X;
-Y  = grid_prams.Y;
-nx = grid_prams.nx;
-ny = grid_prams.ny;
-xm = max(X(:));
-ym = max(Y(:));
+X     = grid_prams.X;
+Y     = grid_prams.Y;
+nx    = grid_prams.nx;
+ny    = grid_prams.ny;
+xav   = mean(X(:));
+yav   = mean(Y(:));
+xm    = max(X(:)-xav);
+ym    = max(Y(:)-yav);
 
 if OPT==0
-   WAVE_MASK   = (X<-.4*xm)|(Y>.4*ym);
+   %%island in corner, with some ice around it
+   WAVE_MASK   = ((X-xav)<-.4*xm)|((Y-yav)>.4*ym);
    jWV         = find(WAVE_MASK==1);
 elseif OPT==1
-   WAVE_MASK   = (X<-.8*xm)*1.0;
+   %% column of water to left,
+   %% column of land on right
+   WAVE_MASK   = ((X-xav)<-.8*xm)*1.0;
    jWV         = find(WAVE_MASK==1);
 elseif OPT==2
-   WAVE_MASK   = (X<-.25*xm)|(Y>.25*ym);
+   %%ice in lower-left corner
+   WAVE_MASK   = ((X-xav)<-.25*xm)|((Y-yav)>.25*ym)*1.0;
    jWV         = find(WAVE_MASK==1);
 elseif OPT==3
-   %WAVE_MASK   = X<-.75*xm;
-   WAVE_MASK   = X<-260e3;
+   %% ice strip
+   WAVE_MASK   = ((X-xav)<-.8*xm)*1.0;
    jWV         = find(WAVE_MASK==1);
 end
 
