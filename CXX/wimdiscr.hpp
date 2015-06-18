@@ -18,7 +18,7 @@
 #include <boost/any.hpp>
 #include <boost/strong_typedef.hpp>
 #include <boost/format.hpp>
-
+#include <iomanip>
 #ifdef __cplusplus
 extern "C"
 {
@@ -62,12 +62,13 @@ public:
     void wimStep();
     void wimRun();
     void floeScaling(value_type const& dmax, value_type& dave);
-    void advAttenSimple(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_om,array2_type& tauy_om, array2_type& ag2d_eff);
-    void advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_om,array2_type& tauy_om, array2_type& ag2d_eff);
+    void advAttenSimple(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_omega,array2_type& tauy_omega, array2_type const& ag2d_eff);
+    void advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_omega,array2_type& tauy_omega, array2_type const& ag2d_eff);
     void waveAdvWeno(array2_type& h, array2_type const& u, array2_type const& v);
     void weno3pdV2(array2_type const& gin, array2_type const& u, array2_type const& v, array2_type const& scuy,
                    array2_type const& scvx, array2_type const& scp2i, array2_type const& scp2, array2_type& saoout);
     void padVar(array2_type const& u, array2_type& upad);
+    void calcMWD();
 
     array2_type getX() const { return X_array; }
     array2_type getY() const { return Y_array; }
@@ -88,7 +89,7 @@ private:
     value_type cfl, dom, guess, Hs_inc, Tp_inc, mwd_inc, Tmin, Tmax, gravity, om;
     value_type xmax, ym, x0, y0, dx, dy, x_edge, unifc, unifh, dfloe_pack_init, amin, amax, dt;
     value_type rhowtr, rhoice, poisson, dmin, xi, fragility, young, visc_rp, kice, kwtr, int_adm, modT, argR, argT, rhoi, rho, rhow;
-    value_type fmin, fmax, df;
+    value_type fmin, fmax, df, epsc, sigma_c, vbf, vb, flex_rig_coeff;
 
     int nwavedirn, nwavefreq, advdim, ncs;
     bool ref_Hs_ice, atten, icevel, steady, breaking;
@@ -108,6 +109,9 @@ private:
     array2_type ful, fuh, fvl, fvh, gt, sao;
 
     array2_type u_pad, v_pad, scp2_pad, scp2i_pad, scuy_pad, scvx_pad, h_pad;
+
+    // variables for calcMWD
+    array2_type cmom0, cmom_dir, CSfreq, cmom_dir0, CF;
 
 };
 
@@ -221,6 +225,10 @@ WimDiscr<T>::readFile (std::string const& filein)
     SCP2I_array.resize(boost::extents[nx][ny]);
     LANDMASK_array.resize(boost::extents[nx][ny]);
 
+    dx = vm["dx"].template as<double>();
+    dy = vm["dy"].template as<double>();
+
+
     std::fstream in(filein, std::ios::binary | std::ios::in);
 
     if (in.is_open())
@@ -283,13 +291,26 @@ WimDiscr<T>::writeFile (size_type const& timestp) const
     }
 
     fs::path path(str);
-    path /= "outputs/binaries";
+    path /= "outputs/binaries/prog";
 
     if ( !fs::exists(path) )
         fs::create_directories(path);
 
 
-    std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestp).str();
+
+    std::string timestpstr;
+
+    if (timestp < 10)
+        timestpstr = "00"+ std::to_string(timestp);
+    else if (timestp < 100)
+        timestpstr = "0"+ std::to_string(timestp);
+    else
+        timestpstr = std::to_string(timestp);
+
+    //std::cout<<"TIMESTEP= "<< timestpstr <<"\n";
+
+    //std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestp).str();
+    std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestpstr).str();
     std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
 
     if (out.is_open())
@@ -330,6 +351,40 @@ WimDiscr<T>::writeFile (size_type const& timestp) const
         std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
         std::abort();
     }
+
+    // export the txt file for grid field information
+
+    //std::string fileoutb = (boost::format( "%1%/wim_prog%2%.b" ) % path.string() % timestp).str();
+    std::string fileoutb = (boost::format( "%1%/wim_prog%2%.b" ) % path.string() % timestpstr).str();
+    std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
+    //std::ofstream outb(fileoutb, std::ios::out | std::ios::trunc);
+
+    if (outb.is_open())
+    {
+        outb << std::setw(15) << std::left << 07 << "          "<< "Number of records" <<"\n";
+        outb << std::setw(15) << std::left << nx << "          "<< "Record length in x direction (elements)" <<"\n";
+        outb << std::setw(15) << std::left << ny << "          "<< "Record length in y direction (elements)" <<"\n";
+        outb << std::setw(15) << std::left << nwavefreq << "          "<< "Number of wave frequencies" <<"\n";
+        outb << std::setw(15) << std::left << nwavedirn << "          "<< "Number of wave directions" <<"\n";
+
+        outb <<"\n";
+
+        outb << "Record number and name:" <<"\n";
+        outb << std::setw(15) << std::left << 01 << "          "<< "icec" <<"\n";
+        outb << std::setw(15) << std::left << 02 << "          "<< "iceh" <<"\n";
+        outb << std::setw(15) << std::left << 03 << "          "<< "Dmax" <<"\n";
+        outb << std::setw(15) << std::left << 04 << "          "<< "tau_x" <<"\n";
+        outb << std::setw(15) << std::left << 05 << "          "<< "tau_y" <<"\n";
+        outb << std::setw(15) << std::left << 06 << "          "<< "Hs" <<"\n";
+        outb << std::setw(15) << std::left << 07 << "          "<< "Tp" <<"\n";
+    }
+    else
+    {
+        std::cout << "Cannot open " << fileoutb  << "\n";
+        std::cerr << "error: open file " << fileoutb << " for output failed!" <<"\n";
+        std::abort();
+    }
+
 
 }
 

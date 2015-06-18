@@ -208,11 +208,20 @@ def fn_plot_final(grid_prams,out_fields,figdir):
 
    # dictionary of figure names
    figs  = {'dfloe':'Dmax.png','taux':'taux.png','tauy':'tauy.png',
+            'Dmax':'Dmax.png','tau_x':'taux.png','tau_y':'tauy.png',
+            'icec':'icec.png','iceh':'iceh.png',
             'Hs':'Hs.png','Tp':'Tp.png'}
 
    # dictionary of labels for colorbars
    labs  = {'dfloe':'$D_{max}$, m','taux':'Stress (x dir.), Pa','tauy':'Stress (y dir.), Pa',
+            'Dmax':'$D_{max}$, m','tau_x':'Stress (x dir.), Pa','tau_y':'Stress (y dir.), Pa',
+            'icec':'$c$','iceh':'$h$, m',
             'Hs':'$H_s$, m','Tp':'$T_p$, s'}
+
+   ignore=['nx','ny']
+   for ky in ignore:
+     if ky in keys:
+        keys.remove(ky)
 
    for key in keys:
       fig   = figdir+'/'+figs[key]

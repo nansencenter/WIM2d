@@ -4,7 +4,7 @@ import sys
 import struct
 
 ##############################################################
-def get_array(fid,nx,ny,fmt_size=4):
+def get_array(fid,nx,ny,fmt_size=4,order='fortran'):
    # routine to get the array from the .a (binary) file
    # * fmt_size = size in bytes of each entry)
    #   > default = 4 (real*4/single precision)
@@ -20,8 +20,9 @@ def get_array(fid,nx,ny,fmt_size=4):
    data  = fid.read(rec_size)
    fld   = struct.unpack(recs*fmt_py,data)
    fld   = np.array(fld)
-   fld   = fld.reshape((ny,nx)).transpose()  # need to transpose because of differences between
-                                             # python/c and fortran/matlab 
+   # fld   = fld.reshape((ny,nx)).transpose()  # need to transpose because of differences between
+   #                                           # python/c and fortran/matlab 
+   fld   = fld.reshape((ny,nx),order=order)
 
    return fld
 ##############################################################
@@ -173,7 +174,7 @@ def fn_check_init(outdir):
 ##############################################################
 
 ##############################################################
-def fn_read_general_bin(afile):
+def fn_read_general_bin(afile,**kwargs):
    # routine to get output fields from binary files:
    bfile = afile[:-2]+'.b'
 
@@ -208,8 +209,11 @@ def fn_read_general_bin(afile):
    ##
    out   = {}
    ##
+   out.update({'nx':nx})
+   out.update({'ny':ny})
+
    for key in keys:
-      out.update({key:get_array(aid,nx,ny)})
+      out.update({key:get_array(aid,nx,ny,**kwargs)})
 
    aid.close()
    ###########################################################

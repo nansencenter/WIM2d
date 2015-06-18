@@ -18,7 +18,8 @@ outdir   = os.getcwd()
 bindir   = outdir+'/binaries'
 figdir   = outdir+'/figs'
 
-grid_prams  = Fdat.fn_check_grid(bindir)
+# grid_prams  = Fdat.fn_check_grid(bindir)
+grid_prams  = Fdat.fn_read_general_bin(bindir+'/wim_grid.a',order='C')
 
 ##########################################################################
 # Make plots
@@ -26,7 +27,7 @@ if not os.path.exists(figdir):
    os.mkdir(figdir)
 
 ##########################################################################
-if 1:
+if 0:
    # Look at initial fields:
    print("Plotting initial conditions...")
    ice_fields,wave_fields  = Fdat.fn_check_init(bindir) # load initial conditions from binaries
@@ -38,7 +39,7 @@ if 1:
 ##########################################################################
 
 ################################################################
-if 1:
+if 0:
    # Look at end results:
    print("Plotting final results...")
    figdir2     = figdir+'/final/'
@@ -53,11 +54,13 @@ if 1:
    # Plot progress files (if they exist)
    prog_files  = os.listdir(bindir+'/prog')
    steps       = []
+   afiles      = []
    for pf in prog_files:
       if '.a'==pf[-2:]:
          # stepno   = pf[-5:-2]
          stepno   = pf.strip('wim_prog').strip('.a')
          steps.append(stepno)
+         afiles.append(pf)
 
    Nprogs   = len(steps)
    print(str(Nprogs)+' sets of progress files to plot\n')
@@ -78,10 +81,15 @@ if 1:
             # os.rmdir(figdir3+'/'+od)
             shutil.rmtree(figdir3+'/'+od)
 
-      for stepno in steps:
-         print("Plotting results at time step "+stepno+" ...")
-         prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
-         figdir3_0   = figdir3+'/'+stepno
+      # for stepno in steps:
+      #    print("Plotting results at time step "+stepno+" ...")
+      #    prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
+      #    figdir3_0   = figdir3+'/'+stepno
+      #    Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
+      #    print("Plots in "+figdir3_0+'\n')
+      for m,afil in enumerate(afiles):
+         prog_fields = Fdat.fn_read_general_bin(bindir+'/prog/'+afil,order='C')
+         figdir3_0   = figdir3+'/'+steps[m]
          Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
          print("Plots in "+figdir3_0+'\n')
 

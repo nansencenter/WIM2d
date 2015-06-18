@@ -75,9 +75,20 @@ int main(int argc, char** argv )
     // initialization of wim2d
     wim2d.wimInit();
 
+    //wim2d.readFile("wim_prog000.a");
+
+    // auto X = wim2d.getY();
+    // for (int i = 0; i < X.shape()[0]; i++)
+    //     for (int j = 0; j < X.shape()[1]; j++)
+    //         std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
+
+
     //wim2d.advAttenIsotropic();
+
+    //wim2d.writeFile(0);
 
     // run the simulation
     wim2d.wimRun();
+    //wim2d.wimStep();
 
 }

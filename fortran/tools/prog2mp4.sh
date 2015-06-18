@@ -28,6 +28,11 @@ mov=${vbl}_prog.mp4
 cd tmp
 echo ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
 ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
+#ffmpeg -r 1/5 -i ${vbl}%03d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p $mov
+#ffmpeg -framerate 25 -i ${vbl}%03d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p $mov
+#ffmpeg -framerate $fps -i ${vbl}%03d.png -b:v 64k -c:v libx264 -r 24 -pix_fmt yuv420p $mov
+#ffmpeg -r 5 -i ${vbl}%03d.png -vf "scale=1920:1080,format=yuv420p" -codec:v libx264 $mov
+
 
 #clean up
 outdir2=$P/../prog_movies
@@ -37,5 +42,5 @@ cd ..
 rm -r tmp
 
 # play the movie (mac)
-echo open -a /Applications/QuickTime\\ Player.app "$outdir2/$mov"
-open -a /Applications/QuickTime\ Player.app "$outdir2/$mov"
+#echo open -a /Applications/QuickTime\\ Player.app "$outdir2/$mov"
+#open -a /Applications/QuickTime\ Player.app "$outdir2/$mov"
