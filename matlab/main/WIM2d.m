@@ -35,7 +35,7 @@ end
 
 %%other options
 %% test/use mex functions with this option
-MEX_OPT  = 1;
+MEX_OPT  = 2;
 
 %% TURN ON/OFF PLOTTING:
 %% change these to 0 if graphics aren't supported;
@@ -105,11 +105,30 @@ if MEX_OPT>0
    end
 
    %% get grid
+   disp(' ');
    disp(['Getting grid from ',indir,'...']);
    grid_prams     = fn_get_grid(indir);
    grid_prams.x0  = min(grid_prams.X(:));
    grid_prams.y0  = min(grid_prams.Y(:));
 
+   %% get nw,ndir,Tmin,Tmax from wave_info.h
+   fdir  = '../../fortran';
+   hfil  = [fdir,'/header_files/wave_info.h'];
+   disp(' ');
+   disp(['Getting wave grid from ',hfil,'...']);
+   fid   = fopen(hfil);
+   lin   = strsplit(strtrim(fgets(fid)));
+   ndir  = find_num(lin{5});
+   lin   = strsplit(strtrim(fgets(fid)));
+   nw    = find_num(lin{5});
+   lin   = strsplit(strtrim(fgets(fid)));
+   lin   = strsplit(strtrim(fgets(fid)));
+   Tmin  = find_num(lin{5});
+   lin   = strsplit(strtrim(fgets(fid)));
+   Tmax  = find_num(lin{5});
+   fclose(fid);
+
+   disp(' ');
    disp(['Will save results in ',outdir]);
    disp('*******************************************************');
    disp(' ');
@@ -317,11 +336,9 @@ fclose(logid);
 %%waves
 if HAVE_WAVES==0
    if ~exist('wave_prams','var');
-      Hs0         = 3;
-      Tp0         = 12;
-      %Tp0         = 6;
-      wave_prams  = struct('Hs',Hs0,...
-                           'Tp',Tp0);
+      wave_prams  = struct('Hs',Hs_init,...
+                           'Tp',T_init,...
+                           'mwd',dir_init);
    end
    wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
    %% structure eg:
@@ -331,8 +348,13 @@ if HAVE_WAVES==0
    %%  WAVE_MASK: [150x10 logical]
    WAVE_MASK   = wave_fields.WAVE_MASK;
    %%
-   inc_options = struct('nw',nw,'ndir',ndir,'DIR_INIT',DIR_INIT);
-   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options)
+   nw,ndir,Tmin,Tmax
+   inc_options = struct('nw',nw,...
+                        'ndir',ndir,...
+                        'Tmin',Tmin,...
+                        'Tmax',Tmax,...
+                        'DIRSPEC_INC_OPT',DIRSPEC_INC_OPT);
+   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options);
 end
 
 nw       = wave_stuff.nfreq;     %% number of frequencies
@@ -697,7 +719,7 @@ if MEX_OPT==1
    in_arrays(:,:,6)  = wave_fields.mwd;
 
    %% make the call!
-   prep_mex_dirs('out_io')
+   prep_mex_dirs(outdir);
    tic;
    out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),int_prams,real_prams);
    toc;
@@ -713,8 +735,43 @@ if MEX_OPT==1
       wave_fields.(fldnames{j})  = out_arrays(:,:,j);
    end
 
-%elseif MEX_OPT==2
-%   disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
+elseif MEX_OPT==2
+
+   disp(' ');
+   disp('*****************************************************************');
+   disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
+   disp('*****************************************************************');
+   disp(' ');
+   real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
+   CHECK_FINAL = 1;
+   CHECK_PROG  = 1;
+   CHECK_INIT  = 1;
+   int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
+                  CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
+                  DO_BREAKING,STEADY];
+   in_arrays   = zeros(nx,ny,3);
+   in_arrays(:,:,1)  = ice_fields.cice;
+   in_arrays(:,:,2)  = ice_fields.hice;
+   in_arrays(:,:,3)  = ice_fields.Dmax;
+
+   %% make the call!
+   prep_mex_dirs(outdir);
+   tic;
+   [Sdir,out_arrays] = WIM2d_run_io_mex_vSdir(...
+      Sdir(:),in_arrays(:),int_prams,real_prams,T_init,dir_init);
+   toc;
+
+   %% extract outputs
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   Nout        = length(fldnames);
+   out_arrays  = reshape(out_arrays,[nx,ny,Nout]);
+   for j=1:3
+      ice_fields.(fldnames{j})   = out_arrays(:,:,j);
+   end
+   for j=4:5
+      wave_fields.(fldnames{j})  = out_arrays(:,:,j);
+   end
+
 else
    disp('Running pure matlab code');
 
@@ -1471,6 +1528,14 @@ else
    name  = lin2{3};
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function x=find_num(txt)
+
+x0 = strsplit(txt,'!');
+x  = str2num(x0{1});
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function prep_mex_dirs(outdir)
