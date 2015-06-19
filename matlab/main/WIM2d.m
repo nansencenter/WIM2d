@@ -35,7 +35,7 @@ end
 
 %%other options
 %% test/use mex functions with this option
-MEX_OPT  = 0;
+MEX_OPT  = 1;
 
 %% TURN ON/OFF PLOTTING:
 %% change these to 0 if graphics aren't supported;
@@ -91,17 +91,28 @@ disp('Initialization')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%check what inputs we are given;
 if MEX_OPT>0
-   rundir   = '../../fortran/run'
-   if MEX_OPT==1
-      outdir   = [rundir,'/out_io'];
-   elseif MEX_OPT==2
-      outdir   = [rundir,'/out_2'];
+   infile_dirs = 'infile_dirs.txt';
+   if ~exist(infile_dirs)
+      error([infile_dirs,' not present (needed by mex functions)'])
+   else
+      disp(' ');
+      disp('*******************************************************');
+      disp(['Reading ',infile_dirs,'...']);
+      fid      = fopen(infile_dirs);
+      indir    = strtrim(fgets(fid));
+      outdir   = strtrim(fgets(fid));
+      fclose(fid);
    end
 
    %% get grid
-   grid_prams     = fn_get_grid([rundir,'/inputs']);
+   disp(['Getting grid from ',indir,'...']);
+   grid_prams     = fn_get_grid(indir);
    grid_prams.x0  = min(grid_prams.X(:));
    grid_prams.y0  = min(grid_prams.Y(:));
+
+   disp(['Will save results in ',outdir]);
+   disp('*******************************************************');
+   disp(' ');
 
    if 0
       %% get initial conditions from fortran run
@@ -110,19 +121,6 @@ if MEX_OPT>0
       ice_prams.h          = 'given';
       ice_prams.Dmax       = 'given';
       ice_prams.break_opt  = 0;
-      if ~isnan(young)
-         ice_prams.young_opt  = NaN;
-      else
-         ice_prams.young_opt  = 1;
-      end
-      if ~isnan(visc_rp)
-         ice_prams.visc_rp = visc_rp;
-      end
-   else
-      ice_prams.c          = conc_init;
-      ice_prams.h          = h_init;
-      ice_prams.Dmax       = Dmax_init;
-      ice_prams.break_opt  = 0;%%TODO infile?
       if ~isnan(young)
          ice_prams.young_opt  = NaN;
       else
@@ -168,17 +166,16 @@ if HAVE_WAVES
    end
 end
 
-HAVE3 = HAVE_GRID+HAVE_ICE+HAVE_WAVES;
-if (0<HAVE3)&(HAVE3<3)
+HAVE2 = HAVE_ICE+HAVE_WAVES;
+if (0<HAVE2)&(HAVE2<3)
    disp(' ');
    disp('*********************************************************************');
-   disp('Please specify all 3 of ''grid_prams'',''ice_fields'',''wave_fields''');
+   disp('Please specify both of ''ice_fields'' and ''wave_fields''');
    disp('(or specify none, and let configuration be chosen through local variable ''OPT'')');
-   disp(['HAVE_GRID   = ',num2str(HAVE_GRID )]);
    disp(['HAVE_ICE    = ',num2str(HAVE_ICE  )]);
    disp(['HAVE_WAVES  = ',num2str(HAVE_WAVES)]);
    disp('*********************************************************************');
-   disp(' ');
+   error('WIM2d initialisation');
    return
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -214,7 +211,6 @@ if HAVE_GRID==0
    %%      scp2: [51x51 double]
    %%     scp2i: [51x51 double]
 end
-grid_prams
 nx       = grid_prams.nx;
 ny       = grid_prams.ny;
 dy       = grid_prams.dy;
@@ -348,7 +344,8 @@ if STEADY==1
    S_inc    = Sdir;
    theta    = -pi/180*(90+wavdir);
    [i1,j1]  = find(WAVE_MASK==1,1,'first');
-   J_STEADY = find(S_inc(i1,j1,:,ceil(nw/2))>0);
+   j_fwd    = find(cos(-pi/180*(90+wavdir))>=0);
+   J_STEADY = find(S_inc(i1,j1,j_fwd,:)>0);%%only get "forward" directions
    % squeeze(S_inc(i1,j1,:))
    % GEN_pause;
 end
@@ -679,7 +676,11 @@ end
 disp('beginning main integration...');
 if MEX_OPT==1
 
+   disp(' ');
+   disp('*****************************************************************');
    disp('Running fortran code with mex function: run_WIM2d_io_mex_v2');
+   disp('*****************************************************************');
+   disp(' ');
    real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
    CHECK_FINAL = 1;
    CHECK_PROG  = 1;
@@ -1482,6 +1483,7 @@ end
 
 odirs = {[outdir,'/binaries'],...
          [outdir,'/binaries/prog'],...
+         [outdir,'/log'],...
          [outdir,'/figs'],...
          [outdir,'/figs/prog']};
 for j=1:length(odirs)

@@ -38,8 +38,11 @@ fortran/run/fig_scripts/figs/TC2S/*
 fortran/run/results/*
 #
 matlab/main/out
+matlab/main/out_io
+matlab/main/out_2
 matlab/main/log
 matlab/main/infile_matlab.txt
+matlab/main/infile_dirs.txt
 matlab/boltzmann/out/*
 matlab/boltzmann/*.mat
 matlab/boltzmann/solve_boltzmann_numeric.m
