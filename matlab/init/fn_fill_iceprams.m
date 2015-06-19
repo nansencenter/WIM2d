@@ -50,7 +50,7 @@ end
 s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
 
 %%Breaking criterion option
-if s1.bc_opt==0%%beam test
+if s1.break_opt==0%%beam test
    s1.strain_c = s1.sigma_c/s1.young;
 else%%Marchenko's stress criterion
     %% - convert to strain criterion

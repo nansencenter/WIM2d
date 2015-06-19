@@ -1,42 +1,12 @@
-function [ice_fields,wave_fields,ice_prams,grid_prams,Dmax_all,brkcrt] =...
-   WIM_2D(grid_prams,wave_prams,ice_prams)
-% clear;
+function WIM2d()
 
 %DO_SAVE     = 0;
 infile         = 'infile_matlab.txt';
-infile_version = 3;%%latest infile version
+infile_version = 4;%%latest infile version
 
 if ~exist(infile)
-   disp('********************************************************')
-   disp([infile,' not present'])
-   disp('using default options:')
-   disp('********************************************************')
-   disp(' ')
-
-   CFL      = .7;    %%CFL number
-   nw       = 1;     %% number of frequencies
-   ndir     = 2^5;   %% number of directions
-   DIR_INIT = 1;     %% incident wave spectrum (spreading/delta...)
-
-   duration_hours = 24;%%length of time to run simulation for
-
-   %%use default options
-   USE_ICE_VEL = 0;  %% if 0, approx ice group vel by water group vel;  
-   DO_ATTEN    = 1;  %% if 0, just advect waves
-                     %%  without attenuation;
-   DO_BREAKING = 0;  %% if 0, turn off breaking for testing
-   STEADY      = 1;  %% Steady-state solution: top-up waves inside wave mask
-   SCATMOD     = 1;  %% 0: old way; 1: scatter E isotropically
-   REF_Hs_ICE  = 0;  %% 1: in ice, give Hs for displacement of the ice;
-                     %% 0: give Hs for displacement of the surrounding water
-
-   OPT         = 3;%%ice-water-land configuration;
-   DIAG1d      = 1;
-   DIAG1d_OPT  = 1;
-
-   CHK_ATTEN   = 0;%%check by running with old attenuation
-   ADV_DIM     = 1;%% 1d or 2d advection
-   ADV_OPT     = 2;%% periodicity (boundary conditions for advection)
+   %% now need infile to run code
+   error([infile,' not present - get example from "matlab/main/infiles" directory'])
 else
    disp('********************************************************')
    disp('reading options from infile:')
@@ -44,7 +14,6 @@ else
    disp('********************************************************')
    disp(' ')
    fid   = fopen(infile);
-   lin   = fgets(fid);%%1st line is header
 
    %%check infile version:
    infile_version_   = read_next(fid);
@@ -55,7 +24,11 @@ else
    %%read in rest of variables:
    while ~feof(fid)
       [x,name] = read_next(fid);
-      eval([name,' = x'])
+      if ~isempty(x)
+         cmd   = [name,' = ',num2str(x),';'];
+         disp(cmd);
+         eval(cmd);
+      end
    end
    fclose(fid);
 end
@@ -66,9 +39,6 @@ MEX_OPT  = 0;
 
 %% TURN ON/OFF PLOTTING:
 %% change these to 0 if graphics aren't supported;
-PLOT_INIT   = 1;
-PLOT_PROG   = 0;
-PLOT_FINAL  = 1;
 PLOT_OPT    = 2;%%plot option (only used if doing plotting)
 SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...
@@ -114,7 +84,6 @@ fclose(logid);
 %%important settings
 itest = 24;
 jtest = 1;
-
 format long
 
 disp('Initialization')
@@ -122,8 +91,6 @@ disp('Initialization')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%check what inputs we are given;
 if MEX_OPT>0
-   addpath('../../fortran/matlab_funs/');
-   addpath('../../fortran/bin/');%%path to mex function
    rundir   = '../../fortran/run'
    if MEX_OPT==1
       outdir   = [rundir,'/out_io'];
@@ -139,10 +106,31 @@ if MEX_OPT>0
    if 0
       %% get initial conditions from fortran run
       [grid_prams,ice_fields,wave_fields] = fn_check_init(outdir);
-      %ice_prams   = struct('c'        ,'given',...
-      %                     'h'        ,'given',...
-      %                     'bc_opt'   ,0,...
-      %                     'young_opt',1);
+      ice_prams.c          = 'given';
+      ice_prams.h          = 'given';
+      ice_prams.Dmax       = 'given';
+      ice_prams.break_opt  = 0;
+      if ~isnan(young)
+         ice_prams.young_opt  = NaN;
+      else
+         ice_prams.young_opt  = 1;
+      end
+      if ~isnan(visc_rp)
+         ice_prams.visc_rp = visc_rp;
+      end
+   else
+      ice_prams.c          = conc_init;
+      ice_prams.h          = h_init;
+      ice_prams.Dmax       = Dmax_init;
+      ice_prams.break_opt  = 0;%%TODO infile?
+      if ~isnan(young)
+         ice_prams.young_opt  = NaN;
+      else
+         ice_prams.young_opt  = 1;
+      end
+      if ~isnan(visc_rp)
+         ice_prams.visc_rp = visc_rp;
+      end
    end
 end
 HAVE_GRID   = exist('grid_prams','var');
@@ -153,10 +141,19 @@ if HAVE_ICE
       ice_prams   = ice_fields;
       HAVE_ICE    = 0;
    else
-      ice_prams   = struct('c'        ,'given',...
-                           'h'        ,'given',...
-                           'bc_opt'   ,0,...
-                           'young_opt',1);
+      %% have ice_fields (arrays) already
+      ice_prams.c          = 'given';
+      ice_prams.h          = 'given';
+      ice_prams.Dmax       = 'given';
+      ice_prams.break_opt  = 0;
+      if ~isnan(young)
+         ice_prams.young_opt  = NaN;
+      else
+         ice_prams.young_opt  = 1;
+      end
+      if ~isnan(visc_rp)
+         ice_prams.visc_rp = visc_rp;
+      end
       ice_prams   = fn_fill_iceprams(ice_prams);
    end
 end
@@ -198,19 +195,6 @@ if HAVE_GRID==0
       return;
    end
 
-   if 1
-      nx = 150;
-      ny = 10;
-   else
-      nx = 150;
-      ny = 50;
-   end
-   x0 = 0.;    % m
-   y0 = 0.;    % m
-   dx = 4000;  % m
-   dy = 4000;  % m
-   %%
-
    grid_prams  = struct('x0',x0,'y0',y0,...
                         'nx',nx,'ny',ny,...
                         'dx',dx,'dy',dy);
@@ -230,6 +214,7 @@ if HAVE_GRID==0
    %%      scp2: [51x51 double]
    %%     scp2i: [51x51 double]
 end
+grid_prams
 nx       = grid_prams.nx;
 ny       = grid_prams.ny;
 dy       = grid_prams.dy;
@@ -241,16 +226,14 @@ Y        = grid_prams.Y;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Ice/water;
 if HAVE_ICE==0
-   h           = 2;
-   c           = 0.7;
-   visc_rp     = 0;%% Robinson-Palmer damping parameter [~13Pa/(m/s)]
-   bc_opt      = 0;%% breaking condition (0=beam;1=Marchenko)
-   ice_prams   = struct('c'         ,c,...
-                        'h'         ,h,...
-                        'visc_rp'   ,visc_rp,...
-                        'bc_opt'    ,bc_opt)
-   if 1%%set Young's directly here TODO infile?
-      ice_prams.young      = 5.49e9;%%Young's modulus [Pa]
+   ice_prams.c    = conc_init;
+   ice_prams.h    = h_init;
+   ice_prams.Dmax = Dmax_init;
+
+   break_opt   = 0;%% breaking condition (0=beam;1=Marchenko)
+   ice_prams.break_opt  = break_opt;
+   if ~isnan(young)
+      ice_prams.young      = young;%%Young's modulus [Pa]
       ice_prams.young_opt  = NaN;%%not used
    else
       %%Option for selecting Young's modulus
@@ -259,6 +242,9 @@ if HAVE_ICE==0
       %% 1: Vernon's estimate from brine volume fraction (vbf)
       %% 2: same as above but with vbf=.1 -> young = 5.49e9 Pa
       ice_prams.young_opt  = 0;
+   end
+   if ~isnan(visc_rp)
+      ice_prams.visc_rp = visc_rp;%%Robinson-Palmer damping [Pa/(m/s)]
    end
    %%
    [ice_fields,ice_prams]  = iceinit(ice_prams,grid_prams,OPT);
@@ -272,6 +258,7 @@ if HAVE_ICE==0
    %% ice_prams = structure eg:
    %%               c: 0.750000000000000
    %%               h: 2
+   %%            Dmax: 300
    %%           young: 2.000000000000000e+09
    %%          bc_opt: 0
    %%         visc_rp: 13
@@ -593,6 +580,14 @@ else
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+if DIAG1d==1
+   cols     = {'-k','-c','-m','-r','-g','-b'};
+   labs1d_1 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
+   labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
+   labs1d_3 = {'\itx, \rmkm','{\itH}_{\rm s}^-, m'};
+   labs1d_4 = {'\itx, \rmkm','c'};
+end
+
 if PLOT_INIT
    %%
    figure(1),clf;
@@ -637,15 +632,12 @@ if PLOT_INIT
       %% initial
       figure(4),clf;
       fn_fullscreen;
-      cols     = {'-k','-c','-m','-r','-g','-b'};
       loop_col = 1;
       %%
       subplot(4,1,4);
-      labs1d_4 = {'\itx, \rmkm','c'};
       fn_plot1d(X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,cols{loop_col});
       %%
       subplot(4,1,1);
-      labs1d_1 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
       %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
       fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
       hold on;
@@ -669,14 +661,12 @@ if PLOT_INIT
       hold on;
       %%
       subplot(4,1,2);
-      labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
       fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
       hold on;
       fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
       hold on;
       %%
       subplot(4,1,3);
-      labs1d_3 = {'\itx, \rmkm','{\itH}_{\rm s}^-, m'};
       fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
       hold on;
       %%
@@ -1132,6 +1122,7 @@ fclose(logid);
 
 if PLOT_FINAL%%check exponential attenuation
    figure(2),clf;
+   fn_fullscreen;
    if PLOT_OPT==1
       s1 = struct('dir',wave_stuff.dirs(jdir),...
                   'period',Tc,...
@@ -1277,13 +1268,15 @@ if PLOT_FINAL%%check exponential attenuation
 
          fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',fcols{1}]);
          hold on;
+
+         fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,fcols{2});
+         leg_text{end+1}   = 'Fwd';
+         hold on;
+
+         fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,fcols{3});
+         leg_text{end+1}   = 'Back';
       end
       %%
-      fn_plot1d(X(:,1)/1e3,Hp,labs1d_1,fcols{2});
-      leg_text{end+1}   = 'Fwd';
-      hold on;
-      fn_plot1d(X(:,1)/1e3,Hm,labs1d_1,fcols{3});
-      leg_text{end+1}   = 'Back';
 
       %% make legend
       cmd   = 'legend(';
@@ -1455,11 +1448,27 @@ GEN_proc_fig(labs{1},labs{2});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [x,name]  = read_next(fid)
+%% read next line in text file
 
-lin   = fgets(fid);
-lin2  = strsplit(lin);%%split using spaces
-x     = str2num(lin2{1});%%get 1st thing in line
-name  = lin2{3};
+lin   = strtrim(fgets(fid));  %% trim leading white space
+lin2  = strsplit(lin);        %%split using spaces
+x     = lin2{1};              %%get 1st thing in line
+
+if strcmp(x,'')
+   % blank line
+   disp(' ');
+   x     = [];
+   name  = [];
+elseif strcmp(x,'#')
+   % comment
+   disp(lin);
+   x     = [];
+   name  = [];
+else
+   % proper variable
+   x     = str2num(x);
+   name  = lin2{3};
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
