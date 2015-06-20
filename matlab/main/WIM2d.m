@@ -2,7 +2,7 @@ function WIM2d()
 
 %DO_SAVE     = 0;
 infile         = 'infile_matlab.txt';
-infile_version = 4;%%latest infile version
+infile_version = 5;%%latest infile version
 
 if ~exist(infile)
    %% now need infile to run code
@@ -33,12 +33,8 @@ else
    fclose(fid);
 end
 
-%%other options
-%% test/use mex functions with this option
-MEX_OPT  = 2;
 
 %% TURN ON/OFF PLOTTING:
-%% change these to 0 if graphics aren't supported;
 PLOT_OPT    = 2;%%plot option (only used if doing plotting)
 SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...

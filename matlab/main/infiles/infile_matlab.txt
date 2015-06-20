@@ -1,4 +1,4 @@
-4     # infile_version_ : infile version number
+5     # infile_version_ : infile version number
 # keep version number on 1st line
 # change this if there are significant changes to structure of infile and/or code
 # (will be a warning in code if version number there doesn't match this one)
@@ -8,6 +8,10 @@
 # NB comments start with "#" 
 # NB order of variables doesn't matter
 # only numerical values accepted currently
+
+# mex function to use
+2     # MEX_OPT   : 0 = pure matlab; 1 = pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes
+                  # 2 = pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
 
 # numerical parameters
 1     # nw              : number of frequencies
@@ -23,9 +27,10 @@
 4e3   # dy  : grid resolution in y dirn (m)
 
 # initial conditions
-1     # DIR_INIT        : incident wave spectrum (spreading/delta...)
-12.0  # T_single_freq   : if only 1 frequency, use this value for the period
--90.0 # dir_single_freq : if only 1 direction, use this value for the wave direction
+1     # DIRSPEC_INC_OPT : incident wave spectrum (spreading/delta...)
+3.0   # Hs_init         : initial Hs (constant over wave mask unless waves are read in)
+12.0  # T_init          : if only 1 frequency, use this value for the period
+-90.0 # dir_init        : if only 1 direction, use this value for the wave direction
 0.7   # conc_init       : initial constant value of concentration (used only if no conc field read in)
 2.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
 100.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
@@ -61,4 +66,3 @@
 1     # PLOT_FINAL
 0     # DIAG1d          : do 1-d diagnostics (eg plot profile of Hs)
 1     # DIAG1d_OPT      : options for 1-d diagnostics
-
