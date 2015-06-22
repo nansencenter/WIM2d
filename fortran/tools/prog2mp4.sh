@@ -17,7 +17,10 @@ do
       n=$((n+1))
       cn=`printf "%3.3d" $n`
       f0=$stepdir/$vbl.png
+      echo $f0
       f=tmp/${vbl}$cn.png
+      echo $f
+      echo ln -s $f0 $f
       ln -s $f0 $f
    fi
 done

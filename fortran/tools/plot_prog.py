@@ -80,7 +80,7 @@ if 1:
 
       for stepno in steps:
          print("Plotting results at time step "+stepno+" ...")
-         prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
+         prog_fields = Fdat.fn_check_prog(outdir,stepno)
          figdir3_0   = figdir3+'/'+stepno
          Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
          print("Plots in "+figdir3_0+'\n')
