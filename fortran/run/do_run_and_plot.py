@@ -28,7 +28,9 @@ grid_prams  = gf
 # set inputs: (icec,iceh,dfloe), (Hs,Tp,mwd)
 if 1:
 
-   if 0:
+   if 1:
+      # "semi-infinite" ice sheet
+
       # ice edge
       xe       = .5*(gf['X'].min()+gf['X'].max())\
                   -.7*.5*(-gf['X'].min()+gf['X'].max())
@@ -62,7 +64,7 @@ if 1:
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
 
-   Hs_in       = 3.
+   Hs_in       = 2.
    Tp_in       = 12.
    mwd_in      = -90.
    in_fields   = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK,
@@ -89,7 +91,7 @@ if 1:
    # change real parameters:
    young          = 5.0e9
    visc_rp        = 0.0
-   duration_hours = 12.0
+   duration_hours = 6.0
    duration       = duration_hours*60*60
    real_prams     = np.array([young,visc_rp,duration])
 
@@ -134,7 +136,7 @@ if 1:
    steps       = []
    for pf in prog_files:
       if '.a'==pf[-2:]:
-         stepno   = pf[-5:-2]
+         stepno   = pf.strip('wim_prog').strip('.a')
          steps.append(stepno)
 
    # make dir for progress plots
@@ -151,7 +153,7 @@ if 1:
 
    for stepno in steps:
       print("Plotting results at time step "+stepno+" ...")
-      prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
+      prog_fields = Fdat.fn_check_prog(outdir,stepno)
       figdir3_0   = figdir3+'/'+stepno
       Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
       print("Plots in "+figdir3_0+'\n')
@@ -166,16 +168,22 @@ elif 1:
    ################################################################
    # Plot progress files (if they exist)
    # - as profiles
-   steps2plot  = range(0,600,40)
-   # steps2plot  = range(0,140,40)
    cols     = ['k','b','r','g','m','c']
    lstil    = ['-','--','-.',':']
    Nc       = len(cols)
    loop_c   = -1
    loop_s   = 0
 
-   for nstep in steps2plot:
-      out_fields  = Fdat.fn_check_prog(outdir,nstep) # load ice/wave conditions from binaries
+   figdir3     = figdir+'/prog'
+   prog_files  = os.listdir(bindir+'/prog')
+   steps       = []
+   for pf in prog_files:
+      if '.a'==pf[-2:]:
+         stepno   = pf.strip('wim_prog').strip('.a')
+         steps.append(stepno)
+
+   for step in steps:
+      out_fields  = Fdat.fn_check_prog(outdir,step) # load ice/wave conditions from binaries
       Hs_n        = out_fields['Hs']
       #
       if loop_c==Nc-1:
