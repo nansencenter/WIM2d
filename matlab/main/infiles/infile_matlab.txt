@@ -14,9 +14,14 @@
                   # 2 = pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
 
 # numerical parameters
-1     # nw              : number of frequencies
-32    # ndir            : number of directions
 0.7   # CFL             : CFL number (cg*dt/dx)
+
+# wave grid (overwritten using wave_info.h if using mex functions)
+1     # nw              : number of frequencies
+16    # ndir            : number of directions
+2.5   # Tmin            : minimum period
+25    # Tmax            : maximum period
+
 
 # grid (overwritten if using mex functions, which need a pre-compiled grid)
 0     # x0  : min(X(:))
@@ -27,7 +32,7 @@
 4e3   # dy  : grid resolution in y dirn (m)
 
 # initial conditions
-1     # DIRSPEC_INC_OPT : incident wave spectrum (spreading/delta...)
+1     # DIRSPEC_INC_OPT : incident wave spectrum (1=spreading/0=delta...)
 3.0   # Hs_init         : initial Hs (constant over wave mask unless waves are read in)
 12.0  # T_init          : if only 1 frequency, use this value for the period
 -90.0 # dir_init        : if only 1 direction, use this value for the wave direction
