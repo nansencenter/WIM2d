@@ -20,7 +20,7 @@
 
       character(len=80) :: log_file,this_subr,outdir,indir
       character(len=*),parameter :: infile_dirs = 'infile_dirs.txt'
-      character(len=*),parameter :: infile      = 'infile.txt'
+      character(len=*),parameter :: infile      = 'infile_nonIO.txt'
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
      &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
@@ -691,7 +691,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SCATMOD,n-1,0,outdir)
+            call check_prog(SCATMOD,(/n-1,nt/),0,outdir)
          end if
 
          print*,'n/nt',n,nt
@@ -702,7 +702,7 @@
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
-         call check_prog(SCATMOD,n-1,1,outdir)
+         call check_prog(SCATMOD,(/n-1,nt/),1,outdir)
       end if
 
       MIZ_MASK = 0.0

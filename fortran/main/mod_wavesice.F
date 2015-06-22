@@ -761,24 +761,41 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(SCATMOD,n,OPT,outdir)
+      subroutine check_prog(SCATMOD,nn,OPT,outdir)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)            :: SCATMOD,n,OPT
+      integer,intent(in)            :: SCATMOD,nn(2),OPT
       character(len=80),intent(in)  :: outdir
-      character(len=80)    :: afile,bfile
-      character(len=10)    :: stat1,stat2
-      character(len=3)     :: cts
+      character(len=80)             :: afile,bfile
+      character(len=10)             :: stat1,stat2
+      character(len=4)              :: cts
+      !!
+      integer           :: n_step,n_total
+      character(len=6)  :: frmt
+
+      n_step   = nn(1)
+      n_total  = nn(2)
+      if (n_total.le.10) then
+         frmt  = '(i1.1)'
+      elseif (n_total.le.100) then
+         frmt  = '(i2.2)'
+      elseif (n_total.le.1000) then
+         frmt  = '(i3.3)'
+      else
+         frmt  = '(i4.4)'
+      end if
 
       if (OPT.eq.0) then
          !!dump only for progress report
-         write(cts,'(i3.3)') n
-         afile = trim(outdir)//'/binaries/prog/wim_prog'//cts//'.a'
-         bfile = trim(outdir)//'/binaries/prog/wim_prog'//cts//'.b'
+         write(cts,frmt) n_step
+         afile = trim(outdir)//'/binaries/prog/wim_prog'                &
+     &               //trim(cts)//'.a'
+         bfile = trim(outdir)//'/binaries/prog/wim_prog'                &
+     &               //trim(cts)//'.b'
       else
          !!final output
          afile = trim(outdir)//'/binaries/wim_out.a'
