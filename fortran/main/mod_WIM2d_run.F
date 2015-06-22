@@ -598,7 +598,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! have already got dir spec directly from Sdir_io in WIM2d_f2py
+      !! have already got sdf_dir directly from Sdir_io in WIM2d_f2py
+      !! - this step allows STEADY==1 to work
+      sdf_inc  = sdf_dir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       call do_wim_integrals(0) ! calc Hs,Tp,mwd,WAVE_MASK from sdf_dir

@@ -68,13 +68,6 @@
          WAVE_MASK2(1:3,:) = 1.0
          print*,'steady test',maxval(WAVE_MASK2),sum(WAVE_MASK2)
       end if
-
-!     if (.true.) then
-!        !!check initialisation
-!        !!(dump binaries to look at with test_WIM2d_F.m)
-!        call check_grid()
-!        call check_init()
-!     end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
