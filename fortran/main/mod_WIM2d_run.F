@@ -63,7 +63,6 @@
       !!
       real     :: PI
 
-      logical,parameter :: SET_WAVES   = .true.
       integer,parameter :: ndir        = n_wavdir
       integer,parameter :: nw          = n_wave_freq
       integer           :: w,wth
@@ -127,11 +126,16 @@
 
       end if
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
-      call ice_init()      ! - initial icec,iceh,dfloe
+
+      !! set idealised incident ice parameters
+      call icecons_ideal()      ! - initial icec,iceh,dfloe
+
+      !! set idealised incident wave parameters
+      call wavecons_ideal()
 
       !! set wave grid
-      !! SET_WAVES = .true. so also set initial Tp,Hs,mwd,WAVE_MASK
-      call waves_init(SET_WAVES)
+      call waves_init_freq()
+      call waves_init_dir()
 
       !! create full incident wave spectrum
       !! - use preset wave parameters (Tp,Hs,mwd,WAVE_MASK)
@@ -142,7 +146,6 @@
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
       call wim_init(STEADY)
-
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -151,7 +154,7 @@
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! fill wave spectra arrays using (Hs,Tp,mwd)
+      !! fill wave spectra arrays using sdf_inc
       !!
       !! could just set sdf_dir = sdf_inc,
       !! but this way lets us retain any waves
@@ -253,14 +256,13 @@
       real              :: PI
       real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
 
-      logical,parameter :: SET_WAVES   = .false.
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
 
       real,parameter    :: min_conc = 0.05
 
-      real  :: Tmean,Tvar,Tstdev
+      !real  :: Tmean,Tvar,Tstdev
 
       !! function to print time
       real  :: etime
@@ -329,9 +331,7 @@
          ICE_MASK = 1.0
       end where
 
-      !! set wave grid
       !! SET_WAVES = .false. so don't set initial Tp,Hs,mwd,WAVE_MASK as well
-      call waves_init(SET_WAVES)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! set incident waves from inputs
@@ -344,44 +344,47 @@
          WAVE_MASK   = 1.0
       end where
 
-      if (nw.eq.1) then
-         !!single frequency:
-         !!-set it to mean over the wave mask
-         Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
-         freq_vec(1) = 1.0/Tmean
-         !!
-         Tvar     = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
-         Tstdev   = sqrt(Tvar)
-         print*,'std dev of peak periods : ',Tstdev
-         !!
-         if (abs(Tstdev).gt.1.0e-2) then
-            print*,'***********************************************'
-            print*,'warning: trying to run multiple frequencies'
-            print*,'  with n_wave_freq = 1'
-            print*,'***********************************************'
-            print*,' '
-            STOP
-         end if
-      end if
+      ! set waves grid
+      call waves_init_freq()
+      call waves_init_dir()
+!     if (nw.eq.1) then
+!        !!single frequency:
+!        !!-set it to mean over the wave mask
+!        Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
+!        freq_vec(1) = 1.0/Tmean
+!        !!
+!        Tvar     = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
+!        Tstdev   = sqrt(Tvar)
+!        print*,'std dev of peak periods : ',Tstdev
+!        !!
+!        if (abs(Tstdev).gt.1.0e-2) then
+!           print*,'***********************************************'
+!           print*,'warning: trying to run multiple frequencies'
+!           print*,'  with n_wave_freq = 1'
+!           print*,'***********************************************'
+!           print*,' '
+!           STOP
+!        end if
+!     end if
 
-      if (ndir.eq.1) then
-         !!single direction:
-         !!-set it to mean over the wave mask
-         wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
-         !!
-         Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
-         Tstdev   = sqrt(Tvar)
-         print*,'std dev of wave directions : ',Tstdev
-         !!
-         if (abs(Tstdev).gt.1.0e-2) then
-            print*,'***********************************************'
-            print*,'warning: trying to run multiple directions'
-            print*,'  with n_wavdir = 1'
-            print*,'***********************************************'
-            print*,' '
-            STOP
-         end if
-      end if
+!     if (ndir.eq.1) then
+!        !!single direction:
+!        !!-set it to mean over the wave mask
+!        wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
+!        !!
+!        Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
+!        Tstdev   = sqrt(Tvar)
+!        print*,'std dev of wave directions : ',Tstdev
+!        !!
+!        if (abs(Tstdev).gt.1.0e-2) then
+!           print*,'***********************************************'
+!           print*,'warning: trying to run multiple directions'
+!           print*,'  with n_wavdir = 1'
+!           print*,'***********************************************'
+!           print*,' '
+!           STOP
+!        end if
+!     end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !! create full incident wave spectrum
@@ -401,7 +404,7 @@
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! fill wave spectra arrays using (Hs,Tp,mwd)
+      !! fill wave spectra arrays using sdf_inc
       !!
       !! could just set sdf_dir = sdf_inc,
       !! but this way lets us retain any waves
@@ -577,9 +580,15 @@
          ICE_MASK = 1.0
       end where
 
-      !! set wave grid
-      !! SET_WAVES = .false. so don't set initial Tp,Hs,mwd,WAVE_MASK as well
-      call waves_init(SET_WAVES)
+      !! wave frequency grid (have already set if nw==1)
+      if (nw.gt.1) then
+         call waves_init_freq()
+      end if
+
+      !! wave directional grid (have already set if ndir==1)
+      if (ndir.gt.1) then
+         call waves_init_dir()
+      end if
       !print*,freq_vec
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -589,32 +598,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! get dir spec directly from Sdir_io in WIM2d_f2py
+      !! have already got dir spec directly from Sdir_io in WIM2d_f2py
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       call do_wim_integrals(0) ! calc Hs,Tp,mwd,WAVE_MASK from sdf_dir
          !! The "0" means it is relative to the water (displacement is
          !!  not reduced in the ice)
       !print*,minval(Hs),maxval(Hs)
-
-      if (ndir.eq.1) then
-         !!single direction:
-         !!-set it to mean over the wave mask
-         wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
-         !!
-         Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
-         Tstdev   = sqrt(Tvar)
-         print*,'std dev of wave directions : ',Tstdev
-         !!
-         if (abs(Tstdev).gt.1.0e-2) then
-            print*,'***********************************************'
-            print*,'warning: trying to run multiple directions'
-            print*,'  with n_wavdir = 1'
-            print*,'***********************************************'
-            print*,' '
-            STOP
-         end if
-      end if
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
          print*,'Saving initial conditions to '//                       &
