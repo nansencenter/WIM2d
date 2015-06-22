@@ -1,14 +1,14 @@
 #include "fintrf.h"
 C
 #if 0
-C     
+C
 C     CALL:
 C     [Sdir_io,out_arrays]=...
 C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,int_prams,...
 C                               real_prams,Tp_io,mwd_io);
-C     
+C
 #endif
-C     
+C
 C     This is a MEX-file for MATLAB.
 
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
@@ -78,7 +78,7 @@ C
       character(len=12)             :: cii,cjj,cj,cm,cn,cdum
       character(len=80)             :: msg
 
-C     Check for proper number of arguments. 
+C     Check for proper number of arguments.
       if(nrhs .ne. Nin) then
          write(cdum,'(i2.2)') Nin
          call mexErrMsgTxt(trim(cdum)//' inputs required.')
@@ -118,7 +118,7 @@ C     Get the size of the input arrays.
          write(cii,'(i4.4)') ii
          write(cjj,'(i4.4)') jj
          write(cj,'(i1.1)')  j
-         write(cm,'(i4.4)')  mxGetM(prhs(j))
+         write(cm,'(i12.12)')  mxGetM(prhs(j))
          write(cn,'(i4.4)')  mxGetN(prhs(j))
 
 C        matrices should be ii*jj
@@ -230,7 +230,8 @@ C        matrices should be 1*1
          endif
       end do
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
+      k  = mexPrintf('All inputs correct sizes...\n')
+
 C     Check to ensure the array is numeric (not strings).
       do j=1,Nin
          write(cj,'(i1.1)')  j
@@ -238,6 +239,7 @@ C     Check to ensure the array is numeric (not strings).
             call mexErrMsgTxt('Input '//cj//' must be a numeric array.')
          endif
       end do
+      k  = mexPrintf('All inputs numeric...\n')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!pointers to input memory
@@ -256,23 +258,35 @@ C     Check to ensure the array is numeric (not strings).
       call mxCopyPtrToReal8(Tp_pr,Tp_io,size5)
       call mxCopyPtrToReal8(MD_pr,mwd_io,size6)
       y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
+      !!
+      k  = mexPrintf('All pointers copied to arrays...\n')
+!     write(msg,'(f12.12)') Tp_io
+!     k  = mexPrintf('T for single freq (s): '//trim(msg)//'\n')
+!     write(msg,'(e7.3)') mwd_io
+!     k  = mexPrintf('mwd for single dir (degrees-from): '//            &
+!    &               trim(msg)//'\n')
+      
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Create matrix for the return arguments.
+      plhs(1)  = mxCreateDoubleMatrix(m0,n0,0)
+      !!
       m4       = ii*jj*ny3d
       n4       = 1
       size4    = m4*n4
-      plhs(1)  = mxCreateDoubleMatrix(m4,n4,0)
+      plhs(2)  = mxCreateDoubleMatrix(m4,n4,0)
 
       !!pointers to output memory
       y4d_pr   = mxGetPr(plhs(1))
       y3d_pr   = mxGetPr(plhs(2))
 
-      !! initialise output array
+      !! initialise output arrays (NB not in/out arrays!)
       y3d = 0.0
-      y4d = 0.0
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      k  = mexPrintf('Initialised output arrays...\n')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       k  = mexPrintf('Have pointers, about to do computations...\n')

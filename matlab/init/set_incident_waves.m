@@ -3,24 +3,29 @@
 %% Date: 20141016, 18:55:20 CEST
 function wave_stuff = set_incident_waves(grid_prams,wave_fields,inc_options)
 
-if ~exist('options')
+grid_prams,wave_fields,inc_options
+if ~exist('inc_options','var')
    %%default options
-   nw       = 1;  %% Single frequency
-   ndir     = 2^4;%% Multiple directions
-   DIR_INIT = 1;  %% cos^2 spreading
+   nw                = 1;  %% Single frequency
+   ndir              = 2^4;%% Multiple directions
+   Tmin              = 2.5;
+   Tmax              = 25;
+   DIRSPEC_INC_OPT   = 1;  %% cos^2 spreading
 else
-   nw       = inc_options.nw;
-   ndir     = inc_options.ndir;
-   DIR_INIT = inc_options.DIR_INIT;
+   nw                = inc_options.nw;
+   ndir              = inc_options.ndir
+   Tmin              = inc_options.Tmin;
+   Tmax              = inc_options.Tmax;
+   DIRSPEC_INC_OPT   = inc_options.DIRSPEC_INC_OPT;
 end
 
 %%frequency grid:
 if nw==1%%single freq
-   T     = max(wave_fields.Tp(:));
+   T     = max(wave_fields.Tp(:))
    freq  = 1/T;
 else
-   f      = 1/25;%0.042;% min freq/ resolution
-   f1     = 1/2.5;%0.4;% max freq
+   f      = 1/Tmax;%0.042;% min freq/ resolution
+   f1     = 1/Tmin;%0.4;% max freq
    freq   = linspace(f,f1,nw)';
    om     = 2*pi*freq;
 end
@@ -29,8 +34,6 @@ end
 if ndir==1
    wavdir   = -90;
 else
-   r        = 4;%%5->32 points
-   ndir     = 2^r;
    wavdir   = linspace(90,-270,ndir+1)';
    %%
    %if mod(ndir,2)==0
@@ -79,7 +82,7 @@ for i=1:nx
             j0          = find(del>pi);
             del(j0)     = del(j0)-2*pi;
 
-            if DIR_INIT==1
+            if DIRSPEC_INC_OPT==1
                %% cos^2 spreading fxn
                dir_fac     = (1+cos(2*del))/2/(pi/2); 
                j0          = find(abs(del)>pi/2);

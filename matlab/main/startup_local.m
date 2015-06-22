@@ -13,6 +13,12 @@ feval(fxn,'../numerics');
 feval(fxn,'../numerics/testing');
 feval(fxn,'../other_deps');
 
+%%mex functions and related
+fdir  = '../../fortran';
+feval(fxn,[fdir,'/bin']);        %% mex functions are here (when compiled)
+feval(fxn,[fdir,'/matlab_funs']);%% functions to read binary outputs (eg)
+
+%% remove ISSM paths
 issmdir  = getenv('ISSM_DIR');
 spath    = path;
 jissm    = strfind(path,issmdir);
@@ -29,7 +35,5 @@ for j=1:length(jissm)
    rmpath(path2)
 end
 disp(' ');
-%gitdir   = '~/GITHUB-REPOSITORIES/';
-%feval(fxn,[gitdir,'matlab/Semi-Infinite-Elastic-Plate/ND_progs']);
-%feval(fxn,[gitdir,'matlab/Semi-Infinite-Elastic-Plate/GEN_progs']);
-%feval(fxn,[gitdir,'matlab/Semi-Infinite-Elastic-Plate/GEN_progs/OP_progs']);
+
+clear;

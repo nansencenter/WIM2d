@@ -27,7 +27,8 @@ if nargin==0
    dx          = 4e3;
    %%
    OPT         = 1;
-   grid_prams  = struct('nx',nx,'ny',nx,...
+   grid_prams  = struct('x0',0,'y0',0,...
+                        'nx',nx,'ny',nx,...
                         'dx',dx,'dy',dx);
    grid_prams  = get_grid(grid_prams,OPT)
 end
@@ -38,6 +39,7 @@ ice_prams   = fn_fill_iceprams(ice_prams);
 %% structure eg:
 %%               c: 0.750000000000000
 %%               h: 2
+%%            Dmax: 300
 %%           young: 2.000000000000000e+09
 %%          bc_opt: 0
 %%         visc_rp: 13
@@ -83,38 +85,40 @@ if OPT==0
 
 elseif OPT==1
    %% column of land on right
-   xm       = max(X(:));
-   WTR_MASK = (X<-.7*xm);
+   xav      = mean(X(:));
+   xm       = max(X(:)-xav);
+   WTR_MASK = ((X-xav)<-.7*xm);
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
-   Dmax0    = 300;
 
 elseif OPT==2
-   %%TEST_1d
-   %%land to right,water to left
-   WTR_MASK = (X<0)|(Y>0);
+   %%ice in lower-left corner
+   xav      = mean(X(:));
+   yav      = mean(Y(:));
+   WTR_MASK = ((X-av)<0)|((Y-yav)>0);
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );
-   Dmax0    = 300;
 
 elseif OPT==3
-   %%TEST_1d
    %% ice strip in middle
-   xm       = max(X(:));
-   %ICE_MASK = abs(X)<.3*xm;
-   ICE_MASK = (X>-220e3)&(X<-120e3);
+   xav         = mean(X(:));
+   xm          = max(X(:)-xav);
+   xe          = xav-.7*xm;
+   strip_width = 100.0e3;
+   xe2         = xe+strip_width;
+   %%
+   ICE_MASK = (X>xe)&(X<xe2);
    WTR_MASK = (1-ICE_MASK).*(1-LANDMASK);%%0 on land & ice
    jW       = find(WTR_MASK==1);
    jI       = find(ICE_MASK==1);
-   Dmax0    = 100;
 end
 
 cice(jI) = ice_prams.c;%% ice
 cice(jL) = NaN;%% land
 %%
-Dmax(jI) = Dmax0;
+Dmax(jI) = ice_prams.Dmax;
 Dmax(jL) = NaN;
 %%
 hice(jI) = ice_prams.h;
