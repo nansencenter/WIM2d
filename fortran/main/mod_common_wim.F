@@ -13,7 +13,7 @@
       real,dimension(idm,jdm) :: Hs,Tp,mwd,WAVE_MASK  !set in waves_init
       real,dimension(idm,jdm) :: tau_x,tau_y
       !!
-      real,parameter          :: dfloe_pack_init   = 250.0
+      real,parameter          :: dfloe_pack_init   = 300.0
       
       !! set number of wave directions and frequencies in wave_info.h
       !! - n_wavdir,n_wave_freq (should be odd - Simpson's rule)

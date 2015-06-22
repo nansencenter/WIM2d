@@ -268,7 +268,7 @@
       implicit none
 
       real           :: x0,xm,x_edge
-      real,parameter :: unif_c   = .75
+      real,parameter :: unif_c   = .7
       real,parameter :: unif_h   = 2.0
       
       WTR_MASK = 0.0

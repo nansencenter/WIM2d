@@ -88,7 +88,7 @@ if 1:
 
 if 1:
    # change real parameters:
-   young          = 5.0e9
+   young          = 5.49e9
    visc_rp        = 0.0
    duration_hours = 6.0
    duration       = duration_hours*60*60
