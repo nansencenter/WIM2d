@@ -6,7 +6,7 @@
 *.pyc
 *fort.6
 #
-fortran/run/infile.txt
+fortran/run/infile_nonIO.txt
 fortran/run/infile_dir.txt
 fortran/run/inputs/*
 fortran/run/out/*
