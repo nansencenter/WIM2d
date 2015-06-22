@@ -11,6 +11,11 @@ import save_grid_f2py   as gs
 import fns_get_data     as Fdat
 import fns_plot_data    as Fplt
 
+COMPARE_VERSION   = 1   # 0=compare f2py-produced grid to grid from pure fortran
+                        # 1=compare f2py-produced grid to original inputs from python
+
+order = 'fortran' # ordering in arrays in binary file is fortran (can also be'C')
+
 ###########################################################
 def _get_grid_arrays_SmallSquare(diag_length,resolution):
 
@@ -215,14 +220,14 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
    ###########################################################
 
    ###########################################################
-   if 0:
+   if COMPARE_VERSION==0:
       # check difference between binaries
       # saved by pure fortran and f2py:
       outdir1  = 'test/out'   # fortran binaries here
                               # run grid_setup.sh with
                               # testing=1 in p_save_grid.F (recompile)
-      gf1      = Fdat.fn_check_grid(outdir1)
-      gf2      = Fdat.fn_check_grid(outdir)
+      gf1      = Fdat.fn_check_grid(outdir1,order='fortran')
+      gf2      = Fdat.fn_check_grid(outdir,order='fortran')
       keys     = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
 
       print('Comparing fortran to python:\n')
@@ -236,7 +241,9 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       # check difference between binaries
       # saved by f2py and the input fields:
       gf    = grid_fields
-      gf2   = Fdat.fn_check_grid(outdir)
+      gf2   = Fdat.fn_check_grid(outdir,order='fortran')
+      print(gf['X'].shape,gf2['X'].shape)
+      print(outdir)
       keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
 
       print('Comparing python in to python out:\n')

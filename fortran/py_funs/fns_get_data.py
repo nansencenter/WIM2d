@@ -22,7 +22,7 @@ def get_array(fid,nx,ny,fmt_size=4,order='fortran'):
    fld   = np.array(fld)
    # fld   = fld.reshape((ny,nx)).transpose()  # need to transpose because of differences between
    #                                           # python/c and fortran/matlab 
-   fld   = fld.reshape((ny,nx),order=order)
+   fld   = fld.reshape((nx,ny),order=order)
 
    return fld
 ##############################################################
@@ -84,7 +84,7 @@ def Out_Fields(dfloe=0.0,taux=0.0,tauy=0.0,Hs=0.0,Tp=0.0):
 ##############################################################
 
 ##############################################################
-def fn_check_grid(outdir):
+def fn_check_grid(outdir,order='fortran'):
    # routine to get grid and other parameters
    # from binary files
 
@@ -110,7 +110,7 @@ def fn_check_grid(outdir):
    #
    keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
    for key in keys:
-      s1[key]  = get_array(aid,nx,ny)
+      s1[key]  = get_array(aid,nx,ny,order=order)
    #
    aid.close()
    s1['dx'] = s1['X'][1,0]-s1['X'][0,0]
