@@ -30,8 +30,10 @@ if 1:
 
    if 0:
       # ice edge
-      xe                   = -220.e3
-      ICEMASK              = 1+0*gf['X']
+      xe       = .5*(gf['X'].min()+gf['X'].max())\
+                  -.7*.5*(-gf['X'].min()+gf['X'].max())
+      ICEMASK  = 1+0*gf['X']
+      #
       ICEMASK[gf['X']<xe]  = 0.
       ICEMASK[gfl>0]       = 0.
       #
@@ -39,25 +41,30 @@ if 1:
       h_in  = 2.
       D_in  = 300.
    else:
-      # strip 
-      xe                         = 50.e3
-      ICEMASK                    = 1+0*gf['X']
-      ICEMASK[abs(gf['X'])>xe]   = 0.
-      ICEMASK[gfl>0]             = 0.
+      # strip
+      strip_width = 100.e3
+      xe          = .5*(gf['X'].min()+gf['X'].max())\
+                     -.7*.5*(-gf['X'].min()+gf['X'].max())
+      ICEMASK     = 1+0*gf['X']
+      #
+      ICEMASK[abs(gf['X'])<xe]               = 0.
+      ICEMASK[abs(gf['X'])>xe+strip_width]   = 0.
+      ICEMASK[gfl>0]                         = 0. # 0 on land
       #
       c_in  = .7
       h_in  = 2.
       D_in  = 100.
 
    # edge of wave mask
-   xw                   = -260.e3
+   xw                   = .5*(gf['X'].min()+gf['X'].max())\
+                           -.8*.5*(-gf['X'].min()+gf['X'].max())
    WAVEMASK             = 1+0*gf['X']
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
 
-   Hs_in       = 3
-   Tp_in       = 12
-   mwd_in      = -90
+   Hs_in       = 3.
+   Tp_in       = 12.
+   mwd_in      = -90.
    in_fields   = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK,
                   'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
 

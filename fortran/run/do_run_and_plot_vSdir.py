@@ -64,9 +64,9 @@ if 1:
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.
 
-   Hs_in          = 3
-   Tp_in          = 12
-   mwd_in         = -90
+   Hs_in          = 3.
+   Tp_in          = 12.
+   mwd_in         = -90.
    wave_fields0   = {'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
 
 int_prams   = None # default integer parameters
