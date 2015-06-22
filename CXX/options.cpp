@@ -30,6 +30,7 @@ namespace WIMOPT
             ("advopt", po::value<std::string>()->default_value( "y-periodic" ), "Not periodic (=notperiodic), periodic in y only (=y-periodic), periodic in both x,y (=xy-periodic)")
             ("advdim", po::value<int>()->default_value( 2 ), "Dimension of advection scheme (1 or 2)")
             ("nbdy", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
+            ("nbdx", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
             ("steady", po::value<bool>()->default_value( true ), "Steady-state (=true), or not steady-state (=false)")
             ("breaking", po::value<bool>()->default_value( true ), "Do breaking (=true), or turn off breaking (=false)")
             ("checkprog", po::value<bool>()->default_value( true ), "Do dump intermediate states to binary files (=true), or don't' (=false)")

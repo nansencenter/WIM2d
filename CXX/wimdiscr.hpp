@@ -83,7 +83,7 @@ public:
 private:
 
     po::variables_map const& vm;
-    size_type nx, ny, nxext, nyext, nbdy;
+    int nx, ny, nxext, nyext, nbdy, nbdx;
     array2_type X_array, Y_array, SCUY_array, SCVX_array, SCP2_array, SCP2I_array, LANDMASK_array;
 
     value_type cfl, dom, guess, Hs_inc, Tp_inc, mwd_inc, Tmin, Tmax, gravity, om;

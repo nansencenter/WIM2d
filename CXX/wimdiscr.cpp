@@ -28,8 +28,13 @@ WimDiscr<T>::wimInit()
 
     cfl = vm["cfl"].template as<double>();
 
+    nbdx = vm["nbdx"].template as<int>();
     nbdy = vm["nbdy"].template as<int>();
-    nxext = nx+2*nbdy;
+
+    if (advdim == 1)
+        nbdy = 0;
+
+    nxext = nx+2*nbdx;
     nyext = ny+2*nbdy;
 
     wave_mask2.resize(boost::extents[nx][ny]);
@@ -143,7 +148,6 @@ WimDiscr<T>::wimInit()
         for (int i = 0; i < nwavedirn; i++)
         {
             wavedir.push_back(theta_max+i*dtheta);
-            //std::cout<<"wavedir["<< i <<"]= "<< theta_max+i*dtheta <<"\n";
         }
     }
 
@@ -154,7 +158,7 @@ WimDiscr<T>::wimInit()
         std::fill(wt_simp.begin(), wt_simp.end(), 2.);
         wt_simp[0] = wt_simp[nwavefreq-1] = 1.;
 
-        size_type w = 1;
+        int w = 1;
         while (w < nwavefreq-1)
         {
             wt_simp[w] = 4.;
@@ -197,9 +201,9 @@ WimDiscr<T>::wimInit()
 
     x_edge = 0.5*(x0+xmax)-0.8*(0.5*(xmax-x0));
 
-    for (size_type i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
-        for (size_type j = 0; j < ny; j++)
+        for (int j = 0; j < ny; j++)
         {
             if (X_array[i][j] < x_edge)
             {
@@ -218,9 +222,9 @@ WimDiscr<T>::wimInit()
     std::cout<<"x_edge= "<< x_edge <<"\n";
 
     // wtr_mask
-    for (size_type i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
-        for (size_type j = 0; j < ny; j++)
+        for (int j = 0; j < ny; j++)
         {
             if (X_array[i][j] < x_edge)
                 wtr_mask[i][j] = 1.;
@@ -232,11 +236,6 @@ WimDiscr<T>::wimInit()
             dfloe[i][j] = dfloe_pack_init*ice_mask[i][j];
 
             //std::cout<<"ICE_MASK["<< i  << "," << j << "]= " << ice_mask[i][j] <<"\n";
-            //std::cout<<"ICEC["<< i  << "," << j << "]= " << icec[i][j] <<"\n";
-            // if (j==0)
-            //     std::cout<<"ICEH["<< i  << "," << j << "]= " << iceh[i][j] <<"\n";
-            //std::cout<<"DFLOE["<< i  << "," << j << "]= " << dfloe[i][j] <<"\n";
-            //std::cout<<"LANDMASK_array["<< i  << "," << j << "]= " << LANDMASK_array[i][j] <<"\n";
         }
     }
 
@@ -247,15 +246,15 @@ WimDiscr<T>::wimInit()
     std::vector<value_type> theta_fac(nwavedirn,0.);
     value_type f1, f2, f3, t_m, om_m, chi;
 
-    for (size_type i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
-        for (size_type j = 0; j < ny; j++)
+        for (int j = 0; j < ny; j++)
         {
             if (wave_mask[i][j] == 1.)
             {
                 if (nwavefreq > 1)
                 {
-                    for (size_type fq = 0; fq < nwavefreq; fq++)
+                    for (int fq = 0; fq < nwavefreq; fq++)
                     {
                         t_m = 2*PI/om;
                         om_m  = 2*PI/Tp[i][j];
@@ -278,7 +277,7 @@ WimDiscr<T>::wimInit()
             }
             else
             {
-                for (size_type dn = 0; dn < nwavedirn; dn++)
+                for (int dn = 0; dn < nwavedirn; dn++)
                 {
                     chi = PI*(wavedir[dn]-mwd[i][j])/180.0;
                     if (std::cos(chi) > 0.)
@@ -289,9 +288,9 @@ WimDiscr<T>::wimInit()
             }
 
             // combine freq and dir
-            for (size_type fq = 0; fq < nwavefreq; fq++)
+            for (int fq = 0; fq < nwavefreq; fq++)
             {
-                for (size_type dn = 0; dn < nwavedirn; dn++)
+                for (int dn = 0; dn < nwavedirn; dn++)
                 {
                     sdf_inc[i][j][dn][fq] = Sfreq[fq]*theta_fac[dn];
 
@@ -313,11 +312,11 @@ WimDiscr<T>::wimInit()
 
     double outputs[8];
 
-    for (size_type fq = 0; fq < nwavefreq; fq++)
+    for (int fq = 0; fq < nwavefreq; fq++)
     {
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 if (ice_mask[i][j] == 1.)
                 {
@@ -340,7 +339,13 @@ WimDiscr<T>::wimInit()
                     argR = outputs[6];
                     argT = outputs[7];
 
+
+                    // for (int i=0; i < 8; ++i)
+                    //     std::cout<<"params["<< i <<"]= " << outputs[i] << "\n";
+
+
                     disp_ratio[i][j][fq] = (kice*modT)/kwtr;
+                    //std::cout<<"RATIO= "<< iceh[i][j] <<"\n";
                     wlng_ice[i][j][fq] = 2*PI/kice;
 
 
@@ -351,15 +356,6 @@ WimDiscr<T>::wimInit()
                     {
                         wlng_ice[i][j][fq] = wlng[fq];
                     }
-
-                    // std::cout<<"damping[i][j][fq]= "<< damping[i][j][fq] <<"\n";
-                    // std::cout<<"kice= "<< kice <<"\n";
-                    // std::cout<<"kwtr= "<< kwtr <<"\n";
-                    // std::cout<<"int_adm= "<< int_adm <<"\n";
-                    // std::cout<<"atten_nond[i][j][fq]= "<< atten_nond[i][j][fq] <<"\n";
-                    // std::cout<<"modT= " << modT <<"\n";
-                    // std::cout<< "argR= "<< argR <<"\n";
-                    // std::cout<<"argT= "<< argT <<"\n";
                 }
                 else
                 {
@@ -393,18 +389,18 @@ WimDiscr<T>::wimInit()
     dt = cfl*dx/amax;
 
     // warning: in wimStep()
-    tmp1.resize(boost::extents[nx][ny]);
-    mom0.resize(boost::extents[nx][ny]);
-    mom2.resize(boost::extents[nx][ny]);
-    var_strain.resize(boost::extents[nx][ny]);
-    mom0w.resize(boost::extents[nx][ny]);
-    mom2w.resize(boost::extents[nx][ny]);
+    // tmp1.resize(boost::extents[nx][ny]);
+    // mom0.resize(boost::extents[nx][ny]);
+    // mom2.resize(boost::extents[nx][ny]);
+    // var_strain.resize(boost::extents[nx][ny]);
+    // mom0w.resize(boost::extents[nx][ny]);
+    // mom2w.resize(boost::extents[nx][ny]);
 
 
     // warning: in wimStep()
-    uwave.resize(boost::extents[nx][ny]);
-    vwave.resize(boost::extents[nx][ny]);
-    temp.resize(boost::extents[nx][ny]);
+    // uwave.resize(boost::extents[nx][ny]);
+    // vwave.resize(boost::extents[nx][ny]);
+    // temp.resize(boost::extents[nx][ny]);
 
     S_freq.resize(boost::extents[nx][ny]);
     taux_om.resize(boost::extents[nx][ny]);
@@ -414,29 +410,29 @@ WimDiscr<T>::wimInit()
     hp.resize(boost::extents[nxext][nyext]);
 
 
-    ful.resize(boost::extents[nxext][nyext]);
-    fuh.resize(boost::extents[nxext][nyext]);
-    fvl.resize(boost::extents[nxext][nyext]);
-    fvh.resize(boost::extents[nxext][nyext]);
-    gt.resize(boost::extents[nxext][nyext]);
+    // ful.resize(boost::extents[nxext][nyext]);
+    // fuh.resize(boost::extents[nxext][nyext]);
+    // fvl.resize(boost::extents[nxext][nyext]);
+    // fvh.resize(boost::extents[nxext][nyext]);
+    // gt.resize(boost::extents[nxext][nyext]);
 
-    sao.resize(boost::extents[nxext][nyext]);
+    // sao.resize(boost::extents[nxext][nyext]);
 
-    u_pad.resize(boost::extents[nxext][nyext]);
-    v_pad.resize(boost::extents[nxext][nyext]);
-    scp2_pad.resize(boost::extents[nxext][nyext]);
-    scp2i_pad.resize(boost::extents[nxext][nyext]);
-    scuy_pad.resize(boost::extents[nxext][nyext]);
-    scvx_pad.resize(boost::extents[nxext][nyext]);
-    h_pad.resize(boost::extents[nxext][nyext]);
+    // u_pad.resize(boost::extents[nxext][nyext]);
+    // v_pad.resize(boost::extents[nxext][nyext]);
+    // scp2_pad.resize(boost::extents[nxext][nyext]);
+    // scp2i_pad.resize(boost::extents[nxext][nyext]);
+    // scuy_pad.resize(boost::extents[nxext][nyext]);
+    // scvx_pad.resize(boost::extents[nxext][nyext]);
+    // h_pad.resize(boost::extents[nxext][nyext]);
 
-    ncs = nwavedirn/2;
+    ncs = std::ceil(nwavedirn/2);
 
-    cmom0.resize(boost::extents[nx][ny]);
-    cmom_dir.resize(boost::extents[nx][ny]);
-    CSfreq.resize(boost::extents[nx][ny]);
-    cmom_dir0.resize(boost::extents[nx][ny]);
-    CF.resize(boost::extents[nx][ny]);
+    // cmom0.resize(boost::extents[nx][ny]);
+    // cmom_dir.resize(boost::extents[nx][ny]);
+    // CSfreq.resize(boost::extents[nx][ny]);
+    // cmom_dir0.resize(boost::extents[nx][ny]);
+    // CF.resize(boost::extents[nx][ny]);
 
     vbf = 0.1;
     vb = vbf;
@@ -453,39 +449,51 @@ void
 WimDiscr<T>::wimStep()
 {
 
-	std::fill( tmp1.data(), tmp1.data() + tmp1.num_elements(), 0. );
-    std::fill( mom0.data(), mom0.data() + mom0.num_elements(), 0. );
-    std::fill( mom2.data(), mom2.data() + mom2.num_elements(), 0. );
-    std::fill( var_strain.data(), var_strain.data() + var_strain.num_elements(), 0. );
-    std::fill( mom0w.data(), mom0w.data() + mom0w.num_elements(), 0. );
-    std::fill( mom2w.data(), mom2w.data() + mom2w.num_elements(), 0. );
+	// std::fill( tmp1.data(), tmp1.data() + tmp1.num_elements(), 0. );
+    // std::fill( mom0.data(), mom0.data() + mom0.num_elements(), 0. );
+    // std::fill( mom2.data(), mom2.data() + mom2.num_elements(), 0. );
+    // std::fill( var_strain.data(), var_strain.data() + var_strain.num_elements(), 0. );
+    // std::fill( mom0w.data(), mom0w.data() + mom0w.num_elements(), 0. );
+    // std::fill( mom2w.data(), mom2w.data() + mom2w.num_elements(), 0. );
 
 
     std::fill( tau_x.data(), tau_x.data() + tau_x.num_elements(), 0. );
     std::fill( tau_y.data(), tau_y.data() + tau_y.num_elements(), 0. );
 
 
+    array2_type tmp1, mom0, mom2, var_strain, mom0w, mom2w;
+    tmp1.resize(boost::extents[nx][ny]);
+    mom0.resize(boost::extents[nx][ny]);
+    mom2.resize(boost::extents[nx][ny]);
+    var_strain.resize(boost::extents[nx][ny]);
+    mom0w.resize(boost::extents[nx][ny]);
+    mom2w.resize(boost::extents[nx][ny]);
+
+
+
+
+
+
     value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
     value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, dom, dave, c1d, tmp;
-    size_type jcrest;
+    int jcrest;
     bool break_criterion;
 
     dom = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[0])/(nwavefreq-1.0);
 
     if (vm["steady"].template as<bool>())
     {
-        for (size_type i = 0; i < nwavefreq; i++)
+        for (int i = 0; i < nwavefreq; i++)
         {
-            for (size_type j = 0; j < nwavedirn; j++)
+            for (int j = 0; j < nwavedirn; j++)
             {
                 adv_dir = (-PI/180)*(wavedir[j]+90.);
-                //std::cout<<"COS(adv_dir)= "<< std::cos(adv_dir) <<"\n";
 
                 if (std::cos(adv_dir) >= 0.)
                 {
-                    for (size_type k = 0; k < nx; k++)
+                    for (int k = 0; k < nx; k++)
                     {
-                        for (size_type l = 0; l < ny; l++)
+                        for (int l = 0; l < ny; l++)
                         {
                             if (wave_mask2[k][l] >= 0.)
                             {
@@ -502,14 +510,14 @@ WimDiscr<T>::wimStep()
 
     dave = 0;
 
-    for (size_type fq = 0; fq < nwavefreq; fq++)
+    for (int fq = 0; fq < nwavefreq; fq++)
     {
         std::fill( atten_dim.data(), atten_dim.data() + atten_dim.num_elements(), 0. );
         std::fill( damp_dim.data(), damp_dim.data() + damp_dim.num_elements(), 0. );
 
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 if (ice_mask[i][j] == 1. && atten)
                 {
@@ -531,122 +539,112 @@ WimDiscr<T>::wimStep()
             }
         }
 
+
+        // copy for application of advAttenSimple
+        for (int i = 0; i < nx; i++)
+        {
+            for (int j = 0; j < ny; j++)
+            {
+                ag2d_eff_temp[i][j] = ag_eff[i][j][fq];
+
+                for (int dn = 0; dn < nwavedirn; dn++)
+                {
+                    sdf3d_dir_temp[i][j][dn] = sdf_dir[i][j][dn][fq];
+                }
+            }
+        }
+
         if (scatmod == "dissipated")
         {
-
-            // copy for application of advAttenSimple
-            for (size_type i = 0; i < nx; i++)
-            {
-                for (size_type j = 0; j < ny; j++)
-                {
-                    ag2d_eff_temp[i][j] = ag_eff[i][j][fq];
-
-                    for (size_type dn = 0; dn < nwavedirn; dn++)
-                    {
-                        sdf3d_dir_temp[i][j][dn] = sdf_dir[i][j][dn][fq];
-                    }
-                }
-            }
-
             advAttenSimple(sdf3d_dir_temp, S_freq, taux_om, tauy_om, ag2d_eff_temp);
+        }
+        else if (scatmod == "isotropic")
+        {
+            advAttenIsotropic(sdf3d_dir_temp, S_freq, taux_om, tauy_om, ag2d_eff_temp);
+        }
 
-            // update after application of advAttenSimple
-            for (size_type i = 0; i < nx; i++)
+        // update after application of advAttenSimple
+        for (int i = 0; i < nx; i++)
+        {
+            for (int j = 0; j < ny; j++)
             {
-                for (size_type j = 0; j < ny; j++)
-                {
-                    ag_eff[i][j][fq] = ag2d_eff_temp[i][j];
-                    //std::cout<<"ag_eff= "<< ag_eff[i][j][fq] <<"\n";
+                ag_eff[i][j][fq] = ag2d_eff_temp[i][j];
 
-                    for (size_type dn = 0; dn < nwavedirn; dn++)
-                    {
-                        sdf_dir[i][j][dn][fq] = sdf3d_dir_temp[i][j][dn];
-                    }
+                for (int dn = 0; dn < nwavedirn; dn++)
+                {
+                    sdf_dir[i][j][dn][fq] = sdf3d_dir_temp[i][j][dn];
                 }
+
+                //std::cout<<"AFTER: taux_om["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
             }
+        }
 
+        // for (int i = 0; i < nx; i++)
+        // {
+        //     for (int j = 0; j < ny; j++)
+        //     {
+        //         std::cout<<"iceh["<< i << "," << j << "]= "<< S_freq[i][j] <<"\n";
+        //     }
+        // }
 
-
-            // for (size_type k = 0; k < nwavedirn; k++)
-            //     for (size_type i = 0; i < nx; i++)
-            //     {
-            //         for (size_type j = 0; j < ny; j++)
-            //         {
-            //             std::cout<<"MASK= "<< sdf3d_dir_temp[i][j][k] <<"\n";
-            //         }
-            //     }
-
-
-            // for (size_type i = 0; i < nx; i++)
-            // {
-            //     for (size_type j = 0; j < ny; j++)
-            //     {
-            //         std::cout<<"iceh["<< i << "," << j << "]= "<< S_freq[i][j] <<"\n";
-            //     }
-            // }
-
-
-
-            // integrate stress densities over frequency
-            for (size_type i = 0; i < nx; i++)
+        // integrate stress densities over frequency
+        for (int i = 0; i < nx; i++)
+        {
+            for (int j = 0; j < ny; j++)
             {
-                for (size_type j = 0; j < ny; j++)
-                {
-                    //std::cout<<"tau_x["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
-                    tmp1[i][j] = rhowtr*gravity*taux_om[i][j]/ap_eff[i][j][fq];
-                    tau_x[i][j] += wt_om[fq]*tmp1[i][j];
+                //std::cout<<"tau_x["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
+                tmp1[i][j] = rhowtr*gravity*taux_om[i][j]/ap_eff[i][j][fq];
+                tau_x[i][j] += wt_om[fq]*tmp1[i][j];
 
-                    tmp1[i][j] = rhowtr*gravity*tauy_om[i][j]/ap_eff[i][j][fq];
-                    tau_y[i][j] += wt_om[fq]*tmp1[i][j];
-                }
+                tmp1[i][j] = rhowtr*gravity*tauy_om[i][j]/ap_eff[i][j][fq];
+                tau_y[i][j] += wt_om[fq]*tmp1[i][j];
+
+                //std::cout<<"tau_x["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
             }
+        }
 
-            // size_type ctr=0;
-            // integrals for breaking program
-            for (size_type i = 0; i < nx; i++)
+        // integrals for breaking program
+        for (int i = 0; i < nx; i++)
+        {
+            for (int j = 0; j < ny; j++)
             {
-                for (size_type j = 0; j < ny; j++)
+                // convert from water amp's to ice amp's
+                F = disp_ratio[i][j][fq];
+                kicel = 2*PI/wlng_ice[i][j][fq];
+
+                // spectral moments: take abs as small errors can make S_freq negative
+                om = 2*PI*freq_vec[fq];
+                tmp = wt_om[fq]*S_freq[i][j];
+                // variance of displacement (water)
+                mom0w[i][j] += std::abs(tmp);
+
+                // variance of displacement (ice)
+                mom0[i][j] += std::abs(tmp*std::pow(F,2.));
+
+                tmp = wt_om[fq]*std::pow(om,2.)*S_freq[i][j];
+
+                // variance of speed (water)
+                mom2w[i][j] += std::abs(tmp);
+
+                // variance of speed (ice)
+                mom2[i][j] += std::abs(tmp*std::pow(F,2.));
+
+                // variance of strain
+                if (ice_mask[i][j] == 1.)
                 {
-                    // convert from water amp's to ice amp's
-                    F = disp_ratio[i][j][fq];
-                    kicel = 2*PI/wlng_ice[i][j][fq];
+                    // strain conversion factor
+                    tmp = F*std::pow(kice,2.)*iceh[i][j]/2.0;
+                    // strain density
+                    tmp = wt_om[fq]*S_freq[i][j]*std::pow(tmp,2.);
 
-                    // spectral moments: take abs as small errors can make S_freq negative
-                    om = 2*PI*freq_vec[fq];
-                    tmp = wt_om[fq]*S_freq[i][j];
-                    // variance of displacement (water)
-                    mom0w[i][j] += std::abs(tmp);
-
-                    // variance of displacement (ice)
-                    mom0[i][j] += std::abs(tmp*std::pow(F,2.));
-
-                    tmp = wt_om[fq]*std::pow(om,2.)*S_freq[i][j];
-
-                    // variance of speed (water)
-                    mom2w[i][j] += std::abs(tmp);
-
-                    // variance of speed (ice)
-                    mom2[i][j] += std::abs(tmp*std::pow(F,2.));
-
-                    // variance of strain
-                    if (ice_mask[i][j] == 1.)
-                    {
-                        //++ ctr;
-                        // strain conversion factor
-                        tmp = F*std::pow(kice,2.)*iceh[i][j]/2.0;
-                        // strain density
-                        tmp = wt_om[fq]*S_freq[i][j]*std::pow(tmp,2.);
-
-                        var_strain[i][j] += std::abs(tmp);
-                    }
+                    var_strain[i][j] += std::abs(tmp);
                 }
             }
         }
     }
 
-
-    // for (size_type i = 0; i < nx; i++)
-    //     for (size_type j = 0; j < ny; j++)
+    // for (int i = 0; i < nx; i++)
+    //     for (int j = 0; j < ny; j++)
     //         std::cout << "VRT[" << i << "," << j << "]= " << var_strain[i][j] <<"\n";
 
     if (ref_Hs_ice)
@@ -656,9 +654,9 @@ WimDiscr<T>::wimStep()
 
         std::fill( Tp.data(), Tp.data() + Tp.num_elements(), 0. );
 
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 if (mom2[i][j] > 0.)
                     Tp[i][j] = 2*PI*std::sqrt(mom0[i][j]/mom2[i][j]);
@@ -672,9 +670,9 @@ WimDiscr<T>::wimStep()
 
         std::fill( Tp.data(), Tp.data() + Tp.num_elements(), 0. );
 
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 if (mom2w[i][j] > 0.)
                     Tp[i][j] = 2*PI*std::sqrt(mom0w[i][j]/mom2w[i][j]);
@@ -682,13 +680,7 @@ WimDiscr<T>::wimStep()
         }
     }
 
-
     calcMWD();
-
-    // for (size_type i = 0; i < nx; i++)
-    //     for (size_type j = 0; j < ny; j++)
-    //         std::cout << "Hs[" << i << "," << j << "]= " << Hs[i][j] <<"\n";
-
 
     if (!steady && !breaking)
     {
@@ -701,17 +693,14 @@ WimDiscr<T>::wimStep()
         // std::cout<<"Sum= "<< E_tot <<"\n";
     }
 
-    // else if (scatmod == "isotropic")
-    // {
-    //   advAttenIsotropic();
-    // }
-
     // finally do floe breaking
 
-    for (size_type i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
-        for (size_type j = 0; j < ny; j++)
+        for (int j = 0; j < ny; j++)
         {
+            //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i][j]  <<"\n";
+
             if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
             {
                 // significant strain amp
@@ -726,6 +715,7 @@ WimDiscr<T>::wimStep()
 
                 if (break_criterion)
                 {
+                    //std::cout << "TP[" << i << "," << j << "]= " << Tp[i][j] <<"\n";
                     om    = 2*PI/Tp[i][j];
                     ommin = 2*PI*freq_vec[0];
                     ommax = 2*PI*freq_vec[nwavefreq-1];
@@ -737,7 +727,6 @@ WimDiscr<T>::wimStep()
                     else
                     {
                         jcrest = std::floor((om-ommin+dom)/dom);
-                        std::cout<<"JREST= "<< jcrest <<"\n";
                         om1 = 2*PI*freq_vec[jcrest];
                         lam1 = wlng_ice[i][j][jcrest];
                         lam2 = wlng_ice[i][j][jcrest+1];
@@ -746,6 +735,7 @@ WimDiscr<T>::wimStep()
 
                     Dc = std::max<value_type>(dmin,wlng_crest/2.0);
                     dfloe[i][j] = std::min<value_type>(Dc,dfloe[i][j]);
+                    //std::cout<<"DMAX= std::MAX("<< Dc << "," << dfloe[i][j] <<")\n";
                 }
             }
             else if (wtr_mask[i][j] == 1.)
@@ -754,33 +744,9 @@ WimDiscr<T>::wimStep()
     }
 
 
-
-
-#if 0
-    for (size_type i = 0; i < nx; i++)
-    {
-        for (size_type j = 0; j < ny; j++)
-        {
-            std::cout << "BMWD[" << i << "," << j << "]= " << mwd[i][j] <<"\n";
-        }
-    }
-
-    calcMWD();
-
-    for (size_type i = 0; i < nx; i++)
-    {
-        for (size_type j = 0; j < ny; j++)
-        {
-            std::cout << "AMWD[" << i << "," << j << "]= " << mwd[i][j] <<"\n";
-        }
-    }
-#endif
-
-
-    for (size_type i = 0; i < nx; i++)
-        for (size_type j = 0; j < ny; j++)
-            std::cout << "TP[" << i << "," << j << "]= " << Tp[i][j] <<"\n";
-
+    // for (int i = 0; i < nx; i++)
+    //     for (int j = 0; j < ny; j++)
+    //         std::cout << "Dmax[" << i << "," << j << "]= " << dfloe[i][j] <<"\n";
 
 }
 
@@ -808,8 +774,8 @@ WimDiscr<T>::wimRun()
 
     //std::cout<<"nt= "<< nt <<"\n";
 
-    size_type cpt = 0;
-    nt = 2;
+    int cpt = 0;
+    //nt = 1;
 
     while (cpt < nt)
     {
@@ -818,7 +784,6 @@ WimDiscr<T>::wimRun()
         critter = !(cpt % vm["reps"].template as<int>()) && (vm["checkprog"].template as<bool>());
         if (critter)
             writeFile(cpt);
-
 
         wimStep();
 
@@ -870,18 +835,22 @@ void
 WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_type& taux_omega, array2_type& tauy_omega, array2_type const& ag2d_eff)
 {
 
-	std::fill( uwave.data(), uwave.data() + uwave.num_elements(), 0. );
-	std::fill( vwave.data(), vwave.data() + vwave.num_elements(), 0. );
+	// std::fill( uwave.data(), uwave.data() + uwave.num_elements(), 0. );
+	// std::fill( vwave.data(), vwave.data() + vwave.num_elements(), 0. );
+
+    array2_type uwave, vwave, temp;
+    uwave.resize(boost::extents[nx][ny]);
+    vwave.resize(boost::extents[nx][ny]);
+    temp.resize(boost::extents[nx][ny]);
 
 	std::vector<value_type> wt_theta(nwavedirn);
 	value_type adv_dir, S_th, tmp, alp_dim, source;
 
-	for (size_type k = 0; k < nwavedirn; k++)
+	for (int k = 0; k < nwavedirn; k++)
     {
         adv_dir = -PI*(90.0+wavedir[k])/180.0;
 
         uwave = ag2d_eff;
-        atten_nond.data() + atten_nond.num_elements();
         //std::for_each(uwave.begin(), uwave.end(), [&](value_type& f){ f *= std::cos(adv_dir); });
         std::for_each(uwave.data(), uwave.data()+uwave.num_elements(), [&](value_type& f){ f *= std::cos(adv_dir); });
 
@@ -892,9 +861,9 @@ WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_type& 
         }
 
         // copy from 3D input array to 2D temporary array
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 temp[i][j] = Sdir[i][j][k];
             }
@@ -904,11 +873,12 @@ WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_type& 
         waveAdvWeno(temp,uwave,vwave);
 
         // copy from 2D temporary array to 3D input array
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 Sdir[i][j][k] = temp[i][j];
+                //std::cout<<"BEFORE: Sdir["<< i << "," << j << "]= "<< Sdir[i][j][k] <<"\n";
             }
         }
 
@@ -924,28 +894,17 @@ WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_type& 
     std::fill( taux_omega.data(), taux_omega.data() + taux_omega.num_elements(), 0. );
     std::fill( tauy_omega.data(), tauy_omega.data() + tauy_omega.num_elements(), 0. );
 
-    // for (size_type i = 0; i < nx; i++)
-    // {
-    //     for (size_type j = 0; j < ny; j++)
-    //     {
-    //         std::cout<<"MASK= "<< ice_mask[i][j] <<"\n";
-    //     }
-    // }
-
-    for (size_type i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
-        for (size_type j = 0; j < ny; j++)
+        for (int j = 0; j < ny; j++)
         {
-
             if (ice_mask[i][j] > 0.)
-                for (size_type wnd = 0; wnd < nwavedirn; wnd++)
+            {
+                for (int wnd = 0; wnd < nwavedirn; wnd++)
                 {
                     adv_dir = -PI*(90.0+wavedir[wnd])/180.0;
                     S_th = Sdir[i][j][wnd];
-                    //std::cout<<"S_th= "<< S_th <<"\n";
                     alp_dim = atten_dim[i][j]+damp_dim[i][j];
-                    //std::cout<<"alp_dim= "<< atten_dim[i][j] <<"\n";
-                    //std::cout<<"alp_dim= "<< damp_dim[i][j] <<"\n";
 
                     // stress calculation
                     source = -alp_dim*ag2d_eff[i][j]*S_th;
@@ -956,20 +915,25 @@ WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_type& 
 
                     // do attenuation
                     Sdir[i][j][wnd] = S_th*std::exp(-alp_dim*ag2d_eff[i][j]*dt);
+
+                    //std::cout<<"tau_x["<< i << "," << j << "]= "<< tauy_omega[i][j] <<"\n";
                 }
+            }
 
             // integrate spectrum over direction
-            for (size_type wnd = 0; wnd < nwavedirn; wnd++)
+            for (int wnd = 0; wnd < nwavedirn; wnd++)
             {
                 Sfreq[i][j] += wt_theta[wnd]*Sdir[i][j][wnd];
             }
+
+            //std::cout<<"BEFORE: taux_om["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
         }
     }
 
-    // for (size_type k = 0; k < nwavedirn; k++)
-    //     for (size_type i = 0; i < nx; i++)
+    // for (int k = 0; k < nwavedirn; k++)
+    //     for (int i = 0; i < nx; i++)
     //     {
-    //         for (size_type j = 0; j < ny; j++)
+    //         for (int j = 0; j < ny; j++)
     //         {
     //             std::cout<<"MASK= "<< Sdir[i][j][k] <<"\n";
     //         }
@@ -984,26 +948,32 @@ template<typename T>
 void
 WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_type& taux_omega, array2_type& tauy_omega, array2_type const& ag2d_eff)
 {
-	std::fill( uwave.data(), uwave.data() + uwave.num_elements(), 0. );
-	std::fill( vwave.data(), vwave.data() + vwave.num_elements(), 0. );
+	// std::fill( uwave.data(), uwave.data() + uwave.num_elements(), 0. );
+	// std::fill( vwave.data(), vwave.data() + vwave.num_elements(), 0. );
+
+    array2_type uwave, vwave, temp;
+    uwave.resize(boost::extents[nx][ny]);
+    vwave.resize(boost::extents[nx][ny]);
+    temp.resize(boost::extents[nx][ny]);
 
 	std::vector<int> nvec(nwavedirn);
 	std::vector<value_type> K_fou(nwavedirn), S_th(nwavedirn), theta_vec(nwavedirn), wt_theta(nwavedirn);
 	std::vector<value_type> tmp1(nwavedirn), evals_x(nwavedirn);
 	value_type adv_dir, tmp, alp_dim, source;
 
-	std::vector<std::complex<value_type> > S_fou;
+	std::vector<std::complex<value_type> > S_fou(nwavedirn);
 	std::complex<value_type> zi, src_fou_p1, src_fou_m1;
 
-	std::vector<value_type> S_cos, S_sin;
+	std::vector<value_type> S_cos(ncs), S_sin(ncs);
 	value_type cg, q_scat, q_abs, q_tot, src_cos_1, src_sin_1;
+    int n, jp1, jm1;
 
 	zi = std::complex<value_type>(0,1);
 	std::cout<<"zi= " << zi <<"\n";
 
 	std::fill( wt_theta.begin(), wt_theta.end(), 2*PI/(1.0*nwavedirn) );
 
-	for (size_type k = 0; k < nwavedirn; k++)
+	for (int k = 0; k < nwavedirn; k++)
     {
         adv_dir = -PI*(90.0+wavedir[k])/180.0;
 
@@ -1019,9 +989,9 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
         }
 
         // copy from 3D input array to 2D temporary array
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-	        for (size_type j = 0; j < ny; j++)
+	        for (int j = 0; j < ny; j++)
 	        {
 		        temp[i][j] = Sdir[i][j][k];
 	        }
@@ -1031,9 +1001,9 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
         waveAdvWeno(temp,uwave,vwave);
 
         // copy from 2D temporary array to 3D input array
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-	        for (size_type j = 0; j < ny; j++)
+	        for (int j = 0; j < ny; j++)
 	        {
 		        Sdir[i][j][k] = temp[i][j];
 	        }
@@ -1043,20 +1013,122 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
         nvec[k] = k;
     }
 
-	for (size_type i = 0; i < nx; i++)
+    std::fill( Sfreq.data(), Sfreq.data() + Sfreq.num_elements(), 0. );
+    std::fill( taux_omega.data(), taux_omega.data() + taux_omega.num_elements(), 0. );
+    std::fill( tauy_omega.data(), tauy_omega.data() + tauy_omega.num_elements(), 0. );
+
+
+	for (int i = 0; i < nx; i++)
     {
-	    for (size_type j = 0; j < ny; j++)
+	    for (int j = 0; j < ny; j++)
 	    {
-		    for (size_type k = 0; k < nwavedirn; k++)
+		    for (int k = 0; k < nwavedirn; k++)
 			    S_th[k] = Sdir[i][j][k];
 
 		    std::fill( S_fou.begin(), S_fou.end(), zi );
 
-		    //S_fou[0] = std::complex<value_type>( sum(wt_theta*S_th) )
+		    //S_fou[0] = std::complex<value_type>( sum(wt_theta*S_th) );
+            S_fou[0] = std::complex<value_type>( std::inner_product(wt_theta.begin(), wt_theta.end(), S_th.begin(), 0.) );
+
+            if (ice_mask[i][j] > 0.)
+            {
+                if (dfloe[i][j] < dfloe_pack_init)
+                {
+                    q_scat = atten_dim[i][j];
+                    q_abs = damp_dim[i][j];
+                }
+                else
+                {
+                    q_scat = 0;
+                    q_abs = atten_dim[i][j]+damp_dim[i][j];
+                }
+
+
+                q_tot = q_scat+q_abs;
+                cg = ag2d_eff[i][j];
+
+                std::fill(K_fou.begin(), K_fou.end(), 0.);
+                K_fou[0] = q_scat;
+
+                std::fill(evals_x.begin(), evals_x.end(), -q_tot);
+                evals_x[0] = -q_abs;
+
+                // for (int cps = 0; cps < nwavedirn; cps++)
+                //     std::cout<<"K[" << cps <<"]= " << S_th[cps] <<"\n";
+
+                //std::cout<< "NCS= "<<ncs <<"\n";
+
+                //ncs = 1;
+                for (int nth = 0; nth < ncs; nth++)
+                {
+                    //std::vector<value_type> prodtmp(S_th.size());
+                    std::vector<value_type> prodtmp = theta_vec;
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos(nth*f); });
+                    std::transform(prodtmp.begin(), prodtmp.end(), S_th.begin(), prodtmp.begin(), std::multiplies<value_type>());
+                    S_cos[nth] = std::inner_product(prodtmp.begin(), prodtmp.end(), wt_theta.begin(), 0.);
+
+                    // for (int cps = 0; cps < nwavedirn; cps++)
+                    //     std::cout<<"K[" << cps <<"]= " << prodtmp[cps] << " and "<< wt_theta[cps] <<"\n";
+                    // std::cout<<"taux= "<< S_cos[nth] <<"\n";
+
+                    prodtmp = theta_vec;
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::sin(nth*f); });
+                    std::transform(prodtmp.begin(), prodtmp.end(), S_th.begin(), prodtmp.begin(), std::multiplies<value_type>());
+                    S_sin[nth] = std::inner_product(prodtmp.begin(), prodtmp.end(), wt_theta.begin(), 0.);
+
+                    S_fou[nth] = std::complex<value_type>(S_cos[nth],S_sin[nth]);
+                    //S_fou[nwavedirn-nth] = std::complex<value_type>(S_cos[nth],-S_sin[nth]);
+                    S_fou[ncs+nth] = std::complex<value_type>(S_cos[nth],-S_sin[nth]);
+
+                    //std::cout<<"taux= "<< S_sin[nth] <<"\n";
+                }
+
+                // stresses
+                jp1 = 1;
+                jm1 = nwavedirn-1;
+
+                src_fou_p1 = cg*(-q_tot*S_fou[jp1]+K_fou[jp1]*S_fou[jp1]);
+                src_fou_m1 = cg*(-q_tot*S_fou[jm1]+K_fou[jm1]*S_fou[jm1]);
+                src_cos_1 = std::real(std::complex<value_type>(0.5)*(src_fou_p1+src_fou_m1));
+                src_sin_1 = std::real(-zi*std::complex<value_type>(0.5)*(src_fou_p1-src_fou_m1));
+
+                taux_omega[i][j] = -src_cos_1;
+                tauy_omega[i][j] = -src_sin_1;
+
+
+                //std::cout<<"taux= "<< taux_omega[i][j] <<"\n";
+
+                //std::vector<std::complex<value_type> > prodtmp(evals_x.size());
+                // for (int cps = 0; cps < prodtmp.size(); cps++)
+                //     prodtmp[cps] = std::complex<value_type>(evals_x);
+
+                std::vector<value_type> prodtmp = evals_x;
+                std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::exp(cg*dt*f); });
+                std::transform(S_fou.begin(), S_fou.end(), prodtmp.begin(), S_fou.begin(), std::multiplies<std::complex<value_type> >());
+
+                std::vector<std::complex<value_type> > Sfoutemp = S_fou;
+
+                for (int k = 0; k < nwavedirn; k++)
+                {
+                    prodtmp = theta_vec;
+                    std::transform(prodtmp.begin(), prodtmp.end(), nvec.begin(), prodtmp.begin(), std::multiplies<value_type>());
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos(f); });
+
+                    std::transform(Sfoutemp.begin(), Sfoutemp.end(), prodtmp.begin(), Sfoutemp.begin(), std::multiplies<std::complex<value_type> >());
+
+                    for (int kin = 0; kin < Sfoutemp.size(); kin++)
+                    {
+                        tmp1[kin] = std::real(Sfoutemp[kin])-std::imag(Sfoutemp[kin]);
+                    }
+
+                    Sdir[i][j][k] = std::inner_product(tmp1.begin(), tmp1.end(), tmp1.begin(), 0.)/(2*PI);
+                    S_th[k] = Sdir[i][j][k];
+                }
+            }
+
+            Sfreq[i][j] = std::real(S_fou[0]);
 	    }
     }
-
-
 }
 
 template<typename T>
@@ -1064,7 +1136,9 @@ void
 WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type const& v)
 {
 
-	std::fill( sao.data(), sao.data() + sao.num_elements(), 0. );
+	//std::fill( sao.data(), sao.data() + sao.num_elements(), 0. );
+    array2_type sao;
+    sao.resize(boost::extents[nxext][nyext]);
 
 	padVar(u, u_pad);
 	padVar(v, v_pad);
@@ -1077,11 +1151,9 @@ WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type const
     // prediction step
     weno3pdV2(h_pad, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad, sao);
 
-
-
-    for (size_type i = 0; i < nxext; i++)
+    for (int i = 0; i < nxext; i++)
     {
-        for (size_type j = 0; j < nyext; j++)
+        for (int j = 0; j < nyext; j++)
         {
             hp[i][j] = h_pad[i][j]+dt*sao[i][j];
         }
@@ -1090,27 +1162,25 @@ WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type const
     // correction step
     weno3pdV2(hp, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad, sao);
 
-
-
-    for (size_type i = 0; i < nxext; i++)
+    for (int i = 0; i < nxext; i++)
     {
-        for (size_type j = 0; j < nyext; j++)
+        for (int j = 0; j < nyext; j++)
         {
             h_pad[i][j] = 0.5*(h_pad[i][j]+hp[i][j]+dt*sao[i][j]);
         }
     }
 
-
-    for (size_type i = nbdy; i < nx+nbdy; i++)
+    for (int i = nbdx; i < nx+nbdx; i++)
     {
-        for (size_type j = nbdy; j < ny+nbdy; j++)
+        for (int j = nbdy; j < ny+nbdy; j++)
         {
-            h[i-nbdy][j-nbdy] = h_pad[i][j];
+            h[i-nbdx][j-nbdy] = h_pad[i][j];
 
             // mask land (no waves on land)
-            h[i-nbdy][j-nbdy] = h[i-nbdy][j-nbdy]*(1-LANDMASK_array[i-nbdy][j-nbdy]);
+            h[i-nbdx][j-nbdy] = h[i-nbdx][j-nbdy]*(1-LANDMASK_array[i-nbdx][j-nbdy]);
         }
     }
+
 }
 
 template<typename T>
@@ -1121,107 +1191,137 @@ WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2_type
 
 	value_type cq00=-1./2 ,cq01=3./2, cq10=1./2, cq11=1./2, ca0=1./3, ca1=2./3, eps=1e-12;
 	value_type q0, q1, a0, a1, q;
-	size_type im1, im2, ip1, jm1, jm2, jp1;
+	int im1, im2, ip1, jm1, jm2, jp1, ymargin;
+
+    array2_type ful, fuh, fvl, fvh, gt;
+    ful.resize(boost::extents[nxext][nyext]);
+    fuh.resize(boost::extents[nxext][nyext]);
+    fvl.resize(boost::extents[nxext][nyext]);
+    fvh.resize(boost::extents[nxext][nyext]);
+    gt.resize(boost::extents[nxext][nyext]);
+
+
+
+    if (advdim == 2)
+        ymargin = 1;
+    else
+        ymargin = 0;
 
     // fluxes in x direction
-    for (size_type i = nbdy-1; i < nx+nbdy+2; i++)
+    for (int i = nbdx-1; i < nx+nbdx+2; i++)
     {
-        for (size_type j = nbdy-1; j < ny+nbdy+1; j++)
+        for (int j = nbdy-ymargin; j < ny+nbdy+ymargin; j++)
         {
             im1 = i-1;
 
             if (u[i][j] > 0.)
             {
+                // coefficents to calc higher-order fluxes
                 im2 = im1-1;
                 q0 = cq00*gin[im2][j]+cq01*gin[im1][j];
                 q1 = cq10*gin[im1][j]+cq11*gin[i][j];
                 a0 = ca0;
                 a1 = ca1*(std::abs(gin[im2][j]-gin[im1][j])+eps)/(std::abs(gin[im1][j]-gin[i][j])+eps);
+
+                // lower-order fluxes
                 ful[i][j] = u[i][j]*gin[im1][j]*scuy[i][j];
 
             }
             else
             {
+                // coefficents to calc higher-order fluxes
                 ip1 = i+1;
                 q0 = cq11*gin[im1][j]+cq10*gin[i][j];
                 q1 = cq01*gin[i][j]+cq00*gin[ip1][j];
                 a0 = ca1;
                 a1 = ca0*(abs(gin[im1][j]-gin[i][j])+eps)/(abs(gin[i][j]-gin[ip1][j])+eps);
+
+                // lower-order fluxes
                 ful[i][j] = u[i][j]*gin[i][j]*scuy[i][j];
             }
 
+            // higher-order fluxes
             fuh[i][j] = u[i][j]*(a0*q0+a1*q1)/(a0+a1)*scuy[i][j]-ful[i][j];
         }
     }
 
-
     // fluxes in y direction
-    for (size_type i = nbdy-1; i < nx+nbdy+1; i++)
+    if (advdim == 2)
     {
-        for (size_type j = nbdy-1; j < ny+nbdy+2; j++)
+        for (int i = nbdx-1; i < nx+nbdx+1; i++)
         {
-            jm1 = j-1;
-
-            if (v[i][j] > 0.)
+            for (int j = nbdy-1; j < ny+nbdy+2; j++)
             {
-                jm2 = jm1-1;
-                q0 = cq00*gin[i][jm2]+cq01*gin[i][jm1];
-                q1 = cq10*gin[i][jm1]+cq11*gin[i][j];
-                a0 = ca0;
-                a1 = ca1*(std::abs(gin[i][jm2]-gin[i][jm1])+eps)/(std::abs(gin[i][jm1]-gin[i][j])+eps);
-                fvl[i][j] = u[i][j]*gin[i][jm1]*scvx[i][j];
-            }
-            else
-            {
-                jp1 = j+1;
-                q0 = cq11*gin[i][jm1]+cq10*gin[i][j];
-                q1 = cq01*gin[i][j]+cq00*gin[i][jp1];
-                a0 = ca1;
-                a1 = ca0*(abs(gin[i][jm1]-gin[i][j])+eps)/(abs(gin[i][j]-gin[i][jp1])+eps);
-                fvl[i][j] = u[i][j]*gin[i][j]*scvx[i][j];
-            }
+                jm1 = j-1;
 
-            fvh[i][j] = u[i][j]*(a0*q0+a1*q1)/(a0+a1)*scvx[i][j]-fvl[i][j];
+                if (v[i][j] > 0.)
+                {
+                    jm2 = jm1-1;
+                    q0 = cq00*gin[i][jm2]+cq01*gin[i][jm1];
+                    q1 = cq10*gin[i][jm1]+cq11*gin[i][j];
+                    a0 = ca0;
+                    a1 = ca1*(std::abs(gin[i][jm2]-gin[i][jm1])+eps)/(std::abs(gin[i][jm1]-gin[i][j])+eps);
+                    fvl[i][j] = u[i][j]*gin[i][jm1]*scvx[i][j];
+                }
+                else
+                {
+                    jp1 = j+1;
+                    q0 = cq11*gin[i][jm1]+cq10*gin[i][j];
+                    q1 = cq01*gin[i][j]+cq00*gin[i][jp1];
+                    a0 = ca1;
+                    a1 = ca0*(abs(gin[i][jm1]-gin[i][j])+eps)/(abs(gin[i][j]-gin[i][jp1])+eps);
+                    fvl[i][j] = u[i][j]*gin[i][j]*scvx[i][j];
+                }
+
+                fvh[i][j] = u[i][j]*(a0*q0+a1*q1)/(a0+a1)*scvx[i][j]-fvl[i][j];
+            }
         }
     }
 
-
     // update field with low order fluxes
-    for (size_type i = nbdy-1; i < nx+nbdy+1; i++)
+    for (int i = nbdx-1; i < nx+nbdx+1; i++)
     {
-        for (size_type j = nbdy-1; j < ny+nbdy+1; j++)
+        for (int j = nbdy-ymargin; j < ny+nbdy+ymargin; j++)
         {
-            gt[i][j] = gin[i][j]-dt*(ful[i+1][j]-ful[i][j]+fvl[i][j+1]-fvl[i][j])*scp2i[i][j];
+            if (advdim == 2)
+                gt[i][j] = gin[i][j]-dt*(ful[i+1][j]-ful[i][j]+fvl[i][j+1]-fvl[i][j])*scp2i[i][j];
+            else if (advdim == 1)
+                gt[i][j] = gin[i][j]-dt*(ful[i+1][j])*scp2i[i][j];
         }
     }
 
     q = 0.25/dt;
 
-    for (size_type i = nbdy; i < nx+nbdy+1; i++)
+    // obtain fluxes with limited high order correction fluxes
+    for (int i = nbdx; i < nx+nbdx+1; i++)
     {
-        for (size_type j = nbdy; j < ny+nbdy; j++)
+        for (int j = nbdy; j < ny+nbdy; j++)
         {
             fuh[i][j] = ful[i][j]+std::max(-q*gt[i][j]*scp2[i][j],std::min(q*gt[i-1][j]*scp2[i-1][j],fuh[i][j]));
         }
     }
 
-
-
-    for (size_type i = nbdy; i < nx+nbdy; i++)
+    // obtain fluxes with limited high order correction fluxes
+    if (advdim == 2)
     {
-        for (size_type j = nbdy; j < ny+nbdy+1; j++)
+        for (int i = nbdx; i < nx+nbdx; i++)
         {
-            fvh[i][j]=fvl[i][j]+std::max(-q*gt[i][j]*scp2[i][j],std::min(q*gt[i][j-1]*scp2[i][j-1],fvh[i][j]));
+            for (int j = nbdy; j < ny+nbdy+1; j++)
+            {
+                fvh[i][j]=fvl[i][j]+std::max(-q*gt[i][j]*scp2[i][j],std::min(q*gt[i][j-1]*scp2[i][j-1],fvh[i][j]));
+            }
         }
     }
 
-
-
-    for (size_type i = nbdy; i < nx+nbdy; i++)
+    // compute the spatial advective operator
+    for (int i = nbdx; i < nx+nbdx; i++)
     {
-        for (size_type j = nbdy; j < ny+nbdy; j++)
+        for (int j = nbdy; j < ny+nbdy; j++)
         {
-	        saoout[i][j] = -(fuh[i+1][j]-fuh[i][j]+fvh[i][j+1]-fvh[i][j])*scp2i[i][j];
+            if (advdim == 2)
+                saoout[i][j] = -(fuh[i+1][j]-fuh[i][j]+fvh[i][j+1]-fvh[i][j])*scp2i[i][j];
+            else if (advdim == 1)
+                saoout[i][j] = -(fuh[i+1][j]-fuh[i][j])*scp2i[i][j];
         }
     }
 
@@ -1233,71 +1333,87 @@ void
 WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
 {
 
-	std::fill( upad.data(), upad.data() + upad.num_elements(), 0. );
+	// std::fill( upad.data(), upad.data() + upad.num_elements(), 0. );
+    upad.resize(boost::extents[nxext][nyext]);
 
-    for (size_type i = 0; i < nxext; i++)
+
+    for (int i = 0; i < nxext; i++)
     {
-        for (size_type j = 0; j < nyext; j++)
+        for (int j = 0; j < nyext; j++)
         {
 
-            if ((nbdy-1 < i) && (i < nx+nbdy) && (nbdy-1 < j) && (j < ny+nbdy))
+            if ((nbdx-1 < i) && (i < nx+nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
             {
-                upad[i][j] = u[i-nbdy][j-nbdy];
+                upad[i][j] = u[i-nbdx][j-nbdy];
             }
 
-
-            if (advopt != "notperiodic")
+            if (advdim == 1)
             {
-                // make periodic in j
-                if ((j < nbdy) && (nbdy-1 < i) && (i < nx+nbdy))
-                    upad[i][j] = u[i-nbdy][ny-nbdy+j];
-            }
-
-            if (advopt == "xy-periodic")
-            {
-
                 // make periodic in i
-                if ((i < nbdy) && (nbdy-1 < j) && (j < ny+nbdy))
-                    upad[i][j] = u[nx-nbdy+i][j-nbdy];
+                if ((i < nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
+                {
+                    upad[i][j] = u[nx-nbdx+i][j-nbdy];
+                }
+
+                if ((nx+nbdx-1 < i) && (nbdy-1 < j) && (j < ny+nbdy))
+                {
+                    upad[i][j] = u[i-nx-nbdx][j-nbdy];
+                }
+            }
+            else if (advdim == 2)
+            {
+                if (advopt != "notperiodic")
+                {
+                    // make periodic in j
+                    if ((j < nbdy) && (nbdx-1 < i) && (i < nx+nbdx))
+                        upad[i][j] = u[i-nbdx][ny-nbdy+j];
+                }
+
+                if (advopt == "xy-periodic")
+                {
+                    // make periodic in i
+                    if ((i < nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
+                        upad[i][j] = u[nx-nbdx+i][j-nbdy];
 
 
-                if ((nx+nbdy-1 < i) && (nbdy-1 < j) && (j < ny+nbdy))
-                    upad[i][j] = u[i-nx-nbdy][j-nbdy];
+                    if ((nx+nbdx-1 < i) && (nbdy-1 < j) && (j < ny+nbdy))
+                        upad[i][j] = u[i-nx-nbdx][j-nbdy];
 
 
-                // // make periodic in j
-                // if ((j < nbdy) && (nbdy-1 < i) && (i < nx+nbdy))
-                //     upad[i][j] = u[i-nbdy][ny-nbdy+j];
+                    // // make periodic in j
+                    // if ((j < nbdy) && (nbdy-1 < i) && (i < nx+nbdy))
+                    //     upad[i][j] = u[i-nbdy][ny-nbdy+j];
 
 
-                if ((ny+nbdy-1 < j) && (nbdy-1 < i) && (i < nx+nbdy))
-                    upad[i][j] = u[i-nbdy][j-ny-nbdy];
+                    if ((ny+nbdy-1 < j) && (nbdx-1 < i) && (i < nx+nbdx))
+                        upad[i][j] = u[i-nbdx][j-ny-nbdy];
 
 
-                // BR, TL
-                if ((nx+nbdy-1 < i) && (ny+nbdy-1 < j))
-                    upad[i][j] = u[i-nx-nbdy][j-ny-nbdy];
+                    // BR, TL
+                    if ((nx+nbdx-1 < i) && (ny+nbdy-1 < j))
+                        upad[i][j] = u[i-nx-nbdx][j-ny-nbdy];
 
 
-                if ((i < nbdy) && (j < nbdy))
-                    upad[i][j] = u[i+nx-nbdy][j];
+                    if ((i < nbdx) && (j < nbdy))
+                        upad[i][j] = u[i+nx-nbdx][j];
 
 
-                // BL, TR
-                if ((nx+nbdy-1 < i) && (j < nbdy))
-                    upad[i][j] = u[i-nx-nbdy][ny-nbdy+j];
+                    // BL, TR
+                    if ((nx+nbdx-1 < i) && (j < nbdy))
+                        upad[i][j] = u[i-nx-nbdx][ny-nbdy+j];
 
 
-                if ((i < nbdy) && (ny+nbdy-1 < j))
-                    upad[i][j] = u[i+nx-nbdy][j-ny-nbdy];
+                    if ((i < nbdx) && (ny+nbdy-1 < j))
+                        upad[i][j] = u[i+nx-nbdx][j-ny-nbdy];
 
+                }
             }
         }
     }
 
-    // for (size_type i = 0; i < nxext; i++)
+    // for (int i = 0; i < nxext; i++)
     // {
-    //     for (size_type j = 0; j < nyext; j++)
+    //     for (int j = 0; j < nyext; j++)
     //     {
     //         std::cout<<"COPY["<< i << "," << j << "]= "<< upad[i][j] <<"\n";
     //     }
@@ -1312,6 +1428,15 @@ WimDiscr<T>::calcMWD()
 {
     value_type adv_dir, wt_theta, om;
 
+    array2_type cmom0,cmom_dir,CSfreq, cmom_dir0, CF;
+    cmom0.resize(boost::extents[nx][ny]);
+    cmom_dir.resize(boost::extents[nx][ny]);
+    CSfreq.resize(boost::extents[nx][ny]);
+    cmom_dir0.resize(boost::extents[nx][ny]);
+    CF.resize(boost::extents[nx][ny]);
+
+
+
     if (nwavedirn == 1)
         wt_theta = 1.;
     else
@@ -1321,20 +1446,20 @@ WimDiscr<T>::calcMWD()
     std::fill( cmom0.data(), cmom0.data() + cmom0.num_elements(), 0. );
     std::fill( cmom_dir.data(), cmom_dir.data() + cmom_dir.num_elements(), 0. );
 
-    for (size_type fq = 0; fq < nwavefreq; fq++)
+    for (int fq = 0; fq < nwavefreq; fq++)
     {
         om = 2*PI*freq_vec[fq];
 
         std::fill( CSfreq.data(), CSfreq.data() + CSfreq.num_elements(), 0. );
         std::fill( cmom_dir0.data(), cmom_dir0.data() + cmom_dir0.num_elements(), 0. );
 
-        for (size_type dn = 0; dn < nwavedirn; dn++)
+        for (int dn = 0; dn < nwavedirn; dn++)
         {
             adv_dir = -PI*(90.0+wavedir[dn])/180.0;
 
-            for (size_type i = 0; i < nx; i++)
+            for (int i = 0; i < nx; i++)
             {
-                for (size_type j = 0; j < ny; j++)
+                for (int j = 0; j < ny; j++)
                 {
                     CSfreq[i][j] += wt_theta*sdf_dir[i][j][dn][fq];
                     cmom_dir0[i][j] += wt_theta*sdf_dir[i][j][dn][fq]+adv_dir;
@@ -1343,9 +1468,9 @@ WimDiscr<T>::calcMWD()
         }
 
 
-        for (size_type i = 0; i < nx; i++)
+        for (int i = 0; i < nx; i++)
         {
-            for (size_type j = 0; j < ny; j++)
+            for (int j = 0; j < ny; j++)
             {
                 if (ref_Hs_ice)
                     CF[i][j] = disp_ratio[i][j][fq];
@@ -1360,9 +1485,9 @@ WimDiscr<T>::calcMWD()
 
     std::fill( mwd.data(), mwd.data() + mwd.num_elements(), 0. );
 
-    for (size_type i = 0; i < nx; i++)
+    for (int i = 0; i < nx; i++)
     {
-        for (size_type j = 0; j < ny; j++)
+        for (int j = 0; j < ny; j++)
         {
             if (cmom0[i][j] > 0.)
                 mwd[i][j] = -90.-180*(cmom_dir[i][j]/cmom0[i][j])/PI;

@@ -91,4 +91,37 @@ int main(int argc, char** argv )
     wim2d.wimRun();
     //wim2d.wimStep();
 
+    std::vector<float> vec1 = {1.,2.,3.,4.,5.};
+    std::vector<float> vec2 = {0.,4.,7.,1.,2.};
+    //std::vector<float> r(5);
+
+    //std::cout<<"Size= "<< vec1.size() <<"\n";
+    //compute the product element by element of vec1 and vec2 and store the result in r
+    //std::transform(vec1.begin(), vec1.end(), vec2.begin(), r.begin(), std::multiplies<float>());
+
+    // for (float const& it : vec1)
+    // {
+    //     std::cout<<"r= "<< it <<"\n";
+    // }
+
+    float r = std::inner_product(vec1.begin(), vec1.end(), vec1.begin(), 0);
+    std::cout<<"r= "<< r <<"\n";
+
+    //r = std::cos(vec1);
+
+
+    // std::vector<float> prodtmp = vec1;
+    // std::for_each(prodtmp.begin(), prodtmp.end(), [&](float& f){ f = 4*std::cos(f); });
+
+    // r = vec1;
+    // for (float const& it : r)
+    // {
+    //     std::cout<<"r= "<< it <<"\n";
+    // }
+
+    // float a = 15;
+
+    // int b = std::ceil(a/2);
+    // std::cout<<"b= "<< b <<"\n";
+
 }

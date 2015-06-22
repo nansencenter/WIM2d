@@ -41,6 +41,8 @@ int RTparam_outer(double outputs[],double h,double om,double visc_rp,double gues
    h_nd     = h/L;
    zeta_nd  = rho*h_nd;
 
+   /* printf("E=          %f\n",h); */
+
    //get wavenumber for ice;
    varpi = 1/alp_nd-zeta_nd;
    //[ki,BG2,avc]   = gen_root_ice(varpi,H_nd,guess*L);
@@ -80,6 +82,25 @@ int RTparam_outer(double outputs[],double h,double om,double visc_rp,double gues
 
    RTparam_fast(&outputs[4],&outputs[5],&outputs[6],&outputs[7],
                 alp_nd,h_nd,outputs[3]);
+
+
+
+   /* printf("inp[0]          %d\n",params[0]); */
+   /* printf("inp[1]          %d\n",params[1]); */
+   /* printf("inp[2]          %d\n",params[2]); */
+   /* printf("inp[3]          %d\n",params[3]); */
+   /* printf("inp[4]          %d\n",params[4]); */
+
+
+
+   /* printf("out[0]          %d\n",outputs[0]); */
+   /* printf("out[1]          %d\n",outputs[1]); */
+   /* printf("out[2]          %d\n",outputs[2]); */
+   /* printf("out[3]          %d\n",outputs[3]); */
+   /* printf("out[4]          %d\n",outputs[4]); */
+   /* printf("out[5]          %d\n",outputs[5]); */
+   /* printf("out[6]          %d\n",outputs[6]); */
+   /* printf("out[7]          %d\n",outputs[7]); */
 
 }
 
