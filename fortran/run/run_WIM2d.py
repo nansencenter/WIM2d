@@ -261,6 +261,9 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
                figdir+'/init',
                figdir+'/final']
 
+   TEST_IN_SPEC   = 0 # check Hs,Tp,mwd calc'd from input spec
+   TEST_OUT_SPEC  = 0 # check Hs,Tp     calc'd from output spec
+
    for j in range(0,len(dirs)):
       dirj  = dirs[j]
       if not os.path.exists(dirj):
@@ -437,7 +440,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
                         sys.exit()
 
             ###############################################################
-            if 0:
+            if TEST_IN_SPEC:
                # test integrals of spectrum are the same as intended:
                print('Testing input spectrum...')
                wave_fields2   = {'Hs':0,'Tp':0,'mwd':0}
@@ -501,7 +504,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
       del out_arrays
 
       ###############################################################
-      if 1:
+      if TEST_OUT_SPEC:
          # test integrals of spectrum are the same as intended:
          print('Testing integrals of output spectrum...')
          wave_fields2   = {'Hs':0,'Tp':0,'mwd':0}
