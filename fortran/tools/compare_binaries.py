@@ -16,6 +16,24 @@ import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 ##########################################################################
+mdir  = '../../matlab/main/'
+if 0:
+   odir  = ['out','out_io']
+elif 0:
+   odir  = ['out','out_2']
+elif 1:
+   # can compare matlab results saved with mex functions also
+   odir  = ['out',mdir+'out_2']
+else:
+   # can compare matlab results saved with mex functions also
+   odir  = ['out',mdir+'out_io']
+
+print('Comparing directories:')
+print(odir)
+print('\n')
+##########################################################################
+
+##########################################################################
 OPT   = 2   # 1: initial results; 2: final results; 3: prog results
 if OPT==1:
    print("\n************************************************")
@@ -30,28 +48,6 @@ elif OPT==3:
    print("Checking progress files...")
    print("************************************************\n")
    n_prog   = 1
-##########################################################################
-
-##########################################################################
-# can compare matlab results saved with mex functions also
-mdir  = '../../matlab/main/'
-odir  = 2*[0]
-if 0:
-   odir[0]  = 'out'
-   odir[1]  = 'out_io'
-elif 1:
-   odir[0]  = 'out'
-   odir[1]  = 'out_2'
-elif 1:
-   odir[0]  = 'out'
-   odir[1]  = mdir+'out_io'
-else:
-   odir[0]  = 'out'
-   odir[1]  = mdir+'out_2'
-
-print('Comparing directories:')
-print(odir)
-print('\n')
 ##########################################################################
 
 ##########################################################################

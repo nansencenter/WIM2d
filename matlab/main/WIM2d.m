@@ -1,4 +1,4 @@
-function WIM2d()
+function [ice_fields,wave_fields] = WIM2d()
 
 %DO_SAVE     = 0;
 infile         = 'infile_matlab.txt';
@@ -713,6 +713,13 @@ if MEX_OPT==1
    in_arrays(:,:,4)  = wave_fields.Hs;
    in_arrays(:,:,5)  = wave_fields.Tp;
    in_arrays(:,:,6)  = wave_fields.mwd;
+   %[min(ice_fields.cice(:)),max(ice_fields.cice(:))]
+   %[min(ice_fields.hice(:)),max(ice_fields.hice(:))]
+   %[min(ice_fields.Dmax(:)),max(ice_fields.Dmax(:))]
+   %[min(wave_fields.Hs(:)) ,max(wave_fields.Hs(:)) ]
+   %[min(wave_fields.Tp(:)) ,max(wave_fields.Tp(:)) ]
+   %[min(wave_fields.mwd(:)),max(wave_fields.mwd(:))]
+   %pause
 
    %% make the call!
    prep_mex_dirs(outdir);
