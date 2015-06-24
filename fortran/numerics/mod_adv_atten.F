@@ -292,6 +292,9 @@
                !! N/2<n<=N (n<0): e^{i*n*\theta}=\cos(n\theta)-i*\sin(n\theta)
                n           = ndir+1-nth
                S_fou(n)    = cmplx(S_cos(nth),-S_sin(nth))
+                  !! NB don't need nth=ncs here,
+                  !! but if \theta_m=2\pi(m/N),
+                  !! e^{iN/2\theta_m}=e^{im\pi}=e^{-im\pi}=e^{-iN/2\theta_m}
             end do
 
             !!stresses
