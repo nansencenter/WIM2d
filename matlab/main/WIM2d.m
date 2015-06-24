@@ -1,4 +1,4 @@
-function WIM2d()
+function [ice_fields,wave_fields] = WIM2d()
 
 %DO_SAVE     = 0;
 infile         = 'infile_matlab.txt';
@@ -39,6 +39,8 @@ PLOT_OPT    = 2;%%plot option (only used if doing plotting)
 SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...
                      'ADV_OPT',ADV_OPT);
+TEST_INC_SPEC     = 0;
+TEST_FINAL_SPEC   = 1;
 
 %% make a log file similar to fortran file
 log_dir  = 'log';
@@ -358,6 +360,26 @@ om_vec   = 2*pi*wave_stuff.freq; %% radial freq
 ndir     = wave_stuff.ndir;      %% number of directions
 wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
+
+if TEST_INC_SPEC==1
+   disp(' ');
+   disp('Testing initial spectrum...');
+   [wf.Hs,wf.Tp,wf.mwd] = fn_spectral_integrals(om_vec,wavdir,Sdir);
+   vbls  = {'Hs','Tp','mwd'};
+   for n=1:length(vbls)
+      vbl   = vbls{n};
+      disp(' ');
+      disp(['comparing field: ',vbl]);
+      v1    = wf.(vbl);
+      v2    = wave_fields.(vbl);
+      diff  = abs(v2-v1);
+      disp(['max diff: ',num2str(max(diff(:)))]);
+      disp(' ');
+   end
+
+   return
+end
+
 if STEADY==1
    S_inc    = Sdir;
    theta    = -pi/180*(90+wavdir);
@@ -713,6 +735,13 @@ if MEX_OPT==1
    in_arrays(:,:,4)  = wave_fields.Hs;
    in_arrays(:,:,5)  = wave_fields.Tp;
    in_arrays(:,:,6)  = wave_fields.mwd;
+   %[min(ice_fields.cice(:)),max(ice_fields.cice(:))]
+   %[min(ice_fields.hice(:)),max(ice_fields.hice(:))]
+   %[min(ice_fields.Dmax(:)),max(ice_fields.Dmax(:))]
+   %[min(wave_fields.Hs(:)) ,max(wave_fields.Hs(:)) ]
+   %[min(wave_fields.Tp(:)) ,max(wave_fields.Tp(:)) ]
+   %[min(wave_fields.mwd(:)),max(wave_fields.mwd(:))]
+   %pause
 
    %% make the call!
    prep_mex_dirs(outdir);
@@ -755,6 +784,7 @@ elseif MEX_OPT==2
    tic;
    [Sdir,out_arrays] = WIM2d_run_io_mex_vSdir(...
       Sdir(:),in_arrays(:),int_prams,real_prams,T_init,dir_init);
+   Sdir  = reshape(Sdir,nx,ny,ndir,nw);
    toc;
 
    %% extract outputs
@@ -1173,6 +1203,31 @@ fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n',' ');
 fclose(logid);
 
+if TEST_FINAL_SPEC==1
+   disp(' ');
+   disp('Testing final spectrum...');
+
+   if 1
+      %% check consistency of Sdir with Hs,Tp
+      [wf.Hs,wf.Tp,wf.mwd] = fn_spectral_integrals(om_vec,wavdir,Sdir);
+
+      vbls  = {'Hs','Tp'};%,'mwd'};%mwd currently not updated
+      for n=1:length(vbls)
+         vbl   = vbls{n};
+         disp(' ');
+         disp(['comparing field: ',vbl]);
+         v1    = wf.(vbl);
+         v2    = wave_fields.(vbl);
+         diff  = abs(v2-v1);
+         disp(['max diff: ',num2str(max(diff(:)))]);
+         disp(' ');
+      end
+   else
+      %% TODO check Hs,Tp against binary files
+   end
+
+   return
+end
 
 if PLOT_FINAL%%check exponential attenuation
    figure(2),clf;

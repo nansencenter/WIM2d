@@ -275,9 +275,9 @@ def fn_check_out_arr(out_arrays):
 ##############################################################
 
 ##############################################################
-def fn_check_prog(outdir,n):
+def fn_check_prog(outdir,cts):
    # routine to get progress fields from binary files:
-   cts      = '%3.3d'   % (n) # time step
+   # cts is a string eg '010' or '0010' corresponding to the time step
    afile    = outdir+'/binaries/prog/wim_prog'+cts+'.a'
    bfile    = outdir+'/binaries/prog/wim_prog'+cts+'.b'
 

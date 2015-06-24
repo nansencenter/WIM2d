@@ -5,41 +5,80 @@
 
       implicit none
 
-      ! parameters
-      ! used to set waves over pre-defined WAVE_MASK in non-IO version of code
-      real,parameter :: Hs_inc   = 2.0    !! significant wave height
-      real,parameter :: Tp_inc   = 12.0   !! mean period
-      real           :: mwd_inc  = -90.   !! waves-from direction
-
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine waves_init(SET_WAVES)
+      subroutine wavecons_ideal()
 
       use mod_common_wim
 
       implicit none
 
-      logical,intent(in)   :: SET_WAVES
-      integer  :: i,j,w,wth
+      integer  :: i,j
       real     :: xm,x0,x_edge
       logical  :: critter
 
+      !! wave parameters for ideal cases
+      real,parameter :: Hs_inc   = 2.0    !! significant wave height
+      real,parameter :: Tp_inc   = 12.0   !! mean period
+      real           :: mwd_inc  = -90.   !! waves-from direction
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! Set WAVEMASK & wave info
+      !! TODO: enable reading this in from file?
+
+
+      !! non-IO version of code
+      !! - setting wave mask, Hs, Tp, mwd here
+      print*,'***************************************'
+      print*,'In waves_init:'
+      print*,'setting WAVE_MASK, Hs, Tp, mwd'
+      print*,'***************************************'
+      print*,' '
+
+      xm       = maxval(X)
+      x0       = minval(X)
+      x_edge  = .5*(x0+xm)-.8*(.5*(xm-x0))
+      !!
+      WAVE_MASK   = 0.0
+      Hs          = 0.0
+      Tp          = 0.0
+      mwd         = 0.0
+
+      !!strip where waves are initially defined on left
+      where (X.lt.x_edge)
+         WAVE_MASK   = 1.0
+         Hs          = Hs_inc
+         Tp          = Tp_inc
+         mwd         = mwd_inc
+      end where
+
+      end subroutine wavecons_ideal
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine waves_init_freq()
+
+      use mod_common_wim
+
+      implicit none
+
+      integer  :: w
+
       integer,parameter :: nw    = n_wave_freq
-      integer,parameter :: ndir  = n_wavdir
 
-      real           :: fmin,fmax,df
-      real           :: theta_min,theta_max,dtheta
-      real           :: PI
-
-      PI    = 4.0*atan(1.0)
+      real  :: fmin,fmax,df
+      real  :: Tmean,Tvar,Tstdev
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set frequency grid
       print*,'***************************************'
-      print*,'In waves_init,n_wave_freq=',nw
-      if (nw.ne.1) then
-         !!multiple frequencies
+      print*,'In waves_init_freq,n_wave_freq=',nw
+
+      if (nw.gt.1) then
+
+         !! multiple frequencies
+         !! - fixed grid
          fmin  = 1/Tmax
          fmax  = 1/Tmin
          df    = (fmax-fmin)/(n_wave_freq-1.0)
@@ -49,89 +88,98 @@
             freq_vec(w) = fmin+(w-1)*df
             !print*,freq_vec(w)
          end do
-      elseif (SET_WAVES) then
-         freq_vec(1) = 1.0/Tp_inc
-         print*,'Single frequency - setting it now:'
-         print*,'freq = ',freq_vec(1)
-         print*,'period = ',1.0/freq_vec(1)
+
       else
-         print*,freq_vec
-         print*,'Single frequency - not setting it yet '//              &
-     &   '(IO version of code)'
+
+         !! single frequency
+         !! - initialise from Tp array
+         !! - set it to mean over the wave mask
+
+         Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
+         freq_vec(1) = 1.0/Tmean
+         !!
+         Tvar     = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
+         Tstdev   = sqrt(Tvar)
+         print*,'std dev of peak periods : ',Tstdev
+         !!
+         if (abs(Tstdev).gt.1.0e-2) then
+            print*,'***********************************************'
+            print*,'warning: trying to run multiple frequencies'
+            print*,'  with n_wave_freq = 1'
+            print*,'***********************************************'
+            print*,' '
+            STOP
+         end if
+
       end if
+
       print*,'***************************************'
       print*,' '
 
+      end subroutine waves_init_freq
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine waves_init_dir()
+
+      use mod_common_wim
+
+      implicit none
+
+      integer  :: wth
+
+      integer,parameter :: ndir  = n_wavdir
+
+      real  :: theta_min,theta_max,dtheta
+      real  :: PI
+      real  :: Tmean,Tvar,Tstdev
+
+      PI    = 4.0*atan(1.0)
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set directional grid
-      if (ndir.ne.1) then
+      print*,'***************************************'
+      print*,'In waves_init_dir, n_wavdir=',ndir
+
+
+      !!set directional grid
+      if (ndir.gt.1) then
+
+         !! fixed directional grid
+
          theta_max   = 90.0
          theta_min   = -270.0
          dtheta      = (theta_min-theta_max)/(1.0*ndir)
          do wth=1,ndir
             wavdir(wth) = theta_max+(wth-1)*dtheta
          end do
-      elseif (SET_WAVES) then
-         print*,'***************************************'
-         print*,'Single wave direction - setting it now:'
-         print*,'direction (from) = ',wavdir(1)
-         print*,'***************************************'
-         print*,' '
-         wavdir(1)   = mwd_inc
+
       else
-         print*,'***************************************'
-         print*,'Single wave direction - not setting it yet '//         &
-     &   '(IO version of code)'
-         print*,'***************************************'
-         print*,' '
-      end if
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! Set WAVEMASK & wave info
-      !! TODO: enable reading this in from file?
 
-      if (SET_WAVES) then
-
-         !! non-IO version of code
-         !! - setting wave mask, Hs, Tp, mwd here
-         print*,'***************************************'
-         print*,'In waves_init:'
-         print*,'setting WAVE_MASK, Hs, Tp, mwd'
-         print*,'***************************************'
-         print*,' '
-
-         xm       = maxval(X)
-         x0       = minval(X)
-         x_edge  = .5*(x0+xm)-.8*(.5*(xm-x0))
+         !! single direction:
+         !! - set it to mean over the wave mask
+         wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
          !!
-         WAVE_MASK   = 0.0
-         Hs          = 0.0
-         Tp          = 0.0
-         mwd         = 0.0
-
-         !!strip where waves are initially defined on left
-         where (X.lt.x_edge)
-            WAVE_MASK   = 1.0
-            Hs          = Hs_inc
-            Tp          = Tp_inc
-            mwd         = mwd_inc
-         end where
-
-      else
-
-         !! IO version of code
-         !! - don't set wave mask, Hs, Tp, mwd here
-         print*,'***************************************'
-         print*,'In waves_init:'
-         print*,'Set WAVE_MASK, Hs, Tp, mwd later'
-         print*,'(IO version of code)'
-         print*,'***************************************'
-         print*,' '
+         Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
+         Tstdev   = sqrt(Tvar)
+         print*,'std dev of wave directions : ',Tstdev
+         !!
+         if (abs(Tstdev).gt.1.0e-2) then
+            print*,'***********************************************'
+            print*,'warning: trying to run multiple directions'
+            print*,'  with n_wavdir = 1'
+            print*,'***********************************************'
+            print*,' '
+            STOP
+         end if
 
       end if
+
+      print*,'***************************************'
+      print*,' '
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
-      end subroutine waves_init
+      end subroutine waves_init_dir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -212,14 +260,16 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine ice_init()
+      subroutine icecons_ideal()
 
       use mod_common_wim
       use mod_gridinfo
 
       implicit none
 
-      real     :: x0,xm,x_edge
+      real           :: x0,xm,x_edge
+      real,parameter :: unif_c   = .7
+      real,parameter :: unif_h   = 2.0
       
       WTR_MASK = 0.0
       !! strip of water on left
@@ -237,7 +287,7 @@
       iceh     = unif_h*ICE_MASK
       dfloe    = dfloe_pack_init*ICE_MASK
 
-      end subroutine ice_init
+      end subroutine icecons_ideal
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

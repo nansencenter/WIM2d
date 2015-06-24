@@ -261,6 +261,9 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
                figdir+'/init',
                figdir+'/final']
 
+   TEST_IN_SPEC   = 0 # check Hs,Tp,mwd calc'd from input spec
+   TEST_OUT_SPEC  = 0 # check Hs,Tp     calc'd from output spec
+
    for j in range(0,len(dirs)):
       dirj  = dirs[j]
       if not os.path.exists(dirj):
@@ -400,7 +403,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
                      else:
                         # use Bretschneider
                         for w in range(nfreq):
-                           om                = 2*PI*freq_vec(w)
+                           om                = 2*PI*freq_vec[w]
                            sdf_dir[i,j,:,w]  = Fmisc.SDF_Bretscneider(om)
                      #########################################################
 
@@ -435,6 +438,32 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
                         plt.show()
                         #
                         sys.exit()
+
+            ###############################################################
+            if TEST_IN_SPEC:
+               # test integrals of spectrum are the same as intended:
+               print('Testing input spectrum...')
+               wave_fields2   = {'Hs':0,'Tp':0,'mwd':0}
+               if nfreq==1:
+                  freq_vec_   = np.array([1./Tp_single_freq])
+               else:
+                  freq_vec_   = freq_vec
+               if ndir==1:
+                  wavdir_   = np.array([mwd_single_dir])
+               else:
+                  wavdir_  = wavdir
+
+               wave_fields2['Hs'],wave_fields2['Tp'],wave_fields2['mwd']   = \
+                     Fmisc.spectrum_integrals(sdf_dir,freq_vec_,wavdir_)
+
+               arrays   = [wave_fields2,wave_fields]
+               keys     = arrays[0].keys()
+               for key in keys:
+                  print('Comparing field: '+key)
+                  diff  = abs(arrays[0][key]-arrays[1][key])
+                  print('Maximum difference = '+str(np.max(diff))+'\n')
+               sys.exit()
+            ###############################################################
 
             del wave_fields # finished setting sdf_dir from wave_fields
          else:
@@ -473,6 +502,70 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
       # convert out_arrays to Out_Fields object
       out_fields  = Fdat.fn_check_out_arr(out_arrays)
       del out_arrays
+
+      ###############################################################
+      if TEST_OUT_SPEC:
+         # test integrals of spectrum are the same as intended:
+         print('Testing integrals of output spectrum...')
+         wave_fields2   = {'Hs':0,'Tp':0,'mwd':0}
+         if nfreq==1:
+            freq_vec_   = np.array([1./Tp_single_freq])
+         else:
+            freq_vec_   = freq_vec
+         if ndir==1:
+            wavdir_   = np.array([mwd_single_dir])
+         else:
+            wavdir_  = wavdir
+
+         wave_fields2['Hs'],wave_fields2['Tp'],wave_fields2['mwd']   = \
+               Fmisc.spectrum_integrals(sdf_dir2,freq_vec_,wavdir_)
+
+         arrays   = [wave_fields2,out_fields]
+         keys     = ['Hs','Tp']
+         # keys     = arrays[0].keys()
+         for key in keys:
+            print('Comparing field: '+key)
+            diff  = abs(arrays[0][key]-arrays[1][key])
+            print('Maximum difference = '+str(np.max(diff))+'\n')
+
+         if 1:
+            # plot Tp for visual comparison
+            # - small differences?
+            gf = Fdat.fn_check_grid('inputs')
+            labs  = ['$x$, km','$y$, km', '$T_p$, s']
+            #
+            f     = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,wave_fields2['Tp'],labs)
+            f.show()
+            #
+            f  = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,out_fields['Tp'],labs)
+            f.show()
+
+         if 0:
+            # plot Hs for visual comparison
+            gf = Fdat.fn_check_grid('inputs')
+            labs  = ['$x$, km','$y$, km', '$H_s$, m']
+            #
+            f     = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,wave_fields2['Hs'],labs)
+            f.show()
+            #
+            f  = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,out_fields['Hs'],labs)
+            f.show()
+
+         sys.exit()
+      elif 0:
+         # test out_fields are the same as in the binary files
+         print('Testing output fields against binary files...')
+         arrays      = 2*[1]
+         arrays[0]   = out_fields
+         arrays[1]   = Fdat.fn_check_out_bin('out_2/binaries')
+         keys        = arrays[0].keys()
+         for key in keys:
+            print('Comparing field: '+key)
+            diff  = abs(arrays[0][key]-arrays[1][key])
+            print('Maximum difference = '+str(np.max(diff))+'\n')
+         sys.exit()
+      ###############################################################
+
    #############################################################
 
    return out_fields,outdir
