@@ -36,7 +36,7 @@ cd $P
 if [ $MKMOV -eq 1 ]
 then
    # make movies of these variables:
-   vbl_list="Hs Dmax taux tauy"
+   vbl_list="Hs Dmax taux tauy Tp"
    cd $outdir/figs/prog
 
    for vbl in $vbl_list

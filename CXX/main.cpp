@@ -62,66 +62,45 @@ int main(int argc, char** argv )
     // instantiation of wim2d
     WimDiscr<float> wim2d(vm);
 
-    //wim2d.readFile("wim_grid.a");
-
-    // generation and saving of the grid
-    //wim2d.wimGrid();
-
-    // auto X = wim2d.getX();
-    // for (int i = 0; i < X.shape()[0]; i++)
-    //     for (int j = 0; j < X.shape()[1]; j++)
-    //         std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
-
     // initialization of wim2d
     wim2d.wimInit();
 
-    //wim2d.readFile("wim_prog000.a");
-
-    // auto X = wim2d.getY();
-    // for (int i = 0; i < X.shape()[0]; i++)
-    //     for (int j = 0; j < X.shape()[1]; j++)
-    //         std::cout << "X[" << i << "," << j << "]= " << X[i][j] << std::endl;
-
-
-    //wim2d.advAttenIsotropic();
-
-    //wim2d.writeFile(0);
-
     // run the simulation
     wim2d.wimRun();
-    //wim2d.wimStep();
 
-    std::vector<float> vec1 = {1.,2.,3.,4.,5.};
-    std::vector<float> vec2 = {0.,4.,7.,1.,2.};
-    //std::vector<float> r(5);
+#if 0
+    //std::vector<float> vec1 = {1.,2.,3.,4.,5.};
+    std::vector<std::complex<float> > vec1 = {(1.,2.),2.,3.,4.,5.};
+    std::vector<std::complex<float> > vec2 = {(1.5,1.),4.,7.,1.,2.};
+    // float sum_of_elems = std::accumulate(vec1.begin(),vec1.end(),0.);
+    //std::transform(vec1.begin(), vec1.end(), vec2.begin(), vec1.begin(), std::multiplies<std::complex<float> >());
+    //std::complex<float> ans = (1.,1.);
+    //ans = std::accumulate(vec1.begin(), vec1.end(), std::complex<float>{1.0}, std::multiplies<std::complex<float> >{});
 
-    //std::cout<<"Size= "<< vec1.size() <<"\n";
-    //compute the product element by element of vec1 and vec2 and store the result in r
-    //std::transform(vec1.begin(), vec1.end(), vec2.begin(), r.begin(), std::multiplies<float>());
+    std::transform(vec1.begin(), vec1.end(), vec1.begin(), vec1.begin(), [](std::complex<float> a, std::complex<float> b) -> std::complex<float> { return a+b; });
 
-    // for (float const& it : vec1)
-    // {
-    //     std::cout<<"r= "<< it <<"\n";
-    // }
+    //std::cout<<"ANS= "<< ans <<"\n";
 
-    float r = std::inner_product(vec1.begin(), vec1.end(), vec1.begin(), 0);
-    std::cout<<"r= "<< r <<"\n";
+    for (auto const& it : vec1)
+    {
+        std::cout<<"Real= "<< std::real(it) <<"\n";
+        std::cout<<"Imag= "<< it.imag() <<"\n";
+    }
+    //float sum_of_elems = std::accumulate(vec1.begin(),vec1.end(),0.);
 
-    //r = std::cos(vec1);
+    //std::cout<<"sum= "<< sum_of_elems <<"\n";
 
+    std::complex<float> a; //(1,2);
+    std::complex<float> b; //(3,5);
 
-    // std::vector<float> prodtmp = vec1;
-    // std::for_each(prodtmp.begin(), prodtmp.end(), [&](float& f){ f = 4*std::cos(f); });
+    a.real(1);
+    a.imag(2);
+    b = a;
 
-    // r = vec1;
-    // for (float const& it : r)
-    // {
-    //     std::cout<<"r= "<< it <<"\n";
-    // }
+    std::cout<<"A*B= "<< b <<"\n";
 
-    // float a = 15;
-
-    // int b = std::ceil(a/2);
-    // std::cout<<"b= "<< b <<"\n";
+    //using namespace std::literals;
+    //std::complex<double> z1 = 1i * 1i;
+#endif
 
 }

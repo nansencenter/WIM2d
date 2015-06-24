@@ -7,6 +7,8 @@
 #include <fstream>
 #include <math.h>
 #include <algorithm>
+// #include <complex>
+// #include <cmath>
 
 #include <boost/multi_array.hpp>
 #include <boost/array.hpp>
@@ -100,18 +102,18 @@ private:
     array3_type ag_eff, ap_eff, wlng_ice, atten_nond, damping, disp_ratio, sdf3d_dir_temp;
     array4_type sdf_dir, sdf_inc;
 
-
-    array2_type S_freq, taux_om, tauy_om, tmp1, mom0, mom2, mom0w, mom2w, var_strain;
-    array2_type uwave, vwave, temp;
+    array2_type S_freq, taux_om, tauy_om;
+    // array2_type tmp1, mom0, mom2, mom0w, mom2w, var_strain;
+    // array2_type uwave, vwave, temp;
 
     array2_type hp;
 
-    array2_type ful, fuh, fvl, fvh, gt, sao;
+    // array2_type ful, fuh, fvl, fvh, gt, sao;
 
-    array2_type u_pad, v_pad, scp2_pad, scp2i_pad, scuy_pad, scvx_pad, h_pad;
+    // array2_type u_pad, v_pad, scp2_pad, scp2i_pad, scuy_pad, scvx_pad, h_pad;
 
     // variables for calcMWD
-    array2_type cmom0, cmom_dir, CSfreq, cmom_dir0, CF;
+    //array2_type cmom0, cmom_dir, CSfreq, cmom_dir0, CF;
 
 };
 

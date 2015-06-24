@@ -95,7 +95,7 @@
                !!  and integrated over frequency as well;
                !! units: [m^2]*[kg/m^3]*[m/s^2]*[s/m]*s^{-1}
                !!         = kg/m/s^2 = Pa
-      
+
                !! NB take '-' because here we have calc'd the stress
                !! ON the waves (cf Donelan et al, 2012, JGR)
                !! - we want the stress on the ice
@@ -103,9 +103,9 @@
                !!do attenuation
                Sdir(i,j,wth) = S_th*exp(-alp_dim*ag_eff(i,j)*dt)
             end do
-      
+
          end if!!end ice check (attenuation and stress calc)
-      
+
          !! INTEGRATE SPECTRUM OVER DIRECTION;
          !! NB do this in water also
          do wth=1,ndir
@@ -113,7 +113,7 @@
          end do
       end do!i
       end do!j
-      
+
       end subroutine adv_atten_simple
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -211,7 +211,7 @@
          S_fou    = zi
 
          !! S_fou(1) = \int_0^{2\pi}S(\theta)d\theta
-         S_fou(1) = cmplx( sum(wt_theta*S_th) )
+         S_fou(1) = cmplx( sum(wt_theta*S_th) ) !n=0 Fourier coefficient
 
          if (ICE_MASK(i,j).gt.0.0) then
 
@@ -235,7 +235,7 @@
 !           if ((i.eq.24).and.(j.eq.1)) then
 !              print*,'NB !!DANGER!! !!'//
 !    &                'overwriting actual values for testing!!'
-!              q_scat   = 8.041601e-06 
+!              q_scat   = 8.041601e-06
 !              q_tot    = 2.736895e-05
 !              q_abs    = q_tot-q_scat
 !              !!
@@ -342,14 +342,14 @@
 !           end if
 
          end if!!end ice check (attenuation and stress calc)
-      
+
          !! INTEGRATE SPECTRUM OVER DIRECTION;
          !! already when getting the Fourier transform
          !! NB do this in water also
          Sfreq(i,j)  = real(S_fou(1))
       end do!i
       end do!j
-      
+
       end subroutine adv_atten_isotropic
 
       end module mod_adv_atten
