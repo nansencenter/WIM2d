@@ -514,7 +514,7 @@ WimDiscr<T>::wimStep()
         {
             for (int j = 0; j < ny; j++)
             {
-                if (ice_mask[i][j] == 1. && atten)
+                if ((ice_mask[i][j] == 1.) && (atten))
                 {
                     if (dfloe[i][j] <200.)
                         floeScaling(dfloe[i][j],dave);
@@ -530,7 +530,6 @@ WimDiscr<T>::wimStep()
                     // damping
                     damp_dim[i][j] = 2*damping[i][j][fq]*icec[i][j];
                 }
-
             }
         }
 
@@ -747,7 +746,11 @@ WimDiscr<T>::wimStep()
 
     // for (int i = 0; i < nx; i++)
     //     for (int j = 0; j < ny; j++)
-    //         std::cout<<"mom0["<< i << "," << j << "]= "<< Hs[i][j] <<"\n";
+    //         std::cout<<"Hs["<< i << "," << j << "]= "<< Hs[i][j] <<"\n";
+
+    // std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
+    // std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
+
 
 
 }
@@ -761,6 +764,8 @@ WimDiscr<T>::wimRun()
     int nt;
     bool critter;
 
+    std::fill( sdf_dir.data(), sdf_dir.data() + sdf_dir.num_elements(), 0. );
+
     for (int i = 0; i < nwavefreq; i++)
     {
         for (int j = 0; j < nwavedirn; j++)
@@ -769,7 +774,7 @@ WimDiscr<T>::wimRun()
             {
                 for (int l = 0; l < ny; l++)
                 {
-                    if (wave_mask[k][l] >= 0.)
+                    if (wave_mask[k][l] == 1.)
                     {
                         sdf_dir[k][l][j][i] = sdf_inc[k][l][j][i];
                         //std::cout<<"sdf_dir[k][l][j][i]= "<< sdf_dir[k][l][j][i] <<"\n";
