@@ -393,7 +393,6 @@ end
 T  = 2*pi./om_vec;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Water wavelength and wave speed
 %% is a function only of wave period
