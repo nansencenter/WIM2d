@@ -16,7 +16,8 @@ def _get_grid_arrays_SmallSquare(diag_length,resolution):
 
    dx    = resolution
    nx    = int(np.floor(diag_length/resolution))
-   out   = get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
+   x0    = -(nx*dx)/2.
+   out   = get_grid_arrays(x0=x0,y0=x0,nx=nx,ny=nx,dx=dx,dy=dx,LAND_OPT=0)
 
    # fix landmask
    gf    = out[1]
