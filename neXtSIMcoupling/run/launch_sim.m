@@ -1,0 +1,112 @@
+DO_COMPILE  = 0;
+
+test_i   =  15;%% Small-square+WIM, doesn't need forcing files on johansen
+
+% --------------
+% 1. compile mex files
+if DO_COMPILE
+   compile_mex_files;
+end
+
+% --------------
+% 2. create the standard simul_in
+[saved_simul_in,simul_in_name,domain,resol]=create_simul_in(test_i);
+
+% --------------
+% 3. run the simulation
+profile on
+EB_model_v2(saved_simul_in,1)
+profile off
+profsave(profile('info'),['test_',num2str(test_i),'_profile_results'])
+
+% --------------
+% 4. Plots of the scalar variables
+load(saved_simul_in)
+meshfile=getfield(simul_in,'meshfile');
+domain=getfield(simul_in,'domain');
+
+% steps to be loaded
+from_step = 0 ;
+saved_simul_out=['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step' num2str(from_step) '.mat']
+plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'pdf')
+plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'pdf')
+
+to_step   = length(dir(['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step*.mat']))-1 ;
+saved_simul_out=['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step' num2str(to_step) '.mat']
+plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'pdf')
+plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'pdf')
+plot_param_v2('log1md',saved_simul_out,domain,'jet',[-3.7 0],[],'pdf')
+
+% --------------
+% 5. Diagnostics
+filename=['diagnostics_' simul_in.meshfile(1:end-4) '_' simul_in.simul_in_name '.txt'];
+import_data=importdata(filename)
+
+list_absciss_to_plot={'p','p','p'};
+list_ordinates_to_plot={{'NnR','NeR'},{'total_volume'},{'variation_total_volume','variation_total_volume_thermo','variation_total_volume_regrid','variation_total_volume_transport'}}
+
+for k=1:length(list_absciss_to_plot)
+  absciss_to_plot=list_absciss_to_plot{k};
+  ordinates_to_plot=list_ordinates_to_plot{k}
+  figure
+  
+  j=find(strcmp(import_data.textdata,absciss_to_plot));
+  if(isempty(j))
+      error('no absciss to plot')
+  else
+      absciss=import_data.data(:,j);
+  end
+  
+  ColorOrder=get(gca,'ColorOrder');
+  
+  for i=1:length(ordinates_to_plot)
+      j=find(strcmp(import_data.textdata,ordinates_to_plot{i}));
+      if(~isempty(j))
+          ordinate=import_data.data(:,j);
+          plot(absciss,ordinate,'color',ColorOrder(i,:)); hold on;
+      end
+  end
+  
+  xbound=xlim;
+  ybound=ylim;
+  for i=1:length(ordinates_to_plot)
+      
+      x_fact=0.1;
+      y_fact=0.1+0.05*(i-1);
+      text(x_fact*xbound(2)+(1-x_fact)*xbound(1),y_fact*ybound(2)+(1-y_fact)*ybound(1),ordinates_to_plot{i},'color',ColorOrder(i,:),'fontsize',15)
+  end
+  saveas(gcf, [ filename(1:end-4) '_diag' num2str(k)], 'fig')
+end
+
+% --------------
+% 6. post_processing the output
+%  [order]=main_script(simul_in_name,domain,resol)
+
+% --------------
+% 7. Plots of the dynamics
+%  masked=0;
+%  multifractal=0;
+
+%  defo_name=['defo_mod_' simul_in_name '.mat'];
+%  disp(defo_name)
+
+%  plots_def_distrib({defo_name},{simul_in_name},order+2);
+%  plots_def_multiscale({defo_name},{simul_in_name},[1,1],order+2,domain,multifractal);
+%  plots_def_map({defo_name},{simul_in_name},domain,masked);
+
+%  plots_vel_distrib({defo_name},{simul_in_name},[1:2:20],masked);
+%  plots_vel_map({defo_name},{simul_in_name},domain,masked);
+
+%%clean up directory
+outdir   = ['test_',num2str(test_i),'_outputs'];
+mkdir(outdir);
+mkdir([outdir,'/pdf']);
+%%
+cmd   = ['!mv *','test',num2str(test_i),'*.mat ',outdir];
+eval(cmd);
+cmd   = ['!mv *','test',num2str(test_i),'*.pdf ',outdir,'/pdf'];
+eval(cmd);
+cmd   = ['!mv *','test',num2str(test_i),'*.txt ',outdir];
+eval(cmd);
+cmd   = ['!mv *','test',num2str(test_i),'*.fig ',outdir];
+eval(cmd);
