@@ -60,7 +60,7 @@ if CHANGE_WAVES:
    elif 1:
       # single frequency, multiple directions
       nfreq = 1
-      ndir  = 64
+      ndir  = 16
    else:
       # multiple frequencies, 1 dirn
       nfreq = 25
