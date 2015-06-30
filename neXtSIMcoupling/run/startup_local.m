@@ -15,6 +15,9 @@ else
 end
 rmpaths;
 
+%% if we need to make a new grid
+addpath('../grid_setup');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% define neXtSIM paths;
 gitdir   = getenv('GIT_REPOS');
@@ -39,11 +42,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% add wim2d paths
 %%
-wimdir1     = [gitdir,'/WIM2d/fortran'];
-wimdirs{1}  = [wimdir1,'/bin'];%%mex funs
-wimdirs{2}  = [wimdir1,'/run'];%%interface to mex funs
-wimdirs{3}  = [wimdir1,'/matlab_funs'];
-wimdirs{4}  = [gitdir,'/matlab/Semi-Infinite-Elastic-Plate/GEN_progs'];
+wimdir1        = [gitdir,'/WIM2d/fortran'];
+wimdirs{1}     = [wimdir1,'/bin'];%%mex funs
+wimdirs{end+1} = [wimdir1,'/run'];%%interface to mex funs
+wimdirs{end+1} = [wimdir1,'/matlab_funs'];
+wimdirs{end+1} = [wimdir1,'/../matlab/other_deps'];
+wimdirs{end+1} = [gitdir,'/matlab/Semi-Infinite-Elastic-Plate/GEN_progs'];
 for loop_i=1:length(wimdirs)
    addpath(wimdirs{loop_i});
 end

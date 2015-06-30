@@ -53,7 +53,7 @@ if CHANGE_WAVES:
    Tmax  = 25  # max period
 
    # change number of wave frequencies and directions
-   if 0:
+   if 1:
       # multiple frequencies, directions
       nfreq = 25
       ndir  = 16
