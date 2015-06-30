@@ -17,6 +17,7 @@ rmpaths;
 
 %% if we need to make a new grid
 addpath('../grid_setup');
+addpath('../tools');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% define neXtSIM paths;
