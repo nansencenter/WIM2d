@@ -57,8 +57,8 @@ end
 if exist('data_sim','var')
 
    johansen_paths = [data_sim,'/data'];%%+all subdirs
-   topaz_path     = [johansen_paths,'/TOPAZ4/200709_201102'];%topaz data
-   amsre_path     = [johansen_paths,'/AMSRE_ice_conc/2008/mar'];%ice conc
+   topaz_path     = [johansen_paths,'/TOPAZ4/198910_201102'];%topaz data
+   amsre_path     = [johansen_paths,'/AMSRE_ice_conc/2008'];%ice conc
    etopo_path     = [johansen_paths,'/BATHYMETRY/etopo1_ice_c_i2'];%%bathymetry
 
    %% add paths
@@ -77,10 +77,13 @@ if exist('data_sim','var')
    addpath([mat_path,'/age/']);
    addpath([mat_path,'/defo_rgps/']);
    addpath([mat_path,'/from An/']);
-   %addpath([mat_path,'/SuiteSparse/CHOLMOD/MATLAB/']);
-   addpath([mat_path,'/SuiteSparse3/CHOLMOD/MATLAB/']);
-   addpath([mat_path,'/SuiteSparse3/AMD/MATLAB/']);
    addpath([mat_path,'/m_map/']);
+
+   %% need to compile SuiteSparse3 locally
+   %addpath([mat_path,'/SuiteSparse/CHOLMOD/MATLAB/']);
+   ss3   = [getenv('HOME'),'/MATHS/programs/matlab/SuiteSparse3']
+   addpath([ss3,'/CHOLMOD/MATLAB/']);
+   addpath([ss3,'/AMD/MATLAB/']);
 
    %% get all the tools,data:
    %% - need all the sub-directories in these folders

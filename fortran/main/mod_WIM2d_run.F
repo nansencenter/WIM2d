@@ -598,9 +598,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !! have already got sdf_dir directly from Sdir_io in WIM2d_f2py
-      !! - this step allows STEADY==1 to work
-      sdf_inc  = sdf_dir
+      !! have already got sdf_dir,sdf_inc directly from
+      !! python/matlab input
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       call do_wim_integrals(0) ! calc Hs,Tp,mwd,WAVE_MASK from sdf_dir
@@ -836,8 +835,10 @@
       !! and wim2d_run_io subroutine in this file
       !! - 3d arrays hard to do in mex/fortran
 
-      use mod_common_wim, only: freq_vec,wavdir,sdf_dir                 &
+      use mod_common_wim, only: freq_vec,wavdir                         &
+     &                          ,sdf_dir,sdf_inc                        &
      &                          ,icec,iceh,dfloe
+      use mod_wavesice, only: WAVE_MASK2
 
       implicit none
 
@@ -855,10 +856,15 @@
       real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
       real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
       real,dimension(nx*ny*nxy4d),intent(inout) :: xy4d !4d input array (Sdir)
-
-      integer  :: i,j,s
+      !!
+      integer  :: i,j,s,w,wth
+      integer  :: STEADY
+      real     :: PI,adv_dir
+      !!
       real,dimension(nx,ny,nx3d) :: in_arrays
       real,dimension(nx,ny,ny3d) :: out_arrays
+
+      PI = 4.*atan(1.)
 
       !! initial ice conditions
       in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
@@ -867,23 +873,43 @@
       dfloe       = in_arrays(:,:,3)
 
       !! get input directional wave spectrum
-      ! sdf_dir  = Sdir_io
       sdf_dir  = reshape(xy4d,(/nx,ny,ndir,nw/))
+      sdf_inc  = sdf_dir
 
-      print*,nw,(nw.eq.1),Tp_io
+      !print*,nw,(nw.eq.1),Tp_io
       if (nw.eq.1) then
          freq_vec(1) = 1./Tp_io
-         print*,Tp_io,freq_vec
+         !print*,Tp_io,freq_vec
       end if
       if (ndir.eq.1) then
          wavdir(1)   = mwd_io
-         print*,mwd_io
+         !print*,mwd_io
       end if
 
       call wim2d_run_vSdir(out_arrays,int_prams,real_prams)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
-      ! Sdir_io  = sdf_dir
+
+      !! correction for STEADY (copied from mod_waves_ice.F)
+      STEADY   = int_prams(8)
+      if (STEADY.eq.1) then
+         do w=1,nw
+         do wth=1,n_wavdir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+      end if
+
+      !!TODO update Hs,Tp,... also?
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!outputs
       xy4d  = reshape(sdf_dir,(/nx*ny*ndir*nw/))
       y3d   = reshape(out_arrays,(/nx*ny*ny3d/))
 
