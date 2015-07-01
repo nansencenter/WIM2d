@@ -1,5 +1,12 @@
 %% location of outputs
-rootdir  = '/Volumes/sim/tim/Model-Results/nextsim/test15_waves';
+if 0
+   %%johansen
+   rootdir  = '/Volumes/sim/tim/Model-Results/nextsim/test15_waves';
+else
+   %%external hard disk
+   rootdir  = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/neXtSIM/Oban-test16/run1'
+end
+
 outdir   = [rootdir,'/simul_out_steps_mat'];
 figdir   = [rootdir,'/figs'];
 eval(['!mkdir -p ',figdir]);
@@ -7,11 +14,16 @@ figdir   = [figdir,'/simul_out_steps_grid'];
 eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
-if 1
+if 0
    twlim = .5*[-1 1];%%tau_x range
-   vbls  = {'Dmax','Hs','Tp','taux_waves','tauy_waves'};
-   cmaps = {'jet','jet','jet','jet','jet'};
-   lims  = {[0,300],[0 6],[0 20],twlim,.1*twlim};
+   vbls  = {'Dmax' ,'Hs' ,'Tp'  ,'taux_waves','tauy_waves'};
+   cmaps = {'jet'  ,'jet','jet' ,'jet'       ,'jet'       };
+   lims  = {[0,300],[0 6],[0 20],twlim       ,.1*twlim    };
+else
+   twlim = .5*[-1 1];%%tau_x range
+   vbls  = {'Dmax' ,'taux_waves','tauy_waves'};
+   cmaps = {'jet'  ,'jet'       ,'jet'       };
+   lims  = {[0,300],twlim       ,.1*twlim    };
 end
 Nv    = length(vbls);
 
@@ -49,13 +61,3 @@ for n=0:N0
    %%
    eval(['!rm ',saved_simul_out]);
 end
-
-
-%plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'pdf')
-%
-%to_step   = length(dir(['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step*.mat']))-1 ;
-%saved_simul_out=['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step' num2str(to_step) '.mat']
-%plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'pdf')
-%plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'pdf')
-%plot_param_v2('log1md',saved_simul_out,domain,'jet',[-3.7 0],[],'pdf')
-

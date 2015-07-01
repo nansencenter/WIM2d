@@ -77,7 +77,9 @@ if exist('data_sim','var')
    addpath([mat_path,'/age/']);
    addpath([mat_path,'/defo_rgps/']);
    addpath([mat_path,'/from An/']);
-   addpath([mat_path,'/SuiteSparse/CHOLMOD/MATLAB/']);
+   %addpath([mat_path,'/SuiteSparse/CHOLMOD/MATLAB/']);
+   addpath([mat_path,'/SuiteSparse3/CHOLMOD/MATLAB/']);
+   addpath([mat_path,'/SuiteSparse3/AMD/MATLAB/']);
    addpath([mat_path,'/m_map/']);
 
    %% get all the tools,data:
@@ -107,9 +109,9 @@ end
 
 showpaths;
 
+ll = '***********************************************************************';
 if SHOW_WARNING==1
    disp(' ');
-   ll = '***********************************************************************';
    disp(ll);
    for j=1:length(warnings)
       disp(warnings{j});
@@ -117,5 +119,12 @@ if SHOW_WARNING==1
    disp(ll);
    disp(' ');
 end
+
+disp(' ');
+disp(ll);
+disp('Remember to open "Parallel>Manage Cluster Profiles..." menu,');
+disp('then run "matlabpool".');
+disp(ll);
+disp(' ');
 
 clear;

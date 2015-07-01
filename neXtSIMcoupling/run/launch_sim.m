@@ -1,6 +1,6 @@
 DO_COMPILE  = 0;
 
-test_i   =  15;%% Small-square+WIM, doesn't need forcing files on johansen
+test_i   =  16;%% idealised domain+WIM, doesn't need forcing files on johansen
 
 % --------------
 % 1. compile mex files
@@ -15,7 +15,7 @@ end
 % --------------
 % 3. run the simulation
 profile on
-EB_model_v2(saved_simul_in,1)
+neXtSIM(saved_simul_in,1)
 profile off
 profsave(profile('info'),['test_',num2str(test_i),'_profile_results'])
 
