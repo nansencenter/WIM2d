@@ -1,10 +1,16 @@
-%% location of outputs
-if 0
-   %%johansen
-   rootdir  = '/Volumes/sim/tim/Model-Results/nextsim/test15_waves';
-else
-   %%external hard disk
-   rootdir  = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/neXtSIM/Oban-test16/run1'
+function plot_steps_grid(rootdir);
+
+if ~exist('rootdir','var');
+   %% location of outputs
+   run_no   = 3;
+   if 1
+      %%johansen
+      rootdir  = '/Volumes/sim/tim';
+   else
+      %%external hard disk
+      rootdir  = 'Model-Results/neXtSIM/Oban-test16/run3'
+   end
+   rootdir  = [rootdir,'/Model-Results/neXtSIM/Oban-test16/run',num2str(run_no)];
 end
 
 outdir   = [rootdir,'/simul_out_steps_mat'];
@@ -14,7 +20,7 @@ figdir   = [figdir,'/simul_out_steps_grid'];
 eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
-if 0
+if 1
    twlim = .5*[-1 1];%%tau_x range
    vbls  = {'Dmax' ,'Hs' ,'Tp'  ,'taux_waves','tauy_waves'};
    cmaps = {'jet'  ,'jet','jet' ,'jet'       ,'jet'       };
@@ -33,6 +39,8 @@ N0    = length(dir0)-1;
 f0    = strsplit(dir0(1).name,'0.mat');
 f0    = f0{1};%start of files
 fmt   = ['%',sprintf( '%d.%dd', length(num2str(N0)), length(num2str(N0)) )];
+
+domain   = '';
 
 for n=0:N0
    saved_simul_out0  = [outdir,'/',dir0(n+1).name];

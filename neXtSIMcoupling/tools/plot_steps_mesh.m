@@ -1,10 +1,10 @@
 %% location of outputs
-if 0
+if 1
    %%johansen
-   rootdir  = '/Volumes/sim/tim/Model-Results/nextsim/test15_waves';
+   rootdir  = '/Volumes/sim/tim/Model-Results/neXtSIM/Oban-test16/run2';
 else
    %%external hard disk
-   rootdir  = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/neXtSIM/Oban-test16/run1'
+   rootdir  = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/neXtSIM/Oban-test16/run2'
 end
 
 outdir   = [rootdir,'/simul_out_steps_mat'];

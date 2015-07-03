@@ -28,14 +28,14 @@ domain=getfield(simul_in,'domain');
 % steps to be loaded
 from_step = 0 ;
 saved_simul_out=['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step' num2str(from_step) '.mat']
-plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'pdf')
-plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'pdf')
+plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'png')
+plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'png')
 
 to_step   = length(dir(['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step*.mat']))-1 ;
 saved_simul_out=['simul_out_' meshfile(1:end-4) '_' simul_in.simul_in_name '_step' num2str(to_step) '.mat']
-plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'pdf')
-plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'pdf')
-plot_param_v2('log1md',saved_simul_out,domain,'jet',[-3.7 0],[],'pdf')
+plot_param_v2('c',saved_simul_out,domain,'rev_gris',[0 1],[],'png')
+plot_param_v2('h',saved_simul_out,domain,'jet',[0 5],[],'png')
+plot_param_v2('log1md',saved_simul_out,domain,'jet',[-3.7 0],[],'png')
 
 % --------------
 % 5. Diagnostics
@@ -99,14 +99,37 @@ end
 
 %%clean up directory
 outdir   = ['test_',num2str(test_i),'_outputs'];
-mkdir(outdir);
-mkdir([outdir,'/pdf']);
+eval(['!mkdir -p ',outdir]);
 %%
-cmd   = ['!mv *','test',num2str(test_i),'*.mat ',outdir];
+odir  = [outdir,'/simul_in'];
+eval(['!mkdir -p ',odir]);
+cmd   = ['!mv *','simul_in*.mat ',odir];
 eval(cmd);
-cmd   = ['!mv *','test',num2str(test_i),'*.pdf ',outdir,'/pdf'];
+%%
+odir  = [outdir,'/simul_out_steps_mat'];
+eval(['!mkdir -p ',odir]);
+cmd   = ['!mv *','simul_out*step*.mat ',odir];
 eval(cmd);
-cmd   = ['!mv *','test',num2str(test_i),'*.txt ',outdir];
+%%
+odir  = [outdir,'/diagnostics'];
+eval(['!mkdir -p ',odir]);
+cmd   = ['!mv diagnostics* ',odir];
 eval(cmd);
-cmd   = ['!mv *','test',num2str(test_i),'*.fig ',outdir];
+%%
+odir  = [outdir,'/wim_log'];
+eval(['!mkdir -p ',odir]);
+cmd   = ['!mv test_outputs/out_2/log/* ',odir];
 eval(cmd);
+%%
+odir  = [outdir,'/figs'];
+eval(['!mkdir -p ',odir]);
+odir  = [odir,'/init_final'];
+eval(['!mkdir -p ',odir]);
+cmd   = ['!mv *','test',num2str(test_i),'*.png ',outdir,'/png'];
+eval(cmd);
+
+!rm -f fort.6
+%cmd   = ['!mv *','test',num2str(test_i),'*.txt ',outdir];
+%eval(cmd);
+%cmd   = ['!mv *','test',num2str(test_i),'*.fig ',outdir];
+%eval(cmd);
