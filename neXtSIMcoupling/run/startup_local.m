@@ -1,17 +1,32 @@
 %%define location of /Data/sim:
 SHOW_WARNING   = 0;
+
 if exist('/Volumes/sim')
    %% johansen
    data_sim = '/Volumes/sim'
-elseif exist('/Volumes/Tim_Ext_HD2/WORK/neXtSIM')
+   try_ext  = 0;
+
+   %% sometimes this dir shows up even if it's not loaded
+   dd       = dir(data_sim);
+   if length(dd)==2
+      %%only ".", ".." in dir
+      try_ext  = 1;
+   end
+end
+   
+if try_ext
+   %% can't find johansen
+
+   if exist('/Volumes/Tim_Ext_HD2/WORK/neXtSIM')
    %% external hard drive
    data_sim = '/Volumes/Tim_Ext_HD2/WORK/neXtSIM'
-else
-   SHOW_WARNING   = 1;
-   %%
-   warnings = {'No paths to neXtSIM data present';
-               '- eg may need to connect to johansen (/Data/sim) with cmd+k';
-               '  or attach external HD.'};
+   else
+      SHOW_WARNING   = 1;
+      %%
+      warnings = {'No paths to neXtSIM data present';
+                  '- eg may need to connect to johansen (/Data/sim) with cmd+k';
+                  '  or attach external HD.'};
+   end
 end
 rmpaths;
 

@@ -12,6 +12,15 @@ end
 % 2. create the standard simul_in
 [saved_simul_in,simul_in_name,domain,resol]=create_simul_in(test_i);
 
+if 0
+   % Rewrite the simul in file
+   step_restart           = 12;
+   simul_in.use_simul_out = 1;
+   simul_in.step_nb       = step_restart;
+   save(saved_simul_in,'simul_in')
+end
+
+
 % --------------
 % 3. run the simulation
 profile on
@@ -22,8 +31,8 @@ profsave(profile('info'),['test_',num2str(test_i),'_profile_results'])
 % --------------
 % 4. Plots of the scalar variables
 load(saved_simul_in)
-meshfile=getfield(simul_in,'meshfile');
-domain=getfield(simul_in,'domain');
+meshfile = getfield(simul_in,'meshfile');
+domain   = getfield(simul_in,'domain');
 
 % steps to be loaded
 from_step = 0 ;

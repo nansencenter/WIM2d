@@ -1,4 +1,4 @@
-function h=plot_param_v2(param,simul_outfile,varargin)
+function plot_param_grid(param,simul_outfile,varargin)
 % plot_param  plots the variable param of the simul_outfile with the given colormap. 
 %   plot_param_v2 was created to avoid issues with global variables and can be called directly from the command line.
 %   plot_param_v2 calls plot_tricorner for the actual plotting.
@@ -44,7 +44,13 @@ if nVarargs >= 8, error('Too many inputs'), end
 
 %Loading data
 load arctic_coasts_light.mat;
-load(simul_outfile);
+if isstr(simul_outfile)
+   load(simul_outfile);
+elseif isstruct(simul_outfile)
+   simul_out   = simul_outfile;
+else
+   error('pass in filename as string or simul_out structure')
+end
 
 % Load/read mesh
 X  = simul_out.wim.gridprams.X/1.e3;%km
@@ -58,23 +64,37 @@ if strcmp(param,'taux_waves')
 elseif strcmp(param,'tauy_waves')
    Z  = simul_out.wim.waves_for_nodes.tau_y;
    tstr  = '\tau_y, Pa';
-elseif strcmp(param,'c')
-   Z  = simul_out.wim.ice_on_grid.cice;
-elseif strcmp(param,'h')
-   Z  = simul_out.wim.ice_on_grid.hice;
-   tstr  = 'h, m';
-elseif strcmp(param,'Dmax')
-   Z  = simul_out.wim.ice_for_elements.Dmax;
-   tstr  = 'D_{max}, m';
 elseif strcmp(param,'Hs')
-   Z  = simul_out.wim.wave_fields.Hs;
+   Z     = simul_out.wim.wave_fields.Hs;
    tstr  = 'H_{s}, m';
 elseif strcmp(param,'Tp')
-   Z  = simul_out.wim.wave_fields.Tp;
+   Z     = simul_out.wim.wave_fields.Tp;
    tstr  = 'T_{p}, s';
 elseif strcmp(param,'mwd')
-   Z  = simul_out.wim.wave_fields.mwd;
+   Z     = simul_out.wim.wave_fields.mwd;
    tstr  = 'mwd, degrees';
+elseif strcmp(param,'cice')|strcmp(param,'c')
+   Z     = simul_out.wim.ice_on_grid.cice;
+   tstr  = 'concentration';
+elseif strcmp(param,'hice')|strcmp(param,'h')
+   Z     = simul_out.wim.ice_on_grid.hice;
+   tstr  = 'thickness, m';
+elseif strcmp(param,'thick')
+   c        = simul_out.wim.ice_on_grid.cice;
+   Z        = 0*c;
+   jpos     = find(c>0);
+   Z(jpos)  = simul_out.wim.ice_on_grid.hice(jpos)./c(jpos);
+   tstr     = 'thickness, m';
+   clear c;
+elseif strcmp(param,'Dmax')
+   Z     = Nfloes_to_Dmax( simul_out.wim.ice_for_elements.Nfloes,...
+                           simul_out.wim.ice_on_grid.cice,...
+                           simul_out.wim.other_prams);
+   tstr  = 'Dmax, m';
+   clear Nfloes;
+elseif strcmp(param,'Nfloes')
+   Z     = 1e6*simul_out.wim.ice_for_elements.Nfloes;
+   tstr  = 'Nfloes, km^{-2}';
 end
 
 P  = pcolor(X',Y',Z');
