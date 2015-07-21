@@ -56,3 +56,4 @@ neXtSIMcoupling/run/*
 !neXtSIMcoupling/run/*.py
 !neXtSIMcoupling/run/*.sh
 !neXtSIMcoupling/run/infiles
+neXtSIMcoupling/tutorial/out/*
