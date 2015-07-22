@@ -254,20 +254,25 @@
 ! --- (donor cell) and a high order correction flux.
 !
 !$OMP PARALLEL DO
-      do j=0,jj+2
-        do i=0,ii+2
-          ful(i,j)=0.
-          fuh(i,j)=0.
-          fvl(i,j)=0.
-          fvh(i,j)=0.
-        enddo
-      enddo
+      ful  = 0.
+      fuh  = 0.
+      fvl  = 0.
+      fvh  = 0.
+      !do j=0,jj+2
+      !  do i=0,ii+2
+      !    ful(i,j)=0.
+      !    fuh(i,j)=0.
+      !    fvl(i,j)=0.
+      !    fvh(i,j)=0.
+      !  enddo
+      !enddo
 !$OMP END PARALLEL DO
 !
 !      call xctilr(g, 1,1, 3,3, halo_ps)
 !
 !$OMP PARALLEL DO PRIVATE(im1,im2,q0,q1,a0,a1,ip1)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!fluxes in x dirn:
       do j=0,jj+1
 !       do l=1,isu(j)
@@ -312,10 +317,12 @@
 !       enddo
 !       enddo
       enddo
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END PARALLEL DO
 !
 !$OMP PARALLEL DO PRIVATE(jm1,q0,q1,a0,a1,jm2,jp1)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!fluxes in y dirn:
       do j=0,jj+2
         jm1=j-1
@@ -359,6 +366,7 @@
 !       enddo
 !       enddo
       enddo
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !$OMP END PARALLEL DO
 !
 ! --- Update field with low order fluxes.
