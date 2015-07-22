@@ -40,7 +40,7 @@ SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...
                      'ADV_OPT',ADV_OPT);
 TEST_INC_SPEC     = 0;
-TEST_FINAL_SPEC   = 1;
+TEST_FINAL_SPEC   = 0;
 
 %% make a log file similar to fortran file
 log_dir  = 'log';
@@ -800,8 +800,7 @@ elseif MEX_OPT==2
 else
    disp('Running pure matlab code');
 
-   %% also give progress report every 'reps' time
-   %%  steps;
+   %% also give progress report every 'reps' time steps;
    %reps  = nt+1;%%go straight through without reporting back or plotting
    reps  = 50;
    GET_OUT  = 1;
@@ -1048,6 +1047,7 @@ else
       % {jmiz}
 
       %% progress report;
+      [round(n/reps),(n/reps)]
       if round(n/reps)==(n/reps)
          if GET_OUT
             Dmax_all(:,:,n/reps) = Dmax;
@@ -1063,79 +1063,94 @@ else
          disp(strvcat(Info));
 
          if PLOT_PROG
-            figure(2),clf;
-            %%
-            if PLOT_OPT==1
-               s1 = struct('dir',wave_stuff.dirs(jdir),...
-                           'period',Tc,...
-                           'Sdir',Sdir(:,:,jdir,jchq));
-               fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
-            else
-               fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
-                  Dmax,ice_fields.tau_y);
-            end
-
-            if OPT==1
-               subplot(2,2,1);
-               hold on;
-               x0 = min(X(:))+uc*n*dt;
-               x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
-               % {uc,x0/1e3,x1/1e3}
-               yc = .3*max(Y(:))/1e3;
-               x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
-               y_ = [0,0,yc*[1,1],0,0];
-               plot(x_,y_,'k');
-               plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-               hold off;
+            if DIAG1d==0
+               figure(2),clf;
+               fn_fullscreen;
                %%
-               subplot(2,2,2);
-               hold on;
-               plot(x_,y_,'k');
-               plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-               hold off;
-            end
-
-            if DIAG1d==1
-               %% during run
-               figure(4);
-               subplot(4,1,1);
-               hold on;
-               %%
-               %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
-               fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
-               hold on;
-               %%
-               [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-               %Hp                = 4*sqrt(Ep(:,1));
-               %Hm                = 4*sqrt(Em(:,1));
-               Hp                = 4*sqrt(mean(Ep,2));
-               Hm                = 4*sqrt(mean(Em,2));
-               if DIAG1d_OPT==0
-                  %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
-                  Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
-               elseif DIAG1d_OPT==1
-                  %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
-                  Hs2   = 4*sqrt(mean(Et1,2));
-               elseif DIAG1d_OPT==2
-                  %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
-                  Hs2   = 4*sqrt(mean(Et2,2));
+               if PLOT_OPT==1
+                  s1 = struct('dir',wave_stuff.dirs(jdir),...
+                              'period',Tc,...
+                              'Sdir',Sdir(:,:,jdir,jchq));
+                  fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+               else
+                  fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
+                     Dmax,ice_fields.tau_y);
                end
-               fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
-               hold on;
-               %%
-               subplot(4,1,2);
-               fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
-               hold on;
-               fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
-               hold on;
-               %%
-               subplot(4,1,3);
-               fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
-               hold on;
-               %%
-               loop_col = loop_col+1;
-               if loop_col>length(cols)
-                  loop_col = 1;
+
+               if OPT==1
+                  subplot(2,2,1);
+                  hold on;
+                  x0 = min(X(:))+uc*n*dt;
+                  x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
+                  % {uc,x0/1e3,x1/1e3}
+                  yc = .3*max(Y(:))/1e3;
+                  x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+                  y_ = [0,0,yc*[1,1],0,0];
+                  plot(x_,y_,'k');
+                  plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+                  hold off;
+                  %%
+                  subplot(2,2,2);
+                  hold on;
+                  plot(x_,y_,'k');
+                  plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+                  hold off;
+               end
+            else
+               %% DIAG1d==1
+               %% during run
+               if 1
+                  figure(4);
+                  %% check symmetry
+                  [hmax,imax] = max(wave_fields.Hs(:,1));
+                  hp          = wave_fields.Hs(imax,:);
+                  yp          = grid_prams.Y(imax,:);
+                  plot(yp/1e3,hp);
+                  ttl   = title(['max h = ',num2str(max(wave_fields.Hs(:))),'; x = ',num2str(X(imax,1)/1.0e3),'km']);
+                  GEN_font(ttl);
+
+               else
+                  %%check partition of fwd and back energy
+                  figure(4);
+                  subplot(4,1,1);
+                  hold on;
+                  %%
+                  %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+                  fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+                  hold on;
+                  %%
+                  [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+                  %Hp                = 4*sqrt(Ep(:,1));
+                  %Hm                = 4*sqrt(Em(:,1));
+                  Hp                = 4*sqrt(mean(Ep,2));
+                  Hm                = 4*sqrt(mean(Em,2));
+                  if DIAG1d_OPT==0
+                     %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+                     Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+                  elseif DIAG1d_OPT==1
+                     %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+                     Hs2   = 4*sqrt(mean(Et1,2));
+                  elseif DIAG1d_OPT==2
+                     %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+                     Hs2   = 4*sqrt(mean(Et2,2));
+                  end
+                  fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+                  hold on;
+                  %%
+                  subplot(4,1,2);
+                  fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+                  hold on;
+                  fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
+                  hold on;
+                  %%
+                  subplot(4,1,3);
+                  fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+                  hold on;
+                  %%
+                  loop_col = loop_col+1;
+                  if loop_col>length(cols)
+                     loop_col = 1;
+                  end
                end
             end
             clear s1;
@@ -1222,7 +1237,7 @@ if TEST_FINAL_SPEC==1
          disp(['max diff: ',num2str(max(diff(:)))]);
          disp(' ');
       end
-   else
+   elseif MEX_OPT>0
       disp('(Check outputs vs values in binary files)');
       of2         = fn_check_final(outdir);%%set in infile_dirs.txt
       of1.Hs      = wave_fields.Hs;
