@@ -31,7 +31,7 @@ function h  = waveadv_weno(h,u,v,grid_prams,dt,adv_options)
 %% in:      scp2, scp2i are grid box area at p points, and its inverse;
 %%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-bc_opt   = adv_options.ADV_OPT;
+ADV_OPT   = adv_options.ADV_OPT;
 
 ii       = grid_prams.nx;
 jj       = grid_prams.ny;
@@ -53,7 +53,7 @@ jreal = nbdy+(1:jdm)';  %%non-ghost j indices
 %%assign values in ghost cells
 %%-do this beforehand in case want to parallelise??
 
-%%make all these periodic in i,j (x,y)
+%%make all these periodic in both i,j (x,y)
 u     = pad_var(u    ,1,nbdy);
 v     = pad_var(v    ,1,nbdy);
 scvx  = pad_var(scvx ,1,nbdy);
@@ -61,12 +61,12 @@ scuy  = pad_var(scuy ,1,nbdy);
 scp2  = pad_var(scp2 ,1,nbdy);
 scp2i = pad_var(scp2i,1,nbdy);
 
-%%bc_opt determines how h is extended to ghost cells:
+%%ADV_OPT determines how h is extended to ghost cells:
 %% 0: zeros in ghost cells
 %% 1: periodic in i,j
 %% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
-h  = pad_var(h,bc_opt,nbdy);
-jtst  = (ii+2*nbdy)+(-12:0);
+h  = pad_var(h,ADV_OPT,nbdy);
+%jtst  = (ii+2*nbdy)+(-12:0);
 %tst2d = h(jtst,4),pause
 %pcolor(h),colorbar,GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -199,6 +199,9 @@ jtst  = idm+2*nbdy+(-12:0)';
 % --- Compute grid cell boundary fluxes. Split in a low order flux
 % --- (donor cell) and a high order correction flux.
 %
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% fluxes in x dirn
 for i_ = 0:ii+2
 for j_ = 0:jj+1
    i  = i_+nbdy;%%1-nbdy->1
@@ -238,7 +241,10 @@ for j_ = 0:jj+1
 end%j
 end%i
 %tst2d = [ful(jtst,4),fuh(jtst,4)],pause
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%fluxes in y dirn:
 for i_ = 0:ii+1
 for j_ = 0:jj+2
    i     = i_+nbdy;%%1-nbdy->1
@@ -275,6 +281,7 @@ for j_ = 0:jj+2
    fvh(i,j) = v(i,j)*(a0*q0+a1*q1)/(a0+a1)*scvx(i,j)-fvl(i,j);
 end%j
 end%i
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Update field with low order fluxes.
 for i_ = 0:ii+1
@@ -289,8 +296,8 @@ end%i
 
 % --- Obtain fluxes with limited high order correction fluxes.
 q  = .25/dt;
-for i_ = 0:ii+1
-for j_ = 0:jj
+for i_ = 1:ii+1
+for j_ = 1:jj
    i     = i_+nbdy;%%1-nbdy->1
    j     = j_+nbdy;%%1-nbdy->1
 
@@ -300,8 +307,8 @@ for j_ = 0:jj
 end%j
 end%i
 
-for i_ = 0:ii
-for j_ = 0:jj+1
+for i_ = 1:ii
+for j_ = 1:jj+1
    i     = i_+nbdy;%%1-nbdy->1
    j     = j_+nbdy;%%1-nbdy->1
 
@@ -312,8 +319,8 @@ end%j
 end%i
 
 % --- Compute the spatial advective operator.
-for i_ = 0:ii
-for j_ = 0:jj+1
+for i_ = 1:ii
+for j_ = 1:jj
    i     = i_+nbdy;%%1-nbdy->1
    j     = j_+nbdy;%%1-nbdy->1
 
