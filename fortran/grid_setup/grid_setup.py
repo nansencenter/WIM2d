@@ -7,19 +7,19 @@ import fns_grid_setup as gs
 CHANGE_GRID    = 1
 CHANGE_WAVES   = 1
 
-# Set default grid configuration (see fns_grid_setup.py)
-if 0:
-   GRID_OPT = 0 # standard 1d grid configuration
-elif 1:
-   GRID_OPT = 2 # Philipp's small-square
-else:
-   GRID_OPT = 1 # standard 2d grid configuration
-
 #############################################################
 infile   = 'infile_grid.txt'
 if os.path.exists(infile):
    # read in GRID_OPT from file:
    GRID_OPT = infile
+else:
+   # Set default grid configuration (see fns_grid_setup.py)
+   if 0:
+      GRID_OPT = 0 # standard 1d grid configuration
+   elif 1:
+      GRID_OPT = 2 # Philipp's small-square
+   else:
+      GRID_OPT = 1 # standard 2d grid configuration
 #############################################################
 
 TEST     = 0 # if 0: save grid files to ../run/inputs (correct place for rest of model to find)
