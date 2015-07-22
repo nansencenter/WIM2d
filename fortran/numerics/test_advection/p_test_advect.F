@@ -32,31 +32,32 @@
 
       inquire(file='infile.txt',exist=fex2)
       if (fex2) then
-         call read_infile(OPT,ADV_opt,CFL)
+         call read_infile(OPT,ADV_opt,CFL,adv_dir)
       else
          OPT      = 1 ! geometry
          ADV_OPT  = 2
             !1: periodic in x,y; 2: periodic in y only; 0: not periodic
          CFL      = .4
+         adv_dir  = 135.0!deg
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set grid here
       x0 = minval(X)
       y0 = minval(Y)
-      xm = .5*(maxval(X)-x0)
-      ym = .5*(maxval(Y)-y0)
-      !!
       X  = 0.0
       Y  = 0.0
       do i=1,ii
          xx(i)    = x0+dx*(i-1)
          X(i,:)   = xx(i)
       end do
+      xm = .5*(maxval(X)-x0)
+      !!
       do j=1,jj
          yy(j)    = y0+dy*(j-1)
          Y(:,j)   = yy(j)
       end do
+      ym = .5*(maxval(Y)-y0)
       !!
       LANDMASK = 0.0
       scuy     = dy
@@ -85,9 +86,7 @@
          print*,'******************************************'
          print*,''
          uc       = 30!const speed m/s
-         xc       = 2*xm/3.0
-         !adv_dir = 180.0!deg straight across
-         adv_dir  = 135.0!deg
+         xc       = x0+5*xm/3.0
          u        = uc*cos(pi/180.0*adv_dir)
          v        = uc*sin(pi/180.0*adv_dir)
          dt       = CFL*dx/uc
@@ -111,8 +110,8 @@
       elseif (OPT.eq.2) then
          !!variable speed
          uc = 30!max speed m/s
-         xc = 2*xm/3.0
-         u  = -uc*X/xm!speed variable with x
+         xc = x0+5*xm/3.0
+         u  = -uc*(X-xm)/xm!speed variable with x
          v  = 0.0
          dt = CFL*dx/uc
          nt = 2*xm/(uc*dt)
@@ -263,13 +262,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine read_infile(OPT,ADV_OPT,CFL)
+      subroutine read_infile(OPT,ADV_OPT,CFL,adv_dir)
       !!determines where to read inputs/outputs from
       
       implicit none
       
       integer,intent(out)        :: OPT,ADV_OPT
-      real,intent(out)           :: CFL
+      real,intent(out)           :: CFL,adv_dir
       integer,parameter          :: fid=99
       character(len=80)          :: ctmp
       character(len=*),parameter :: infile = 'infile.txt'
@@ -292,6 +291,8 @@
       read(fid,'(a)'), ctmp
       read(fid,'(e4.2,a)'),  CFL ,ctmp
       print*,"CFL: ",CFL
+      read(fid,'(e5.1,a)'),  adv_dir ,ctmp
+      print*,"adv_dir: ",adv_dir
       print*,'******************************************************'
       print*,' '
       !!

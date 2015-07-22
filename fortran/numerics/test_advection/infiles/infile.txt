@@ -3,4 +3,5 @@
 02 # ADV_OPT   (i2.2)
 
 # real parameters
-0.40  # CFL (f4.2)
+0.40  # CFL       (f4.2)
+135.0 # adv_dir   (f5.1) - only used if OPT==1

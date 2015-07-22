@@ -11,14 +11,11 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer, parameter   :: OPT      = 1
-      integer, parameter   :: bc_opt   = 1
-         !1: periodic in x; 0: not periodic
-
-      integer, parameter :: ADV_METHOD = 1
-      real, parameter    :: CFL        = 0.4
+      integer              :: OPT,ADV_opt
+      integer, parameter   :: ADV_METHOD = 1
+      real                 :: CFL
       !!
-      real   :: xm,ym
+      real   :: x0,y0,xm,ym
       real   :: xx(ii),yy(jj)
       real,dimension(idm,jdm)   :: R,Theta,u,h,v,source
 
@@ -28,7 +25,7 @@
 
       real   :: adv_dir,xc,yc,uc,Rc,angrot,dt,dtheta,PI
       integer  :: nt,n,i,j
-      logical  :: critter
+      logical  :: critter,fex2
 
       character(len=*),parameter :: outfile = "ADVweno"
       character(len=*),parameter :: outdir = "out/"
@@ -37,25 +34,40 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       PI = 4.0*atan(1.0)
-      v  = 0.0 !!place holder for test functions
 
-      xm = (ii+1)/2.0*dx
-      ym = (jj+1)/2.0*dy
+      inquire(file='infile.txt',exist=fex2)
+      if (fex2) then
+         call read_infile(OPT,ADV_opt,CFL,adv_dir)
+      else
+         OPT      = 1 ! geometry
+         ADV_OPT  = 2
+            !1: periodic in x,y; 2: periodic in y only; 0: not periodic
+         CFL      = .4
+         adv_dir  = 135.0!deg
+      end if
+
+      v  = 0.0 !!place holder for test functions
 
       source   = 0.0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!set grid here
+      x0 = 0.
+      y0 = 0.
+      !!
       X  = 0.0
       Y  = 0.0
       do i=1,ii
-         xx(i)    = -xm+dx*i
+         xx(i)    = x0+dx*(i-1)
          X(i,:)   = xx(i)
       end do
+      xm = .5*(maxval(X)-x0)
+      !!
       do j=1,jj
-         yy(j)    = -ym+dy*j
+         yy(j)    = y0+dy*(j-1)
          Y(:,j)   = yy(j)
       end do
+      ym = .5*(maxval(Y)-y0)
       !!
       LANDMASK = 0.0
       scuy     = dy
@@ -84,14 +96,12 @@
          print*,'******************************************'
          print*,''
          uc       = 30!const speed m/s
-         xc       = 2*xm/3.0
-         !adv_dir = 180.0!deg straight across
-         adv_dir  = 135.0!deg
+         xc       = x0+5*xm/3.0
          u        = uc*cos(pi/180.0*adv_dir)
          dt       = CFL*dx/uc
-         if (bc_opt.eq.1) then
+         if (ADV_opt.eq.1) then
             nt = 2*aint(2*xm/(uc*dt))  !test periodic boundary condition
-         elseif (bc_opt.eq.2) then
+         elseif (ADV_opt.eq.2) then
             nt = aint(3*xm/(uc*dt))  !test periodic boundary condition
          else
             nt = aint(2*xm/(uc*dt))
@@ -109,8 +119,8 @@
       elseif (OPT.eq.2) then
          !!variable speed
          uc = 30!max speed m/s
-         xc = 2*xm/3.0
-         u  = -uc*X/xm!speed variable with x
+         xc = x0+5*xm/3.0
+         u  = -uc*(X-xm)/xm!speed variable with x
          dt = CFL*dx/uc
          nt = 2*xm/(uc*dt)
          !!
@@ -191,13 +201,13 @@
 
          if (ADV_METHOD.eq.1) then
             !!advect for one time step
-            call waveadv_weno_1d(h,u,dt,bc_opt)
+            call waveadv_weno_1d(h,u,dt,ADV_opt)
          else
             !!advect for one time step
             if (.false.) then
                print*,'min/max source:',minval(source),maxval(source)
             endif
-            call waveadv_lax_1d(h,u,dt,bc_opt)
+            call waveadv_lax_1d(h,u,dt,ADV_opt)
          end if
 
          if (1.eq.1) then
@@ -271,4 +281,44 @@
       close(2)
 
       end subroutine wrt_bfile
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine read_infile(OPT,ADV_OPT,CFL,adv_dir)
+      !!determines where to read inputs/outputs from
+      
+      implicit none
+      
+      integer,intent(out)        :: OPT,ADV_OPT
+      real,intent(out)           :: CFL,adv_dir
+      integer,parameter          :: fid=99
+      character(len=80)          :: ctmp
+      character(len=*),parameter :: infile = 'infile.txt'
+
+      print*,' '
+      print*,'******************************************************'
+      print*,'Opening infile: infile.txt'
+
+      open(unit=fid,file=infile,action='read')
+
+      !! integer prams
+      read(fid,'(a)'), ctmp
+      read(fid,'(i2.2,a)'), OPT     ,ctmp
+      print*,'OPT: ',OPT
+      read(fid,'(i2.2,a)'), ADV_OPT     ,ctmp
+      print*,'ADV_OPT: ',ADV_OPT
+
+      !! real prams
+      read(fid,'(a)'), ctmp
+      read(fid,'(a)'), ctmp
+      read(fid,'(e4.2,a)'),  CFL ,ctmp
+      print*,"CFL: ",CFL
+      read(fid,'(e4.2,a)'),  adv_dir ,ctmp
+      print*,"adv_dir: ",adv_dir
+      print*,'******************************************************'
+      print*,' '
+      !!
+      close(fid)
+
+      end subroutine read_infile
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
