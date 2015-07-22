@@ -1108,7 +1108,7 @@ else
                   plot(yp/1e3,hp);
                   ttl   = title(['max h = ',num2str(max(wave_fields.Hs(:))),'; x = ',num2str(X(imax,1)/1.0e3),'km']);
                   GEN_font(ttl);
-
+                  GEN_proc_fig('y, km','H_s, m')
                else
                   %%check partition of fwd and back energy
                   figure(4);
