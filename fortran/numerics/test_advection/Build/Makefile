@@ -30,7 +30,8 @@ OBJS=\
      $(ODIR)/mod_gridinfo.o \
      $(ODIR)/mod_advect.o
 
-TARGET=test_advect.exec
+TARGET2d=test_advect.exec
+TARGET1d=test_advect_1d.exec
 
 # Create objects by compiling their respective .F files
 $(ODIR)/%.o:	%.F
@@ -41,13 +42,15 @@ $(ODIR)/%.o:	%.F
 # Default is 2d advection code
 2d: $(PROG) $(OBJS)
 	mkdir -p $(bin)
-	$(FC) -o $(TARGET) $^ $(FCFLAGS)
-	mv $(TARGET) $(bin)
+	$(FC) -o $(TARGET2d) $^ $(FCFLAGS)
+	mv $(TARGET2d) $(bin)
 
 1d:	$(PROG_1d) $(OBJS)
 	mkdir -p $(bin)
-	$(FC) -o $(TARGET) $^ $(FCFLAGS)
-	mv $(TARGET) $(bin)
+	$(FC) -o $(TARGET1d) $^ $(FCFLAGS)
+	mv $(TARGET1d) $(bin)
+
+all:	2d	1d
 
 # dependencies:
 $(ODIR)/mod_gridinfo.o:	grid_info.h

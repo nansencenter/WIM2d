@@ -57,3 +57,5 @@ neXtSIMcoupling/run/*
 !neXtSIMcoupling/run/*.sh
 !neXtSIMcoupling/run/infiles
 neXtSIMcoupling/tutorial/out/*
+
+fortran/numerics/test_advection/infile.txt

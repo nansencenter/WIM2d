@@ -2,7 +2,23 @@
 mkdir -p out test_out
 rm out/* test_out/*
 
-bin/test_advect.exec
+if [ $# -eq 1 ]
+then
+   dim=$1
+else
+   dim=2
+fi
+
+if [ $dim -eq 2 ]
+then
+   ex2=bin/test_advect.exec      # 2d advection executable
+   echo running $ex2
+   $ex2
+else
+   ex1=bin/test_advect_1d.exec   # 1d advection executable
+   echo running $ex1
+   $ex1
+fi
 
 echo " "
 echo "**********************************************************"
