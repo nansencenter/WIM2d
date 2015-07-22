@@ -4,13 +4,14 @@
 clear;
 
 %%boundary conditions:
-%bc_opt   = 0; %waves escape domain
-%bc_opt   = 1; %waves periodic in i,j
-bc_opt   = 2; %waves periodic in j (y) only
+%ADV_OPT  = 0; %waves escape domain
+ADV_OPT  = 1; %waves periodic in i,j
+%ADV_OPT  = 2; %waves periodic in j (y) only
+adv_options.ADV_OPT  = ADV_OPT;
 
 %%testing:
-ii = 49;
-jj = 51;
+ii = 150;
+jj = 10;
 dx = 4e3;%m
 dy = 4e3;%m
 %%
@@ -35,7 +36,7 @@ grid_prams  = s1;
 clear s1;
 
 OPT   = 1;
-CFL   = .4;
+CFL   = .7;
 
 if OPT==1
    uc      = 30;%const speed m/s
@@ -43,6 +44,7 @@ if OPT==1
    %theta   = 180;%wave-to direction [deg] - to left
    theta   = 135;%wave-to direction [deg] - up and to the left
    %theta   = 0;%wave-to direction [deg] - to right
+   theta   = 45;%wave-to direction [deg] - up and to the right
    u       = 0*X+uc*cos(pi/180*theta);
    v       = 0*X+uc*sin(pi/180*theta);
    h       = 0*X;
@@ -50,7 +52,7 @@ if OPT==1
    %%
    dt = CFL*dx/uc;
    nt = 2*xm/(uc*dt);
-   if bc_opt==1
+   if ADV_OPT==1
       nt = 2*nt;
    end
 elseif OPT==2
@@ -138,9 +140,9 @@ if 1%%plot u,v,h
    subplot(2,2,4);
    ax = pcolor(X/1e3,Y/1e3,h);
    set(ax, 'EdgeColor', 'none');
-   colorbar;
+   %daspect([1 1 1]);
+   %colorbar;
    caxis([0 2]);
-   daspect([1 1 1]);
    ttl   = title('h(t), m');
    GEN_font(ttl);
    GEN_proc_fig('x, km','y, km');
@@ -158,44 +160,72 @@ end
 for n = 1:nt
    [n,nt]
    %h     = waveadv_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK);
-   h     = waveadv_weno(h,u,v,grid_prams,dt,bc_opt);
+   h     = waveadv_weno(h,u,v,grid_prams,dt,adv_options);
    hmax  = max(h(:))
    %%
-   subplot(2,2,4);
-   ax = pcolor(X/1e3,Y/1e3,h);
-   set(ax, 'EdgeColor', 'none');
-   colorbar;
-   caxis([0 2]);
-   daspect([1 1 1]);
-   ttl   = title('h(t), m');
-   GEN_font(ttl);
-   GEN_proc_fig('x, km','y, km');
-
-   if OPT==1
-      x1 = xc+uc*cos(pi*theta/180)*n*dt;
-      y1 = -ym+uc*sin(pi*theta/180)*n*dt
-      x2 = xm+uc*cos(pi*theta/180)*n*dt;
-      hold on;
-      plot(x1/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
-      plot(x2/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
-      plot([x1,x2]/1e3,y1/1e3*[1 1],'r');
-      if 1
-         y3 = 0*xx;
-         y3((xx>=x1)&(xx<=x2))   = ym/2;
-         plot(xx/1e3,y3/1e3,'k');
-         plot(xx/1e3,h(:,46)*ym/2/1e3,'--k');
+   if 1
+      if OPT==1
+         figure(3);
+         [hmax,imax] = max(h(:,1));
+         yp          = Y(imax,:);
+         hp          = h(imax,:);
+         plot(yp/1.0e3,hp-mean(hp));
+         GEN_proc_fig('y, km','h');
+         ttl   = title(['max h = ',num2str(max(h(:))),'; x = ',num2str(X(imax,1)/1.0e3),'km']);
+         GEN_font(ttl);
       end
-      hold off;
+   else
+      figure(2);
+      ax = pcolor(X/1e3,Y/1e3,h);
+      set(ax, 'EdgeColor', 'none');
+      %daspect([1 1 1]);
+      %colorbar;
+      caxis([0 2]);
+      ttl   = title('h(t), m');
+      GEN_font(ttl);
+      GEN_proc_fig('x, km','y, km');
 
-   elseif OPT==3
-      hold on;
-      x3 = x1*cos(n*dtheta)-y1*sin(n*dtheta);
-      y3 = y1*cos(n*dtheta)+x1*sin(n*dtheta);
-      plot(x3/1e3,y3/1e3,'r');
-      x4 = x2*cos(n*dtheta)-y2*sin(n*dtheta);
-      y4 = y2*cos(n*dtheta)+x2*sin(n*dtheta);
-      plot(x4/1e3,y4/1e3,'m');
-      hold off;
+      if OPT==1
+         x1 = xc+uc*cos(pi*theta/180)*n*dt;
+         y1 = -ym+uc*sin(pi*theta/180)*n*dt
+         x2 = xm+uc*cos(pi*theta/180)*n*dt;
+         hold on;
+         plot(x1/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
+         plot(x2/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
+         plot([x1,x2]/1e3,y1/1e3*[1 1],'r');
+         if 1
+            y3 = 0*xx;
+            y3((xx>=x1)&(xx<=x2))   = ym/2;
+            plot(xx/1e3,y3/1e3,'k');
+            plot(xx/1e3,h(:,end)*ym/2/1e3,'--k');
+            yb = ym/2+0*xx;
+            plot(xx/1e3,yb/1e3,'--r');
+         end
+         hold off;
+
+      elseif OPT==3
+         hold on;
+         x3 = x1*cos(n*dtheta)-y1*sin(n*dtheta);
+         y3 = y1*cos(n*dtheta)+x1*sin(n*dtheta);
+         plot(x3/1e3,y3/1e3,'r');
+         x4 = x2*cos(n*dtheta)-y2*sin(n*dtheta);
+         y4 = y2*cos(n*dtheta)+x2*sin(n*dtheta);
+         plot(x4/1e3,y4/1e3,'m');
+         hold off;
+      end
    end
-   pause(.1);
+   %GEN_pause;
+   %pause(.1);
+   drawnow;
+end
+
+if OPT==1
+   figure(3);
+   [hmax,imax] = max(h(:,1));
+   yp          = Y(imax,:);
+   hp          = h(imax,:);
+   plot(yp/1.0e3,hp-mean(hp));
+   GEN_proc_fig('y, km','h');
+   ttl   = title(['max h = ',num2str(max(h(:))),'; x = ',num2str(X(imax,1)/1.0e3),'km']);
+   GEN_font(ttl);
 end
