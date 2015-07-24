@@ -799,6 +799,72 @@ elseif MEX_OPT==2
 
 else
    disp('Running pure matlab code');
+   COMP_F   = 0;
+   if COMP_F==1
+      %% load prog binaries and compare saved wim_prog*.[ab] files
+      %% to matlab results
+      
+      Fdir     = 'out_2/binaries/prog/';
+      FF       = dir([Fdir,'wim_prog*.a'])
+      if length(FF)==0
+         error('COMP_F==1, but no fortran files to compare to');
+      end
+      %%
+      F0 = FF(1).name;
+      cn = F0(9:end-2);
+      Ln = length(cn);
+      fmt_n = sprintf('%%%d.%dd',Ln,Ln);
+      afile    = [Fdir,F0];
+      %%
+      fmt            = 'float32';
+      aid            = fopen(afile,'rb');
+      F_fields.Dmax  = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.tau_x = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.tau_y = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.Hs    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.Tp    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      fclose(aid);
+      %%
+      if 1
+         if 0
+            %% plot Hs
+            vc = {'Hs','H_s, m'};
+            v1 = wave_fields.(vc{1});
+         else
+            %% plot Dmax
+            vc = {'Dmax','D_{max}, m'};
+            v1 = ice_fields.(vc{1});
+         end
+         v2    = F_fields.(vc{1});
+         subplot(2,1,1);
+         fn_plot_vbl(X,Y,v1,vc{2});
+         subplot(2,1,2);
+         fn_plot_vbl(X,Y,v2,vc{2});
+         maxes = {max(v1(:)),max(v1(:))}
+      elseif 1
+         %% plot relative diff's
+         vlist = {'Hs','Tp','tau_x'};
+         lbl   = {'{\Delta}H_s/H_s','{\Delta}T_p/T_p','\Delta{\tau}_x/{\tau}_x'};
+         for j=1:2
+            subplot(3,1,j);
+            v1    = wave_fields.(vlist{j});
+            v2    = F_fields.(vlist{j});
+            Z     = 0*v2;
+            jn    = find(abs(v2)>0);
+            Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
+            fn_plot_vbl(X,Y,Z,lbl{j})
+         end
+         for j=3:3
+            subplot(3,1,j);
+            v1    = ice_fields.(vlist{j});
+            v2    = F_fields.(vlist{j});
+            Z     = 0*v2;
+            jn    = find(abs(v2)>0);
+            Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
+            fn_plot_vbl(X,Y,Z,lbl{j})
+         end
+      end
+   end
 
    %% also give progress report every 'reps' time steps;
    %reps  = nt+1;%%go straight through without reporting back or plotting
@@ -1152,6 +1218,21 @@ else
                      loop_col = 1;
                   end
                end
+            end
+
+            if COMP_F==1
+               %% load prog binaries and compare saved wim_prog*.[ab] files
+               %% to matlab results
+               
+               Fdir     = 'out_2/binaries/prog';
+               n        = 0;
+               nnn      = num2str(n,'%3.3d');
+               afile    = [Fdir,nnn,'.a'];
+               aid      = fopen(afile,'rb');
+               XX       = reshape( fread(aid,ii*jj,fmt), ii,jj );
+               YY       = reshape( fread(aid,ii*jj,fmt), ii,jj );
+               hh       = reshape( fread(aid,ii*jj,fmt), ii,jj );
+               fclose(aid);
             end
             clear s1;
             pause(0.1);
@@ -1641,4 +1722,17 @@ for j=1:length(odirs)
       eval(['!mkdir ',outdir]);
    end
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function fn_plot_vbl(X,Y,Z,lbl)
+
+H  = pcolor(X/1e3,Y/1e3,Z);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+GEN_font(gca);
+ttl   = title(lbl);
+GEN_font(ttl);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
