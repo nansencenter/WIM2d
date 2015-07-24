@@ -9,6 +9,7 @@ clear;
 fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
+%TODO read in from infile.txt
 ADV_DIM  = 1;
 CFL      = .4;
 
