@@ -22,6 +22,9 @@ if 0:
 elif 0:
    odir  = ['out','out_2']
 elif 1:
+   # can compare pure matlab results with results saved from mex functions
+   odir  = [mdir+'m_out',mdir+'out_2']
+elif 1:
    # can compare matlab results saved with mex functions also
    odir  = ['out',mdir+'out_2']
 else:
@@ -34,7 +37,7 @@ print('\n')
 ##########################################################################
 
 ##########################################################################
-OPT   = 2   # 1: initial results; 2: final results; 3: prog results
+OPT   = 1   # 1: initial conditions; 2: final results; 3: prog results
 if OPT==1:
    print("\n************************************************")
    print("Checking initial conditions...")

@@ -712,6 +712,67 @@ if PLOT_INIT
    %pause;
 end
 
+SV_BIN   = 1;
+reps_ab  = 10;
+if (SV_BIN==1)
+   %% save matlab files as binaries
+   %% to matlab results
+   !mkdir -p m_out
+   !mkdir -p m_out/binaries
+   !mkdir -p m_out/binaries/prog
+   dims  = [nx,ny,nw,ndir];
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%grid files
+   Fdir  = 'm_out/binaries';
+   Froot = [Fdir,'/wim_grid'];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'X'         ,grid_prams.X};
+   pairs{end+1}   = {'Y'         ,grid_prams.Y};
+   pairs{end+1}   = {'scuy'      ,grid_prams.scuy};
+   pairs{end+1}   = {'scvx'      ,grid_prams.scvx};
+   pairs{end+1}   = {'scp2'      ,grid_prams.scp2};
+   pairs{end+1}   = {'scp2i'     ,grid_prams.scp2i};
+   pairs{end+1}   = {'LANDMASK'  ,grid_prams.LANDMASK};
+   %%
+   fn_save_binary(Froot,dims,pairs);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%init files
+   Fdir  = 'm_out/binaries';
+   Froot = [Fdir,'/wim_init'];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'cice',ice_fields.cice};
+   pairs{end+1}   = {'hice',ice_fields.hice};
+   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'Hs',wave_fields.Hs};
+   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   pairs{end+1}   = {'mwd',wave_fields.mwd};
+   %%
+   fn_save_binary(Froot,dims,pairs);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %% 1st prog file
+   Fdir  = 'm_out/binaries/prog';
+   nnn   = num2str(0,'%3.3d');
+   Froot = [Fdir,'/wim_prog',nnn];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'tau_x',ice_fields.tau_x};
+   pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+   pairs{end+1}   = {'Hs',wave_fields.Hs};
+   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   %%
+   dims  = [nx,ny,nw,ndir];
+   fn_save_binary(Froot,dims,pairs);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+end
+
 disp('beginning main integration...');
 if MEX_OPT==1
 
@@ -759,6 +820,9 @@ if MEX_OPT==1
       wave_fields.(fldnames{j})  = out_arrays(:,:,j);
    end
 
+   % delete annoying file
+   !rm -f fort.6
+
 elseif MEX_OPT==2
 
    disp(' ');
@@ -766,14 +830,19 @@ elseif MEX_OPT==2
    disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
    disp('*****************************************************************');
    disp(' ');
+
+   % real parameters
    real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
    CHECK_FINAL = 1;
    CHECK_PROG  = 1;
    CHECK_INIT  = 1;
+
+   % integer parameters
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
                   CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
                   DO_BREAKING,STEADY];
-   in_arrays   = zeros(nx,ny,3);
+
+   in_arrays         = zeros(nx,ny,3);
    in_arrays(:,:,1)  = ice_fields.cice;
    in_arrays(:,:,2)  = ice_fields.hice;
    in_arrays(:,:,3)  = ice_fields.Dmax;
@@ -796,6 +865,9 @@ elseif MEX_OPT==2
    for j=4:5
       wave_fields.(fldnames{j})  = out_arrays(:,:,j);
    end
+  
+   % delete annoying file
+   !rm -f fort.6
 
 else
    disp('Running pure matlab code');
@@ -868,7 +940,7 @@ else
 
    %% also give progress report every 'reps' time steps;
    %reps  = nt+1;%%go straight through without reporting back or plotting
-   reps  = 50;
+   reps     = 50;
    GET_OUT  = 1;
    if GET_OUT
       Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
@@ -876,7 +948,7 @@ else
    end
 
    %nt = 13%%stop straight away for testing
-   for n = 2:nt
+   for n = 1:nt
       disp([n nt])
 
       %% spectral moments;
@@ -1223,17 +1295,18 @@ else
             if COMP_F==1
                %% load prog binaries and compare saved wim_prog*.[ab] files
                %% to matlab results
-               
-               Fdir     = 'out_2/binaries/prog';
-               n        = 0;
-               nnn      = num2str(n,'%3.3d');
-               afile    = [Fdir,nnn,'.a'];
-               aid      = fopen(afile,'rb');
-               XX       = reshape( fread(aid,ii*jj,fmt), ii,jj );
-               YY       = reshape( fread(aid,ii*jj,fmt), ii,jj );
-               hh       = reshape( fread(aid,ii*jj,fmt), ii,jj );
+               Fdir           = 'out_2/binaries/prog';
+               nnn            = num2str(n,'%3.3d');
+               afile          = [Fdir,nnn,'.a'];
+               aid            = fopen(afile,'rb');
+               F_fields.Dmax  = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.tau_x = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.tau_y = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.Hs    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.Tp    = reshape( fread(aid,nx*ny,fmt), nx,ny );
                fclose(aid);
             end
+
             clear s1;
             pause(0.1);
          end
@@ -1246,13 +1319,47 @@ else
 
 
       for jw=[]%11
-      [n,T(jw)],%[ag_ice(jw,1:11,1)]
-      testSatt=S(1:11,1,jw,jmwd)
-      pause
+         [n,T(jw)],%[ag_ice(jw,1:11,1)]
+         testSatt=S(1:11,1,jw,jmwd)
+         pause
+      end
+
+      if (SV_BIN==1)&(mod(n,reps_ab)==0)
+         %% save matlab files as binaries
+         %% to matlab results
+         Fdir  = 'm_out/binaries/prog';
+         nnn   = num2str(n,'%3.3d');
+         Froot = [Fdir,'/wim_prog',nnn];
+         %%
+         pairs = {};
+         pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+         pairs{end+1}   = {'tau_x',ice_fields.tau_x};
+         pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+         pairs{end+1}   = {'Hs',wave_fields.Hs};
+         pairs{end+1}   = {'Tp',wave_fields.Tp};
+         %%
+         dims  = [nx,ny,nw,ndir];
+         fn_save_binary(Froot,dims,pairs);
       end
 
    end%% end time loop
 end%%MEX_OPT==0 option
+
+if (SV_BIN==1)
+   %% save matlab files as binaries
+   %% to matlab results
+   Fdir  = 'm_out/binaries';
+   Froot = [Fdir,'/wim_out'];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'tau_x',ice_fields.tau_x};
+   pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+   pairs{end+1}   = {'Hs',wave_fields.Hs};
+   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   %%
+   fn_save_binary(Froot,dims,pairs);
+end
 
 t1 = now;
 
