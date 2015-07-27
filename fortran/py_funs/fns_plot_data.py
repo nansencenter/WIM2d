@@ -162,6 +162,53 @@ def cmap_3d(x,y,z,labs,zlims=None):
 #######################################################################
 
 #######################################################################
+def fn_plot_gen(grid_prams,fields,figdir):
+
+   if not os.path.exists(figdir):
+      os.mkdir(figdir)
+
+   x  = grid_prams['X']/1.0e3
+   y  = grid_prams['Y']/1.0e3
+   nx = grid_prams['nx']
+   ny = grid_prams['ny']
+
+   # dictionary of figure names
+   figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png',\
+             'taux':'taux.png','tauy':'tauy.png',\
+             'Hs':'Hs.png'    ,'Tp':'Tp.png'   ,'mwd':'mwd.png',\
+             'ICE_MASK':'ice_mask.png','WAVE_MASK':'wave_mask.png'}
+
+   # dictionary of labels for colorbars
+   labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m',\
+             'taux':r'$\tau_x$, Pa','tauy':r'$\tau_y$, Pa',\
+             'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees',\
+             'ICE_MASK':'Ice mask','WAVE_MASK':'Wave mask'}
+
+   # allow for other variations of key names
+   aliases  = {'Dmax':'dfloe',\
+               'cice':'icec',\
+               'hice':'iceh',\
+               'tau_x':'taux',\
+               'tau_y':'tauy'}
+   for key in aliases.keys():
+      figs.update({key:figs[aliases[key]]})
+      labs.update({key:labs[aliases[key]]})
+
+   # make plots
+   for key in fields.keys():
+      fig   = figdir+'/'+figs[key]
+      if ny>1:
+         f  = cmap_3d(x,y,fields[key],
+               ['$x$, km','$y$, km',labs[key]])
+      else:
+         f  = plot_1d(x,fields[key],
+               ['$x$, km',labs[key]])
+      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close()
+      f.clf()
+############################################################################
+
+#######################################################################
 def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
    if not os.path.exists(figdir):

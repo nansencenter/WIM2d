@@ -4,7 +4,7 @@ import sys
 import struct
 
 ##############################################################
-def get_array(fid,nx,ny,fmt_size=4):
+def get_array(fid,nx,ny,fmt_size=4,order='F'):
    # routine to get the array from the .a (binary) file
    # * fmt_size = size in bytes of each entry)
    #   > default = 4 (real*4/single precision)
@@ -20,8 +20,7 @@ def get_array(fid,nx,ny,fmt_size=4):
    data  = fid.read(rec_size)
    fld   = struct.unpack(recs*fmt_py,data)
    fld   = np.array(fld)
-   fld   = fld.reshape((ny,nx)).transpose()  # need to transpose because of differences between
-                                             # python/c and fortran/matlab 
+   fld   = fld.reshape((nx,ny),order=order)
 
    return fld
 ##############################################################
@@ -173,7 +172,7 @@ def fn_check_init(outdir):
 ##############################################################
 
 ##############################################################
-def fn_read_general_bin(afile):
+def fn_read_general_binary(afile):
    # routine to get output fields from binary files:
    bfile = afile[:-2]+'.b'
 
@@ -183,13 +182,17 @@ def fn_read_general_bin(afile):
    lines = bid.readlines()
    bid.close()
 
-   nxline   = lines[1].split()
-   nyline   = lines[2].split()
-   nx       = int(nxline[0])
-   ny       = int(nyline[0])
+   Nrecs    = int(lines[0].split()[0])
+   Nord     = int(lines[1].split()[0])
+   nx       = int(lines[2].split()[0])
+   ny       = int(lines[3].split()[0])
+   if Nord==1:
+      order = 'fortran'
+   else:
+      order = 'C'
 
    Nlines   = len(lines)
-   for n in range(3,Nlines):
+   for n in range(2,Nlines):
       lin   = lines[n]
       if 'Record number and name:' in lin:
          n0 = n+1
@@ -202,6 +205,9 @@ def fn_read_general_bin(afile):
       keys.append(vname)
    ###########################################################
 
+   if len(keys)!=Nrecs:
+      raise ValueError('Inconsistent number of records in file: '+bfile)
+
    ###########################################################
    # can now read data from .a file
    aid   = open(afile,'rb')
@@ -209,7 +215,7 @@ def fn_read_general_bin(afile):
    out   = {}
    ##
    for key in keys:
-      out.update({key:get_array(aid,nx,ny)})
+      out.update({key:get_array(aid,nx,ny,order=order)})
 
    aid.close()
    ###########################################################
