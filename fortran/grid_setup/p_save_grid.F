@@ -5,12 +5,11 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       program p_save_grid
 
-      use mod_save_grid, only: save_grid_info_hdr,save_grid
-      use mod_grid
+      use mod_save_grid
       implicit none
 
-      character(len=80)       :: outdir,outdir2
-      integer,parameter       :: testing  = 1
+      character(len=80) :: outdir,outdir2
+      integer,parameter :: testing  = 1
 
       if (testing.eq.1) then
          !!for testing
@@ -36,32 +35,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      module mod_grid
-      !!change ii,jj,dx,dy,GRID_OPT here
-      !!remaining stuff set in set_grid
-
-      implicit none
-
-      integer, parameter   :: GRID_OPT = 1
-      integer,parameter    :: ii       = 150
-      integer,parameter    :: jj       = 50
-      real,parameter       :: dx       = 4.0e3!m
-      real,parameter       :: dy       = 4.0e3!m
-      integer, parameter   :: nbdy     = 0
-      integer, parameter   :: idm      = ii
-      integer, parameter   :: jdm      = jj
-      !!
-      real  ,dimension(ii,jj) ::                                        &
-     &   X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      !!
-      real,dimension(ii,jj,7) :: grid_arrays
-
-      end module mod_grid
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine set_grid()
-      use mod_grid
+      use mod_save_grid
 
       implicit none
 

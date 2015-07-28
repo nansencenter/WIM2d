@@ -74,7 +74,7 @@ py:	$(PROG_PY) $(OBJS)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 	mv $(TARGET_PY).so $(bin)
 
-all: exe py
+all: exec py
 
 # DEPENDENCIES
 $(PROG_F): 		$(OBJS)

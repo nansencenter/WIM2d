@@ -209,8 +209,8 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
    ###########################################################
    print(' ')
    print(60*'*')
-   gs.save_grid_info_hdr(outdir2,nx,ny,dx,dy,nc2)
-   gs.save_grid(outdir,grid_arrays,nc)
+   gs.save_grid_info_hdr_f2py(outdir2,nx,ny,dx,dy)
+   gs.save_grid_f2py(outdir,grid_arrays)
    print(60*'*')
    print(' ')
    ###########################################################

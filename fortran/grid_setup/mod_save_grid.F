@@ -3,6 +3,25 @@
       !Date:   20141128, 16:06:18 CET
 
       module mod_save_grid
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      implicit none
+
+      integer, parameter   :: GRID_OPT = 1
+      integer,parameter    :: ii       = 150
+      integer,parameter    :: jj       = 50
+      real,parameter       :: dx       = 4.0e3!m
+      real,parameter       :: dy       = 4.0e3!m
+      integer, parameter   :: nbdy     = 0
+      integer, parameter   :: idm      = ii
+      integer, parameter   :: jdm      = jj
+      !!
+      real  ,dimension(ii,jj) ::                                        &
+     &   X,Y,scuy,scvx,scp2,scp2i,LANDMASK
+      !!
+      real,dimension(ii,jj,7) :: grid_arrays
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine save_grid_info_hdr(outdir,ii,jj,dx,dy)
