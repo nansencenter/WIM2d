@@ -25,9 +25,7 @@ grid_prams  = Fdat.fn_check_grid(bindir)
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
-PLOT_PROG   = 1
 PROG_OPT    = 1
-
 ##########################################################################
 
 ################################################################
