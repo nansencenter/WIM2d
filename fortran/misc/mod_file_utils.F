@@ -7,10 +7,10 @@
 
       implicit none
 
-      character(len=80), intent(in)    :: outfile
+      character(len=*), intent(in)    :: outfile
       real, dimension(nx), intent(in)  :: x  !!1d array to write in
       integer, intent(in)              :: nx !!length of x
-      character(len=80), intent(in)    :: stat
+      character(len=*), intent(in)    :: stat
       !! stat can be:
       !! 'replace' - overwrite file
       !! 'new'     - file doesn't exist already
@@ -34,11 +34,11 @@
 
       implicit none
 
-      character(len=80), intent(in)       :: outfile
+      character(len=*), intent(in)       :: outfile
       real, dimension(nx,ny), intent(in)  :: x     !!2d array to write in
       integer, intent(in)                 :: nx,ny !!size of x
       integer, intent(in)                 :: recno !!record no
-      character(len=10), intent(in)       :: stat
+      character(len=*), intent(in)       :: stat
       !! stat can be:
       !! 'replace' - overwrite file
       !! 'new'     - file doesn't exist already
@@ -61,11 +61,11 @@
 
       implicit none
 
-      character(len=80), intent(in)       :: outfile
+      character(len=*), intent(in)       :: outfile
       real, dimension(nx,ny), intent(in)  :: x        !!3d array to write in
       integer, intent(in)                 :: nx,ny,nz !!size of x
       integer, intent(in)                 :: recno    !!record no
-      character(len=10), intent(in)       :: stat
+      character(len=*), intent(in)       :: stat
       !! stat can be:
       !! 'replace' - overwrite file
       !! 'new'     - file doesn't exist already
@@ -88,7 +88,7 @@
 
       implicit none
 
-      character(len=80), intent(in)       :: infile
+      character(len=*), intent(in)       :: infile
       real, dimension(nx), intent(out)    :: x     !!1d array to read in
       integer, intent(in)                 :: nx    !!size of x
       integer, intent(in)                 :: recno !!record no
@@ -110,7 +110,7 @@
 
       implicit none
 
-      character(len=80), intent(in)       :: infile
+      character(len=*), intent(in)       :: infile
       real, dimension(nx,ny), intent(out) :: x     !!2d array to read in
       integer, intent(in)                 :: nx,ny !!size of x
       integer, intent(in)                 :: recno !!record no
@@ -144,7 +144,7 @@
 
       implicit none
 
-      character(len=80), intent(in)       :: infile
+      character(len=*), intent(in)       :: infile
       real, dimension(nx,ny), intent(out) :: x        !!3d array to read in
       integer, intent(in)                 :: nx,ny,nz !!size of x
       integer, intent(in)                 :: recno    !!record no

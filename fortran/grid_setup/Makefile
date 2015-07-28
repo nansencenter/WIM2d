@@ -53,7 +53,8 @@ TARGET_PY	:=	save_grid_f2py
 # OBJ_MAIN	:=	$(ODIR)/WIM2d_run.o
 
 OBJS		:=      \
-			$(ODIR)/mod_file_utils.o
+			$(ODIR)/mod_file_utils.o	\
+			$(ODIR)/mod_save_grid.o
 
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
@@ -62,7 +63,7 @@ $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
-exe: $(PROG_F) $(OBJS)
+exec: $(PROG_F) $(OBJS)
 	mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
