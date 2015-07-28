@@ -4,6 +4,23 @@ import sys
 import struct
 
 ##############################################################
+def key_aliases(inverse=False):
+   if not inverse:
+      aliases  = {'Dmax'   :'dfloe' ,\
+                  'cice'   :'icec'  ,\
+                  'hice'   :'iceh'  ,\
+                  'tau_x'  :'taux'  ,\
+                  'tau_y'  :'tauy'  }
+   else:
+      aliases  = {'dfloe'  :'Dmax'  ,\
+                  'icec'   :'cice'  ,\
+                  'iceh'   :'hice'  ,\
+                  'taux'   :'tau_x' ,\
+                  'tauy'   :'tau_y' }
+   return aliases
+##############################################################
+
+##############################################################
 def get_array(fid,nx,ny,fmt_size=4,order='F'):
    # routine to get the array from the .a (binary) file
    # * fmt_size = size in bytes of each entry)
@@ -87,35 +104,23 @@ def fn_check_grid(outdir):
    # from binary files
 
    ###########################################################
-   # get dimensions from .b file
    afile    = outdir+'/wim_grid.a'
    bfile    = outdir+'/wim_grid.b'
-   #
-   bid   = open(bfile,'r')
-   lines = bid.readlines()
-   bid.close()
+   fields   = fn_read_general_binary(afile)
+   aliases  = key_aliases(inverse=True)
 
-   nxline   = lines[1].split()
-   nyline   = lines[2].split()
-   nx       = int(nxline[0])
-   ny       = int(nyline[0])
-
-   grid_prams  = Grid_Prams()
-   s1          = grid_prams   #pointer with shorter name (NB change s1=> change grid_prams)
-   s1['nx']    = nx
-   s1['ny']    = ny
-   aid         = open(afile,'rb')
-   #
-   keys  = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
+   grid_prams  = {}
+   keys        = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
    for key in keys:
-      s1[key]  = get_array(aid,nx,ny)
+      if key in fields.keys():
+         key2  = key
+      else:
+         key2  = aliases[key]
+      grid_prams.update({key:fields[key2]})
    #
-   aid.close()
-   s1['dx'] = s1['X'][1,0]-s1['X'][0,0]
-   if ny>1:
-      s1['dy'] = s1['Y'][0,1]-s1['Y'][0,0]
-   else:
-      s1['dy'] = s1['dx']
+   nx,ny = grid_prams['X'].shape
+   grid_prams.update({'nx':nx})
+   grid_prams.update({'ny':ny})
    ###########################################################
    
    # output
@@ -127,44 +132,39 @@ def fn_check_init(outdir):
    # routine to get initial fields from binary files:
    afile    = outdir+'/wim_init.a'
    bfile    = outdir+'/wim_init.b'
-
+   fields   = fn_read_general_binary(afile)
+   aliases  = key_aliases(inverse=True)
+   
    ###########################################################
-   # get dimensions from .b file
-   bid   = open(bfile,'r')
-   lines = bid.readlines()
-   bid.close()
-
-   nxline   = lines[1].split()
-   nyline   = lines[2].split()
-   nx       = int(nxline[0])
-   ny       = int(nyline[0])
-   ###########################################################
-
-   ###########################################################
-   # can now read data from .a file
-   aid   = open(afile,'rb')
-   ##
-   ice_fields  = Ice_Fields()
-   wave_fields = Wave_Fields()
-   s2          = ice_fields
-   s3          = wave_fields
-
    ## ice fields
-   keys  = ['icec','iceh','dfloe']
+   keys        = ['icec','iceh','dfloe']
+   ice_fields  = {}
    for key in keys:
-      s2[key]  = get_array(aid,nx,ny)
+      if key in fields.keys():
+         key2  = key
+      else:
+         key2  = aliases[key]
+      ice_fields.update({key:fields[key2]})
 
+   # ice mask
+   ice_fields.update({'ICE_MASK':0*ice_fields['icec']})
+   ice_fields['ICE_MASK'][ice_fields['icec']>0.05] = 1.0
+   ###########################################################
+
+   ###########################################################
    ## wave fields
-   keys  = ['Hs','Tp','mwd']
+   keys        = ['Hs','Tp','mwd']
+   wave_fields = {}
    for key in keys:
-      s3[key]  = get_array(aid,nx,ny)
-   aid.close()
+      if key in fields.keys():
+         key2  = key
+      else:
+         key2  = aliases[key]
+      wave_fields.update({key:fields[key]})
 
-   ## masks
-   s2['ICE_MASK']    = np.zeros((nx,ny))
-   s3['WAVE_MASK']   = np.zeros((nx,ny))
-   s2['ICE_MASK'] [s2['icec']>0.05] = 1.0
-   s3['WAVE_MASK'][s3['Hs']>0.0]    = 1.0
+   # wave mask
+   wave_fields.update({'WAVE_MASK':0*wave_fields['Hs']})
+   wave_fields['WAVE_MASK'][wave_fields['Hs']>0.0] = 1.0
    ###########################################################
    
    # outputs
@@ -229,31 +229,19 @@ def fn_check_out_bin(outdir):
    # routine to get output fields from binary files:
    afile    = outdir+'/wim_out.a'
    bfile    = outdir+'/wim_out.b'
-
+   fields   = fn_read_general_binary(afile)
+   aliases  = key_aliases(inverse=True)
+   
    ###########################################################
-   # get dimensions from .b file
-   bid   = open(bfile,'r')
-   lines = bid.readlines()
-   bid.close()
-
-   nxline   = lines[1].split()
-   nyline   = lines[2].split()
-   nx       = int(nxline[0])
-   ny       = int(nyline[0])
-   ###########################################################
-
-   ###########################################################
-   # can now read data from .a file
-   aid   = open(afile,'rb')
-   ##
-   out_fields  = Out_Fields()
-   s2          = out_fields
+   ## out fields
    keys        = ['dfloe','taux','tauy','Hs','Tp']
-   ##
+   out_fields  = {}
    for key in keys:
-      s2[key]  = get_array(aid,nx,ny)
-
-   aid.close()
+      if key in fields.keys():
+         key2  = key
+      else:
+         key2  = aliases[key]
+      out_fields.update({key:fields[key2]})
    ###########################################################
    
    # outputs
@@ -282,31 +270,19 @@ def fn_check_prog(outdir,cts):
    # cts is a string eg '010' or '0010' corresponding to the time step
    afile    = outdir+'/binaries/prog/wim_prog'+cts+'.a'
    bfile    = outdir+'/binaries/prog/wim_prog'+cts+'.b'
-
+   fields   = fn_read_general_binary(afile)
+   aliases  = key_aliases(inverse=True)
+   
    ###########################################################
-   # get dimensions from .b file
-   bid   = open(bfile,'r')
-   lines = bid.readlines()
-   bid.close()
-
-   nxline   = lines[1].split()
-   nyline   = lines[2].split()
-   nx       = int(nxline[0])
-   ny       = int(nyline[0])
-   ###########################################################
-
-   ###########################################################
-   # can now read data from .a file
-   aid   = open(afile,'rb')
-   ##
-   out_fields  = Out_Fields()
-   s2          = out_fields
+   ## out fields
    keys        = ['dfloe','taux','tauy','Hs','Tp']
-   ##
+   out_fields  = {}
    for key in keys:
-      s2[key]  = get_array(aid,nx,ny)
-
-   aid.close()
+      if key in fields.keys():
+         key2  = key
+      else:
+         key2  = aliases[key]
+      out_fields.update({key:fields[key2]})
    ###########################################################
    
    # outputs

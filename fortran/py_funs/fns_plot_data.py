@@ -221,7 +221,7 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
    # ice fields
    # dictionary of figure names
-   figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax0.png'}
+   figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png'}
    # dictionary of labels for colorbars
    labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m'}
    keys   = labs.keys()
@@ -240,7 +240,7 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
    # wave fields
    # dictionary of figure names
-   figs     = {'Hs':'Hs0.png'    ,'Tp':'Tp0.png'   ,'mwd':'mwd0.png'}
+   figs     = {'Hs':'Hs.png'    ,'Tp':'Tp.png'   ,'mwd':'mwd.png'}
    # dictionary of labels for colorbars
    labs  = {'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees'}
    keys   = labs.keys()
