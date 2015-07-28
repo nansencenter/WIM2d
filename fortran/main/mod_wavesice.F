@@ -656,6 +656,9 @@
 
       write(2,111)                                                      &
      &  7,          "       Number of records"
+      write(2,111)                                                      &
+     &  1,          "       Storage order "//                           &
+     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
       write(2,112)                                                      &
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
@@ -719,6 +722,9 @@
 
       write(2,111)                                                      &
      &  6,          "       Number of records"
+      write(2,111)                                                      &
+     &  1,          "       Storage order "//                           &
+     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
       write(2,112)                                                      &
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
@@ -806,16 +812,13 @@
 
       write(2,111)                                                      &
      &  5,           "       Number of records"
+      write(2,111)                                                      &
+     &  1,          "       Storage order "//                           &
+     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
       write(2,112)                                                      &
      &  ii,           "      Record length in x direction (elements)"
       write(2,112)                                                      &
      &  jj,           "      Record length in y direction (elements)"
-      write(2,111)                                                      &
-     &  SCATMOD,      "       Option number for scattering model"
-      write(2,111)                                                      &
-     &  n_wave_freq, "       Number of wave frequencies"
-      write(2,112)                                                      &
-     &  n_wavdir,     "      Number of wave directions"
       write(2,113) ""
 
       write(2,113)    "Record number and name:"
