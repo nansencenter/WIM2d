@@ -714,7 +714,7 @@ end
 
 SV_BIN   = 1;
 reps_ab  = 10;
-if (SV_BIN==1)
+if (SV_BIN==1) & (MEX_OPT==0)
    %% save matlab files as binaries
    %% to matlab results
    !mkdir -p m_out
@@ -1324,7 +1324,7 @@ else
          pause
       end
 
-      if (SV_BIN==1)&(mod(n,reps_ab)==0)
+      if (SV_BIN==1)&(mod(n,reps_ab)==0)&(MEX_OPT==0)
          %% save matlab files as binaries
          %% to matlab results
          Fdir  = 'm_out/binaries/prog';
@@ -1345,7 +1345,7 @@ else
    end%% end time loop
 end%%MEX_OPT==0 option
 
-if (SV_BIN==1)
+if (SV_BIN==1)&(MEX_OPT==0)
    %% save matlab files as binaries
    %% to matlab results
    Fdir  = 'm_out/binaries';
@@ -1466,21 +1466,44 @@ if PLOT_FINAL%%check exponential attenuation
    figure(3),clf;
    fn_fullscreen;
    xx = X(:,1);
+   if 0
+      vbl   = 'Hs';
+      Vbl   = wave_fields.(vbl);
+   else
+      vbl   = 'tau_x';
+      Vbl   = ice_fields.(vbl);
+   end
    if 1
       subplot(2,1,2)
-      yy = Y(1,:);
-      xp = -250e3;
-      ix = find(abs(xx-xp)==min(abs(xx-xp)));
-      for loop_ix=1%:length(ix)
-         plot(yy/1e3,wave_fields.Hs(ix(loop_ix),:));
+      yy    = Y(1,:);
+      xp    = 110e3;
+      ix    = find(abs(xx-xp)==min(abs(xx-xp)));
+      ix    = ix(1);
+      xp    = xx(ix);
+      Vy    = Vbl(ix,:);
+      plot(yy/1e3,Vy);
+      if strcmp(vbl,'Hs')
+         GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+      elseif strcmp(vbl,'tau_x')
+         GEN_proc_fig('{\ity}, km','{\tau}_x, Pa');
       end
-      GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+      ttl   = title(['Profile at x = ',num2str(xp/1e3,'%7.2f'),'km']);
+      GEN_font(ttl);
+      ylim([0,1.1*max(Vy)]);
       %%
       subplot(2,1,1)
    end
-   plot(xx/1e3,wave_fields.Hs(:,1),'-k');
-   set(gca,'yscale','log');
-   GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   plot(xx/1e3,mean(Vbl,2),'-k');
+   hold on;
+   plot(xx/1e3,min(Vbl,[],2),'--r');
+   plot(xx/1e3,max(Vbl,[],2),'--c');
+   %set(gca,'yscale','log');
+   if strcmp(vbl,'Hs')
+      GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   elseif strcmp(vbl,'tau_x')
+      GEN_proc_fig('{\itx}, km','{\tau}_x, Pa');
+   end
+   legend('Mean','Min','Max');
    %%
    if DIAG1d==1
       %% final
