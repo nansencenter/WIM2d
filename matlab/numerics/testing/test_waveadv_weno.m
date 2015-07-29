@@ -32,6 +32,10 @@ s1.scvx     = 0*X+dx;
 s1.scp2     = s1.scuy.*s1.scvx;
 s1.scp2i    = 1./s1.scp2;
 s1.LANDMASK = 0*X;
+s1.dx       = dx;
+s1.dy       = dy;
+s1.X        = X;
+s1.Y        = Y;
 grid_prams  = s1;
 clear s1;
 
@@ -90,6 +94,7 @@ elseif OPT==3
 end
 
 if 1%%plot u,v,h
+   figure(2);
    subplot(2,2,1);
    ax = pcolor(X/1e3,Y/1e3,u);
    set(ax, 'EdgeColor', 'none');
@@ -163,7 +168,7 @@ for n = 1:nt
    h     = waveadv_weno(h,u,v,grid_prams,dt,adv_options);
    hmax  = max(h(:))
    %%
-   if 1
+   if 0
       if OPT==1
          figure(3);
          [hmax,imax] = max(h(:,1));
@@ -187,7 +192,7 @@ for n = 1:nt
 
       if OPT==1
          x1 = xc+uc*cos(pi*theta/180)*n*dt;
-         y1 = -ym+uc*sin(pi*theta/180)*n*dt
+         y1 = -ym+uc*sin(pi*theta/180)*n*dt;
          x2 = xm+uc*cos(pi*theta/180)*n*dt;
          hold on;
          plot(x1/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');

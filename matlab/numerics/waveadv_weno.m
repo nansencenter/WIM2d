@@ -40,7 +40,7 @@ scvx     = grid_prams.scvx;
 scp2i    = grid_prams.scp2i;
 scp2     = grid_prams.scp2;
 LANDMASK = grid_prams.LANDMASK;
-clear grid_prams;
+%clear grid_prams;
 
 idm   = ii;
 jdm   = jj;
@@ -78,15 +78,49 @@ sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
 margin   = nbdy;
 %tst2d = sao(jtst,4),pause
 
-hp = 0*h;
-for i_ = 1-margin:ii+margin
-for j_ = 1-margin:jj+margin
-   i  = i_+nbdy;%%1-nbdy->1
-   j  = j_+nbdy;%%1-nbdy->1
+if 0
+   %% how it is in fortran code,
+   %% but sao is 0 on margins so errors/asymmetries can creep in from there 
+   hp = 0*h;
+   for i_ = 1-margin:ii+margin
+   for j_ = 1-margin:jj+margin
+      i  = i_+nbdy;%%1-nbdy->1
+      j  = j_+nbdy;%%1-nbdy->1
 
-   hp(i,j)  = h(i,j)+dt*sao(i,j);
-end%j
-end%i
+      hp(i,j)  = h(i,j)+dt*sao(i,j);
+   end%j
+   end%i
+else
+   %% enforce periodicity between prediction and correction steps
+   hp = zeros(ii,jj);
+   for i_ = 1:ii
+   for j_ = 1:jj
+      i           = i_+nbdy;%%1-nbdy->1
+      j           = j_+nbdy;%%1-nbdy->1
+      hp(i_,j_)   = h(i,j)+dt*sao(i,j);
+   end%j
+   end%i
+   hp = pad_var(hp,ADV_OPT,nbdy);
+end
+
+if 0%max(sao(:))>0
+   xx = grid_prams.X(1,:).';
+   dx = grid_prams.dx;
+   xx = [xx(1)+dx*(-nbdy:1:-1)';xx;xx(end)+dx*(1:nbdy)'];
+   %%
+   yy = grid_prams.Y(:,1);
+   dy = grid_prams.dy;
+   yy = [yy(1)+dy*(-nbdy:1:-1)';yy;yy(end)+dy*(1:nbdy)'];
+   %%
+   {xx,yy,sao,min(sao(:)),max(sao(:))}
+   save test.mat xx yy sao h hp
+   P  = pcolor(xx,yy,sao);
+   set(P,'EdgeColor','none');
+   fn_fullscreen;
+   caxis([0,1.1*max(sao(:))]);
+   {ii,jj,hp,h,sao}
+   pause
+end
 %tst2d = hp(jtst,4)%,pause
 
 % --- Correction step

@@ -14,7 +14,7 @@
 
       !! --------------------------------------------------------------
       !! WENO 2d
-      subroutine waveadv_weno(h,u,v,dt,bc_opt)
+      subroutine waveadv_weno(h,u,v,dt,ADV_OPT)
 !
 ! --- ------------------------------------------------------------------
 ! --- Advection is done with flux limited 3rd order WENO in space and
@@ -54,7 +54,7 @@
       !,scuy,scvx,scp2i,scp2,LANDMASK
       real,intent(inout),dimension(idm,jdm)   :: h
       real,intent(in)                         :: dt
-      integer,intent(in)                        :: bc_opt
+      integer,intent(in)                        :: ADV_OPT
 !
       real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: sao,hp    &
      &   ,u_pad,v_pad,scp2_pad,scp2i_pad,scuy_pad,scvx_pad,h_pad
@@ -75,11 +75,11 @@
       call pad_var(scuy_pad   ,scuy    ,1)
       call pad_var(scvx_pad   ,scvx    ,1)
 
-      !!bc_opt applies boundary conditions
+      !!ADV_OPT applies boundary conditions
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x,y
       !!2: make h be periodic in y only
-      call pad_var(h_pad,h,bc_opt)
+      call pad_var(h_pad,h,ADV_OPT)
 
       if (.false.) then
          !! confirm in correct subroutine
@@ -132,35 +132,34 @@
       call weno3pd_v2(h_pad,sao,u_pad,v_pad,                            &
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
 
-!$OMP PARALLEL DO
-       !margin=n_bdy 
-      do j=1-margin,jj+margin
-!       do l=1,isp(j)
-!       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
-        do i=1-margin,ii+margin!![TW 28.1.2014]
-          hp(i,j) = h_pad(i,j)+dt*sao(i,j)
-        enddo
-!       enddo
-!       enddo
-      enddo
-!$OMP END PARALLEL DO
-!
+      if (.false.) then
+         !! original version
+         do j=1-margin,jj+margin
+           do i=1-margin,ii+margin!![TW 28.1.2014]
+             hp(i,j) = h_pad(i,j)+dt*sao(i,j)
+           enddo
+         enddo
+      else
+         !! apply boundary condition between prediction and correction step
+         do j=1,jj
+           do i=1,ii!![TW 28.1.2014]
+             hp(i,j) = h_pad(i,j)+dt*sao(i,j)
+           enddo
+         enddo
+         call pad_var(hp,hp(1:ii,1:jj),ADV_OPT)
+      end if
+
 ! --- Correction step
       call weno3pd_v2(hp,sao,u_pad,v_pad,                               &
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
-!$OMP PARALLEL DO
-      do j=1-margin,jj+margin
-!       do l=1,isp(j)
-!       do i=max(1-margin,ifp(j,l)),min(ii+margin,ilp(j,l))
-        do i=1-margin,ii+margin!![TW 28.1.2014]
-           h_pad(i,j)  = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
-        enddo
-!       enddo
-!       enddo
-      enddo
-!$OMP END PARALLEL DO
 
-      h  = h_pad(1:ii,1:jj)
+      !! final output
+      do j=1,jj
+      do i=1,ii!![TW 28.1.2014]
+           h(i,j) = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
+      enddo
+      enddo
+
       !!mask land (no waves on land)
       h  = h*(1-LANDMASK)
 
@@ -434,7 +433,7 @@
       !! WENO 1d
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine waveadv_weno_1d(h,u,dt,bc_opt)
+      subroutine waveadv_weno_1d(h,u,dt,ADV_OPT)
 !
 ! --- ------------------------------------------------------------------
 ! --- Advection is done with flux limited 3rd order WENO in space and
@@ -473,7 +472,7 @@
       real,intent(in),dimension(idm,jdm)     :: u
       real,intent(inout),dimension(idm,jdm)  :: h
       real,intent(in)                        :: dt
-      integer,intent(in)                     :: bc_opt
+      integer,intent(in)                     :: ADV_OPT
 !
       real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
      &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad
@@ -492,10 +491,10 @@
       call pad_var_1d(scp2i_pad,scp2i,1)
       call pad_var_1d(scuy_pad ,scuy ,1)
 
-      !!bc_opt applies boundary conditions
+      !!ADV_OPT applies boundary conditions
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x
-      call pad_var_1d(h_pad,h,bc_opt)
+      call pad_var_1d(h_pad,h,ADV_OPT)
 
       if (.false.) then
          !! confirm in correct subroutine
@@ -715,7 +714,7 @@
       !! Lax-Wendroff 1d
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine waveadv_lax_1d(h,u,dt,bc_opt)
+      subroutine waveadv_lax_1d(h,u,dt,ADV_OPT)
 !
 ! --- ------------------------------------------------------------------
 ! --- Advection is done with flux limited 3rd order WENO in space and
@@ -755,7 +754,7 @@
       !,scuy,scvx,scp2i,scp2,LANDMASK
       real,intent(inout),dimension(idm,jdm)   :: h
       real,intent(in)                         :: dt
-      integer,intent(in)                        :: bc_opt
+      integer,intent(in)                        :: ADV_OPT
 !
       real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
      &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad
@@ -774,10 +773,10 @@
       call pad_var_1d(scp2i_pad,scp2i,1)
       call pad_var_1d(scuy_pad ,scuy ,1)
 
-      !!bc_opt applies boundary conditions
+      !!ADV_OPT applies boundary conditions
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x
-      call pad_var_1d(h_pad,h,bc_opt)
+      call pad_var_1d(h_pad,h,ADV_OPT)
 
       if (.false.) then
       !if (.true.) then
