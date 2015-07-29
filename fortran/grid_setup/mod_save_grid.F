@@ -111,7 +111,7 @@
      &  ii,          "      Record length in x direction (elements)"
       write(2,112)                                                      &
      &  jj,          "      Record length in y direction (elements)"
-      write(2,113) ""
+      write(2,113) " "
 
       write(2,113)    "Record number and name:"
       write(2,111)                                                      &

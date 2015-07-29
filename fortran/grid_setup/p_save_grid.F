@@ -9,7 +9,7 @@
       implicit none
 
       character(len=80) :: outdir,outdir2
-      integer,parameter :: testing  = 1
+      integer,parameter :: testing  = 0
 
       if (testing.eq.1) then
          !!for testing
