@@ -81,6 +81,7 @@ margin   = nbdy;
 if 0
    %% how it is in fortran code,
    %% but sao is 0 on margins so errors/asymmetries can creep in from there 
+   %% - prob need to do xctilr at this point
    hp = 0*h;
    for i_ = 1-margin:ii+margin
    for j_ = 1-margin:jj+margin
