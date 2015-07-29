@@ -244,9 +244,6 @@ for j_ = 0:jj+1
    im1   = i-1;
  
    if (u(i,j)>0.)
-      %!iu is a water mask (water at point and to left of point);
-      %!for waves we make it 1 everywhere and mask waves that go on land later;
-      %!im2   = im1-iu(im1,j);
       im2   = im1-1;%i-2
  
       q0 = cq00*g(im2,j)+cq01*g(im1,j);
@@ -258,7 +255,6 @@ for j_ = 0:jj+1
       ful(i,j) = u(i,j)*g(im1,j)*scuy(i,j);
 
     else
-       %!ip1  = i+iu(i+1,j);
        ip1  = i+1;
  
        q0   = cq11*g(im1,j)+cq10*g(i  ,j);
@@ -274,7 +270,6 @@ for j_ = 0:jj+1
 
 end%j
 end%i
-%tst2d = [ful(jtst,4),fuh(jtst,4)],pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,9 +281,6 @@ for j_ = 0:jj+2
    jm1   = j-1;
 
    if (v(i,j)>0.)
-      %!iv is a water mask (water at point and beneath point);
-      %!for waves we make it 1 everywhere and mask waves that go on land later;
-      %!jm2   = jm1-iv(i,jm1);
       jm2   = jm1-1;
 
       q0 = cq00*g(i,jm2)+cq01*g(i,jm1);
@@ -300,7 +292,6 @@ for j_ = 0:jj+2
       fvl(i,j) = v(i,j)*g(i,jm1)*scvx(i,j);
 
    else
-      %!jp1   = j+iv(i,j+1);
       jp1   = j+1;
 
       q0 = cq11*g(i,jm1)+cq10*g(i,j  );

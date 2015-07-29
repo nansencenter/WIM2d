@@ -74,7 +74,7 @@ end
 %% 0: zeros in ghost cells
 %% 1: periodic in i,j
 %% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
-h  = pad_var_1d(h,ADV_OPT,nbdy);
+h     = pad_var_1d(h,ADV_OPT,nbdy);
 jtst  = (ii+2*nbdy)+(-12:0);
 %tst1d = h(jtst)
 %plot(h),GEN_pause
@@ -86,10 +86,22 @@ margin   = nbdy;
 %tst1d = sao(jtst)
 
 hp = 0*h;
-for i_ = 1-margin:ii+margin
-   i     = i_+nbdy;%%1-nbdy->1
-   hp(i) = h(i)+dt*sao(i);
-end%i
+if 0
+   %% original version
+   %% -> errors at boundaries
+   %% hycom code prob needed xctilr at this point
+   for i_ = 1-margin:ii+margin
+      i     = i_+nbdy;%%1-nbdy->1
+      hp(i) = h(i)+dt*sao(i);
+   end%i
+else
+   %% enforce periodicity between prediction and correction steps
+   for i_ = 1:ii
+      i     = i_+nbdy;%%1-nbdy->1
+      hp(i) = h(i)+dt*sao(i);
+   end%i
+   hp = pad_var_1d(hp(ireal),ADV_OPT,nbdy);
+end
 %tst1d = hp(jtst)
 
 % --- Correction step
@@ -164,9 +176,6 @@ for i_ = 0:ii+2
    im1   = i-1;
  
    if (u(i)>0.)
-      %!iu is a water mask (water at point and to left of point);
-      %!for waves we make it 1 everywhere and mask waves that go on land later;
-      %!im2   = im1-iu(im1,j);
       im2   = im1-1;%i-2
  
       q0 = cq00*g(im2)+cq01*g(im1);
@@ -178,7 +187,6 @@ for i_ = 0:ii+2
       ful(i) = u(i)*g(im1)*scuy(i);
 
     else
-       %!ip1  = i+iu(i+1,j);
        ip1  = i+1;
  
        q0   = cq11*g(im1)+cq10*g(i  );
