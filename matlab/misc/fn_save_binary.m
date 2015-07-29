@@ -34,11 +34,9 @@ bfile = [Froot,'.b'];
 %%
 bid   = fopen(bfile,'w');
 fprintf(bid,'%2.2d       Number of records\n',Nrecs);
-fprintf(bid,'%1.1d        Storage order [column-major (F/matlab) = 1, row-major (C) = 0]\n\n',1);
+fprintf(bid,'%1.1d        Storage order [column-major (F/matlab) = 1, row-major (C) = 0]\n',1);
 fprintf(bid,'%3.3d      Record length in x direction (elements)\n',nx);
-fprintf(bid,'%3.3d      Record length in y direction (elements)\n',ny);
-fprintf(bid,'%2.2d       Number of wave frequencies\n',nw);
-fprintf(bid,'%3.3d      Number of wave directions\n',ndir);
+fprintf(bid,'%3.3d      Record length in y direction (elements)\n\n',ny);
 %%
 fprintf(bid,'%s','Record number and name:');
 for loop_i=1:length(vlist)
