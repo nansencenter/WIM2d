@@ -383,9 +383,11 @@ end
 if STEADY==1
    S_inc    = Sdir;
    theta    = -pi/180*(90+wavdir);
-   [i1,j1]  = find(WAVE_MASK==1,1,'first');
-   j_fwd    = find(cos(-pi/180*(90+wavdir))>=0);
-   J_STEADY = find(S_inc(i1,j1,j_fwd,:)>0);%%only get "forward" directions
+   j_fwd    = find(cos(theta)>=0);
+   WAVE_MASK2        = 0*WAVE_MASK;
+   WAVE_MASK2(1:3,:) = 1;
+   %[i1,j1]  = find(WAVE_MASK==1,1,'first');
+   %J_STEADY = find(S_inc(i1:i1+2,j1:j1+,j_fwd,:)>0);%%only get "forward" directions
    % squeeze(S_inc(i1,j1,:))
    % GEN_pause;
 end
@@ -972,6 +974,18 @@ else
       % end
       % var_boundary0  = var_boundary;  
       %%
+      if STEADY==1
+         for i = 1:nx
+         for j = 1:ny
+            %%top-up waves in wave mask if STEADY==1
+            %%(steady-state solution);
+            if WAVE_MASK2(i,j)>0 & STEADY==1
+               Sdir(i,j,j_fwd,:)  = S_inc(i,j,j_fwd,:);
+            end
+         end
+         end
+      end
+         
       for jw   = 1:nw
 
          %% CALC DIMENSIONAL ATTEN COEFF;
@@ -980,11 +994,6 @@ else
          for i = 1:nx
          for j = 1:ny
 
-            %%top-up waves in wave mask if STEADY==1
-            %%(steady-state solution);
-            if WAVE_MASK(i,j)>0 & STEADY==1
-               Sdir(i,j,J_STEADY,:)  = S_inc(i,j,J_STEADY,:);
-            end
             
             if ICE_MASK(i,j)>0 & DO_ATTEN==1
 
@@ -1176,7 +1185,7 @@ else
          elseif WTR_MASK(i,j)==1%% only water present
             Dmax(i,j)   = 0;
          end
-         
+
       end%% end spatial loop j in y;
       end%% end spatial loop i in x;
 
