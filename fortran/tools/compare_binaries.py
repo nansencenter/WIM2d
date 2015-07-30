@@ -24,8 +24,8 @@ if 0:
 elif 1:
    # can compare pure matlab results with results saved from mex functions
    # odir  = [mdir+'out_2',mdir+'out_io']
-   odir  = [mdir+'m_out',mdir+'out_io']
-   # odir  = [mdir+'m_out',mdir+'out_2']
+   # odir  = [mdir+'m_out',mdir+'out_io']
+   odir  = [mdir+'m_out',mdir+'out_2']
 elif 1:
    # matlab vs py interfaces
    odir  = [fdir+'out_io',mdir+'out_io']
@@ -36,7 +36,7 @@ print('\n')
 ##########################################################################
 
 ##########################################################################
-OPT   = 1   # 1: initial conditions; 2: final results; 3: prog results
+OPT   = 2   # 1: initial conditions; 2: final results; 3: prog results
 if OPT==1:
    print("\n************************************************")
    print("Checking initial conditions...")

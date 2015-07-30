@@ -117,10 +117,17 @@ def fn_check_grid(outdir):
       else:
          key2  = aliases[key]
       grid_prams.update({key:fields[key2]})
-   #
+   
+   # extra info
    nx,ny = grid_prams['X'].shape
    grid_prams.update({'nx':nx})
    grid_prams.update({'ny':ny})
+   #
+   dx = np.mean(grid_prams['scvx'])
+   dy = np.mean(grid_prams['scuy'])
+   grid_prams.update({'dx':dx})
+   grid_prams.update({'dy':dy})
+
    ###########################################################
    
    # output

@@ -96,7 +96,7 @@ def cmap_3d_V1d(x,y,z,labs,ADD_CONTS=1,fmt='%4.1f'):
 #######################################################################
 
 #######################################################################
-def cmap_3d(x,y,z,labs,zlims=None):
+def cmap_3d(x,y,z,labs,pobj=None,zlims=None):
    # f  = plt.figure(figsize=[6,6],dpi=50)
    # plt.pcolor(grid_prams.X,grid_prams.Y,ice_fields.icec,cmap=cm.jet,vmax=Vmax,vmin=Vmin)
 
@@ -104,9 +104,10 @@ def cmap_3d(x,y,z,labs,zlims=None):
    fontname = 'serif'
    # fontname = 'sans-serif'
 
+   ################################################
    if zlims is not None:
-      vmin=zlims[0]
-      vmax=zlims[1]
+      vmin  = zlims[0]
+      vmax  = zlims[1]
    else:
       vmax  = z.max()
       vmin  = z.min()
@@ -120,21 +121,30 @@ def cmap_3d(x,y,z,labs,zlims=None):
       else:
          vmin  = vmin-.1*dv
          vmax  = vmax+.1*dv
+   ################################################
 
-   f  = plt.figure()
-   ax = plt.pcolor(x,y,z,vmin=vmin,vmax=vmax)
+   ################################################
+   if pobj is None:
+      f     = plt.figure()
+      ax    = f.add_subplot(1,1,1)
+      pobj  = f,ax
+   else:
+      f,ax  = pobj
+   ################################################
+
+   P  = ax.pcolor(x,y,z,vmin=vmin,vmax=vmax)
    ax.axes.set_aspect('equal')
-   xl = plt.xlabel(labs[0], fontsize=16)
-   xl.set_fontname(fontname)
-   yl = plt.ylabel(labs[1], fontsize=16)
-   yl.set_fontname(fontname)
+   ax.set_xlabel(labs[0], fontsize=16,fontname=fontname)
+   ax.set_ylabel(labs[1], fontsize=16,fontname=fontname)
+   ax.set_xlim((x[0],x[-1]))
+   ax.set_ylim((y[0],y[-1]))
 
    ############################################################
    #colorbar:
    if z.max()!=z.min():
       # only have colorbar if not constant
       # - doesn't work on linux otherwise
-      cbar  = plt.colorbar(ax)#,ticks=np.arange(0,1+dc,dc))
+      cbar  = f.colorbar(P)#,ticks=np.arange(0,1+dc,dc))
       cbar.set_label(labs[2], size=14)
       cbar.ax.tick_params(labelsize=14)
       #plt.locator_params(nbins=4)
@@ -151,26 +161,32 @@ def cmap_3d(x,y,z,labs,zlims=None):
    ############################################################
 
    # fonts of axes:
-   for tick in ax.axes.xaxis.get_major_ticks():
+   for tick in P.axes.xaxis.get_major_ticks():
       tick.label.set_fontsize(14)
       tick.label.set_fontname(fontname)
-   for tick in ax.axes.yaxis.get_major_ticks():
+   for tick in P.axes.yaxis.get_major_ticks():
       tick.label.set_fontsize(14)
       tick.label.set_fontname(fontname)
 
-   return f
+   return pobj
 #######################################################################
 
 #######################################################################
 def fn_plot_gen(grid_prams,fields,figdir):
 
+   from matplotlib import pyplot as plt
+
    if not os.path.exists(figdir):
       os.mkdir(figdir)
 
-   x  = grid_prams['X']/1.0e3
-   y  = grid_prams['Y']/1.0e3
    nx = grid_prams['nx']
    ny = grid_prams['ny']
+   dx = grid_prams['dx']
+   dy = grid_prams['dy']
+   x  = grid_prams['X'][:,0]+dx/2.
+   x  = np.concatenate([[x[0]-dx],x])/1.e3
+   y  = grid_prams['Y'][0,:]+dy/2.
+   y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # dictionary of figure names
    figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png',\
@@ -198,77 +214,84 @@ def fn_plot_gen(grid_prams,fields,figdir):
    for key in fields.keys():
       fig   = figdir+'/'+figs[key]
       if ny>1:
-         f  = cmap_3d(x,y,fields[key],
-               ['$x$, km','$y$, km',labs[key]])
+         f,ax  = cmap_3d(x,y,fields[key].transpose(),\
+                        ['$x$, km','$y$, km',labs[key]])
       else:
-         f  = plot_1d(x,fields[key],
-               ['$x$, km',labs[key]])
-      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close()
-      f.clf()
+         f,ax  = plot_1d(x,fields[key],\
+                        ['$x$, km',labs[key]])
+      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close(f)
 ############################################################################
 
 #######################################################################
 def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
+   from matplotlib import pyplot as plt
+
    if not os.path.exists(figdir):
       os.mkdir(figdir)
 
-   x  = grid_prams['X']/1.0e3
-   y  = grid_prams['Y']/1.0e3
    nx = grid_prams['nx']
    ny = grid_prams['ny']
+   dx = grid_prams['dx']
+   dy = grid_prams['dy']
+   x  = grid_prams['X'][:,0]+dx/2.
+   x  = np.concatenate([[x[0]-dx],x])/1.e3
+   y  = grid_prams['Y'][0,:]+dy/2.
+   y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # ice fields
    # dictionary of figure names
    figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png'}
    # dictionary of labels for colorbars
    labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m'}
-   keys   = labs.keys()
 
-   for key in keys:
+   for key in labs.keys():
       fig   = figdir+figs[key]
       if ny>1:
-         f  = cmap_3d(x,y,ice_fields[key],
-                  ['$x$, km','$y$, km',labs[key]])
+         f,ax  = cmap_3d(x,y,ice_fields[key].transpose(),\
+                        ['$x$, km','$y$, km',labs[key]])
       else:
-         f  = plot_1d(x,ice_fields[key],
-                  ['$x$, km',labs[key]])
-      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close()
-      f.clf()
+         f,ax  = plot_1d(x,ice_fields[key],\
+                        ['$x$, km',labs[key]])
+      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close(f)
 
    # wave fields
    # dictionary of figure names
    figs     = {'Hs':'Hs.png'    ,'Tp':'Tp.png'   ,'mwd':'mwd.png'}
    # dictionary of labels for colorbars
    labs  = {'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees'}
-   keys   = labs.keys()
 
-   for key in keys:
+   for key in labs.keys():
       fig   = figdir+'/'+figs[key]
       if ny>1:
-         f  = cmap_3d(x,y,wave_fields[key],
-               ['$x$, km','$y$, km',labs[key]])
+         f,ax  = cmap_3d(x,y,wave_fields[key].transpose(),\
+                        ['$x$, km','$y$, km',labs[key]])
       else:
-         f  = plot_1d(x,wave_fields[key],
+         f,ax  = plot_1d(x,wave_fields[key],\
                ['$x$, km',labs[key]])
-      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close()
+      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      ax.cla()
       f.clf()
 ############################################################################
 
 ############################################################################
 def fn_plot_final(grid_prams,out_fields,figdir):
 
+   from matplotlib import pyplot as plt
+
    if not os.path.exists(figdir):
       os.mkdir(figdir)
 
-   keys  = out_fields.keys()
-   x     = grid_prams['X']/1.0e3
-   y     = grid_prams['Y']/1.0e3
-   nx    = grid_prams['nx']
-   ny    = grid_prams['ny']
+   nx = grid_prams['nx']
+   ny = grid_prams['ny']
+   dx = grid_prams['dx']
+   dy = grid_prams['dy']
+   x  = grid_prams['X'][:,0]+dx/2.
+   x  = np.concatenate([[x[0]-dx],x])/1.e3
+   y  = grid_prams['Y'][0,:]+dy/2.
+   y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # dictionary of figure names
    figs  = {'dfloe':'Dmax.png','taux':'taux.png','tauy':'tauy.png',
@@ -278,17 +301,16 @@ def fn_plot_final(grid_prams,out_fields,figdir):
    labs  = {'dfloe':'$D_{max}$, m','taux':'Stress (x dir.), Pa','tauy':'Stress (y dir.), Pa',
             'Hs':'$H_s$, m','Tp':'$T_p$, s'}
 
-   for key in keys:
+   for key in out_fields.keys():
       fig   = figdir+'/'+figs[key]
       if ny>1:
-         f     = cmap_3d(x,y,out_fields[key],
+         f,ax  = cmap_3d(x,y,out_fields[key].transpose(),\
                   ['$x$, km','$y$, km',labs[key]])
       else:
-         f     = plot_1d(x,out_fields[key],
+         f,ax  = plot_1d(x,out_fields[key],\
                   ['$x$, km',labs[key]])
-      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close()
-      f.clf()
+      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close(f)
 ############################################################################
 
 ############################################################################
