@@ -38,6 +38,7 @@ fortran/run/fig_scripts/figs/TC2S/*
 fortran/run/results/*
 #
 matlab/main/out
+matlab/main/results
 matlab/main/m_out
 matlab/main/out_io
 matlab/main/out_2

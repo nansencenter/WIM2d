@@ -11,25 +11,24 @@ dd    = w2d+'/fortran'
 sys.path.append(dd+"/bin")
 sys.path.append(dd+"/py_funs")
 
-import run_WIM2d     as Rwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 ##########################################################################
-mdir  = '../../matlab/main/'
+mdir  = w2d+'/matlab/main/'
+fdir  = w2d+'/fortran/run/'
 if 0:
-   odir  = ['out','out_io']
-elif 0:
-   odir  = ['out','out_2']
+   odir  = [fdir+'out',fdir+'out_io']
+   # odir  = [fdir+'out',fdir+'out_2']
+   # odir  = [fdir+'out_io',fdir+'out_2']
 elif 1:
    # can compare pure matlab results with results saved from mex functions
-   odir  = [mdir+'m_out',mdir+'out_2']
+   # odir  = [mdir+'out_2',mdir+'out_io']
+   odir  = [mdir+'m_out',mdir+'out_io']
+   # odir  = [mdir+'m_out',mdir+'out_2']
 elif 1:
-   # can compare matlab results saved with mex functions also
-   odir  = ['out',mdir+'out_2']
-else:
-   # can compare matlab results saved with mex functions also
-   odir  = ['out',mdir+'out_io']
+   # matlab vs py interfaces
+   odir  = [fdir+'out_io',mdir+'out_io']
 
 print('Comparing directories:')
 print(odir)

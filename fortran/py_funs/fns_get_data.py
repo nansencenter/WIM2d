@@ -192,7 +192,7 @@ def fn_read_general_binary(afile):
       order = 'C'
 
    Nlines   = len(lines)
-   for n in range(2,Nlines):
+   for n in range(4,Nlines):
       lin   = lines[n]
       if 'Record number and name:' in lin:
          n0 = n+1

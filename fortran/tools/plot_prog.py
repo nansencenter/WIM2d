@@ -25,8 +25,8 @@ grid_prams  = Fdat.fn_check_grid(bindir)
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
-PLOT_INIT   = 0
-PLOT_FINAL  = 0
+PLOT_INIT   = 1
+PLOT_FINAL  = 1
 PLOT_PROG   = 1
 OLD_WAY     = 0
 
@@ -96,7 +96,7 @@ if PLOT_PROG:
 
    if not OLD_WAY:
       ################################################################
-      print('**********************************************************************')
+      print('\n**********************************************************************')
       print('to make movie, go to figs/prog and type')
       print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs')
       print('or')
@@ -126,7 +126,7 @@ if PLOT_PROG:
          Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
          print("Plots in "+figdir3_0+'\n')
 
-      print('**********************************************************************')
+      print('\n**********************************************************************')
       print('to make movie, go to figs/prog and type')
       print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs')
       print('or')
