@@ -53,11 +53,11 @@
       X  = 0.0
       Y  = 0.0
       do i=1,ii
-         xx(i)    = dx*(i-1)
+         xx(i)    = x0+dx*(i-.5) !centres of cells
          X(i,:)   = xx(i)
       end do
       do j=1,jj
-         yy(j)    = dy*(j-1)
+         yy(j)    = y0+dy*(j-.5) !centres of cells
          Y(:,j)   = yy(j)
       end do
       !!
