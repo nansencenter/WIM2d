@@ -10,7 +10,7 @@ from matplotlib import ticker
 import fns_get_data as Fdat
 
 #######################################################################
-def plot_1d(x,y,labs=None,f=None,**kwargs):
+def plot_1d(x,y,labs=None,pobj=None,**kwargs):
    # f  = plt.figure(figsize=[6,6],dpi=50)
    # plt.pcolor(grid_prams.X,grid_prams.Y,ice_fields.icec,cmap=cm.jet,vmax=Vmax,vmin=Vmin)
 
@@ -18,16 +18,19 @@ def plot_1d(x,y,labs=None,f=None,**kwargs):
    fontname = 'serif'
    # fontname = 'sans-serif'
 
-   if f is None:
+   if pobj is None:
       # no figure open so open a new one
-      f  = plt.figure()
+      f     = plt.figure()
+      ax    = f.add_subplot(1,1,1)
+   else:
+      f,ax  = pobj
 
-   ax = plt.plot(x,y,**kwargs)
+   line ,= ax.plot(x,y,**kwargs)
+   pobj  = f,ax,line
+
    if not(labs is None):
-      xl = plt.xlabel(labs[0], fontsize=16)
-      xl.set_fontname(fontname)
-      yl = plt.ylabel(labs[1], fontsize=16)
-      yl.set_fontname(fontname)
+      ax.set_xlabel(labs[0], fontsize=16,fontname=fontname)
+      ax.set_ylabel(labs[1], fontsize=16,fontname=fontname)
 
 #  # fonts of axes:
 #  for tick in ax.axes.xaxis.get_major_ticks():
@@ -37,7 +40,7 @@ def plot_1d(x,y,labs=None,f=None,**kwargs):
 #     tick.label.set_fontsize(14)
 #     tick.label.set_fontname(fontname)
 
-   return f
+   return pobj
 #######################################################################
 
 #######################################################################

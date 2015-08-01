@@ -51,8 +51,8 @@
       write(2,'(a)') trim(ss)
       write(2,'(a)') ''
 
-      write(ssi,'(a,i3.3)'),  'integer,parameter   :: ii = ',ii
-      write(ssj,'(a,i3.3)'),  'integer,parameter   :: jj = ',jj
+      write(ssi,'(a,i4.4)'),  'integer,parameter   :: ii = ',ii
+      write(ssj,'(a,i4.4)'),  'integer,parameter   :: jj = ',jj
       write(ssx,'(a,e10.4)'), 'real,parameter   :: dx = ',dx
       write(ssy,'(a,e10.4)'), 'real,parameter   :: dy = ',dy
 
@@ -94,39 +94,40 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)  
- 112  format(i3.3,a)  
- 113  format(a)
+ 111  format(a)
+ 112  format(i2.2,a)  
+ 113  format(i3.3,a)  
+ 114  format(i4.4,a)  
 
       !! write .b file (description of stuff in .a file)
       print*,'Making .b file     : ',bfile
       open(unit=2,file=trim(bfile),status = 'replace')
 
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  7,          "       Number of records"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  1,          "       Storage order "//                           &
      &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  ii,          "      Record length in x direction (elements)"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  jj,          "      Record length in y direction (elements)"
-      write(2,113) " "
+      write(2,111) " "
 
-      write(2,113)    "Record number and name:"
-      write(2,111)                                                      &
+      write(2,111)    "Record number and name:"
+      write(2,112)                                                      &
      &  1,    "       X"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  2,    "       Y"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  3,    "       scuy"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  4,    "       scvx"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  5,    "       scp2"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  6,    "       scp2i"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  7,    "       LANDMASK"
 
       close(2)

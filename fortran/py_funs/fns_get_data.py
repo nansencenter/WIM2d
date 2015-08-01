@@ -275,6 +275,15 @@ def fn_check_out_arr(out_arrays):
 def fn_check_prog(outdir,cts):
    # routine to get progress fields from binary files:
    # cts is a string eg '010' or '0010' corresponding to the time step
+   if type(cts)==type(0):
+      # convert from int to str of correct length
+      import os
+      fils  = os.listdir(outdir+'/binaries/prog/')
+      cts0  = fils[0].strip('wim_prog')[:-2]
+      fmt   = '%'+str(len(cts0))+'.'+str(len(cts0))+'d'
+      cts   = fmt %(cts)
+      print(cts0,cts)
+
    afile    = outdir+'/binaries/prog/wim_prog'+cts+'.a'
    bfile    = outdir+'/binaries/prog/wim_prog'+cts+'.b'
    fields   = fn_read_general_binary(afile)

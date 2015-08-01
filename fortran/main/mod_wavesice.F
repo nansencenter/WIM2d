@@ -647,38 +647,39 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)  
- 112  format(i3.3,a)  
- 113  format(a)
+ 111  format(a)
+ 112  format(i2.2,a)  
+ 113  format(i3.3,a)  
+ 114  format(i4.4,a)  
 
       !! write .b file (description of stuff in .a file)
       open(unit=2,file=trim(bfile),status = 'replace')
 
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  7,          "       Number of records"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  1,          "       Storage order "//                           &
      &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  ii,          "      Record length in x direction (elements)"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  jj,          "      Record length in y direction (elements)"
-      write(2,113) " "
+      write(2,111) " "
 
-      write(2,113)    "Record number and name:"
-      write(2,111)                                                      &
+      write(2,111)    "Record number and name:"
+      write(2,112)                                                      &
      &  1,    "       X"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  2,    "       Y"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  3,    "       scuy"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  4,    "       scvx"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  5,    "       scp2"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  6,    "       scp2i"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  7,    "       LANDMASK"
 
       close(2)
@@ -713,36 +714,37 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)  
- 112  format(i3.3,a)  
- 113  format(a)
+ 111  format(a)
+ 112  format(i2.2,a)  
+ 113  format(i3.3,a)  
+ 114  format(i4.4,a)  
 
       !! write .b file (description of stuff in .a file)
       open(unit=2,file=trim(bfile),status = 'replace')
 
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  6,          "       Number of records"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  1,          "       Storage order "//                           &
      &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  ii,          "      Record length in x direction (elements)"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  jj,          "      Record length in y direction (elements)"
-      write(2,113) ""
+      write(2,111) ""
 
-      write(2,113)    "Record number and name:"
-      write(2,111)                                                      &
+      write(2,111)    "Record number and name:"
+      write(2,112)                                                      &
      &  1,    "       icec"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  2,    "       iceh"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  3,    "       Dmax"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  4,    "       Hs"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  5,    "       Tp"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  6,    "       mwd"
 
       close(2)
@@ -803,36 +805,37 @@
       stat1 = 'replace'
       stat2 = 'old'
 
- 111  format(i2.2,a)
- 112  format(i3.3,a)
- 113  format(a)
+ 111  format(a)
+ 112  format(i2.2,a)  
+ 113  format(i3.3,a)  
+ 114  format(i4.4,a)  
 
       !! write .b file (description of stuff in .a file)
       open(unit=2,file=trim(bfile),status = 'replace')
 
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  5,           "       Number of records"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  1,          "       Storage order "//                           &
      &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  ii,           "      Record length in x direction (elements)"
-      write(2,112)                                                      &
+      write(2,114)                                                      &
      &  jj,           "      Record length in y direction (elements)"
-      write(2,113) ""
+      write(2,111) ""
 
-      write(2,113)    "Record number and name:"
-      write(2,111)                                                      &
+      write(2,111)    "Record number and name:"
+      write(2,112)                                                      &
      &  1,    "       Dmax"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  2,    "       tau_x"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  3,    "       tau_y"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  4,    "       Hs"
-      write(2,111)                                                      &
+      write(2,112)                                                      &
      &  5,    "       Tp"
-!     write(2,111)                                                      &
+!     write(2,112)                                                      &
 !    &  6,    "       mwd"
 
       close(2)
