@@ -25,8 +25,9 @@ import fns_plot_data as Fplt
 # steady state results to compare to:
 import fns_boltzmann_steady as Fbs
 
+# RUN_OPT  = 1 # plot from saved dir (not in default location)
 RUN_OPT  = 2 # rerun then plot
-# RUN_OPT  = 3 # plot saved results
+# RUN_OPT  = 3 # plot saved results (from default location)
 
 gf          = Fdat.fn_check_grid('inputs')
 gfl         = gf['LANDMASK']
@@ -91,29 +92,42 @@ if 1:
    duration       = duration_hours*60*60
    real_prams     = np.array([young,visc_rp,duration])
 
-
-out_fields,outdir = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
-                                    int_prams=int_prams,
-                                    real_prams=real_prams)
+do_legend   = 1 # show times as legends
+if RUN_OPT==1:
+   # specify manually where results are
+   # outdir   = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/Boltzmann/convergence/16dirs/500m'
+   # outdir   = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/Boltzmann/convergence/16dirs/1km'
+   # outdir   = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/Boltzmann/convergence/16dirs/2km'
+   outdir   = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/Boltzmann/convergence/16dirs/4km'
+   figdir   = outdir
+else:
+   figdir0  = 'fig_scripts/figs/'
+   figdir   = figdir0+'TC2S'
+   if not os.path.exists(figdir0):
+      os.mkdir(figdir0)
+   if not os.path.exists(figdir):
+      os.mkdir(figdir)
+   if RUN_OPT==3:
+      outdir   = 'out_io'
+   else:
+      out_fields,outdir
+         = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,\
+                       int_prams=int_prams,\
+                       real_prams=real_prams)
 
 ##########################################################################
 # Make plots
 bindir   = outdir+'/binaries'
-figdir0  = 'fig_scripts/figs/'
-figdir   = figdir0+'TC2S'
-
-if not os.path.exists(figdir0):
-   os.mkdir(figdir0)
-if not os.path.exists(figdir):
-   os.mkdir(figdir)
 
 ##########################################################################
 grid_prams  = Fdat.fn_check_grid(bindir) # load grid from binaries
 xx          = 1.e-3*grid_prams['X'][:,0]
-labs        = ['x, km','$H_s$, m']
+# labs1       = ['x, km','$H_s$, m']
+labs1       = ['','$H_s$, m']
+labs2       = ['$x$, km',r'$\tau_x$, Pa']
 
 ##########################################################################
-if 1:
+if 0:
    # get steady state solution # TODO get this working
    om          = 2*np.pi/Tp_in
    # gravity     = 9.81
@@ -154,46 +168,111 @@ if 1:
 
    # print(x_ice)
    # print(Hs_steady)
-   fig      = Fplt.plot_1d(1.e-3*(xe+x_ice),Hs_steady,labs=labs,color='y',linewidth=3)
+   fig      = Fplt.plot_1d(1.e-3*(xe+x_ice),Hs_steady,labs=labs1,color='y',linewidth=3)
 else:
    fig   = None
 ##########################################################################
 
 pfiles   = os.listdir(bindir+'/prog')
-pf       = pfiles[-1]
-Nprog    = int(pf[8:-2])
+afiles   = []
+psteps   = []
+psteps_i = []
+for pf in pfiles:
+   if pf[-2:]=='.a':
+      afiles.append(pf)
+      psteps.append(pf[8:-2])
+      psteps_i.append(int(pf[8:-2]))
+Nprog = psteps[-1]
 
+logfil   = outdir+'/log/wim2d.log'
+fid      = open(logfil)
+lines    = fid.readlines()
+fid.close()
+dt       = float(lines[25].split()[-1]) # time step (s)
+psteps_i = np.array(psteps_i)
+tsteps   = dt*psteps_i
+
+def find_nearest(nparr,val):
+   R           = list(abs(nparr-val))
+   Rs          = sorted([(r,i) for i,r in enumerate(R)])
+   Rval,ival   = Rs[0]
+   return int(ival)
+
+################################################ 
 if 0:
-   # compare every stp steps
-   stp         = 40
-   steps2plot  = range(0,Nprog,stp)
+   if 1:
+      # compare every stp steps
+      stp         = 40
+      steps2plot  = range(0,Nprog,stp)
+      steps2plot.extend([Nprog])
+   else:
+      # just compare final prog file
+      steps2plot  = [Nprog]
 else:
-   # just compare final prog file
-   steps2plot  = [Nprog]
+   # specify the times manually
+   times = [0.,1.,1.5,2.,2.5,3.] # times in h
+   times.extend([6.,12.,18.,24.,48,72.])
+   steps2plot  = []
+   for tval in times:
+      i_t   = find_nearest(tsteps,tval*3600)
+      steps2plot.append(psteps_i[i_t])
+################################################ 
+
 
 cols     = ['k','b','r','g','m','c']
 lstil    = ['-','--','-.',':']
 Nc       = len(cols)
+Ns       = len(lstil)
 loop_c   = -1
-loop_s   = 0
+loop_s   = -1
+
+fig   = plt.figure()
+ax1   = fig.add_subplot(2,1,1)
+ax2   = fig.add_subplot(2,1,2)
+# 
+if do_legend:
+   lines_h     = []
+   lines_t     = []
+   times_leg   = []
 
 for nstep in steps2plot:
-   out_fields  = Fdat.fn_check_prog(outdir,nstep) # load ice/wave conditions from binaries
+   print(nstep,int(nstep)*dt)
+   out_fields  = Fdat.fn_check_prog(outdir,int(nstep)) # load ice/wave conditions from binaries
    Hs_n        = out_fields['Hs'][:,0]
+   tx_n        = out_fields['taux'][:,0]
    #
-   if loop_c==Nc-1:
-      loop_c   = 0
-      loop_s   = loop_s+1
-   else:
-      loop_c   = loop_c+1
+   loop_c   = np.mod(loop_c+1,Nc)
+   if loop_c==0:
+      loop_s   = np.mod(loop_s+1,Ns)
+   
+   # plot and set up for legend
+   fig,ax1,line_h = Fplt.plot_1d(xx,Hs_n,labs=labs1,pobj=(fig,ax1),color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
+   fig,ax2,line_t = Fplt.plot_1d(xx,tx_n,labs=labs2,pobj=(fig,ax2),color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
 
-   fig      = Fplt.plot_1d(xx,Hs_n,labs=labs,f=fig,color=cols[loop_c],linestyle=lstil[loop_s])
-#
-figname  = figdir+'/convergence2steady'+meth+'.png'
+   if do_legend:
+      lines_h.append(line_h)
+      lines_t.append(line_t)
+      #
+      tt = dt*nstep/3600.
+      ss = '%5.1fh' % (tt)
+      times_leg.append(ss)
+
+ax1.set_xlim([0,300])
+ax2.set_ylim([0,0.3])
+ax2.set_xlim([0,300])
+
+# legends
+if do_legend:
+   if len(lines_h)>0:
+      ax1.legend(lines_h,times_leg,loc='upper right', bbox_to_anchor=(1.3, .78))
+   # if len(lines_t)>0:
+   #    ax2.legend(lines_t,times_leg)
+
+# figname  = figdir+'/convergence2steady.png'
+figname  = figdir+'/convergence2steady.eps'
 print('saving to '+figname+'...')
-plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
-plt.close()
-fig.clf()
+fig.savefig(figname,bbox_inches='tight',pad_inches=0.05)
+plt.close(fig)
 
 if 1:
    #####################################################
@@ -206,7 +285,7 @@ if 1:
    lin   = []
    lin.append('# Time-dependant results (end of simulation)\n')
    lin.append('# Time (h): '+str(duration_hours)+'\n')
-   lin.append('# x (m), Hs (m)'+'\n')
+   lin.append('# x (m), Hs (m), taux, Pa'+'\n')
    lin.append('#####################################################\n')
    lin.append('\n')
 
@@ -217,11 +296,13 @@ if 1:
    for loop_x in range(len(xx)):
       lin   =           ('%f' % (1.e3*xx[loop_x])  )
       lin   = lin+blk + ('%f' % (Hs_n[loop_x])     )
+      lin   = lin+blk + ('%f' % (tx_n[loop_x])     )
       fid.write(lin+'\n')
    fid.close()
    print('saving to '+dfil+'...')
    #####################################################
 
+if 0:
    #####################################################
    # print  steady-state results to dat-file
    dfil  = figdir+'/test_steady2'+meth+'.dat'
