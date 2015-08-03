@@ -1,15 +1,15 @@
 PROGNAME=prog_wim2d.exec
 
 CXX = g++-4.8
-CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC -MMD -MP -lm -v #-Wall
+CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC -v# -MMD -MP -lm #-Wall
 CXXFLAGS += -I headers -I . -I $(BOOST_DIR)/include
 
 LDFLAGS += -Wl,-rpath,$(BOOST_DIR)/lib
-LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
+LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options-mt -lboost_filesystem-mt -lboost_system-mt
 
 
 CC = gcc-4.8
-CFLAGS += -std=c++0x -pedantic -Wno-inline -fPIC -MMD -MP -lm -v #-Wall
+CFLAGS += -std=c++0x -pedantic -Wno-inline -fPIC -v # -MMD -MP -lm #-Wall
 CFLAGS += -I headers -I .
 
 # SRC = \
@@ -66,15 +66,17 @@ default: $(CCOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(OBJECTDIR)%.o: %.c
+	mkdir -p $(OBJECTDIR)
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 
 
 $(PROGNAME): $(OBJS) $(CCOBJS)
-	@mkdir -p $(BINARYDIR)
+	mkdir -p $(BINARYDIR)
 	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$@ $^ $(LDFLAGS)
 
 $(OBJECTDIR)%.o: %.cpp
+	mkdir -p $(OBJECTDIR)
 	$(CXX) -o $@ -c $< $(CXXFLAGS)
 
 

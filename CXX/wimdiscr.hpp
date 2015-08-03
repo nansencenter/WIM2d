@@ -25,7 +25,7 @@
 #include <boost/filesystem/fstream.hpp>
 
 #include <boost/any.hpp>
-#include <boost/strong_typedef.hpp>
+//#include <boost/strong_typedef.hpp>
 #include <boost/format.hpp>
 #include <iomanip>
 #ifdef __cplusplus
