@@ -738,7 +738,7 @@ if (SV_BIN==1) & (MEX_OPT==0)
    pairs{end+1}   = {'scp2i'     ,grid_prams.scp2i};
    pairs{end+1}   = {'LANDMASK'  ,grid_prams.LANDMASK};
    %%
-   fn_save_binary(Froot,dims,pairs);
+   fn_save_binary(Froot,dims,[],pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -754,7 +754,7 @@ if (SV_BIN==1) & (MEX_OPT==0)
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    pairs{end+1}   = {'mwd',wave_fields.mwd};
    %%
-   fn_save_binary(Froot,dims,pairs);
+   fn_save_binary(Froot,dims,[],pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -771,7 +771,9 @@ if (SV_BIN==1) & (MEX_OPT==0)
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    %%
    dims  = [nx,ny,nw,ndir];
-   fn_save_binary(Froot,dims,pairs);
+   fn_save_binary(Froot,dims,0,pairs);
+   %eval(['!cat ',Froot,'.b'])
+   %pause;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
@@ -1348,7 +1350,7 @@ else
          pairs{end+1}   = {'Tp',wave_fields.Tp};
          %%
          dims  = [nx,ny,nw,ndir];
-         fn_save_binary(Froot,dims,pairs);
+         fn_save_binary(Froot,dims,n*dt,pairs);
       end
 
    end%% end time loop
@@ -1367,7 +1369,7 @@ if (SV_BIN==1)&(MEX_OPT==0)
    pairs{end+1}   = {'Hs',wave_fields.Hs};
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    %%
-   fn_save_binary(Froot,dims,pairs);
+   fn_save_binary(Froot,dims,duration,pairs);
 end
 
 t1 = now;
@@ -1704,48 +1706,73 @@ function fn_plot_spec(X,Y,Hs,Tw,Dmax,s1)
 %% plot Hs, Dmax, Tw &
 %% S for 1 particular freq and dir
 
+[nx,ny]  = size(X);
+
 subplot(2,2,1);
-H  = pcolor(X/1e3,Y/1e3,Hs);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-ttl   = title('{\itH}_{\rm s}, m');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,Hs);
+   GEN_proc_fig('\itx, \rmkm','{\itH}_{\rm s}, m');
+else
+   H  = pcolor(X/1e3,Y/1e3,Hs);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   ttl   = title('{\itH}_{\rm s}, m');
+   GEN_font(ttl);
+end
 
 subplot(2,2,2);
-H  = pcolor(X/1e3,Y/1e3,Dmax);
-caxis([0 250]);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-ttl   = title('{\itD}_{\rm max}, m');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,Dmax);
+   GEN_proc_fig('\itx, \rmkm','{\itD}_{\rm max}, m');
+else
+   H  = pcolor(X/1e3,Y/1e3,Dmax);
+   caxis([0 250]);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   ttl   = title('{\itD}_{\rm max}, m');
+   GEN_font(ttl);
+end
 
 subplot(2,2,3);
-H  = pcolor(X/1e3,Y/1e3,Tw);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-ttl   = title('{\itT}_{\rm w}, m');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,Tw);
+   GEN_proc_fig('\itx, \rmkm','{\itT}_{\rm w}, s');
+else
+   H  = pcolor(X/1e3,Y/1e3,Tw);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   ttl   = title('{\itT}_{\rm w}, s');
+   GEN_font(ttl);
+end
 
 subplot(2,2,4);
-H  = pcolor(X/1e3,Y/1e3,s1.Sdir);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-ttl   = [num2str(s1.period),'s, ',num2str(s1.dir),'^o'];
-ttl   = title({'\itS, \rmm^2s',ttl});
-GEN_font(ttl);
+detls = ['S: ',num2str(s1.period),'s, ',num2str(s1.dir),'^o'];
+if ny==1
+   plot(X/1e3,s1.Sdir);
+   GEN_proc_fig('\itx, \rmkm',detls);
+else
+   H  = pcolor(X/1e3,Y/1e3,s1.Sdir);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   ttl   = dtls;
+   ttl   = title({'\itS, \rmm^2s',ttl});
+   GEN_font(ttl);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function fn_plot_spec_2(X,Y,Hs,tau_x,Dmax,tau_y)
 %% plot Hs, Dmax, Tw &
 %% S for 1 particular freq and dir
+
+[nx,ny]  = size(X);
 
 %%fix positions so figures can be compared more easily between computers
 pos1  = [0.130000000000000   0.583837209302326   0.334659090909091   0.341162790697674];
@@ -1755,48 +1782,68 @@ pos4  = [0.570340909090909   0.110000000000000   0.334659090909091   0.341162790
 
 %subplot(2,2,1);
 subplot('position',pos1);
-H  = pcolor(X/1e3,Y/1e3,Hs);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-GEN_font(gca);
-ttl   = title('{\itH}_{\rm s}, m');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,Hs);
+   GEN_proc_fig('\itx, \rmkm','{\itH}_{\rm s}, m');
+else
+   H  = pcolor(X/1e3,Y/1e3,Hs);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   GEN_font(gca);
+   ttl   = title('{\itH}_{\rm s}, m');
+   GEN_font(ttl);
+end
 
 %subplot(2,2,2);
 subplot('position',pos2);
-H  = pcolor(X/1e3,Y/1e3,Dmax);
-caxis([0 250]);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-GEN_font(gca);
-ttl   = title('{\itD}_{\rm max}, m');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,Dmax);
+   GEN_proc_fig('\itx, \rmkm','{\itD}_{\rm max}, m');
+else
+   H  = pcolor(X/1e3,Y/1e3,Dmax);
+   caxis([0 250]);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   GEN_font(gca);
+   ttl   = title('{\itD}_{\rm max}, m');
+   GEN_font(ttl);
+end
 
 %subplot(2,2,3);
 subplot('position',pos3);
-H  = pcolor(X/1e3,Y/1e3,tau_x);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-GEN_font(gca);
-ttl   = title('{\tau}_{x}, Pa');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,tau_x);
+   GEN_proc_fig('\itx, \rmkm','{\tau}_{x}, Pa');
+else
+   H  = pcolor(X/1e3,Y/1e3,tau_x);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   GEN_font(gca);
+   ttl   = title('{\tau}_{x}, Pa');
+   GEN_font(ttl);
+end
 
 %subplot(2,2,4);
 subplot('position',pos4);
-H  = pcolor(X/1e3,Y/1e3,tau_y);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-GEN_font(gca);
-ttl   = title('{\tau}_{y}, Pa');
-GEN_font(ttl);
+if ny==1
+   plot(X/1e3,tau_y);
+   GEN_proc_fig('\itx, \rmkm','{\tau}_{y}, Pa');
+else
+   H  = pcolor(X/1e3,Y/1e3,tau_y);
+   set(H,'EdgeColor', 'none');
+   daspect([1 1 1]);
+   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+   colorbar;
+   GEN_font(gca);
+   ttl   = title('{\tau}_{y}, Pa');
+   GEN_font(ttl);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
