@@ -66,7 +66,7 @@ public:
 
     void wimGrid();
 	void readFile(std::string const& filein);
-    void writeFile(size_type const& timestp) const;
+    void writeFile(size_type const& timestp, value_type const& t_out) const;
     void wimInit();
     void wimStep();
     void wimRun();
@@ -288,7 +288,7 @@ WimDiscr<T>::readFile (std::string const& filein)
 
 template<typename T>
 void
-WimDiscr<T>::writeFile (size_type const& timestp) const
+WimDiscr<T>::writeFile (size_type const& timestp, value_type const& t_out) const
 {
 
     std::string str = vm["outparentdir"].template as<std::string>();
@@ -370,11 +370,13 @@ WimDiscr<T>::writeFile (size_type const& timestp) const
 
     if (outb.is_open())
     {
-        outb << std::setw(15) << std::left << 07 << "          "<< "Number of records" <<"\n";
-        outb << std::setw(15) << std::left << nx << "          "<< "Record length in x direction (elements)" <<"\n";
-        outb << std::setw(15) << std::left << ny << "          "<< "Record length in y direction (elements)" <<"\n";
-        outb << std::setw(15) << std::left << nwavefreq << "          "<< "Number of wave frequencies" <<"\n";
-        outb << std::setw(15) << std::left << nwavedirn << "          "<< "Number of wave directions" <<"\n";
+        outb << std::setw(15) << std::left << 07    << "          "<< "Number of records" <<"\n";
+        outb << std::setw(15) << std::left << 0     << "          "<< "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
+        outb << std::setw(15) << std::left << nx    << "          "<< "Record length in x direction (elements)" <<"\n";
+        outb << std::setw(15) << std::left << ny    << "          "<< "Record length in y direction (elements)" <<"\n";
+        outb << std::setw(15) << std::left << t_out << "          "<< "Model time of output (s)" <<"\n";
+        //outb << std::setw(15) << std::left << nwavefreq << "          "<< "Number of wave frequencies" <<"\n";
+        //outb << std::setw(15) << std::left << nwavedirn << "          "<< "Number of wave directions" <<"\n";
 
         outb <<"\n";
 

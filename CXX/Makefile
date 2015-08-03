@@ -2,8 +2,10 @@ PROGNAME=prog_wim2d.exec
 
 CXX = g++-4.8
 CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC -MMD -MP -lm -v #-Wall
-CXXFLAGS += -I headers -I .
-LDFLAGS += -lboost_program_options -lboost_filesystem -lboost_system
+CXXFLAGS += -I headers -I . -I $(BOOST_DIR)/include
+
+LDFLAGS += -Wl,-rpath,$(BOOST_DIR)/lib
+LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
 
 
 CC = gcc-4.8

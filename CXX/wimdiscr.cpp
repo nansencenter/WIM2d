@@ -814,9 +814,12 @@ WimDiscr<T>::wimRun()
     {
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
 
+        value_type t_out = dt*cpt;
+        std::cout<<"T_OUT= "<< t_out <<"\n";
+
         critter = !(cpt % vm["reps"].template as<int>()) && (vm["checkprog"].template as<bool>());
         if (critter)
-            writeFile(cpt);
+            writeFile(cpt,t_out);
 
         wimStep();
 
