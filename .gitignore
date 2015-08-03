@@ -31,6 +31,7 @@ fortran/header_files/grid_info.h
 fortran/header_files/wave_info.h
 fortran/numerics/test_advection/test_out/*
 fortran/numerics/test_advection/figs/*
+fortran/numerics/test_advection/infile.txt
 fortran/run/fig_scripts/figs/profiles/*
 fortran/run/fig_scripts/figs/*.png
 fortran/run/fig_scripts/figs/TC2S/*
@@ -60,4 +61,4 @@ neXtSIMcoupling/run/*
 !neXtSIMcoupling/run/infiles
 neXtSIMcoupling/tutorial/out/*
 
-fortran/numerics/test_advection/infile.txt
+CXX/run/outputs
