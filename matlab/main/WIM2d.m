@@ -1207,7 +1207,8 @@ if TEST_FINAL_SPEC==1
    disp(' ');
    disp('Testing final spectrum...');
 
-   if 1
+   if 0
+      disp('(Check integrals of output spectrum vs output Hs,Tp,etc)');
       %% check consistency of Sdir with Hs,Tp
       [wf.Hs,wf.Tp,wf.mwd] = fn_spectral_integrals(om_vec,wavdir,Sdir);
 
@@ -1223,7 +1224,25 @@ if TEST_FINAL_SPEC==1
          disp(' ');
       end
    else
-      %% TODO check Hs,Tp against binary files
+      disp('(Check outputs vs values in binary files)');
+      of2         = fn_check_final(outdir);%%set in infile_dirs.txt
+      of1.Hs      = wave_fields.Hs;
+      of1.Tp      = wave_fields.Tp;
+      of1.tau_x   = ice_fields.tau_x;
+      of1.tau_y   = ice_fields.tau_y;
+      of1.Dmax    = ice_fields.Dmax;
+      %%
+      vbls  = {'Hs','Tp','tau_x','tau_y','Dmax'};%,'mwd'};%mwd currently not updated
+      for n=1:length(vbls)
+         vbl   = vbls{n};
+         disp(' ');
+         disp(['comparing field: ',vbl]);
+         v1    = of1.(vbl);
+         v2    = of2.(vbl);
+         diff  = abs(v2-v1);
+         disp(['max diff: ',num2str(max(diff(:)))]);
+         disp(' ');
+      end
    end
 
    return
