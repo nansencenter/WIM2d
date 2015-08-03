@@ -62,7 +62,7 @@ def cmap_3d_V1d(x,y,z,labs,ADD_CONTS=1,fmt='%4.1f'):
    #colorbar:
    #cbar = plt.colorbar(ax, extend='neither', spacing='proportional',
                    #orientation='vertical', format="%4.2f")
-
+   
    cbar  = plt.colorbar(ax)#,ticks=np.arange(0,1+dc,dc))
    cbar.set_label(labs[2], size=14)
    cbar.ax.tick_params(labelsize=14)
@@ -156,7 +156,7 @@ def cmap_3d(x,y,z,labs,pobj=None,zlims=None):
       cpos[2]  = cpos[2]+.15  # cbar width
       cpos[1]  = cpos[1]+.21  # lower height
       cpos[3]  = cpos[3]*.38  # colorbar height
-      cbar.ax.set_position(cpos)
+      cbar.ax.set_position(cpos)         
 
       tick_locator = ticker.MaxNLocator(nbins=5)
       cbar.locator = tick_locator
@@ -298,14 +298,10 @@ def fn_plot_final(grid_prams,out_fields,figdir):
 
    # dictionary of figure names
    figs  = {'dfloe':'Dmax.png','taux':'taux.png','tauy':'tauy.png',
-            'Dmax':'Dmax.png','tau_x':'taux.png','tau_y':'tauy.png',
-            'icec':'icec.png','iceh':'iceh.png',
             'Hs':'Hs.png','Tp':'Tp.png'}
 
    # dictionary of labels for colorbars
    labs  = {'dfloe':'$D_{max}$, m','taux':'Stress (x dir.), Pa','tauy':'Stress (y dir.), Pa',
-            'Dmax':'$D_{max}$, m','tau_x':'Stress (x dir.), Pa','tau_y':'Stress (y dir.), Pa',
-            'icec':'$c$','iceh':'$h$, m',
             'Hs':'$H_s$, m','Tp':'$T_p$, s'}
 
    for key in out_fields.keys():

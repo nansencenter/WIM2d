@@ -18,16 +18,15 @@ outdir   = os.getcwd()
 bindir   = outdir+'/binaries'
 figdir   = outdir+'/figs'
 
-# grid_prams  = Fdat.fn_check_grid(bindir)
-grid_prams  = Fdat.fn_read_general_bin(bindir+'/wim_grid.a',order='C')
+grid_prams  = Fdat.fn_check_grid(bindir)
 
 ##########################################################################
 # Make plots
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
-PLOT_INIT   = 1
-PLOT_FINAL  = 1
+PLOT_INIT   = 0
+PLOT_FINAL  = 0
 PLOT_PROG   = 1
 OLD_WAY     = 0
 
@@ -82,7 +81,6 @@ if PLOT_PROG:
       os.mkdir(figdir3)
 
    steps       = []
-   afiles      = []
    for pf in prog_files:
       if '.a'==pf[-2:]:
          stepno   = pf.strip('wim_prog').strip('.a')
@@ -121,26 +119,12 @@ if PLOT_PROG:
             # os.rmdir(figdir3+'/'+od)
             shutil.rmtree(figdir3+'/'+od)
 
-      # for stepno in steps:
-      #    print("Plotting results at time step "+stepno+" ...")
-      #    prog_fields = Fdat.fn_check_prog(outdir,int(stepno))
-      #    figdir3_0   = figdir3+'/'+stepno
-      #    Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-      #    print("Plots in "+figdir3_0+'\n')
-      if 1:
-         for m,afil in enumerate(afiles):
-			prog_fields = Fdat.fn_read_general_bin(bindir+'/prog/'+afil,order='C')
-			figdir3_0   = figdir3+'/'+steps[m]
-		      	Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-		      	print("Plots in "+figdir3_0+'\n')
-      else:
-		 for stepno in steps:
-			print("Plotting results at time step "+stepno+" ...")
-			prog_fields = Fdat.fn_check_prog(outdir,stepno)
-			figdir3_0   = figdir3+'/'+stepno
-
-		      	Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-		      	print("Plots in "+figdir3_0+'\n')
+      for stepno in steps:
+         print("Plotting results at time step "+stepno+" ...")
+         prog_fields = Fdat.fn_check_prog(outdir,stepno)
+         figdir3_0   = figdir3+'/'+stepno
+         Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
+         print("Plots in "+figdir3_0+'\n')
 
       print('\n**********************************************************************')
       print('to make movie, go to figs/prog and type')

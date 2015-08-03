@@ -22,7 +22,6 @@ def key_aliases(inverse=False):
 
 ##############################################################
 def get_array(fid,nx,ny,fmt_size=4,order='F'):
-
    # routine to get the array from the .a (binary) file
    # * fmt_size = size in bytes of each entry)
    #   > default = 4 (real*4/single precision)
@@ -100,7 +99,7 @@ def Out_Fields(dfloe=0.0,taux=0.0,tauy=0.0,Hs=0.0,Tp=0.0):
 ##############################################################
 
 ##############################################################
-def fn_check_grid(outdir,order='fortran'):
+def fn_check_grid(outdir):
    # routine to get grid and other parameters
    # from binary files
 
@@ -118,7 +117,7 @@ def fn_check_grid(outdir,order='fortran'):
       else:
          key2  = aliases[key]
       grid_prams.update({key:fields[key2]})
-
+   
    # extra info
    nx,ny = grid_prams['X'].shape
    grid_prams.update({'nx':nx})
@@ -130,7 +129,7 @@ def fn_check_grid(outdir,order='fortran'):
    grid_prams.update({'dy':dy})
 
    ###########################################################
-
+   
    # output
    return grid_prams
 ##############################################################
@@ -142,7 +141,7 @@ def fn_check_init(outdir):
    bfile    = outdir+'/wim_init.b'
    fields   = fn_read_general_binary(afile)
    aliases  = key_aliases(inverse=True)
-
+   
    ###########################################################
    ## ice fields
    keys        = ['icec','iceh','dfloe']
@@ -174,7 +173,7 @@ def fn_check_init(outdir):
    wave_fields.update({'WAVE_MASK':0*wave_fields['Hs']})
    wave_fields['WAVE_MASK'][wave_fields['Hs']>0.0] = 1.0
    ###########################################################
-
+   
    # outputs
    return ice_fields,wave_fields
 ##############################################################
@@ -222,15 +221,12 @@ def fn_read_general_binary(afile):
    ##
    out   = {}
    ##
-   out.update({'nx':nx})
-   out.update({'ny':ny})
-
    for key in keys:
       out.update({key:get_array(aid,nx,ny,order=order)})
 
    aid.close()
    ###########################################################
-
+   
    # outputs
    return out
 ##############################################################
@@ -242,7 +238,7 @@ def fn_check_out_bin(outdir):
    bfile    = outdir+'/wim_out.b'
    fields   = fn_read_general_binary(afile)
    aliases  = key_aliases(inverse=True)
-
+   
    ###########################################################
    ## out fields
    keys        = ['dfloe','taux','tauy','Hs','Tp']
@@ -254,7 +250,7 @@ def fn_check_out_bin(outdir):
          key2  = aliases[key]
       out_fields.update({key:fields[key2]})
    ###########################################################
-
+   
    # outputs
    return out_fields
 ##############################################################
@@ -270,7 +266,7 @@ def fn_check_out_arr(out_arrays):
    for key in keys:
       s2[key]  = out_arrays[:,:,n]
       n        = n+1
-
+   
    # outputs
    return out_fields
 ##############################################################
@@ -292,7 +288,7 @@ def fn_check_prog(outdir,cts):
    bfile    = outdir+'/binaries/prog/wim_prog'+cts+'.b'
    fields   = fn_read_general_binary(afile)
    aliases  = key_aliases(inverse=True)
-
+   
    ###########################################################
    ## out fields
    keys        = ['dfloe','taux','tauy','Hs','Tp']
@@ -304,7 +300,7 @@ def fn_check_prog(outdir,cts):
          key2  = aliases[key]
       out_fields.update({key:fields[key2]})
    ###########################################################
-
+   
    # outputs
    return out_fields
 ##############################################################
