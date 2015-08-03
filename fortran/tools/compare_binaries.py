@@ -17,7 +17,10 @@ import fns_plot_data as Fplt
 ##########################################################################
 mdir  = w2d+'/matlab/main/'
 fdir  = w2d+'/fortran/run/'
-if 0:
+cdir  = w2d+'/CXX/run/'
+if 1:
+   odir  = [cdir+'outputs',fdir+'out_io']
+elif 0:
    odir  = [fdir+'out',fdir+'out_io']
    # odir  = [fdir+'out',fdir+'out_2']
    # odir  = [fdir+'out_io',fdir+'out_2']
@@ -36,7 +39,7 @@ print('\n')
 ##########################################################################
 
 ##########################################################################
-OPT   = 2   # 1: initial conditions; 2: final results; 3: prog results
+OPT   = 3   # 1: initial conditions; 2: final results; 3: prog results
 if OPT==1:
    print("\n************************************************")
    print("Checking initial conditions...")
@@ -55,7 +58,8 @@ elif OPT==3:
 ##########################################################################
 arrays   = 2*[0]
 for j in range(2):
-   bindir   = odir[j]+'/binaries'
+   outdir   = odir[j]
+   bindir   = outdir+'/binaries'
 
    if OPT==1:
 
@@ -91,6 +95,7 @@ for j in range(2):
 
       stepno   = steps[n_prog]
       print("Checking results at time step "+stepno+" ...")
+      print(outdir)
       prog_fields = Fdat.fn_check_prog(outdir,stepno)
       arrays[j]   = prog_fields
       #############################################################
