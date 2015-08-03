@@ -260,7 +260,6 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       if not os.path.exists('test/out_py'):
          os.mkdir('test/out_py')
       fig   = 'test/out_py/land.png'
-      print('Saving test figure : '+fig)
       #
       gf = grid_fields
       nx = gf['nx']
@@ -278,8 +277,10 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
          f,ax  = Fplt.cmap_3d(x,y,z,['$x$, km','$y$, km','LANDMASK'])
       else:
          # 1d grid => make 1d plot of LANDMASK
-         f,ax  = Fplt.plot_1d(gf['X']/1.0e3,gf['LANDMASK'],\
-                              ['$x$, km','LANDMASK'])
+         f,ax,line   = Fplt.plot_1d(gf['X'][:,0]/1.0e3,gf['LANDMASK'][:,0],\
+                              labs=['$x$, km','LANDMASK'])
+
+      print('Saving test figure : '+fig)
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close(f)
    ###########################################################
