@@ -52,8 +52,10 @@ for bfil in files:
          # - get some parameters from X,Y
          dx = X[1,0]-X[0,0]
          dy = Y[0,1]-Y[0,0]
-         xm = X.max()
-         ym = Y.max()
+         x0 = X.min()
+         y0 = Y.min()
+         xm = .5*(X.max()-x0)
+         ym = .5*(Y.max()-y0)
          xx = X[:,0]
          yy = Y[0,:]
          n  = int(basename[-3:])
@@ -61,7 +63,7 @@ for bfil in files:
          #############################################################
          if OPT==1:
             uc    = 30. # const speed m/s
-            xc    = 2*xm/3.
+            xc    = x0+5*xm/3.
             # theta = 180. # deg straight across
             theta = 135. # deg
             u     = 0*X+uc*np.cos(np.pi/180.*theta)
@@ -71,15 +73,15 @@ for bfil in files:
             nt = 2*xm/(uc*dt)
             #
             x1 = xc+uc*np.cos(np.pi*theta/180)*n*dt
-            y1 = -ym+uc*np.sin(np.pi*theta/180)*n*dt
-            x2 = xm+uc*np.cos(np.pi*theta/180)*n*dt
+            y1 = y0+uc*np.sin(np.pi*theta/180)*n*dt
+            x2 = X.max()+uc*np.cos(np.pi*theta/180)*n*dt
             #
             col   = 'g'
             plt.plot(x1/1.e3+0*yy[yy>y1],yy[yy>y1]/1e3,col,linewidth=2)
             plt.plot(x2/1.e3+0*yy[yy>y1],yy[yy>y1]/1e3,col,linewidth=2)
             plt.plot(np.array([x1,x2])/1.e3,np.array([y1,y1])/1.e3,col,linewidth=2)
-            plt.ylim([-ym/1.e3,ym/1.e3])
-            plt.xlim([-xm/1.e3,xm/1.e3])
+            plt.ylim([y0/1.e3,Y.max()/1.e3])
+            plt.xlim([x0/1.e3,X.max()/1.e3])
 
             if 1:
                # plot section

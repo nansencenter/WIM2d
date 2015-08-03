@@ -40,9 +40,11 @@
      &                  ,int_prams,real_prams,Tp_io,mwd_io              &
      &                  ,ndir,nw,nx,ny)
 
-      use mod_common_wim,  only: icec,iceh,dfloe,sdf_dir,               &
-     &                           freq_vec,wavdir
+      use mod_common_wim,  only: icec,iceh,dfloe                        &
+     &                           ,sdf_dir,sdf_inc                       &
+     &                           ,freq_vec,wavdir
       use mod_wim2d_run,   only: wim2d_run_vSdir
+      use mod_wavesice,    only: WAVE_MASK2
 
       implicit none
 
@@ -60,6 +62,12 @@
       !! parameters
       real,intent(in)      :: real_prams(3),Tp_io,mwd_io
       integer,intent(in)   :: int_prams(8)
+      !!
+      integer  :: i,j,w,wth
+      real     :: PI,STEADY,adv_dir
+
+      PI       = 4.*atan(1.)
+      STEADY   = int_prams(8)
 
       !! initial ice conditions
       icec     = ice_arrays(:,:,1)
@@ -67,8 +75,8 @@
       dfloe    = ice_arrays(:,:,3)
 
       !! get input directional wave spectrum
-      ! sdf_dir  = Sdir_io
       sdf_dir  = reshape(Sdir_io,(/nx,ny,ndir,nw/))
+      sdf_inc  = sdf_dir
 
       print*,nw,(nw.eq.1),Tp_io
       if (nw.eq.1) then
@@ -82,8 +90,27 @@
 
       call wim2d_run_vSdir(out_arrays,int_prams,real_prams)
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
-      ! Sdir_io  = sdf_dir
+
+      !! correction for STEADY (copied from mod_waves_ice.F)
+      STEADY   = int_prams(8)
+      if (STEADY.eq.1) then
+         do w=1,nw
+         do wth=1,ndir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+      end if
+
+      !!TODO update Hs,Tp,... also?
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       Sdir_io2 = reshape(sdf_dir,(/nx*ny*ndir*nw/))
 
 

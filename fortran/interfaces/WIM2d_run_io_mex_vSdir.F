@@ -230,7 +230,7 @@ C        matrices should be 1*1
          endif
       end do
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      k  = mexPrintf('All inputs correct sizes...\n')
+      !k  = mexPrintf('All inputs correct sizes...\n')
 
 C     Check to ensure the array is numeric (not strings).
       do j=1,Nin
@@ -239,7 +239,7 @@ C     Check to ensure the array is numeric (not strings).
             call mexErrMsgTxt('Input '//cj//' must be a numeric array.')
          endif
       end do
-      k  = mexPrintf('All inputs numeric...\n')
+      !k  = mexPrintf('All inputs numeric...\n')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!pointers to input memory
@@ -259,7 +259,7 @@ C     Check to ensure the array is numeric (not strings).
       call mxCopyPtrToReal8(MD_pr,mwd_io,size6)
       y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
       !!
-      k  = mexPrintf('All pointers copied to arrays...\n')
+      !k  = mexPrintf('All pointers copied to arrays...\n')
 !     write(msg,'(f12.12)') Tp_io
 !     k  = mexPrintf('T for single freq (s): '//trim(msg)//'\n')
 !     write(msg,'(e7.3)') mwd_io
@@ -286,11 +286,11 @@ C     Create matrix for the return arguments.
       y3d = 0.0
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      k  = mexPrintf('Initialised output arrays...\n')
+      !k  = mexPrintf('Initialised output arrays...\n')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      k  = mexPrintf('Have pointers, about to do computations...\n')
-      k  = mexPrintf('Entering mex_io_gate_vSdir...\n')
+      !k  = mexPrintf('Have pointers, about to do computations...\n')
+      !k  = mexPrintf('Entering mex_io_gate_vSdir...\n')
 
       call mex_io_gate_vSdir(y4d,y3d,real(x3d),nint(ip),real(rp)        &
      &                    ,real(Tp_io),real(mwd_io)                     &

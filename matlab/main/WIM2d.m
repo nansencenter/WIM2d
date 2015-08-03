@@ -40,7 +40,7 @@ SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...
                      'ADV_OPT',ADV_OPT);
 TEST_INC_SPEC     = 0;
-TEST_FINAL_SPEC   = 1;
+TEST_FINAL_SPEC   = 0;
 
 %% make a log file similar to fortran file
 log_dir  = 'log';
@@ -383,16 +383,17 @@ end
 if STEADY==1
    S_inc    = Sdir;
    theta    = -pi/180*(90+wavdir);
-   [i1,j1]  = find(WAVE_MASK==1,1,'first');
-   j_fwd    = find(cos(-pi/180*(90+wavdir))>=0);
-   J_STEADY = find(S_inc(i1,j1,j_fwd,:)>0);%%only get "forward" directions
+   j_fwd    = find(cos(theta)>=0);
+   WAVE_MASK2        = 0*WAVE_MASK;
+   WAVE_MASK2(1:3,:) = 1;
+   %[i1,j1]  = find(WAVE_MASK==1,1,'first');
+   %J_STEADY = find(S_inc(i1:i1+2,j1:j1+,j_fwd,:)>0);%%only get "forward" directions
    % squeeze(S_inc(i1,j1,:))
    % GEN_pause;
 end
 %%
 T  = 2*pi./om_vec;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Water wavelength and wave speed
@@ -713,6 +714,67 @@ if PLOT_INIT
    %pause;
 end
 
+SV_BIN   = 1;
+reps_ab  = 10;
+if (SV_BIN==1) & (MEX_OPT==0)
+   %% save matlab files as binaries
+   %% to matlab results
+   !mkdir -p m_out
+   !mkdir -p m_out/binaries
+   !mkdir -p m_out/binaries/prog
+   dims  = [nx,ny,nw,ndir];
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%grid files
+   Fdir  = 'm_out/binaries';
+   Froot = [Fdir,'/wim_grid'];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'X'         ,grid_prams.X};
+   pairs{end+1}   = {'Y'         ,grid_prams.Y};
+   pairs{end+1}   = {'scuy'      ,grid_prams.scuy};
+   pairs{end+1}   = {'scvx'      ,grid_prams.scvx};
+   pairs{end+1}   = {'scp2'      ,grid_prams.scp2};
+   pairs{end+1}   = {'scp2i'     ,grid_prams.scp2i};
+   pairs{end+1}   = {'LANDMASK'  ,grid_prams.LANDMASK};
+   %%
+   fn_save_binary(Froot,dims,pairs);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%init files
+   Fdir  = 'm_out/binaries';
+   Froot = [Fdir,'/wim_init'];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'cice',ice_fields.cice};
+   pairs{end+1}   = {'hice',ice_fields.hice};
+   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'Hs',wave_fields.Hs};
+   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   pairs{end+1}   = {'mwd',wave_fields.mwd};
+   %%
+   fn_save_binary(Froot,dims,pairs);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %% 1st prog file
+   Fdir  = 'm_out/binaries/prog';
+   nnn   = num2str(0,'%3.3d');
+   Froot = [Fdir,'/wim_prog',nnn];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'tau_x',ice_fields.tau_x};
+   pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+   pairs{end+1}   = {'Hs',wave_fields.Hs};
+   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   %%
+   dims  = [nx,ny,nw,ndir];
+   fn_save_binary(Froot,dims,pairs);
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+end
+
 disp('beginning main integration...');
 if MEX_OPT==1
 
@@ -760,6 +822,9 @@ if MEX_OPT==1
       wave_fields.(fldnames{j})  = out_arrays(:,:,j);
    end
 
+   % delete annoying file
+   !rm -f fort.6
+
 elseif MEX_OPT==2
 
    disp(' ');
@@ -767,14 +832,19 @@ elseif MEX_OPT==2
    disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
    disp('*****************************************************************');
    disp(' ');
+
+   % real parameters
    real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
    CHECK_FINAL = 1;
    CHECK_PROG  = 1;
    CHECK_INIT  = 1;
+
+   % integer parameters
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
                   CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
                   DO_BREAKING,STEADY];
-   in_arrays   = zeros(nx,ny,3);
+
+   in_arrays         = zeros(nx,ny,3);
    in_arrays(:,:,1)  = ice_fields.cice;
    in_arrays(:,:,2)  = ice_fields.hice;
    in_arrays(:,:,3)  = ice_fields.Dmax;
@@ -797,14 +867,82 @@ elseif MEX_OPT==2
    for j=4:5
       wave_fields.(fldnames{j})  = out_arrays(:,:,j);
    end
+  
+   % delete annoying file
+   !rm -f fort.6
 
 else
    disp('Running pure matlab code');
+   COMP_F   = 0;
+   if COMP_F==1
+      %% load prog binaries and compare saved wim_prog*.[ab] files
+      %% to matlab results
+      
+      Fdir     = 'out_2/binaries/prog/';
+      FF       = dir([Fdir,'wim_prog*.a'])
+      if length(FF)==0
+         error('COMP_F==1, but no fortran files to compare to');
+      end
+      %%
+      F0 = FF(1).name;
+      cn = F0(9:end-2);
+      Ln = length(cn);
+      fmt_n = sprintf('%%%d.%dd',Ln,Ln);
+      afile    = [Fdir,F0];
+      %%
+      fmt            = 'float32';
+      aid            = fopen(afile,'rb');
+      F_fields.Dmax  = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.tau_x = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.tau_y = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.Hs    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      F_fields.Tp    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+      fclose(aid);
+      %%
+      if 1
+         if 0
+            %% plot Hs
+            vc = {'Hs','H_s, m'};
+            v1 = wave_fields.(vc{1});
+         else
+            %% plot Dmax
+            vc = {'Dmax','D_{max}, m'};
+            v1 = ice_fields.(vc{1});
+         end
+         v2    = F_fields.(vc{1});
+         subplot(2,1,1);
+         fn_plot_vbl(X,Y,v1,vc{2});
+         subplot(2,1,2);
+         fn_plot_vbl(X,Y,v2,vc{2});
+         maxes = {max(v1(:)),max(v1(:))}
+      elseif 1
+         %% plot relative diff's
+         vlist = {'Hs','Tp','tau_x'};
+         lbl   = {'{\Delta}H_s/H_s','{\Delta}T_p/T_p','\Delta{\tau}_x/{\tau}_x'};
+         for j=1:2
+            subplot(3,1,j);
+            v1    = wave_fields.(vlist{j});
+            v2    = F_fields.(vlist{j});
+            Z     = 0*v2;
+            jn    = find(abs(v2)>0);
+            Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
+            fn_plot_vbl(X,Y,Z,lbl{j})
+         end
+         for j=3:3
+            subplot(3,1,j);
+            v1    = ice_fields.(vlist{j});
+            v2    = F_fields.(vlist{j});
+            Z     = 0*v2;
+            jn    = find(abs(v2)>0);
+            Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
+            fn_plot_vbl(X,Y,Z,lbl{j})
+         end
+      end
+   end
 
-   %% also give progress report every 'reps' time
-   %%  steps;
+   %% also give progress report every 'reps' time steps;
    %reps  = nt+1;%%go straight through without reporting back or plotting
-   reps  = 50;
+   reps     = 50;
    GET_OUT  = 1;
    if GET_OUT
       Dmax_all         = zeros(nx,ny,1+floor(nt/reps));
@@ -812,7 +950,7 @@ else
    end
 
    %nt = 13%%stop straight away for testing
-   for n = 2:nt
+   for n = 1:nt
       disp([n nt])
 
       %% spectral moments;
@@ -836,6 +974,18 @@ else
       % end
       % var_boundary0  = var_boundary;  
       %%
+      if STEADY==1
+         for i = 1:nx
+         for j = 1:ny
+            %%top-up waves in wave mask if STEADY==1
+            %%(steady-state solution);
+            if WAVE_MASK2(i,j)>0 & STEADY==1
+               Sdir(i,j,j_fwd,:)  = S_inc(i,j,j_fwd,:);
+            end
+         end
+         end
+      end
+         
       for jw   = 1:nw
 
          %% CALC DIMENSIONAL ATTEN COEFF;
@@ -844,11 +994,6 @@ else
          for i = 1:nx
          for j = 1:ny
 
-            %%top-up waves in wave mask if STEADY==1
-            %%(steady-state solution);
-            if WAVE_MASK(i,j)>0 & STEADY==1
-               Sdir(i,j,J_STEADY,:)  = S_inc(i,j,J_STEADY,:);
-            end
             
             if ICE_MASK(i,j)>0 & DO_ATTEN==1
 
@@ -1040,7 +1185,7 @@ else
          elseif WTR_MASK(i,j)==1%% only water present
             Dmax(i,j)   = 0;
          end
-         
+
       end%% end spatial loop j in y;
       end%% end spatial loop i in x;
 
@@ -1049,6 +1194,7 @@ else
       % {jmiz}
 
       %% progress report;
+      [round(n/reps),(n/reps)]
       if round(n/reps)==(n/reps)
          if GET_OUT
             Dmax_all(:,:,n/reps) = Dmax;
@@ -1064,81 +1210,112 @@ else
          disp(strvcat(Info));
 
          if PLOT_PROG
-            figure(2),clf;
-            %%
-            if PLOT_OPT==1
-               s1 = struct('dir',wave_stuff.dirs(jdir),...
-                           'period',Tc,...
-                           'Sdir',Sdir(:,:,jdir,jchq));
-               fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+            if DIAG1d==0
+               figure(2),clf;
+               fn_fullscreen;
+               %%
+               if PLOT_OPT==1
+                  s1 = struct('dir',wave_stuff.dirs(jdir),...
+                              'period',Tc,...
+                              'Sdir',Sdir(:,:,jdir,jchq));
+                  fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
+               else
+                  fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
+                     Dmax,ice_fields.tau_y);
+               end
+
+               if OPT==1
+                  subplot(2,2,1);
+                  hold on;
+                  x0 = min(X(:))+uc*n*dt;
+                  x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
+                  % {uc,x0/1e3,x1/1e3}
+                  yc = .3*max(Y(:))/1e3;
+                  x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+                  y_ = [0,0,yc*[1,1],0,0];
+                  plot(x_,y_,'k');
+                  plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+                  hold off;
+                  %%
+                  subplot(2,2,2);
+                  hold on;
+                  plot(x_,y_,'k');
+                  plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
+                  hold off;
+               end
             else
-               fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
-                  Dmax,ice_fields.tau_y);
-            end
-
-            if OPT==1
-               subplot(2,2,1);
-               hold on;
-               x0 = min(X(:))+uc*n*dt;
-               x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
-               % {uc,x0/1e3,x1/1e3}
-               yc = .3*max(Y(:))/1e3;
-               x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
-               y_ = [0,0,yc*[1,1],0,0];
-               plot(x_,y_,'k');
-               plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-               hold off;
-               %%
-               subplot(2,2,2);
-               hold on;
-               plot(x_,y_,'k');
-               plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-               hold off;
-            end
-
-            if DIAG1d==1
+               %% DIAG1d==1
                %% during run
-               figure(4);
-               subplot(4,1,1);
-               hold on;
-               %%
-               %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
-               fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
-               hold on;
-               %%
-               [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
-               %Hp                = 4*sqrt(Ep(:,1));
-               %Hm                = 4*sqrt(Em(:,1));
-               Hp                = 4*sqrt(mean(Ep,2));
-               Hm                = 4*sqrt(mean(Em,2));
-               if DIAG1d_OPT==0
-                  %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
-                  Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
-               elseif DIAG1d_OPT==1
-                  %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
-                  Hs2   = 4*sqrt(mean(Et1,2));
-               elseif DIAG1d_OPT==2
-                  %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
-                  Hs2   = 4*sqrt(mean(Et2,2));
-               end
-               fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
-               hold on;
-               %%
-               subplot(4,1,2);
-               fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
-               hold on;
-               fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
-               hold on;
-               %%
-               subplot(4,1,3);
-               fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
-               hold on;
-               %%
-               loop_col = loop_col+1;
-               if loop_col>length(cols)
-                  loop_col = 1;
+               if 1
+                  figure(4);
+                  %% check symmetry
+                  [hmax,imax] = max(wave_fields.Hs(:,1));
+                  hp          = wave_fields.Hs(imax,:);
+                  yp          = grid_prams.Y(imax,:);
+                  plot(yp/1e3,hp);
+                  ttl   = title(['max h = ',num2str(max(wave_fields.Hs(:))),'; x = ',num2str(X(imax,1)/1.0e3),'km']);
+                  GEN_font(ttl);
+                  GEN_proc_fig('y, km','H_s, m')
+               else
+                  %%check partition of fwd and back energy
+                  figure(4);
+                  subplot(4,1,1);
+                  hold on;
+                  %%
+                  %fn_plot1d(X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
+                  fn_plot1d(X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+                  hold on;
+                  %%
+                  [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wavdir,Sdir);
+                  %Hp                = 4*sqrt(Ep(:,1));
+                  %Hm                = 4*sqrt(Em(:,1));
+                  Hp                = 4*sqrt(mean(Ep,2));
+                  Hm                = 4*sqrt(mean(Em,2));
+                  if DIAG1d_OPT==0
+                     %Hs2   = 4*sqrt(Ep(:,1)+Em(:,1));%%add Ep + Em
+                     Hs2   = 4*sqrt(mean(Ep,2)+mean(Em,2));
+                  elseif DIAG1d_OPT==1
+                     %Hs2   = 4*sqrt(Et1(:,1));%%check const panel integration
+                     Hs2   = 4*sqrt(mean(Et1,2));
+                  elseif DIAG1d_OPT==2
+                     %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
+                     Hs2   = 4*sqrt(mean(Et2,2));
+                  end
+                  fn_plot1d(X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
+                  hold on;
+                  %%
+                  subplot(4,1,2);
+                  fn_plot1d(X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+                  hold on;
+                  fn_plot1d(X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
+                  hold on;
+                  %%
+                  subplot(4,1,3);
+                  fn_plot1d(X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+                  hold on;
+                  %%
+                  loop_col = loop_col+1;
+                  if loop_col>length(cols)
+                     loop_col = 1;
+                  end
                end
             end
+
+            if COMP_F==1
+               %% load prog binaries and compare saved wim_prog*.[ab] files
+               %% to matlab results
+               Fdir           = 'out_2/binaries/prog';
+               nnn            = num2str(n,'%3.3d');
+               afile          = [Fdir,nnn,'.a'];
+               aid            = fopen(afile,'rb');
+               F_fields.Dmax  = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.tau_x = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.tau_y = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.Hs    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               F_fields.Tp    = reshape( fread(aid,nx*ny,fmt), nx,ny );
+               fclose(aid);
+            end
+
             clear s1;
             pause(0.1);
          end
@@ -1151,13 +1328,47 @@ else
 
 
       for jw=[]%11
-      [n,T(jw)],%[ag_ice(jw,1:11,1)]
-      testSatt=S(1:11,1,jw,jmwd)
-      pause
+         [n,T(jw)],%[ag_ice(jw,1:11,1)]
+         testSatt=S(1:11,1,jw,jmwd)
+         pause
+      end
+
+      if (SV_BIN==1)&(mod(n,reps_ab)==0)&(MEX_OPT==0)
+         %% save matlab files as binaries
+         %% to matlab results
+         Fdir  = 'm_out/binaries/prog';
+         nnn   = num2str(n,'%3.3d');
+         Froot = [Fdir,'/wim_prog',nnn];
+         %%
+         pairs = {};
+         pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+         pairs{end+1}   = {'tau_x',ice_fields.tau_x};
+         pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+         pairs{end+1}   = {'Hs',wave_fields.Hs};
+         pairs{end+1}   = {'Tp',wave_fields.Tp};
+         %%
+         dims  = [nx,ny,nw,ndir];
+         fn_save_binary(Froot,dims,pairs);
       end
 
    end%% end time loop
 end%%MEX_OPT==0 option
+
+if (SV_BIN==1)&(MEX_OPT==0)
+   %% save matlab files as binaries
+   %% to matlab results
+   Fdir  = 'm_out/binaries';
+   Froot = [Fdir,'/wim_out'];
+   %%
+   pairs = {};
+   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'tau_x',ice_fields.tau_x};
+   pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+   pairs{end+1}   = {'Hs',wave_fields.Hs};
+   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   %%
+   fn_save_binary(Froot,dims,pairs);
+end
 
 t1 = now;
 
@@ -1223,7 +1434,7 @@ if TEST_FINAL_SPEC==1
          disp(['max diff: ',num2str(max(diff(:)))]);
          disp(' ');
       end
-   else
+   elseif MEX_OPT>0
       disp('(Check outputs vs values in binary files)');
       of2         = fn_check_final(outdir);%%set in infile_dirs.txt
       of1.Hs      = wave_fields.Hs;
@@ -1264,21 +1475,44 @@ if PLOT_FINAL%%check exponential attenuation
    figure(3),clf;
    fn_fullscreen;
    xx = X(:,1);
+   if 0
+      vbl   = 'Hs';
+      Vbl   = wave_fields.(vbl);
+   else
+      vbl   = 'tau_x';
+      Vbl   = ice_fields.(vbl);
+   end
    if 1
       subplot(2,1,2)
-      yy = Y(1,:);
-      xp = -250e3;
-      ix = find(abs(xx-xp)==min(abs(xx-xp)));
-      for loop_ix=1%:length(ix)
-         plot(yy/1e3,wave_fields.Hs(ix(loop_ix),:));
+      yy    = Y(1,:);
+      xp    = 110e3;
+      ix    = find(abs(xx-xp)==min(abs(xx-xp)));
+      ix    = ix(1);
+      xp    = xx(ix);
+      Vy    = Vbl(ix,:);
+      plot(yy/1e3,Vy);
+      if strcmp(vbl,'Hs')
+         GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+      elseif strcmp(vbl,'tau_x')
+         GEN_proc_fig('{\ity}, km','{\tau}_x, Pa');
       end
-      GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+      ttl   = title(['Profile at x = ',num2str(xp/1e3,'%7.2f'),'km']);
+      GEN_font(ttl);
+      ylim([0,1.1*max(Vy)]);
       %%
       subplot(2,1,1)
    end
-   plot(xx/1e3,wave_fields.Hs(:,1),'-k');
-   set(gca,'yscale','log');
-   GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   plot(xx/1e3,mean(Vbl,2),'-k');
+   hold on;
+   plot(xx/1e3,min(Vbl,[],2),'--r');
+   plot(xx/1e3,max(Vbl,[],2),'--c');
+   %set(gca,'yscale','log');
+   if strcmp(vbl,'Hs')
+      GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+   elseif strcmp(vbl,'tau_x')
+      GEN_proc_fig('{\itx}, km','{\tau}_x, Pa');
+   end
+   legend('Mean','Min','Max');
    %%
    if DIAG1d==1
       %% final
@@ -1627,4 +1861,17 @@ for j=1:length(odirs)
       eval(['!mkdir ',outdir]);
    end
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function fn_plot_vbl(X,Y,Z,lbl)
+
+H  = pcolor(X/1e3,Y/1e3,Z);
+set(H,'EdgeColor', 'none');
+daspect([1 1 1]);
+GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
+colorbar;
+GEN_font(gca);
+ttl   = title(lbl);
+GEN_font(ttl);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

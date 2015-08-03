@@ -38,6 +38,8 @@ fortran/run/fig_scripts/figs/TC2S/*
 fortran/run/results/*
 #
 matlab/main/out
+matlab/main/results
+matlab/main/m_out
 matlab/main/out_io
 matlab/main/out_2
 matlab/main/log
@@ -56,3 +58,6 @@ neXtSIMcoupling/run/*
 !neXtSIMcoupling/run/*.py
 !neXtSIMcoupling/run/*.sh
 !neXtSIMcoupling/run/infiles
+neXtSIMcoupling/tutorial/out/*
+
+fortran/numerics/test_advection/infile.txt

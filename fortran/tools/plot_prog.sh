@@ -2,19 +2,16 @@
 # (and of initial and final, if wanted)
 # run from "../run" folder
 tools="${WIM2D_PATH}/fortran/tools"
-P=`pwd`
-outdir=$P/out_io # root results directory
 
-if [ $# -eq 2 ]
+if [ $# -eq 0 ]
 then
-   MKMOV=$1 # 1, make movies; 0, don't
-   outdir=$P/$2
-elif [ $# -eq 1 ]
-then
-   MKMOV=$1 # 1, make movies; 0, don't
-else
-   MKMOV=0 # default is not make movie
+   echo "Usage:"
+   echo "plot_prog.sh [1/0: do/don't make movie] [results directory (full path)]"
+   exit
 fi
+
+MKMOV=$1
+outdir=$2
 
 # make png files from progress files
 # (if they exist)
@@ -36,7 +33,8 @@ cd $P
 if [ $MKMOV -eq 1 ]
 then
    # make movies of these variables:
-   vbl_list="Hs Dmax taux tauy Tp"
+   # vbl_list="Hs Dmax taux tauy"
+   vbl_list="Hs"
    cd $outdir/figs/prog
 
    for vbl in $vbl_list

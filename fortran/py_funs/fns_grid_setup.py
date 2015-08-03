@@ -21,7 +21,8 @@ def _get_grid_arrays_SmallSquare(diag_length,resolution):
 
    dx    = resolution
    nx    = int(np.floor(diag_length/resolution))
-   out   = get_grid_arrays(nx,nx,dx,dx,LAND_OPT=0)
+   x0    = -(nx*dx)/2.
+   out   = get_grid_arrays(x0=x0,y0=x0,nx=nx,ny=nx,dx=dx,dy=dx,LAND_OPT=0)
 
    # fix landmask
    gf    = out[1]
@@ -49,8 +50,9 @@ def _get_grid_arrays_SmallSquare(diag_length,resolution):
 ###########################################################
 def get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
 
-   vx = x0+np.array(range(0,nx))*dx
-   vy = y0+np.array(range(0,ny))*dy
+   # get centres of grid
+   vx = np.arange(.5,nx)*dx
+   vy = np.arange(.5,ny)*dy
    oo = np.ones((nx,ny))
 
    grid_arrays = np.zeros((nx,ny,7))
@@ -173,7 +175,7 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       nx = 150
       ny = 4
       dx = 4.0e3
-      dy = 10*dx
+      dy = 10*dx # to make plots clearer
       x0 = 0.
       y0 = 0.
       #
@@ -213,8 +215,8 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
    ###########################################################
    print(' ')
    print(60*'*')
-   gs.save_grid_info_hdr(outdir2,nx,ny,dx,dy,nc2)
-   gs.save_grid(outdir,grid_arrays,nc)
+   gs.save_grid_info_hdr_f2py(outdir2,nx,ny,dx,dy)
+   gs.save_grid_f2py(outdir,grid_arrays)
    print(60*'*')
    print(' ')
    ###########################################################
@@ -256,7 +258,9 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
    ###########################################################
 
    ###########################################################
-   if 1:
+   SV_FIG   = 1
+   if SV_FIG:
+      from matplotlib import pyplot as plt
       # save test figure:
       if not os.path.exists('test'):
          os.mkdir('test')
@@ -266,19 +270,25 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
       print('Saving test figure : '+fig)
       #
       gf = grid_fields
+      nx = gf['nx']
+      ny = gf['ny']
+      dx = gf['dx']
+      dy = gf['dy']
+      x  = gf['X'][:,0]+dx/2.
+      x  = np.concatenate([[x[0]-dx],x])/1.e3
+      y  = gf['Y'][0,:]+dy/2.
+      y  = np.concatenate([[y[0]-dy],y])/1.e3
 
       if gf['ny']>1:
          # 2d grid => make colormap of LANDMASK
-         f  = Fplt.cmap_3d(gf['X']/1.0e3,gf['Y']/1.0e3,
-                           gf['LANDMASK'],
-                           ['$x$, km','$y$, km','LANDMASK'])
+         z     = gf['LANDMASK'].transpose()
+         f,ax  = Fplt.cmap_3d(x,y,z,['$x$, km','$y$, km','LANDMASK'])
       else:
          # 1d grid => make 1d plot of LANDMASK
-         f  = Fplt.plot_1d(gf['X']/1.0e3,gf['LANDMASK'],
-                           ['$x$, km','LANDMASK'])
-      plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close()
-      f.clf()
+         f,ax  = Fplt.plot_1d(gf['X']/1.0e3,gf['LANDMASK'],\
+                              ['$x$, km','LANDMASK'])
+      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+      plt.close(f)
    ###########################################################
 
    ###########################################################

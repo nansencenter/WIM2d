@@ -9,6 +9,7 @@ clear;
 fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
+%TODO read in from infile.txt
 ADV_DIM  = 1;
 CFL      = .4;
 
@@ -22,14 +23,17 @@ end
 
 nbdy  = 3;
 ii    = 150;
-jj    = 50;
+jj    = 20;
 dx    = 4e3;%m
 dy    = 4e3;%m
 %%
-xm = (ii+1)/2*dx;
-ym = (jj+1)/2*dy;
-xx = -xm+dx*(1:ii)';
-yy = -ym+dy*(1:jj)';
+x0 = 0;
+y0 = 0;
+%%
+xx = x0+dx*(1:ii)';
+yy = y0+dy*(1:jj)';
+xm = .5*(max(xx)-x0);
+ym = .5*(max(yy)-y0);
 %
 [Y,X] = meshgrid(yy,xx);
 R     = sqrt(X.^2+Y.^2);
@@ -45,7 +49,7 @@ OPT   = 1;
 
 if OPT==1
    uc    = 30;%const speed m/s
-   xc    = 2*xm/3;
+   xc    = x0+5*xm/3;
    %theta = 180;%deg straight across
    theta = 135;%deg
    u     = 0*X+uc*cos(pi/180*theta);
@@ -55,7 +59,7 @@ if OPT==1
    nt = 2*xm/(uc*dt);
 elseif OPT==2
    uc = 30;%const speed m/s
-   xc = 2*xm/3;
+   xc = x0+5*xm/3;
    u  = -uc*X/xm;
    v  = 0*X;
    %%
@@ -167,6 +171,8 @@ if 0%%test initial conditions
 end
 
 if 1%%plot u,v,h
+   figure(1);
+   fn_fullscreen;
    subplot(2,2,1);
    ax = pcolor(XX/1e3,YY/1e3,u);
    set(ax, 'EdgeColor', 'none');
@@ -200,7 +206,7 @@ if 1%%plot u,v,h
    cla;
    ax = pcolor(XX/1e3,YY/1e3,hh);
    set(ax, 'EdgeColor', 'none');
-   caxis([0 2]);
+   caxis([0 1.2]);
    colorbar;
    daspect([1 1 1]);
    ttl   = title('h(0), m');
@@ -218,7 +224,7 @@ if 1%%plot u,v,h
    ax = pcolor(XX/1e3,YY/1e3,hh);
    set(ax, 'EdgeColor', 'none');
    colorbar;
-   caxis([0 2]);
+   caxis([0 1.2]);
    daspect([1 1 1]);
    ttl   = title('h(t), m');
    GEN_font(ttl);
@@ -266,7 +272,7 @@ for n = 1:step:nt
    ax = pcolor(XX/1e3,YY/1e3,hh);
    set(ax, 'EdgeColor', 'none');
    colorbar;
-   %caxis([0 2]);
+   caxis([0 1.2]);
    daspect([1 1 1]);
    ttl   = title('h(t), m');
    GEN_font(ttl);
@@ -275,8 +281,8 @@ for n = 1:step:nt
    %%add test plots
    if OPT==1
       x1 = xc+uc*cos(pi*theta/180)*n*dt;
-      y1 = -ym+uc*sin(pi*theta/180)*n*dt;
-      x2 = xm+uc*cos(pi*theta/180)*n*dt;
+      y1 = y0+uc*sin(pi*theta/180)*n*dt;
+      x2 = x0+2*xm+uc*cos(pi*theta/180)*n*dt;
       hold on;
       plot(x1/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
       plot(x2/1e3+0*yy(yy>y1),yy(yy>y1)/1e3,'r');
@@ -289,7 +295,7 @@ for n = 1:step:nt
          fac      = (ym/2/1e3);
          plot(xx/1e3,y3/1e3,'k');
          fac      = fac*exp(n*alp*dt);
-         plot(xx/1e3,hh(:,46)*fac,'--k');
+         plot(xx/1e3,hh(:,end)*fac,'--k');
       end
       hold off;
 

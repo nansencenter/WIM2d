@@ -31,7 +31,7 @@ function h  = waveadv_weno(h,u,v,grid_prams,dt,adv_options)
 %% in:      scp2, scp2i are grid box area at p points, and its inverse;
 %%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-bc_opt   = adv_options.ADV_OPT;
+ADV_OPT   = adv_options.ADV_OPT;
 
 ii       = grid_prams.nx;
 jj       = grid_prams.ny;
@@ -40,7 +40,7 @@ scvx     = grid_prams.scvx;
 scp2i    = grid_prams.scp2i;
 scp2     = grid_prams.scp2;
 LANDMASK = grid_prams.LANDMASK;
-clear grid_prams;
+%clear grid_prams;
 
 idm   = ii;
 jdm   = jj;
@@ -53,7 +53,7 @@ jreal = nbdy+(1:jdm)';  %%non-ghost j indices
 %%assign values in ghost cells
 %%-do this beforehand in case want to parallelise??
 
-%%make all these periodic in i,j (x,y)
+%%make all these periodic in both i,j (x,y)
 u     = pad_var(u    ,1,nbdy);
 v     = pad_var(v    ,1,nbdy);
 scvx  = pad_var(scvx ,1,nbdy);
@@ -61,12 +61,12 @@ scuy  = pad_var(scuy ,1,nbdy);
 scp2  = pad_var(scp2 ,1,nbdy);
 scp2i = pad_var(scp2i,1,nbdy);
 
-%%bc_opt determines how h is extended to ghost cells:
+%%ADV_OPT determines how h is extended to ghost cells:
 %% 0: zeros in ghost cells
 %% 1: periodic in i,j
 %% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
-h  = pad_var(h,bc_opt,nbdy);
-jtst  = (ii+2*nbdy)+(-12:0);
+h  = pad_var(h,ADV_OPT,nbdy);
+%jtst  = (ii+2*nbdy)+(-12:0);
 %tst2d = h(jtst,4),pause
 %pcolor(h),colorbar,GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,15 +78,50 @@ sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
 margin   = nbdy;
 %tst2d = sao(jtst,4),pause
 
-hp = 0*h;
-for i_ = 1-margin:ii+margin
-for j_ = 1-margin:jj+margin
-   i  = i_+nbdy;%%1-nbdy->1
-   j  = j_+nbdy;%%1-nbdy->1
+if 0
+   %% how it is in fortran code,
+   %% but sao is 0 on margins so errors/asymmetries can creep in from there 
+   %% - prob need to do xctilr at this point
+   hp = 0*h;
+   for i_ = 1-margin:ii+margin
+   for j_ = 1-margin:jj+margin
+      i  = i_+nbdy;%%1-nbdy->1
+      j  = j_+nbdy;%%1-nbdy->1
 
-   hp(i,j)  = h(i,j)+dt*sao(i,j);
-end%j
-end%i
+      hp(i,j)  = h(i,j)+dt*sao(i,j);
+   end%j
+   end%i
+else
+   %% enforce periodicity between prediction and correction steps
+   hp = zeros(ii,jj);
+   for i_ = 1:ii
+   for j_ = 1:jj
+      i           = i_+nbdy;%%1-nbdy->1
+      j           = j_+nbdy;%%1-nbdy->1
+      hp(i_,j_)   = h(i,j)+dt*sao(i,j);
+   end%j
+   end%i
+   hp = pad_var(hp,ADV_OPT,nbdy);
+end
+
+if 0%max(sao(:))>0
+   xx = grid_prams.X(1,:).';
+   dx = grid_prams.dx;
+   xx = [xx(1)+dx*(-nbdy:1:-1)';xx;xx(end)+dx*(1:nbdy)'];
+   %%
+   yy = grid_prams.Y(:,1);
+   dy = grid_prams.dy;
+   yy = [yy(1)+dy*(-nbdy:1:-1)';yy;yy(end)+dy*(1:nbdy)'];
+   %%
+   {xx,yy,sao,min(sao(:)),max(sao(:))}
+   save test.mat xx yy sao h hp
+   P  = pcolor(xx,yy,sao);
+   set(P,'EdgeColor','none');
+   fn_fullscreen;
+   caxis([0,1.1*max(sao(:))]);
+   {ii,jj,hp,h,sao}
+   pause
+end
 %tst2d = hp(jtst,4)%,pause
 
 % --- Correction step
@@ -199,6 +234,9 @@ jtst  = idm+2*nbdy+(-12:0)';
 % --- Compute grid cell boundary fluxes. Split in a low order flux
 % --- (donor cell) and a high order correction flux.
 %
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% fluxes in x dirn
 for i_ = 0:ii+2
 for j_ = 0:jj+1
    i  = i_+nbdy;%%1-nbdy->1
@@ -207,9 +245,6 @@ for j_ = 0:jj+1
    im1   = i-1;
  
    if (u(i,j)>0.)
-      %!iu is a water mask (water at point and to left of point);
-      %!for waves we make it 1 everywhere and mask waves that go on land later;
-      %!im2   = im1-iu(im1,j);
       im2   = im1-1;%i-2
  
       q0 = cq00*g(im2,j)+cq01*g(im1,j);
@@ -221,7 +256,6 @@ for j_ = 0:jj+1
       ful(i,j) = u(i,j)*g(im1,j)*scuy(i,j);
 
     else
-       %!ip1  = i+iu(i+1,j);
        ip1  = i+1;
  
        q0   = cq11*g(im1,j)+cq10*g(i  ,j);
@@ -237,8 +271,10 @@ for j_ = 0:jj+1
 
 end%j
 end%i
-%tst2d = [ful(jtst,4),fuh(jtst,4)],pause
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%fluxes in y dirn:
 for i_ = 0:ii+1
 for j_ = 0:jj+2
    i     = i_+nbdy;%%1-nbdy->1
@@ -246,9 +282,6 @@ for j_ = 0:jj+2
    jm1   = j-1;
 
    if (v(i,j)>0.)
-      %!iv is a water mask (water at point and beneath point);
-      %!for waves we make it 1 everywhere and mask waves that go on land later;
-      %!jm2   = jm1-iv(i,jm1);
       jm2   = jm1-1;
 
       q0 = cq00*g(i,jm2)+cq01*g(i,jm1);
@@ -260,7 +293,6 @@ for j_ = 0:jj+2
       fvl(i,j) = v(i,j)*g(i,jm1)*scvx(i,j);
 
    else
-      %!jp1   = j+iv(i,j+1);
       jp1   = j+1;
 
       q0 = cq11*g(i,jm1)+cq10*g(i,j  );
@@ -275,6 +307,7 @@ for j_ = 0:jj+2
    fvh(i,j) = v(i,j)*(a0*q0+a1*q1)/(a0+a1)*scvx(i,j)-fvl(i,j);
 end%j
 end%i
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Update field with low order fluxes.
 for i_ = 0:ii+1
@@ -289,8 +322,8 @@ end%i
 
 % --- Obtain fluxes with limited high order correction fluxes.
 q  = .25/dt;
-for i_ = 0:ii+1
-for j_ = 0:jj
+for i_ = 1:ii+1
+for j_ = 1:jj
    i     = i_+nbdy;%%1-nbdy->1
    j     = j_+nbdy;%%1-nbdy->1
 
@@ -300,8 +333,8 @@ for j_ = 0:jj
 end%j
 end%i
 
-for i_ = 0:ii
-for j_ = 0:jj+1
+for i_ = 1:ii
+for j_ = 1:jj+1
    i     = i_+nbdy;%%1-nbdy->1
    j     = j_+nbdy;%%1-nbdy->1
 
@@ -312,8 +345,8 @@ end%j
 end%i
 
 % --- Compute the spatial advective operator.
-for i_ = 0:ii
-for j_ = 0:jj+1
+for i_ = 1:ii
+for j_ = 1:jj
    i     = i_+nbdy;%%1-nbdy->1
    j     = j_+nbdy;%%1-nbdy->1
 
