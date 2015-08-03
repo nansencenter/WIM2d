@@ -1,5 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
 
+/**
+ * @file   wimdiscr.hpp
+ * @author Abdoulaye Samake <abdoulaye.samake@nersc.no>
+ * @date   Mon Aug  3 11:53:19 2015
+ */
+
+
 #ifndef __WIMDISCR_H
 #define __WIMDISCR_H 1
 

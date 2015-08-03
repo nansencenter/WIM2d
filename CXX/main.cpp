@@ -8,6 +8,7 @@ namespace
     const size_t SUCCESS = 0;
 } // namespace
 
+
 namespace po = boost::program_options;
 
 namespace WIMOPT
