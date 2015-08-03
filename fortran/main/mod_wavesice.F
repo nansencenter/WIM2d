@@ -777,6 +777,7 @@
       !!
       integer           :: n_step,n_total
       character(len=6)  :: frmt
+      real              :: t_out
 
       n_step   = nn(1)
       n_total  = nn(2)
@@ -797,10 +798,12 @@
      &               //trim(cts)//'.a'
          bfile = trim(outdir)//'/binaries/prog/wim_prog'                &
      &               //trim(cts)//'.b'
+         t_out = n_step*dt
       else
          !!final output
          afile = trim(outdir)//'/binaries/wim_out.a'
          bfile = trim(outdir)//'/binaries/wim_out.b'
+         t_out = n_total*dt
       end if
       stat1 = 'replace'
       stat2 = 'old'
@@ -809,19 +812,22 @@
  112  format(i2.2,a)  
  113  format(i3.3,a)  
  114  format(i4.4,a)  
+ 211  format(f8.1,a)  
 
       !! write .b file (description of stuff in .a file)
       open(unit=2,file=trim(bfile),status = 'replace')
 
       write(2,112)                                                      &
-     &  5,           "       Number of records"
+     &  5,           "         Number of records"
       write(2,112)                                                      &
-     &  1,          "       Storage order "//                           &
+     &  1,          "         Storage order "//                         &
      &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
       write(2,114)                                                      &
-     &  ii,           "      Record length in x direction (elements)"
+     &  ii,           "        Record length in x direction (elements)"
       write(2,114)                                                      &
-     &  jj,           "      Record length in y direction (elements)"
+     &  jj,           "        Record length in y direction (elements)"
+      write(2,211)                                                      &
+     &  t_out,           "   Model time of output (s)"
       write(2,111) ""
 
       write(2,111)    "Record number and name:"
