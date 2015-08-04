@@ -8,9 +8,9 @@
       use mod_save_grid, only: save_grid_info_hdr
       implicit none
 
+      character(len=*),intent(in)   :: outdir
       integer, intent(in)           :: ii,jj
       real, intent(in)              :: dx,dy
-      character(len=*),intent(in)  :: outdir
 
       call save_grid_info_hdr(outdir,ii,jj,dx,dy)
 
@@ -25,11 +25,8 @@
       implicit none
       integer,parameter                   :: nz = 7
       integer,intent(in)                  :: ii,jj
-      character(len=*),intent(in)        :: outdir
+      character(len=*),intent(in)         :: outdir
       real,dimension(ii,jj,nz),intent(in) :: grid_arrays
-      character(len=80)    :: afile,bfile
-      character(len=10)    :: stat1,stat2
-      integer              :: j
 
       !comments for f2py
       !don't need to pass these inputs in with python
