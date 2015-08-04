@@ -32,14 +32,14 @@ disp(['Saved ',afile]);
 bfile = [Froot,'.b'];
 %%
 bid   = fopen(bfile,'w');
-fprintf(bid,'%2.2d         Number of records\n',Nrecs);
-fprintf(bid,'%1.1d          Storage order [column-major (F/matlab) = 1, row-major (C) = 0]\n',1);
-fprintf(bid,'%3.3d        Record length in x direction (elements)\n',nx);
+fprintf(bid,'%2.2d         Nrecs  # Number of records\n',Nrecs);
+fprintf(bid,'%1.1d          Norder # Storage order [column-major (F/matlab) = 1, row-major (C) = 0]\n',1);
+fprintf(bid,'%3.3d        ny     # Record length in x direction (elements)\n',nx);
 if isempty(t_out)
-   fprintf(bid,'%3.3d        Record length in y direction (elements)\n\n',ny);
+   fprintf(bid,'%3.3d        ny     # Record length in y direction (elements)\n\n',ny);
 else
-   fprintf(bid,'%3.3d        Record length in y direction (elements)\n',ny);
-   fprintf(bid,'%8.1f   Model time of output (s)\n\n',t_out);
+   fprintf(bid,'%3.3d        ny     # Record length in y direction (elements)\n',ny);
+   fprintf(bid,'%8.1f   t_out  # Model time of output (s)\n\n',t_out);
 end
 %%
 fprintf(bid,'%s','Record number and name:');

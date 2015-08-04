@@ -1,4 +1,4 @@
-function out_fields = fn_read_general_binary(afile)
+function [out_fields,info] = fn_read_general_binary(afile,WANT_TOUT)
 
 %% load from binaries;
 bfile = [afile(1:end-2),'.b'];
@@ -9,30 +9,47 @@ if ~exist(bfile)
    error([bfile,' not present.'])
 end
 
+if ~exist('WANT_TOUT')
+   WANT_TOUT   = 0;
+end
+
 %% get basic info from bfile
 %% - eg:
-%% > 04       Number of records
-%% > 150      Record length in x direction (elements)
-%% > 050      Record length in y direction (elements)
-%% > 01       Option number for solver
-%% > 01       Number of wave frequencies
-%% > 016      Number of wave directions
+%% > 04       Nrecs  # Number of records
+%% > 01       Norder # Storage order
+%% > 150      nx     # Record length in x direction (elements)
+%% > 050      ny     # Record length in y direction (elements)
+%% > 0.00     t_out  # Model time at output (s)
+
 bid   = fopen(bfile);
 C     = textscan(bid,'%2.2d',1);
 nrec  = C{1};
-C     = textscan(bid,'%s',3);
+C     = textscan(bid,'%s',5);
 %%
 C     = textscan(bid,'%2.2d',1);
 Nord  = C{1};
-C     = textscan(bid,'%s',10);
+C     = textscan(bid,'%s',12);
 %%
-C  = textscan(bid,'%3.3d',1);
+C  = textscan(bid,'%4.4d',1);
 nx = C{1};
-C  = textscan(bid,'%s',6);
+C  = textscan(bid,'%s',8);
 %%
-C  = textscan(bid,'%3.3d',1);
+C  = textscan(bid,'%4.4d',1);
 ny = C{1};
-C  = textscan(bid,'%s',6);
+C  = textscan(bid,'%s',8);
+%%
+if WANT_TOUT==1
+   C           = textscan(bid,'%9.1f',1);
+   t_out       = C{1};
+   C           = textscan(bid,'%s',7);
+   info.t_out  = t_out;
+end
+
+%% output the above info
+info.Nrecs  = nrec;
+info.Norder = Nord;
+info.nx     = nx;
+info.ny     = ny;
 
 %% Find "Record number and name"
 C  = textscan(bid,'%s',1);
