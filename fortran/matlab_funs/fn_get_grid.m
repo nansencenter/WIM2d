@@ -14,9 +14,10 @@ if ~exist(afile)
 end
 
 %% read file
-grid_prams  = fn_read_general_binary(afile);
+[grid_prams,info] = fn_read_general_binary(afile);
 
 %% extra info
-[grid_prams.nx,grid_prams.ny] = size(grid_prams.X);
-grid_prams.dx                 = mean(grid_prams.scvx(:));
-grid_prams.dy                 = mean(grid_prams.scuy(:));
+grid_prams.nx  = info.nx;
+grid_prams.ny] = info.ny;;
+grid_prams.dx  = mean(grid_prams.scvx(:));
+grid_prams.dy  = mean(grid_prams.scuy(:));

@@ -43,62 +43,6 @@ def get_array(fid,nx,ny,fmt_size=4,order='F'):
 ##############################################################
 
 ##############################################################
-#initialise grid_prams dictionary:
-def Grid_Prams(nx=0,ny=0,dx=0,dy=0,
-      X=0,Y=0,scuy=0,scvx=0,scp2=0,
-      scp2i=0,LANDMASK=0):
-   grid_prams  = {'nx'        :nx,
-                  'ny'        :ny,
-                  'dx'        :dx,
-                  'dy'        :dy,
-                  'X'         :X,
-                  'Y'         :Y,
-                  'scuy'      :scuy,
-                  'scvx'      :scvx,
-                  'scp2'      :scp2,
-                  'scp2i'     :scp2i,
-                  'LANDMASK'  :LANDMASK}
-   return grid_prams
-##############################################################
-
-##############################################################
-# initialise ice_fields dictionary:
-def Ice_Fields(icec=0.0,iceh=0.0,dfloe=0.0,ICE_MASK=0.0,):
-
-   ice_fields  = {'icec'      :icec,
-                  'iceh'      :iceh,
-                  'dfloe'     :dfloe,
-                  'ICE_MASK'  :ICE_MASK}
-
-   return ice_fields
-##############################################################
-
-##############################################################
-# initialise wave_fields dictionary:
-def Wave_Fields(Hs=0.0,Tp=0.0,mwd=0.0,WAVE_MASK = 0.0):
-
-   wave_fields = {'mwd'       :mwd,
-                  'WAVE_MASK' :WAVE_MASK,
-                  'Hs'        :Hs,
-                  'Tp'        :Tp}
-
-   return wave_fields
-##############################################################
-
-##############################################################
-# initialise out_fields dictionary:
-def Out_Fields(dfloe=0.0,taux=0.0,tauy=0.0,Hs=0.0,Tp=0.0):
-
-   out_fields  = {'dfloe'  :dfloe,
-                  'taux'   :taux,
-                  'tauy'   :tauy,
-                  'Hs'     :Hs,
-                  'Tp'     :Tp}
-
-   return out_fields
-##############################################################
-
-##############################################################
 def fn_check_grid(outdir):
    # routine to get grid and other parameters
    # from binary files
@@ -117,7 +61,9 @@ def fn_check_grid(outdir):
       else:
          key2  = aliases[key]
       grid_prams.update({key:fields[key2]})
+   ###########################################################
    
+   ###########################################################
    # extra info
    nx,ny = grid_prams['X'].shape
    grid_prams.update({'nx':nx})
@@ -127,7 +73,6 @@ def fn_check_grid(outdir):
    dy = np.mean(grid_prams['scuy'])
    grid_prams.update({'dx':dx})
    grid_prams.update({'dy':dy})
-
    ###########################################################
    
    # output
@@ -179,49 +124,70 @@ def fn_check_init(outdir):
 ##############################################################
 
 ##############################################################
-def fn_read_general_binary(afile):
+def fn_bfile_info(bfile):
    # routine to get output fields from binary files:
-   bfile = afile[:-2]+'.b'
 
    ###########################################################
-   # get dimensions and variable names from .b file
+   # get info like dimensions and variable names from .b file
    bid   = open(bfile,'r')
    lines = bid.readlines()
    bid.close()
 
-   Nrecs    = int(lines[0].split()[0])
-   Nord     = int(lines[1].split()[0])
-   nx       = int(lines[2].split()[0])
-   ny       = int(lines[3].split()[0])
-   if Nord==1:
+   int_list = ['nx','ny','Nrecs','Norder'] # these are integers not floats
+   binfo = {}  # dictionary with info about fields in corresponding .a file
+   vlist = []  # list of variable names in corresponding .a file (in order)
+
+   do_vlist = 0
+   for lin in lines:
+      ls = lin.split()
+      if ls != []:
+         # skip blank lines
+
+         # if not at "Record number and name"
+         if not(ls[0]=='Record' and ls[1]=='number'):
+            key   = ls[1]
+            if not do_vlist:
+               if key in int_list:
+                  val   = int(ls[0])
+               else:
+                  val   = float(ls[0])
+               binfo.update({key:val})
+            else:
+               vlist.append(key)
+         else:
+            # have got down to list of variables
+            do_vlist = 1
+
+   print(binfo)
+   if binfo['Nrecs']!=len(vlist):
+      raise ValueError('Inconsistent number of records in file: '+bfile)
+
+   return binfo,vlist
+##############################################################
+
+##############################################################
+def fn_read_general_binary(afile):
+   # routine to get output fields from binary files:
+
+   ###########################################################
+   # get dimensions and variable names from .b file
+   bfile       = afile[:-2]+'.b'
+   binfo,vlist = fn_bfile_info(bfile)
+
+   nx    = binfo['nx']
+   ny    = binfo['ny']
+   if binfo['Norder']==1:
       order = 'fortran'
    else:
       order = 'C'
-
-   Nlines   = len(lines)
-   for n in range(4,Nlines):
-      lin   = lines[n]
-      if 'Record number and name:' in lin:
-         n0 = n+1
-         break
-
-   keys  = []
-   for n in range(n0,Nlines):
-      lin   = lines[n]
-      vname = lin.split()[1]
-      keys.append(vname)
    ###########################################################
-
-   if len(keys)!=Nrecs:
-      raise ValueError('Inconsistent number of records in file: '+bfile)
 
    ###########################################################
    # can now read data from .a file
    aid   = open(afile,'rb')
-   ##
+
    out   = {}
-   ##
-   for key in keys:
+   for key in vlist:
       out.update({key:get_array(aid,nx,ny,order=order)})
 
    aid.close()
@@ -258,14 +224,11 @@ def fn_check_out_bin(outdir):
 ##############################################################
 def fn_check_out_arr(out_arrays):
    # routine to convert out_arrays to Out_Fields object
-   out_fields  = Out_Fields()
-   s2          = out_fields
+   out_fields  = {}
 
    keys  = ['dfloe','taux','tauy','Hs','Tp'] # can be got from s2.keys(),
-   n     = 0
-   for key in keys:
-      s2[key]  = out_arrays[:,:,n]
-      n        = n+1
+   for n,key in enumerate(keys):
+      out_fields.update({key:out_arrays[:,:,n]})
    
    # outputs
    return out_fields

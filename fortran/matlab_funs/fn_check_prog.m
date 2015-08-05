@@ -1,4 +1,4 @@
-function out = fn_check_prog(outdir,n)
+function [out,info] = fn_check_prog(outdir,n)
 
 bdir  = [outdir,'/binaries/prog'];
 flist = dir([bdir,'/wim_prog*.a']);
@@ -16,5 +16,5 @@ else
 end
 
 %% get filename and read it
-afile = [bdir,'/wim_prog',cts,'.a'];
-out   = fn_read_general_binary(afile);
+afile       = [bdir,'/wim_prog',cts,'.a'];
+[out,info]  = fn_read_general_binary(afile);

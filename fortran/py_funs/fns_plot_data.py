@@ -22,6 +22,7 @@ def plot_1d(x,y,labs=None,pobj=None,**kwargs):
       # no figure open so open a new one
       f     = plt.figure()
       ax    = f.add_subplot(1,1,1)
+      pobj  = f,ax
    else:
       f,ax  = pobj
 
@@ -186,10 +187,13 @@ def fn_plot_gen(grid_prams,fields,figdir):
    ny = grid_prams['ny']
    dx = grid_prams['dx']
    dy = grid_prams['dy']
-   x  = grid_prams['X'][:,0]+dx/2.
-   x  = np.concatenate([[x[0]-dx],x])/1.e3
-   y  = grid_prams['Y'][0,:]+dy/2.
-   y  = np.concatenate([[y[0]-dy],y])/1.e3
+   if ny==0:
+      x  = grid_prams['X'][:,0]/1.e3
+   else:
+      x  = grid_prams['X'][:,0]+dx/2.
+      x  = np.concatenate([[x[0]-dx],x])/1.e3
+      y  = grid_prams['Y'][0,:]+dy/2.
+      y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # dictionary of figure names
    figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png',\
@@ -220,10 +224,11 @@ def fn_plot_gen(grid_prams,fields,figdir):
          f,ax  = cmap_3d(x,y,fields[key].transpose(),\
                         ['$x$, km','$y$, km',labs[key]])
       else:
-         f,ax  = plot_1d(x,fields[key],\
-                        ['$x$, km',labs[key]])
+         f,ax,line   = plot_1d(x,fields[key][:,0],\
+                               ['$x$, km',labs[key]])
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close(f)
+   return
 ############################################################################
 
 #######################################################################
@@ -238,10 +243,13 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
    ny = grid_prams['ny']
    dx = grid_prams['dx']
    dy = grid_prams['dy']
-   x  = grid_prams['X'][:,0]+dx/2.
-   x  = np.concatenate([[x[0]-dx],x])/1.e3
-   y  = grid_prams['Y'][0,:]+dy/2.
-   y  = np.concatenate([[y[0]-dy],y])/1.e3
+   if ny==1:
+      x  = grid_prams['X'][:,0]/1.e3
+   else:
+      x  = grid_prams['X'][:,0]+dx/2.
+      x  = np.concatenate([[x[0]-dx],x])/1.e3
+      y  = grid_prams['Y'][0,:]+dy/2.
+      y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # ice fields
    # dictionary of figure names
@@ -255,8 +263,8 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
          f,ax  = cmap_3d(x,y,ice_fields[key].transpose(),\
                         ['$x$, km','$y$, km',labs[key]])
       else:
-         f,ax  = plot_1d(x,ice_fields[key],\
-                        ['$x$, km',labs[key]])
+         f,ax,line   = plot_1d(x,ice_fields[key][:,0],\
+                               ['$x$, km',labs[key]])
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close(f)
 
@@ -270,13 +278,14 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
       fig   = figdir+'/'+figs[key]
       if ny>1:
          f,ax  = cmap_3d(x,y,wave_fields[key].transpose(),\
-                        ['$x$, km','$y$, km',labs[key]])
+                         ['$x$, km','$y$, km',labs[key]])
       else:
-         f,ax  = plot_1d(x,wave_fields[key],\
-               ['$x$, km',labs[key]])
+         f,ax,line   = plot_1d(x,wave_fields[key][:,0],\
+                               ['$x$, km',labs[key]])
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      ax.cla()
-      f.clf()
+      plt.close(f)
+
+   return
 ############################################################################
 
 ############################################################################
@@ -291,10 +300,13 @@ def fn_plot_final(grid_prams,out_fields,figdir):
    ny = grid_prams['ny']
    dx = grid_prams['dx']
    dy = grid_prams['dy']
-   x  = grid_prams['X'][:,0]+dx/2.
-   x  = np.concatenate([[x[0]-dx],x])/1.e3
-   y  = grid_prams['Y'][0,:]+dy/2.
-   y  = np.concatenate([[y[0]-dy],y])/1.e3
+   if ny==1:
+      x  = grid_prams['X'][:,0]/1.e3
+   else:
+      x  = grid_prams['X'][:,0]+dx/2.
+      x  = np.concatenate([[x[0]-dx],x])/1.e3
+      y  = grid_prams['Y'][0,:]+dy/2.
+      y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # dictionary of figure names
    figs  = {'dfloe':'Dmax.png','taux':'taux.png','tauy':'tauy.png',
@@ -308,12 +320,14 @@ def fn_plot_final(grid_prams,out_fields,figdir):
       fig   = figdir+'/'+figs[key]
       if ny>1:
          f,ax  = cmap_3d(x,y,out_fields[key].transpose(),\
-                  ['$x$, km','$y$, km',labs[key]])
+                         ['$x$, km','$y$, km',labs[key]])
       else:
-         f,ax  = plot_1d(x,out_fields[key],\
-                  ['$x$, km',labs[key]])
+         f,ax,line   = plot_1d(x,out_fields[key][:,0],\
+                               ['$x$, km',labs[key]])
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close(f)
+
+   return
 ############################################################################
 
 ############################################################################
@@ -350,4 +364,6 @@ def fn_plot_final_V1d(grid_prams,Tp_vec,out_fields,figdir):
       plt.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close()
       f.clf()
+
+   return
 ############################################################################

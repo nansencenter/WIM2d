@@ -177,20 +177,29 @@ pfiles   = os.listdir(bindir+'/prog')
 afiles   = []
 psteps   = []
 psteps_i = []
+tsteps   = []
 for pf in pfiles:
    if pf[-2:]=='.a':
       afiles.append(pf)
       psteps.append(pf[8:-2])
       psteps_i.append(int(pf[8:-2]))
-Nprog = psteps[-1]
+   elif pf[-2:]=='.b':
+      bid      = open(pf)
+      blines   = bid.readlines()
+      bid.close()
+      t_out = float(blines[4].split()[0])
+      tsteps.append(t_out)
+      psteps.append(pf[8:-2])
+      psteps_i.append(int(pf[8:-2]))
 
-logfil   = outdir+'/log/wim2d.log'
-fid      = open(logfil)
-lines    = fid.readlines()
-fid.close()
-dt       = float(lines[25].split()[-1]) # time step (s)
-psteps_i = np.array(psteps_i)
-tsteps   = dt*psteps_i
+# # get approx time step from log file - now get from .b file
+# logfil   = outdir+'/log/wim2d.log'
+# fid      = open(logfil)
+# lines    = fid.readlines()
+# fid.close()
+# dt       = float(lines[25].split()[-1]) # time step (s)
+# psteps_i = np.array(psteps_i)
+# tsteps   = dt*psteps_i
 
 def find_nearest(nparr,val):
    R           = list(abs(nparr-val))
@@ -246,8 +255,10 @@ for nstep in steps2plot:
       loop_s   = np.mod(loop_s+1,Ns)
    
    # plot and set up for legend
-   fig,ax1,line_h = Fplt.plot_1d(xx,Hs_n,labs=labs1,pobj=(fig,ax1),color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
-   fig,ax2,line_t = Fplt.plot_1d(xx,tx_n,labs=labs2,pobj=(fig,ax2),color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
+   fig,ax1,line_h = Fplt.plot_1d(xx,Hs_n,labs=labs1,pobj=(fig,ax1),\
+                                 color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
+   fig,ax2,line_t = Fplt.plot_1d(xx,tx_n,labs=labs2,pobj=(fig,ax2),\
+                                 color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
 
    if do_legend:
       lines_h.append(line_h)

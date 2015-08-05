@@ -2,6 +2,7 @@
 # (and of initial and final, if wanted)
 # run from "../run" folder
 tools="${WIM2D_PATH}/fortran/tools"
+P=`pwd`
 
 if [ $# -eq 0 ]
 then
@@ -28,7 +29,6 @@ fi
 echo In `pwd`:
 echo python $tools/plot_prog.py
 python $tools/plot_prog.py
-cd $P
 
 if [ $MKMOV -eq 1 ]
 then

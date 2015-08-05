@@ -692,7 +692,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog(SCATMOD,(/n-1,nt/),0,outdir)
+            call check_prog((/n-1,nt/),0,outdir)
          end if
 
          print*,'n/nt',n,nt
@@ -703,7 +703,7 @@
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
-         call check_prog(SCATMOD,(/n-1,nt/),1,outdir)
+         call check_prog((/n-1,nt/),1,outdir)
       end if
 
       MIZ_MASK = 0.0

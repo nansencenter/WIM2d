@@ -1,10 +1,9 @@
-function fn_save_binary(Froot,dims,varargin);
+function fn_save_binary(Froot,dims,t_out,varargin);
 
-if nargin<2
+if nargin<3
    error('not enough inputs');
-elseif nargin==2
-   disp('nothing to do');
-   return
+elseif nargin<=3
+   error('nothing to do');
 else
    pairs = varargin{:};
    nx    = dims(1);
@@ -33,10 +32,15 @@ disp(['Saved ',afile]);
 bfile = [Froot,'.b'];
 %%
 bid   = fopen(bfile,'w');
-fprintf(bid,'%2.2d       Number of records\n',Nrecs);
-fprintf(bid,'%1.1d        Storage order [column-major (F/matlab) = 1, row-major (C) = 0]\n',1);
-fprintf(bid,'%3.3d      Record length in x direction (elements)\n',nx);
-fprintf(bid,'%3.3d      Record length in y direction (elements)\n\n',ny);
+fprintf(bid,'%2.2d         Nrecs  # Number of records\n',Nrecs);
+fprintf(bid,'%1.1d          Norder # Storage order [column-major (F/matlab) = 1, row-major (C) = 0]\n',1);
+fprintf(bid,'%3.3d        ny     # Record length in x direction (elements)\n',nx);
+if isempty(t_out)
+   fprintf(bid,'%3.3d        ny     # Record length in y direction (elements)\n\n',ny);
+else
+   fprintf(bid,'%3.3d        ny     # Record length in y direction (elements)\n',ny);
+   fprintf(bid,'%8.1f   t_out  # Model time of output (s)\n\n',t_out);
+end
 %%
 fprintf(bid,'%s','Record number and name:');
 for loop_i=1:length(vlist)

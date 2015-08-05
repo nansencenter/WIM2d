@@ -2,35 +2,71 @@
       !Author: Timothy Williams
       !Date:   20141128, 16:06:18 CET
 
+!     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!     module mod_save_grid_vars
+!     implicit none
+
+!     integer  :: GRID_OPT
+!     integer  :: ii,jj
+!     real     :: dx,dy,x0,y0
+!     !!
+!     real  ,dimension(ii,jj) ::                                        &
+!    &   X,Y,scuy,scvx,scp2,scp2i,LANDMASK
+!     !!
+!     real,dimension(ii,jj,7) :: grid_arrays
+
+!     end module mod_save_grid_vars
+!     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       module mod_save_grid
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
 
-      integer, parameter   :: GRID_OPT = 1
-      integer,parameter    :: ii       = 150
-      integer,parameter    :: jj       = 50
-      real,parameter       :: dx       = 4.0e3!m
-      real,parameter       :: dy       = 4.0e3!m
-      integer, parameter   :: nbdy     = 0
-      integer, parameter   :: idm      = ii
-      integer, parameter   :: jdm      = jj
-      !!
-      real  ,dimension(ii,jj) ::                                        &
-     &   X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      !!
-      real,dimension(ii,jj,7) :: grid_arrays
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
       contains
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine save_wave_info_hdr(outdir,nfreq,ndir,Tmin,Tmax)
+
+      implicit none
+
+      character(len=*),intent(in)   :: outdir
+      integer,intent(in)            :: nfreq,ndir
+      real,intent(in)               :: Tmin,Tmax
+      character(len=*),parameter    :: blk   = '      '
+      !!
+      character(len=80) :: hfile,ss
+      character(len=80) :: ssi,ssj,ssx,ssy
+
+      !! write .h file
+      hfile = trim(outdir)//'/wave_info.h'
+      print*,'Making header file : ',hfile
+
+      open(unit=2,file=trim(hfile),status = 'replace')
+
+ 310  format(a)
+ 311  format(a,i4.4)
+ 312  format(a,i4.4,a)
+ 411  format(a,f6.2)
+
+      write(2,311),  blk//'integer,parameter   :: n_wavdir    = ',ndir
+      write(2,312),  blk//'integer,parameter   :: n_wave_freq = ',nfreq &
+     &                  ," !should be odd (Simpson's rule)"
+      write(2,310),  ''
+      write(2,411), blk//'real,parameter   :: Tmin = ',Tmin
+      write(2,411), blk//'real,parameter   :: Tmax = ',Tmax
+
+      close(2)
+
+      end subroutine save_wave_info_hdr
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine save_grid_info_hdr(outdir,ii,jj,dx,dy)
 
       implicit none
 
-      integer, intent(in)           :: ii,jj
-      real, intent(in)              :: dx,dy
-      character(len=*),intent(in)  :: outdir
+      character(len=*),intent(in)   :: outdir
+      integer,intent(in)            :: ii,jj
+      real,intent(in)               :: dx,dy
       character(len=*),parameter    :: blk   = '      '
       !!
       character(len=80) :: hfile,ss
@@ -79,10 +115,10 @@
       implicit none
       integer,parameter                   :: nz = 7
       integer,intent(in)                  :: ii,jj
-      character(len=*),intent(in)        :: outdir
+      character(len=*),intent(in)         :: outdir
       real,dimension(ii,jj,nz),intent(in) :: grid_arrays
+      !!
       character(len=80)    :: afile,bfile
-      character(len=10)    :: stat1,stat2
       integer              :: j
 
       !comments for f2py
@@ -91,8 +127,44 @@
 
       afile = trim(outdir)//'/wim_grid.a'
       bfile = trim(outdir)//'/wim_grid.b'
-      stat1 = 'replace'
-      stat2 = 'old'
+
+      !! write .b file (description of stuff in .a file)
+      print*,'Making .b file     : ',bfile
+ 111  format(a)
+ 112  format(i2.2,a)  
+      call wrt_bfile_header(bfile,nz,ii,jj)
+      open(unit=2,file=trim(bfile),position='append')
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      write(2,111)    "Record number and name:"
+      write(2,112)    1,    "       X"
+      write(2,112)    2,    "       Y"
+      write(2,112)    3,    "       scuy"
+      write(2,112)    4,    "       scvx"
+      write(2,112)    5,    "       scp2"
+      write(2,112)    6,    "       scp2i"
+      write(2,112)    7,    "       LANDMASK"
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      close(2)
+
+      !! dump arrays to .a file
+      print*,'Making .a file     : ',afile
+
+      !! write 7 2d arrays
+      j  = 1
+      call wrt_afile_2d(afile,grid_arrays(:,:,j),ii,jj,'replace',j)
+      do j=2,nz
+         call wrt_afile_2d(afile,grid_arrays(:,:,j),ii,jj,'old',j)
+      end do
+
+      end subroutine save_grid
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine wrt_bfile_header(bfile,Nrecs,ii,jj)
+      character(len=*),intent(in)   :: bfile
+      integer,intent(in)            :: Nrecs,ii,jj
 
  111  format(a)
  112  format(i2.2,a)  
@@ -100,54 +172,22 @@
  114  format(i4.4,a)  
 
       !! write .b file (description of stuff in .a file)
-      print*,'Making .b file     : ',bfile
       open(unit=2,file=trim(bfile),status = 'replace')
 
-      write(2,112)                                                      &
-     &  7,          "       Number of records"
-      write(2,112)                                                      &
-     &  1,          "       Storage order "//                           &
-     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,114)                                                      &
-     &  ii,          "      Record length in x direction (elements)"
-      write(2,114)                                                      &
-     &  jj,          "      Record length in y direction (elements)"
-      write(2,111) " "
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      write(2,112) Nrecs,  "       Nrecs    # Number of records"
+      write(2,112) 1,      "       Norder   # Storage order "//         &
+     &               "[column-major (F/matlab) = 1, row-major (C) = 0]"
+      write(2,114) ii,     "     nx       "//                           &
+     &               "# Record length in x direction (elements)"
+      write(2,114) jj,     "     ny       "//                           &
+     &               "# Record length in y direction (elements)"
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      write(2,111)    "Record number and name:"
-      write(2,112)                                                      &
-     &  1,    "       X"
-      write(2,112)                                                      &
-     &  2,    "       Y"
-      write(2,112)                                                      &
-     &  3,    "       scuy"
-      write(2,112)                                                      &
-     &  4,    "       scvx"
-      write(2,112)                                                      &
-     &  5,    "       scp2"
-      write(2,112)                                                      &
-     &  6,    "       scp2i"
-      write(2,112)                                                      &
-     &  7,    "       LANDMASK"
-
+      write(2,111) ""
       close(2)
 
-      !! dump arrays to .a file
-      !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      print*,'Making .a file     : ',afile
-
-      if (.false.) then
-         !! write 3d array directly
-         call wrt_afile_3d(afile,grid_arrays,ii,jj,nz,stat1,1)
-      else
-         !! write 7 2d arrays
-         j  = 1
-         call wrt_afile_2d(afile,grid_arrays(:,:,j),ii,jj,stat1,j)
-         do j=2,7
-            call wrt_afile_2d(afile,grid_arrays(:,:,j),ii,jj,stat2,j)
-         end do
-      end if
-
-      end subroutine save_grid
+      end subroutine wrt_bfile_header
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       end module mod_save_grid

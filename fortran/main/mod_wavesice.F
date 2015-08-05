@@ -634,65 +634,44 @@
       subroutine check_grid(outdir)
 
       use mod_gridinfo
-      !use mod_common_wim
       use mod_file_utils
 
       implicit none
-      character(len=80),intent(in)   :: outdir
-      character(len=80)    :: afile,bfile
-      character(len=10)    :: stat1,stat2
+      character(len=*),intent(in)   :: outdir
+      character(len=80)             :: afile,bfile
+      integer,parameter             :: Nrecs = 7
 
       afile = trim(outdir)//'/binaries/wim_grid.a'
       bfile = trim(outdir)//'/binaries/wim_grid.b'
-      stat1 = 'replace'
-      stat2 = 'old'
 
+      !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)
- 113  format(i3.3,a)
- 114  format(i4.4,a)
+      call wrt_bfile_header(bfile,Nrecs)
+      open(unit=2,file=trim(bfile),position = 'append')
 
-      !! write .b file (description of stuff in .a file)
-      open(unit=2,file=trim(bfile),status = 'replace')
-
-      write(2,112)                                                      &
-     &  7,          "       Number of records"
-      write(2,112)                                                      &
-     &  1,          "       Storage order "//                           &
-     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,114)                                                      &
-     &  ii,          "      Record length in x direction (elements)"
-      write(2,114)                                                      &
-     &  jj,          "      Record length in y direction (elements)"
-      write(2,111) " "
-
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       write(2,111)    "Record number and name:"
-      write(2,112)                                                      &
-     &  1,    "       X"
-      write(2,112)                                                      &
-     &  2,    "       Y"
-      write(2,112)                                                      &
-     &  3,    "       scuy"
-      write(2,112)                                                      &
-     &  4,    "       scvx"
-      write(2,112)                                                      &
-     &  5,    "       scp2"
-      write(2,112)                                                      &
-     &  6,    "       scp2i"
-      write(2,112)                                                      &
-     &  7,    "       LANDMASK"
+      write(2,112)    1,    "       X"
+      write(2,112)    2,    "       Y"
+      write(2,112)    3,    "       scuy"
+      write(2,112)    4,    "       scvx"
+      write(2,112)    5,    "       scp2"
+      write(2,112)    6,    "       scp2i"
+      write(2,112)    7,    "       LANDMASK"
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       close(2)
 
       !! dump arrays to .a file
       !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      call wrt_afile_2d(afile ,X          ,ii,jj  ,stat1,1)
-      call wrt_afile_2d(afile ,Y          ,ii,jj  ,stat2,2)
-      call wrt_afile_2d(afile ,scuy       ,ii,jj  ,stat2,3)
-      call wrt_afile_2d(afile ,scvx       ,ii,jj  ,stat2,4)
-      call wrt_afile_2d(afile ,scp2       ,ii,jj  ,stat2,5)
-      call wrt_afile_2d(afile ,scp2i      ,ii,jj  ,stat2,6)
-      call wrt_afile_2d(afile ,LANDMASK   ,ii,jj  ,stat2,7)
+      call wrt_afile_2d(afile ,X          ,ii,jj  ,'replace',1)
+      call wrt_afile_2d(afile ,Y          ,ii,jj  ,'old'    ,2)
+      call wrt_afile_2d(afile ,scuy       ,ii,jj  ,'old'    ,3)
+      call wrt_afile_2d(afile ,scvx       ,ii,jj  ,'old'    ,4)
+      call wrt_afile_2d(afile ,scp2       ,ii,jj  ,'old'    ,5)
+      call wrt_afile_2d(afile ,scp2i      ,ii,jj  ,'old'    ,6)
+      call wrt_afile_2d(afile ,LANDMASK   ,ii,jj  ,'old'    ,7)
 
       end subroutine check_grid
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -705,78 +684,60 @@
       use mod_file_utils
 
       implicit none
-      character(len=80),intent(in)   :: outdir
-      character(len=80)    :: afile,bfile
-      character(len=10)    :: stat1,stat2
+      character(len=*),intent(in)   :: outdir
+      character(len=80)             :: afile,bfile
+      integer,parameter             :: Nrecs = 6
 
       afile = trim(outdir)//'/binaries/wim_init.a'
       bfile = trim(outdir)//'/binaries/wim_init.b'
-      stat1 = 'replace'
-      stat2 = 'old'
 
+      !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)
- 113  format(i3.3,a)
- 114  format(i4.4,a)
+      call wrt_bfile_header(bfile,Nrecs)
+      open(unit=2,file=trim(bfile),position = 'append')
 
-      !! write .b file (description of stuff in .a file)
-      open(unit=2,file=trim(bfile),status = 'replace')
-
-      write(2,112)                                                      &
-     &  6,          "       Number of records"
-      write(2,112)                                                      &
-     &  1,          "       Storage order "//                           &
-     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,114)                                                      &
-     &  ii,          "      Record length in x direction (elements)"
-      write(2,114)                                                      &
-     &  jj,          "      Record length in y direction (elements)"
-      write(2,111) ""
-
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       write(2,111)    "Record number and name:"
-      write(2,112)                                                      &
-     &  1,    "       icec"
-      write(2,112)                                                      &
-     &  2,    "       iceh"
-      write(2,112)                                                      &
-     &  3,    "       Dmax"
-      write(2,112)                                                      &
-     &  4,    "       Hs"
-      write(2,112)                                                      &
-     &  5,    "       Tp"
-      write(2,112)                                                      &
-     &  6,    "       mwd"
+      write(2,112)    1,    "       icec"
+      write(2,112)    2,    "       iceh"
+      write(2,112)    3,    "       Dmax"
+      write(2,112)    4,    "       Hs"
+      write(2,112)    5,    "       Tp"
+      write(2,112)    6,    "       mwd"
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       close(2)
 
       !! dump arrays to .a file
       !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      call wrt_afile_2d(afile ,icec    ,ii,jj  ,stat1,1)
-      call wrt_afile_2d(afile ,iceh    ,ii,jj  ,stat2,2)
-      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,stat2,3)
-      call wrt_afile_2d(afile ,Hs      ,ii,jj  ,stat2,4)
-      call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)
-      call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
+      call wrt_afile_2d(afile ,icec    ,ii,jj  ,'replace',1)
+      call wrt_afile_2d(afile ,iceh    ,ii,jj  ,'old'    ,2)
+      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,'old'    ,3)
+      call wrt_afile_2d(afile ,Hs      ,ii,jj  ,'old'    ,4)
+      call wrt_afile_2d(afile ,Tp      ,ii,jj  ,'old'    ,5)
+      call wrt_afile_2d(afile ,mwd     ,ii,jj  ,'old'    ,6)
 
       end subroutine check_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(SCATMOD,nn,OPT,outdir)
+      subroutine check_prog(nn,OPT,outdir)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)            :: SCATMOD,nn(2),OPT
+      integer,intent(in)            :: nn(2),OPT
       character(len=80),intent(in)  :: outdir
       character(len=80)             :: afile,bfile
-      character(len=10)             :: stat1,stat2
       character(len=4)              :: cts
+      integer,parameter             :: Nrecs = 5
       !!
       integer           :: n_step,n_total
       character(len=6)  :: frmt
+      real              :: t_out
 
       n_step   = nn(1)
       n_total  = nn(2)
@@ -797,59 +758,77 @@
      &               //trim(cts)//'.a'
          bfile = trim(outdir)//'/binaries/prog/wim_prog'                &
      &               //trim(cts)//'.b'
+         t_out = n_step*dt
       else
          !!final output
          afile = trim(outdir)//'/binaries/wim_out.a'
          bfile = trim(outdir)//'/binaries/wim_out.b'
+         t_out = n_total*dt
       end if
-      stat1 = 'replace'
-      stat2 = 'old'
 
+      !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)
- 113  format(i3.3,a)
- 114  format(i4.4,a)
+      call wrt_bfile_header(bfile,Nrecs,t_out)
+      open(unit=2,file=trim(bfile),position = 'append')
 
-      !! write .b file (description of stuff in .a file)
-      open(unit=2,file=trim(bfile),status = 'replace')
-
-      write(2,112)                                                      &
-     &  5,           "       Number of records"
-      write(2,112)                                                      &
-     &  1,          "       Storage order "//                           &
-     &              "[column-major (F/matlab) = 1, row-major (C) = 0]"
-      write(2,114)                                                      &
-     &  ii,           "      Record length in x direction (elements)"
-      write(2,114)                                                      &
-     &  jj,           "      Record length in y direction (elements)"
-      write(2,111) ""
-
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       write(2,111)    "Record number and name:"
-      write(2,112)                                                      &
-     &  1,    "       Dmax"
-      write(2,112)                                                      &
-     &  2,    "       tau_x"
-      write(2,112)                                                      &
-     &  3,    "       tau_y"
-      write(2,112)                                                      &
-     &  4,    "       Hs"
-      write(2,112)                                                      &
-     &  5,    "       Tp"
-!     write(2,112)                                                      &
-!    &  6,    "       mwd"
+      write(2,112)    1,    "       Dmax"
+      write(2,112)    2,    "       tau_x"
+      write(2,112)    3,    "       tau_y"
+      write(2,112)    4,    "       Hs"
+      write(2,112)    5,    "       Tp"
+!     write(2,112)    6,    "       mwd"
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       close(2)
 
       !! dump arrays to .a file
       !! - X,Y,scuy,scvx,scp2,scp2i,LANDMASK
-      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,stat1,1)
-      call wrt_afile_2d(afile ,tau_x   ,ii,jj  ,stat2,2)
-      call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,stat2,3)
-      call wrt_afile_2d(afile ,Hs      ,ii,jj  ,stat2,4)
-      call wrt_afile_2d(afile ,Tp      ,ii,jj  ,stat2,5)
-!     call wrt_afile_2d(afile ,mwd     ,ii,jj  ,stat2,6)
+      call wrt_afile_2d(afile ,dfloe   ,ii,jj  ,'replace',1)
+      call wrt_afile_2d(afile ,tau_x   ,ii,jj  ,'old'    ,2)
+      call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,'old'    ,3)
+      call wrt_afile_2d(afile ,Hs      ,ii,jj  ,'old'    ,4)
+      call wrt_afile_2d(afile ,Tp      ,ii,jj  ,'old'    ,5)
+!     call wrt_afile_2d(afile ,mwd     ,ii,jj  ,'old'    ,6)
 
       end subroutine check_prog
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine wrt_bfile_header(bfile,Nrecs,t_out)
+      character(len=*),intent(in)   :: bfile
+      integer,intent(in)            :: Nrecs
+      real,optional,intent(in)      :: t_out
+
+ 111  format(a)
+ 112  format(i2.2,a)
+ 113  format(i3.3,a)
+ 114  format(i4.4,a)
+ 211  format(f9.1,a)
+
+      !! write .b file (description of stuff in .a file)
+      open(unit=2,file=trim(bfile),status = 'replace')
+
+      write(2,112) Nrecs,  "         Nrecs    # Number of records"
+      write(2,112) 1,      "         Norder   # Storage order "//       &
+     &               "[column-major (F/matlab) = 1, row-major (C) = 0]"
+      write(2,114) ii,     "       nx       "//                         &
+     &               "# Record length in x direction (elements)"
+      write(2,114) jj,     "       ny       "//                         &
+     &               "# Record length in y direction (elements)"
+
+      !! if t_out is given add a line with the model time at time of dump
+      if (present(t_out)) then
+         write(2,211) t_out,   "  t_out    "//                          &
+     &               "# Model time of output (s)"
+      end if
+
+      write(2,111) ""
+      close(2)
+
+      end subroutine wrt_bfile_header
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

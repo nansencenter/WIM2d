@@ -163,7 +163,7 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm -f $(ODIR)/*.o $(MDIR)/*.mod \
+	rm -f	$(ODIR)/*.o $(MDIR)/*.mod \
 	   	$(bin)/$(TARGET_F) \
 	   	$(bin)/$(TARGET_PY).so \
 	   	$(bin)/$(TARGET_MEX1)* \
