@@ -6,7 +6,7 @@ tools="${WIM2D_PATH}/fortran/tools"
 if [ $# -eq 0 ]
 then
    echo "Usage:"
-   echo "plot_prog.sh [1/0: do/don't make movie] [results directory (full path)]"
+   echo "plot_prog.sh [1/0: do/don't make movie] [root results directory ie with binaries, log etc]"
    exit
 fi
 
@@ -44,6 +44,5 @@ then
    done
 else
    echo To make movie
-   echo cd $outdir/figs/prog
-   echo "$tools/prog2mp4.sh Hs (or Dmax,taux,tauy)"
+   echo "$tools/prog2mp4.sh Hs (or Dmax,taux,tauy)" $outdir/figs/prog
 fi
