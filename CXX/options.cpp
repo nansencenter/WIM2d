@@ -22,6 +22,7 @@ namespace WIMOPT
             ("ymin", po::value<double>()->default_value( -60e+3 ), "ymin")
             ("nwavefreq", po::value<int>()->default_value( 1 ), "Number of wave frequency")
             ("nwavedirn", po::value<int>()->default_value( 16 ), "Number of wave direction")
+            ("duration", po::value<double>()->default_value( 43200.0 ), "length of simulation [s]")
             ("cfl", po::value<double>()->default_value( 0.7 ), "CFL number")
             ("atten", po::value<bool>()->default_value( true ), "Do attenuation")
             ("refhsice", po::value<bool>()->default_value( false ), "Inside ice, Hs corresponds to water (=false) or ice (=true) displacement")
@@ -36,7 +37,7 @@ namespace WIMOPT
             ("checkprog", po::value<bool>()->default_value( true ), "Do dump intermediate states to binary files (=true), or don't' (=false)")
             ("reps", po::value<int>()->default_value( 10 ), "frequency of dumping")
             ("wim.nz", po::value<int>()->default_value( 1000 ), "Record length in x direction")
-            ("young", po::value<double>()->default_value( 5.45e+9 ), "Young's modulus")
+            ("young", po::value<double>()->default_value( 5.49e+9 ), "Young's modulus")
             ("viscrp", po::value<double>()->default_value( 13. ), "Robinson-Palmer viscosity")
             ("outparentdir", po::value<std::string>()->default_value( "." ), "Parent directory for the output files")
             ;

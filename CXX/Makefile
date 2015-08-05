@@ -1,31 +1,19 @@
 PROGNAME=prog_wim2d.exec
 
-CXX = g++-4.8
-CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC -v# -MMD -MP -lm #-Wall
+CXX = g++
+CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC #-v # -MMD -MP -lm #-Wall
 CXXFLAGS += -I headers -I . -I $(BOOST_DIR)/include
 
 LDFLAGS += -Wl,-rpath,$(BOOST_DIR)/lib
-LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options-mt -lboost_filesystem-mt -lboost_system-mt
+LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
 
-
-CC = gcc-4.8
-CFLAGS += -std=c++0x -pedantic -Wno-inline -fPIC -v # -MMD -MP -lm #-Wall
+CC = gcc
+CFLAGS += -pedantic -Wno-inline -fPIC #-v # -MMD -MP -lm #-Wall
 CFLAGS += -I headers -I .
-
-# SRC = \
-# 	main.cpp \
-# 	options.cpp
-
-
-# CSRCDIR=src
-# CCSRC=\
-# 	$(CSRCDIR)/RTparam_outer.c \
-# 	$(CSRCDIR)/RTparam_fast.c \
-# 	$(CSRCDIR)/RTparam_hardcoded.c
-
 
 EXEC=$(PROGNAME)
 OBJECTDIR=objs/
+DEPENDDIR=.deps/
 BINARYDIR=bin/
 
 # C++ files
@@ -35,18 +23,14 @@ OBJS=$(CXXSRC:.cpp=.o)
 DEPS=$(CXXSRC:.cpp=.d)
 
 OBJS:=$(addprefix $(OBJECTDIR), $(OBJS))
-DEPS:=$(addprefix $(OBJECTDIR), $(DEPS))
+DEPS:=$(addprefix $(DEPENDDIR), $(DEPS))
 
 # C files
 CCSRCDIR=src
 CCSRC=$(wildcard $(CCSRCDIR)/*.c)
-CCOBJS=$(CCSRC:.c=.o)
-CCDEPS=$(CCSRC:.c=.d)
 
-CCOBJS:=$(addprefix $(OBJECTDIR), $(CCOBJS))
-CCDEPS:=$(addprefix $(OBJECTDIR), $(CCDEPS))
-
-
+CCOBJS:=$(CCSRC:$(CCSRCDIR)/%.c=$(OBJECTDIR)%.o)
+CCDEPS:=$(CCSRC:$(CCSRCDIR)/%.c=$(DEPENDDIR)%.d)
 
 # Rules to always execute.
 .PHONY: all clean mrproper
@@ -54,36 +38,42 @@ CCDEPS:=$(addprefix $(OBJECTDIR), $(CCDEPS))
 # Default action.
 all: $(EXEC)
 
-# Delete the object files.
+# Delete the object and dependancy files.
 clean:
 	$(RM) $(OBJS) $(DEPS) $(CCOBJS) $(CCDEPS)
 
 mrproper: clean
 	$(RM) $(BINARYDIR)$(PROGNAME)
 
+$(CCOBJS): $(OBJECTDIR)%.o : $(CCSRCDIR)/%.c
+	@mkdir -p $(OBJECTDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-default: $(CCOBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-$(OBJECTDIR)%.o: %.c
-	mkdir -p $(OBJECTDIR)
-	$(CC) -o $@ -c $< $(CFLAGS)
-
-
+# Make dependancy rules
+$(CCDEPS): $(DEPENDDIR)%.d : $(CCSRCDIR)/%.c
+	@mkdir -p $(DEPENDDIR)
+	@$(SHELL) -ec '$(CC) -M $(CFLAGS) $< | sed "s^$*.o^$(OBJECTDIR)$*.o^" > $@'
 
 $(PROGNAME): $(OBJS) $(CCOBJS)
-	mkdir -p $(BINARYDIR)
+	@mkdir -p $(BINARYDIR)
 	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$@ $^ $(LDFLAGS)
 
 $(OBJECTDIR)%.o: %.cpp
-	mkdir -p $(OBJECTDIR)
+	@mkdir -p $(OBJECTDIR)
 	$(CXX) -o $@ -c $< $(CXXFLAGS)
+
+# Make dependancy rules
+$(DEPENDDIR)%.d: %.cpp
+	@mkdir -p $(DEPENDDIR)
+	@$(SHELL) -ec '$(CXX) -M $(CXXFLAGS) $< | sed "s^$*.o^$(OBJECTDIR)$*.o^" > $@'
 
 
 # The compilation depends on this Makefile.
 $(OBJS): Makefile
 
 -include $(DEPS)
+
+-include $(CCDEPS)
 
 
 # .PHONY: all clean mrproper
@@ -104,3 +94,14 @@ $(OBJS): Makefile
 # 	$(CXX) -o $@ -c $< $(CFLAGS)
 
 #$(CXX) -o $@ $^ $(LDFLAGS)
+
+
+# OBJECTS  := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+
+# $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+#     $(CC) $(CFLAGS) -c $< -o $@
+#     @echo "Compiled "$<" successfully!"
+
+# $(BINDIR)/$(TARGET): $(OBJECTS)
+#     $(LINKER) $@ $(LFLAGS) $(OBJECTS)
+#     @echo "Linking complete!"

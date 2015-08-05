@@ -1,7 +1,7 @@
 1     # infile version number
 150   # nx - number of grid cells in x dirn
-10    # ny - number of grid cells in y dirn
-4.e3  # dx - x resolution
+4     # ny - number of grid cells in y dirn
+40.e3 # dx - x resolution
 40.e3 # dy - y resolution
 0.    # x0 - 1st grid cell in x dirn
 0.    # y0 - 1st grid cell in y dirn

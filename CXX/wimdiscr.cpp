@@ -103,13 +103,13 @@ WimDiscr<T>::wimInit()
     Tmax = 25.;
     gravity = 9.81;
 
-    unifc = 0.75;
+    unifc = 0.7;
     unifh = 2.0;
-    dfloe_pack_init = 250.0;
+    dfloe_pack_init = 300.0;
 
     rho = 0.9;
     rhowtr = 1025.;
-    rhow = 1025.;
+    //rhow = 1025.;
     rhoi = rho*rhow;
     rhoice = 922.5;
     poisson = 0.3;
@@ -312,8 +312,8 @@ WimDiscr<T>::wimInit()
     double params[5];
     params[0] = young;
     params[1] = gravity;
-    params[2] = rhow;
-    params[3] = rhoi;
+    params[2] = rhowtr;
+    params[3] = rhoice;
     params[4] = poisson;
 
     double outputs[8];
@@ -795,7 +795,8 @@ WimDiscr<T>::wimRun()
     x_ext = nx*dx/1.e+03;
     y_ext = ny*dy/1.e+03;
     u_ref = amin + 0.7*(amax-amin);
-    duration = 1.0e3*x_ext/u_ref;
+    //duration = 1.0e3*x_ext/u_ref;
+    duration = vm["duration"].template as<double>();
 
     std::cout<<"x_ext= "<< x_ext <<"\n";
     std::cout<<"y_ext= "<< y_ext <<"\n";
@@ -803,9 +804,10 @@ WimDiscr<T>::wimRun()
     std::cout<<"duration= "<< duration <<"\n";
     std::cout<<"dt= "<< dt <<"\n";
 
-    nt = std::floor(duration/dt);
+    //nt = std::floor(duration/dt);
+    nt = std::round(duration/dt);
 
-    //std::cout<<"nt= "<< nt <<"\n";
+    std::cout<<"nt= "<< nt <<"\n";
 
     int cpt = 0;
     //nt = 1;
@@ -815,7 +817,7 @@ WimDiscr<T>::wimRun()
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
 
         value_type t_out = dt*cpt;
-        std::cout<<"T_OUT= "<< t_out <<"\n";
+        //std::cout<<"T_OUT= "<< t_out <<"\n";
 
         critter = !(cpt % vm["reps"].template as<int>()) && (vm["checkprog"].template as<bool>());
         if (critter)

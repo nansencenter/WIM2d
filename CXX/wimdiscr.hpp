@@ -163,8 +163,8 @@ WimDiscr<T>::wimGrid()
     y0 = vm["ymin"].template as<double>();
 
 
-    std::cout<<"x0= "<< x0 <<"\n";
-    std::cout<<"y0= "<< y0 <<"\n";
+    // std::cout<<"x0= "<< x0 <<"\n";
+    // std::cout<<"y0= "<< y0 <<"\n";
 
     for (int i = 0; i < nx; i++)
     {
