@@ -17,7 +17,7 @@ namespace WIMOPT
             ("nx", po::value<int>()->default_value( 150 ), "Record length in x direction")
             ("ny", po::value<int>()->default_value( 4 ), "Record length in y direction")
             ("dx", po::value<double>()->default_value( 4e+3 ), "Resolution in x direction")
-            ("dy", po::value<double>()->default_value( 4e+4 ), "Resolution in y direction")
+            ("dy", po::value<double>()->default_value( 4e+3 ), "Resolution in y direction")
             ("xmin", po::value<double>()->default_value( -298.e+3 ), "xmin")
             ("ymin", po::value<double>()->default_value( -60e+3 ), "ymin")
             ("nwavefreq", po::value<int>()->default_value( 1 ), "Number of wave frequency")

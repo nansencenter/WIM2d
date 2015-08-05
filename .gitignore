@@ -61,3 +61,5 @@ neXtSIMcoupling/run/*
 neXtSIMcoupling/tutorial/out/*
 
 fortran/numerics/test_advection/infile.txt
+
+CXX/run/outputs
