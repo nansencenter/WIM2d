@@ -17,9 +17,10 @@ import fns_plot_data as Fplt
 ##########################################################################
 mdir  = w2d+'/matlab/main/'
 fdir  = w2d+'/fortran/run/'
-cdir  = w2d+'/CXX/run/'
+cdir  = w2d+'/CXX/'
 if 1:
-   odir  = [cdir+'outputs',fdir+'out_io']
+   # odir  = [cdir+'outputs',fdir+'out_io']
+   odir  = [cdir+'outputs',fdir+'out']
 elif 0:
    odir  = [fdir+'out',fdir+'out_io']
    # odir  = [fdir+'out',fdir+'out_2']
@@ -52,7 +53,7 @@ elif OPT==3:
    print("\n************************************************")
    print("Checking progress files...")
    print("************************************************\n")
-   n_prog   = 1
+   n_prog   = 9
 ##########################################################################
 
 ##########################################################################
@@ -96,7 +97,7 @@ for j in range(2):
       stepno   = steps[n_prog]
       print("Checking results at time step "+stepno+" ...")
       print(outdir)
-      prog_fields = Fdat.fn_check_prog(outdir,stepno)
+      prog_fields = Fdat.fn_check_prog(outdir,stepno) # dictionary eg {'Hs':Hs_array,...} 
       arrays[j]   = prog_fields
       #############################################################
 

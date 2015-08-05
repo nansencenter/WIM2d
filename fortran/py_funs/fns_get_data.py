@@ -158,7 +158,6 @@ def fn_bfile_info(bfile):
             # have got down to list of variables
             do_vlist = 1
 
-   print(binfo)
    if binfo['Nrecs']!=len(vlist):
       raise ValueError('Inconsistent number of records in file: '+bfile)
 

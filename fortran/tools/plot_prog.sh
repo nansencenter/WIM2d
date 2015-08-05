@@ -2,12 +2,11 @@
 # (and of initial and final, if wanted)
 # run from "../run" folder
 tools="${WIM2D_PATH}/fortran/tools"
-P=`pwd`
 
 if [ $# -eq 0 ]
 then
    echo "Usage:"
-   echo "plot_prog.sh [1/0: do/don't make movie] [results directory (full path)]"
+   echo "plot_prog.sh [1/0: do/don't make movie] [results directory]"
    exit
 fi
 
@@ -17,6 +16,7 @@ outdir=$2
 # make png files from progress files
 # (if they exist)
 cd $outdir
+outdir=$(pwd)
 bindir=$outdir/binaries/prog
 
 afiles=($bindir/wim_prog*.a)
@@ -36,6 +36,7 @@ then
    # vbl_list="Hs Dmax taux tauy"
    vbl_list="Hs"
    cd $outdir/figs/prog
+   echo $(pwd)
 
    for vbl in $vbl_list
    do

@@ -107,10 +107,10 @@ WimDiscr<T>::wimInit()
     unifh = 2.0;
     dfloe_pack_init = 300.0;
 
-    rho = 0.9;
+    //rho = 0.9;
     rhowtr = 1025.;
     //rhow = 1025.;
-    rhoi = rho*rhow;
+    //rhoi = rho*rhow;
     rhoice = 922.5;
     poisson = 0.3;
     dmin = 20.;

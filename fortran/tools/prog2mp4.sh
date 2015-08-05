@@ -1,12 +1,22 @@
-P=`pwd` # run from figs/prog/ folder
-
-if [ $# -eq 1 ]
+if [ $# -eq 0 ]
+then
+   echo "Usage : prog2mp4.sh [ variable name eg Hs ]"
+   echo "or    : prog2mp4.sh [ variable name eg Hs ] [ path to figs/prog ]"
+   echo "NB needs to be run from figs/prog directory"
+   echo "(where the png files from plot_prog.py are kept)"
+   exit
+elif [ $# -eq 1 ]
 then
    vbl=$1
+elif [ $# -eq 2 ]
+then
+   vbl=$1
+   cd $2
 else
    vbl='Hs'
 fi
 
+P=`pwd` # run from figs/prog/ folder or pass in path there as 2nd argument
 mkdir tmp
 
 n=-1
