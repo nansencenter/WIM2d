@@ -48,23 +48,34 @@ if CHANGE_GRID:
    print('**************************************************')
 
 if CHANGE_WAVES:
-
-   Tmin  = 2.5 # min period
-   Tmax  = 25  # max period
-
    # change number of wave frequencies and directions
-   if 0:
-      # multiple frequencies, directions
-      nfreq = 25
-      ndir  = 16
-   elif 1:
-      # single frequency, multiple directions
-      nfreq = 1
-      ndir  = 16
+
+   infile   = 'infile_waves.txt'
+   if os.path.exists(infile):
+      # get info from infile
+      fid      = open(infile)
+      lines    = fid.readlines()
+      fid.close()
+
+      vers_no  = int  (lines[0].split()[0])
+      nfreq    = int  (lines[1].split()[0])
+      ndir     = int  (lines[2].split()[0])
+      Tmin     = float(lines[3].split()[0])
+      Tmax     = float(lines[4].split()[0])
+
    else:
-      # multiple frequencies, 1 dirn
-      nfreq = 25
-      ndir  = 1
+      # set here
+      Tmin  = 2.5 # min period
+      Tmax  = 25  # max period
+
+      if 1:
+         # single frequency, multiple directions
+         nfreq = 1
+         ndir  = 16
+      else:
+         # multiple frequencies, 1 dirn
+         nfreq = 25
+         ndir  = 1
 
    hfil  = '../header_files/wave_info.h'
 

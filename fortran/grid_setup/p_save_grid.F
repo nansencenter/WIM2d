@@ -11,17 +11,15 @@
 
       character(len=80) :: outdir,outdir2
       character(len=80) :: infile
-      integer,parameter :: testing  = 1
+      integer,parameter :: testing  = 0
 
       !! grid prams: set here or read in from infile_grid.txt
       integer  :: ii,jj,GRID_OPT
       real     :: reals(4)
       logical  :: fex
 
-      integer,parameter :: nfreq = 1
-      integer,parameter :: ndir  = 16
-      real,parameter    :: Tmin  = 2.5
-      real,parameter    :: Tmax  = 25.
+      integer :: nfreq,ndir
+      real    :: Tmin,Tmax
 
       if (testing.eq.1) then
          !!for testing
@@ -36,7 +34,7 @@
       !! main subroutine
       !! - define the grid
       infile   = 'infile_grid.txt'
-      inquire(file=infile,exist=fex) 
+      inquire(file=trim(infile),exist=fex) 
 
       if (fex) then
          !! read from infile
@@ -62,6 +60,20 @@
       call save_grid_info_hdr(outdir2,ii,jj,reals(1),reals(2))
 
       !! save main parameters to wave_info.h:
+      infile   = 'infile_waves.txt'
+      inquire(file=trim(infile),exist=fex) 
+      if (fex) then
+         !! read from infile
+         print*,' '
+         print*,'Reading ',infile
+         print*,' '
+         call read_infile_waves(infile,nfreq,ndir,Tmin,Tmax)
+      else
+         nfreq = 1
+         ndir  = 16
+         Tmin  = 2.5
+         Tmax  = 25.
+      end if
       call save_wave_info_hdr(outdir2,nfreq,ndir,Tmin,Tmax)
 
       end program p_save_grid
@@ -81,7 +93,6 @@
 
  111  format(i1.1,a)
  114  format(i4.4,a)  
- 211  format(e9.2,a)  
  212  format(f9.2,a)  
 
       open(unit=fid,file=infile,action='read')
@@ -104,7 +115,48 @@
       read(fid,111)  ,GRID_OPT   ,ctmp
 
       close(fid)
-      end subroutine
+      end subroutine read_infile_grid
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine read_infile_waves(infile,nfreq,ndir,Tmin,Tmax)
+      !use mod_save_grid_vars
+      implicit none
+
+      character(len=*),intent(in)   :: infile
+      integer,intent(out)           :: nfreq,ndir
+      real,intent(out)              :: Tmin,Tmax
+      character(len=80)             :: ctmp
+      integer,parameter             :: vers_no0 = 1
+      integer                       :: fid,vers_no
+
+ 111  format(i1.1,a)
+ 112  format(i2.2,a)  
+ 113  format(i3.3,a)  
+ 212  format(f5.2,a)  
+
+      open(unit=fid,file=infile,action='read')
+      read(fid,111), vers_no,ctmp
+
+      if (vers_no.ne.vers_no0) then
+         print*,'Wrong version number for '//trim(infile)
+         print*,'Version number : ',vers_no
+         print*,'Should be      : ',vers_no0
+         close(fid)
+         stop
+      end if
+
+      write(ctmp,212) 2.5
+      print*,ctmp
+      write(ctmp,212) 25.
+      print*,ctmp
+      read(fid,112)  ,nfreq      ,ctmp !nx
+      read(fid,113)  ,ndir       ,ctmp !ny
+      read(fid,212)  ,Tmin       ,ctmp !dx
+      read(fid,212)  ,Tmax       ,ctmp !dy
+
+      close(fid)
+      end subroutine read_infile_waves
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

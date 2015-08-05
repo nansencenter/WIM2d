@@ -1,14 +1,15 @@
 # int_prams - all fortran format '(i2.2)'
 01  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
-02  # ADV_DIM        : dimension of advection scheme (1/2)
+01  # ADV_DIM        : dimension of advection scheme (1/2)
 02  # ADV_OPT        : 0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-01  # DO_BREAKING    : 0/1, do/don't break ice
-01  # STEADY         : 0/1, do/don't top-up incident waves each time-step
-01  # DO_CHECK_FINAL : 0/1, do/don't dump final state to binary file
-01  # DO_CHECK_PROG  : 0/1, do/don't dump intermediate states to binary files
-01  # DO_CHECK_INIT  : 0/1, do/don't dump initial states to binary files
+01  # DO_BREAKING    : 1/0, do/don't break ice
+01  # STEADY         : 1/0, do/don't top-up incident waves each time-step
+01  # DO_ATTEN       : 1/0, do/don't do attenuation NB this is not implemented in f2py/mex versions of int_prams
+01  # DO_CHECK_FINAL : 1/0, do/don't dump final state to binary file
+01  # DO_CHECK_PROG  : 1/0, do/don't dump intermediate states to binary files
+01  # DO_CHECK_INIT  : 1/0, do/don't dump initial states to binary files
 
 # real_prams:
 0.549E+10   # Young's modulus (Pa)                             - fortran format '(e10.3)'
-13.00       # Robinson-Palmer viscosity parameter (Pa/(m/s))   - fortran format '(f5.2)'
-43200.00    # duration of simulation (seconds)                 - fortran format '(f7.2)'
+0.00       # Robinson-Palmer viscosity parameter (Pa/(m/s))   - fortran format '(f5.2)'
+21600.00    # duration of simulation (seconds)                 - fortran format '(f7.2)'

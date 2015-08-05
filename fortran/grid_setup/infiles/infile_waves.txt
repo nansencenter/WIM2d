@@ -1,0 +1,5 @@
+1     # infile version number
+01    # nfreq - number of wave frequencies (fortran format i2.2)
+016   # ndir  - number of wave directions  (fortran format i3.3)
+02.50 # Tmin  - min wave period            (fortran format f5.2)
+25.00 # Tmin  - min wave period            (fortran format f5.2)

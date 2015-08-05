@@ -16,6 +16,7 @@ outdir=$2
 # make png files from progress files
 # (if they exist)
 cd $outdir
+outdir=`pwd` # change to full path
 bindir=$outdir/binaries/prog
 
 afiles=($bindir/wim_prog*.a)
@@ -28,7 +29,6 @@ fi
 echo In `pwd`:
 echo python $tools/plot_prog.py
 python $tools/plot_prog.py
-cd $P
 
 if [ $MKMOV -eq 1 ]
 then
