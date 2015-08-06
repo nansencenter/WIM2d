@@ -10,6 +10,7 @@ fortran/run/infile_nonIO.txt
 fortran/run/infile_dir.txt
 fortran/run/inputs/*
 fortran/run/out/*
+fortran/run/out_1d/*
 fortran/run/out_2/*
 fortran/run/prog/*
 fortran/run/out_io/*

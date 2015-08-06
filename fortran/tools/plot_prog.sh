@@ -44,5 +44,6 @@ then
    done
 else
    echo To make movie
-   echo "$tools/prog2mp4.sh Hs (or Dmax,taux,tauy)" $outdir/figs/prog
+   echo "$tools/prog2mp4.sh Hs" $outdir/figs/prog
+   echo "(can also use eg Dmax,taux,tauy)"
 fi
