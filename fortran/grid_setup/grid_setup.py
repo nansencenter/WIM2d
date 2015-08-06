@@ -51,6 +51,8 @@ if CHANGE_WAVES:
    # change number of wave frequencies and directions
 
    infile   = 'infile_waves.txt'
+   hfil     = '../header_files/wave_info.h'
+
    if os.path.exists(infile):
       # get info from infile
       fid      = open(infile)
@@ -67,17 +69,8 @@ if CHANGE_WAVES:
       # set here
       Tmin  = 2.5 # min period
       Tmax  = 25  # max period
-
-      if 1:
-         # single frequency, multiple directions
-         nfreq = 1
-         ndir  = 16
-      else:
-         # multiple frequencies, 1 dirn
-         nfreq = 25
-         ndir  = 1
-
-   hfil  = '../header_files/wave_info.h'
+      nfreq = 1   # no of freq's
+      ndir  = 16  # no of dir's
 
    print(' ')
    print('**************************************************')

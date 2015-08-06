@@ -55,7 +55,8 @@ elif OPT==3:
 ##########################################################################
 arrays   = 2*[0]
 for j in range(2):
-   bindir   = odir[j]+'/binaries'
+   outdir   = odir[j]
+   bindir   = outdir+'/binaries'
 
    if OPT==1:
 

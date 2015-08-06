@@ -18,7 +18,10 @@ outdir   = os.getcwd()
 bindir   = outdir+'/binaries'
 figdir   = outdir+'/figs'
 
-grid_prams  = Fdat.fn_check_grid(bindir)
+if not os.path.exists(bindir):
+   raise ValueError('No binaries folder in current directory')
+else:
+   grid_prams  = Fdat.fn_check_grid(bindir)
 
 ##########################################################################
 # Make plots
@@ -83,8 +86,8 @@ if PLOT_PROG:
    ################################################################
    print('\n**********************************************************************')
    print('to make movie, type')
-   print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs figs/prog')
+   print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs '+outdir+'/figs/prog')
    print('or')
-   print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax figs/prog')
+   print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax '+outdir+'/figs/prog')
    print('**********************************************************************\n')
    ################################################################

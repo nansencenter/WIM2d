@@ -58,8 +58,12 @@ mv $mov $outdir2
 cd ..
 rm -r tmp
 
-# play the movie (mac)
-# echo open -a /Applications/QuickTime\\ Player.app "$outdir2/$mov"
-# open -a /Applications/QuickTime\ Player.app "$outdir2/$mov"
-echo open "$outdir2/$mov"
-open "$outdir2/$mov"
+os=`uname`
+if [ $os == "Darwin" ]
+then
+   # play the movie (mac)
+   echo open "$outdir2/$mov"
+   open "$outdir2/$mov"
+else
+   echo "Movie = $outdir2/$mov"
+fi

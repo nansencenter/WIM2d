@@ -69,9 +69,9 @@ if PROG_OPT==1:
 
    print('\n**********************************************************************')
    print('to make movie, type')
-   print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs figs/prog_profiles')
+   print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs '+outdir+'/figs/prog_profiles')
    print('or')
-   print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax figs/prog_profiles')
+   print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax '+outdir+'/figs/prog_profiles')
    print('**********************************************************************\n')
 
 elif PROG_OPT==2:
