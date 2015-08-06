@@ -6,7 +6,7 @@ tools="${WIM2D_PATH}/fortran/tools"
 if [ $# -eq 0 ]
 then
    echo "Usage:"
-   echo "plot_prog.sh [1/0: do/don't make movie] [root results directory ie with binaries, log etc]"
+   echo "plot_prog_profiles.sh [1/0: do/don't make movie] [root results directory ie with binaries, log etc]"
    exit
 fi
 
@@ -27,15 +27,15 @@ then
 fi
 
 echo In `pwd`:
-echo python $tools/plot_prog.py
-python $tools/plot_prog.py
+echo python $tools/plot_prog_profiles.py
+python $tools/plot_prog_profiles.py
 
 if [ $MKMOV -eq 1 ]
 then
    # make movies of these variables:
    # vbl_list="Hs Dmax taux tauy"
    vbl_list="Hs"
-   cd $outdir/figs/prog
+   cd $outdir/figs/prog_profiles
    echo $(pwd)
 
    for vbl in $vbl_list
@@ -45,6 +45,6 @@ then
    done
 else
    echo To make movie
-   echo "$tools/prog2mp4.sh Hs" $outdir/figs/prog
+   echo "$tools/prog2mp4.sh Hs" $outdir/figs/prog_profiles
    echo "(can also use eg Dmax,taux,tauy)"
 fi

@@ -48,10 +48,10 @@ def fn_check_grid(outdir):
    # from binary files
 
    ###########################################################
-   afile    = outdir+'/wim_grid.a'
-   bfile    = outdir+'/wim_grid.b'
-   fields   = fn_read_general_binary(afile)
-   aliases  = key_aliases(inverse=True)
+   afile       = outdir+'/wim_grid.a'
+   bfile       = outdir+'/wim_grid.b'
+   fields,info = fn_read_general_binary(afile)
+   aliases     = key_aliases(inverse=True)
 
    grid_prams  = {}
    keys        = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
@@ -82,10 +82,10 @@ def fn_check_grid(outdir):
 ##############################################################
 def fn_check_init(outdir):
    # routine to get initial fields from binary files:
-   afile    = outdir+'/wim_init.a'
-   bfile    = outdir+'/wim_init.b'
-   fields   = fn_read_general_binary(afile)
-   aliases  = key_aliases(inverse=True)
+   afile       = outdir+'/wim_init.a'
+   bfile       = outdir+'/wim_init.b'
+   fields,info = fn_read_general_binary(afile)
+   aliases     = key_aliases(inverse=True)
    
    ###########################################################
    ## ice fields
@@ -193,16 +193,16 @@ def fn_read_general_binary(afile):
    ###########################################################
    
    # outputs
-   return out
+   return out,binfo
 ##############################################################
 
 ##############################################################
 def fn_check_out_bin(outdir):
    # routine to get output fields from binary files:
-   afile    = outdir+'/wim_out.a'
-   bfile    = outdir+'/wim_out.b'
-   fields   = fn_read_general_binary(afile)
-   aliases  = key_aliases(inverse=True)
+   afile       = outdir+'/wim_out.a'
+   bfile       = outdir+'/wim_out.b'
+   fields,info = fn_read_general_binary(afile)
+   aliases     = key_aliases(inverse=True)
    
    ###########################################################
    ## out fields
@@ -246,10 +246,10 @@ def fn_check_prog(outdir,cts):
       cts   = fmt %(cts)
       print(cts0,cts)
 
-   afile    = outdir+'/binaries/prog/wim_prog'+cts+'.a'
-   bfile    = outdir+'/binaries/prog/wim_prog'+cts+'.b'
-   fields   = fn_read_general_binary(afile)
-   aliases  = key_aliases(inverse=True)
+   afile       = outdir+'/binaries/prog/wim_prog'+cts+'.a'
+   bfile       = outdir+'/binaries/prog/wim_prog'+cts+'.b'
+   fields,info = fn_read_general_binary(afile)
+   aliases     = key_aliases(inverse=True)
    
    ###########################################################
    ## out fields

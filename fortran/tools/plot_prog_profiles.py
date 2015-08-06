@@ -18,128 +18,107 @@ outdir   = os.getcwd()
 bindir   = outdir+'/binaries'
 figdir   = outdir+'/figs'
 
-grid_prams  = Fdat.fn_check_grid(bindir)
+if not os.path.exists(bindir):
+   raise ValueError('No binaries folder in current directory')
+else:
+   grid_prams  = Fdat.fn_check_grid(bindir)
 
 ##########################################################################
 # Make plots
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
-PROG_OPT    = 1
+PROG_OPT = 1
 ##########################################################################
 
 ################################################################
 # Plot progress files (if they exist)
 pdir        = bindir+'/prog'
 prog_files  = os.listdir(pdir)
-figdir3     = figdir+'/prog'
+figdir3     = figdir+'/prog_profiles'
 if not os.path.exists(figdir3):
    os.mkdir(figdir3)
 
-steps       = []
-for pf in prog_files:
-   if '.a'==pf[-2:]:
-      stepno   = pf.strip('wim_prog').strip('.a')
-      steps.append(stepno)
-
 if PROG_OPT==1:
-   ################################################################
-   # Plot as profiles on different graphs (eg test advection)
-   cols     = ['k']
-   lstil    = ['-']
-
-   figdir3     = figdir+'/prog'
-   first_call  = True
-   xx          = grid_prams['X'][:,0]
-   labs        = ['$x$, km','$H_s$, m']
-
-   # make dir for progress plots
-   if (not os.path.exists(figdir3)) and len(steps)>0:
-      os.mkdir(figdir3)
-
-   for stepno in steps:
-      print("Plotting results at time step "+stepno+" ...")
-      prog_fields = Fdat.fn_check_prog(outdir,stepno)
-      figdir3_0   = figdir3+'/'+stepno
-
-      Hs_n  = prog_fields['Hs'][:,0]
-      if first_call:
-         Hs_0        = prog_fields['Hs'][:,0]
-         fig         = None
-         first_call  = False
-
-      fig   = Fplt.plot_1d(xx/1.e3,Hs_n,labs=labs,f=fig,color='k',linestyle='-')
-      if 0:
-         # TODO: calc & plot "Hs_exact" from speed in x direction
-
-         ################################################
-         # set manually
-         T        = 12. # wave period (s)
-         wavdir0  = -90.# waves-from dirn (degrees)
-         CFL      = 0.7
-         ################################################
-
-         ################################################
-         dir0     = -np.pi/180.*(90.+wavdir0)   # waves-to dirn (radians)
-         om       = 2*np.pi/T
-         g        = 9.81
-         k        = om*om/g
-         cp       = om/k
-         cg       = cp/2.
-         ug       = cg*np.cos(dir0)
+   # plot each variable, save different fig for each time step
+   for pf in prog_files:
+      if '.a'==pf[-2:]:
+         stepno   = pf.strip('wim_prog').strip('.a')
+         # steps.append(stepno)
          #
-         dx    = xx[1]-xx[0]
-         dt    = CFL*dx/cg
-         xt    = xx+ug*int(stepno)*dt
-         fig   = Fplt.plot_1d(xt/1.e3,Hs_0,labs=labs,f=fig,color='r',linestyle='--')
-         ################################################
+         afile    = pdir+'/'+pf
+         print(afile)
+         fields,info = Fdat.fn_read_general_binary(afile)
+         figdir3B = figdir3+'/'+stepno
+         #
+         field_profiles = {}
+         for key in fields.keys():
+            F  = fields[key][:,0]
+            field_profiles.update({key:F})
+         #
+         grid_profiles = {}
+         for key in grid_prams.keys():
+            try:
+               F  = grid_prams[key][:,0]
+            except:
+               F  = grid_prams[key]
+            grid_profiles.update({key:F})
 
-      plt.xlim([xx.min()/1.e3,xx.max()/1.e3])
-      plt.ylim([0.,2.*Hs_0.max()])
+         grid_profiles['ny']  = 1
+         Fplt.fn_plot_gen(grid_profiles,field_profiles,figdir3B)
 
-      if not os.path.exists(figdir3_0):
-         os.mkdir(figdir3_0)
-      figname  = figdir3_0+'/Hs.png'
-      print('saving to '+figname+'...\n')
-      plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
-      plt.close()
-      fig.clf()
-
-   print('**********************************************************************')
-   print('to make movie, go to figs/prog and type')
-   print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs')
+   print('\n**********************************************************************')
+   print('to make movie, type')
+   print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs '+outdir+'/figs/prog_profiles')
+   print('or')
+   print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax '+outdir+'/figs/prog_profiles')
    print('**********************************************************************\n')
-   ################################################################
 
 elif PROG_OPT==2:
    ################################################################
-   # Plot as profiles on same graph (test convergence to steady)
-   print(steps)
-   steps2plot  = range(len(steps))
+   # Plot 1 variable as profiles on same graph (eg to test convergence to steady)
    #
    cols     = ['k','b','r','g','m','c']
    lstil    = ['-','--','-.',':']
    Nc       = len(cols)
+   Ns       = len(lstil)
    loop_c   = -1
-   loop_s   = 0
-   xx       = grid_prams['X'][:,0]
-   fig      = None
-   labs     = ['$x$, km','$H_s$, m']
-
-   for nstep in steps2plot:
-      out_fields  = Fdat.fn_check_prog(outdir,steps[nstep]) # load ice/wave conditions from binaries
-      Hs_n        = out_fields['Hs']
-      #
-      if loop_c==Nc-1:
-         loop_c   = 0
-         loop_s   = loop_s+1
-      else:
-         loop_c   = loop_c+1
-
-      fig      = Fplt.plot_1d(xx,Hs_n,labs=labs,f=fig,color=cols[loop_c],linestyle=lstil[loop_s])
+   loop_s   = -1
+   xx       = grid_prams['X'][:,0]/1.e3
+   if 1:
+      vname = 'Hs'
+      labs  = ['$x$, km','$H_s$, m']
+   else:
+      vname = 'tau_x'
+      labs  = ['$x$, km',r'$\tau_x$, Pa']
    #
-   figname  = figdir+'/convergence2steady.png'
-   print('saving to '+figname+'...')
-   plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   fig.clf()
+   fig   = plt.figure()
+   ax    = fig.add_subplot(1,1,1)
+   lines = []
+   legs  = []
+
+
+   for pf in prog_files:
+      if '.a'==pf[-2:]:
+         stepno   = pf.strip('wim_prog').strip('.a')
+         afile    = pdir+'/'+pf
+         print(afile)
+         #
+         out_fields,info   = Fdat.fn_read_general_binary(afile) # load ice/wave conditions from binaries
+         Hs_n              = out_fields[vname][:,0]
+         t_prog            = info['t_out']/3600.   # time in h
+         leg               = '%5.1fh' % (t_prog)
+         #
+         loop_c   = np.mod(loop_c+1,Nc)
+         if loop_c==0:
+            loop_s   = np.mod(loop_s+1,Ns)
+
+         fig,ax,line = Fplt.plot_1d(xx,Hs_n,labs=labs,pobj=[fig,ax],color=cols[loop_c],linestyle=lstil[loop_s])
+         lines.append(line)
+         legs.append(leg)
+   #
+   ax.legend(lines,legs)
+   figname  = figdir+'/time_dep_'+vname+'.png'
+   print('Saving to '+figname+'...')
+   fig.savefig(figname,bbox_inches='tight',pad_inches=0.05)
+   plt.close(fig)

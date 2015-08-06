@@ -20,7 +20,6 @@
          !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
 
       integer,parameter :: REF_Hs_ICE  = 0
-      integer,parameter :: DO_ATTEN    = 1
       integer,parameter :: USE_ICE_VEL = 0
       !!
       real,parameter    :: CFL      = 0.7
@@ -40,7 +39,7 @@
 
       contains
 
-      subroutine wim_init(STEADY)
+      subroutine wim_init(STEADY,DO_ATTEN)
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
@@ -51,7 +50,7 @@
 
       implicit none
 
-      integer, intent(in) :: STEADY
+      integer, intent(in) :: STEADY,DO_ATTEN
       real     :: PI,tmp
       real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
@@ -191,7 +190,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       subroutine wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
-     &                     ,DO_BREAKING,STEADY)
+     &                     ,DO_BREAKING,STEADY,DO_ATTEN)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -203,7 +202,7 @@
       implicit none
 
       integer,intent(in)   :: SCATMOD,ADV_DIM,ADV_OPT                   &
-     &                        ,DO_BREAKING,STEADY
+     &                        ,DO_BREAKING,STEADY,DO_ATTEN
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &

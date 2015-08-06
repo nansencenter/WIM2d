@@ -10,7 +10,25 @@ from matplotlib import ticker
 import fns_get_data as Fdat
 
 #######################################################################
-def plot_1d(x,y,labs=None,pobj=None,**kwargs):
+def step_1d(x,y):
+   # vectors for constant-panel plotting
+
+   nx       = len(x)
+   dx       = x[1]-x[0]
+   #
+   xx       = np.zeros(2*nx)
+   xx[::2]  = x-.5*dx
+   xx[1::2] = x+.5*dx
+   #
+   yy       = np.zeros(2*nx)
+   yy[::2]  = y
+   yy[1::2] = y
+
+   return xx,yy
+#######################################################################
+
+#######################################################################
+def plot_1d(x,y,labs=None,plot_steps=True,pobj=None,**kwargs):
    # f  = plt.figure(figsize=[6,6],dpi=50)
    # plt.pcolor(grid_prams.X,grid_prams.Y,ice_fields.icec,cmap=cm.jet,vmax=Vmax,vmin=Vmin)
 
@@ -25,6 +43,9 @@ def plot_1d(x,y,labs=None,pobj=None,**kwargs):
       pobj  = f,ax
    else:
       f,ax  = pobj
+
+   if plot_steps:
+      x,y   = step_1d(x,y)
 
    line ,= ax.plot(x,y,**kwargs)
    pobj  = f,ax,line
@@ -176,7 +197,7 @@ def cmap_3d(x,y,z,labs,pobj=None,zlims=None):
 #######################################################################
 
 #######################################################################
-def fn_plot_gen(grid_prams,fields,figdir):
+def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
 
    from matplotlib import pyplot as plt
 
@@ -187,8 +208,10 @@ def fn_plot_gen(grid_prams,fields,figdir):
    ny = grid_prams['ny']
    dx = grid_prams['dx']
    dy = grid_prams['dy']
-   if ny==0:
-      x  = grid_prams['X'][:,0]/1.e3
+   if ny==1:
+      x  = grid_prams['X']/1.e3
+      if x.ndim==2:
+         x  = x[:,0]
    else:
       x  = grid_prams['X'][:,0]+dx/2.
       x  = np.concatenate([[x[0]-dx],x])/1.e3
@@ -207,25 +230,43 @@ def fn_plot_gen(grid_prams,fields,figdir):
              'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees',\
              'ICE_MASK':'Ice mask','WAVE_MASK':'Wave mask'}
 
+   # Typical limits for parameters
+   zlims  = {'icec':[0,1],'iceh':[0,5],'dfloe':[0,300],\
+             'taux':[-.5,.5],'tauy':[-.05,.05],\
+             'Hs':[0,5],'Tp':[10,20],'mwd':[-180,180],\
+             'ICE_MASK':[0,1],'WAVE_MASK':[0,1]}
+
    # allow for other variations of key names
    aliases  = {'Dmax':'dfloe',\
                'cice':'icec',\
                'hice':'iceh',\
                'tau_x':'taux',\
                'tau_y':'tauy'}
+
    for key in aliases.keys():
-      figs.update({key:figs[aliases[key]]})
-      labs.update({key:labs[aliases[key]]})
+      key2  = aliases[key]
+      figs.update ({key:figs [key2]})
+      labs.update ({key:labs [key2]})
+      zlims.update({key:zlims[key2]})
+
+   if zlims_in is not None:
+      for key in zlims_in.keys():
+         zlims[key]  = zlims_in[key]
 
    # make plots
    for key in fields.keys():
       fig   = figdir+'/'+figs[key]
+      zlim  = zlims[key]
       if ny>1:
          f,ax  = cmap_3d(x,y,fields[key].transpose(),\
-                        ['$x$, km','$y$, km',labs[key]])
+                         labs=['$x$, km','$y$, km',labs[key]],\
+                         zlims=zlim)
       else:
-         f,ax,line   = plot_1d(x,fields[key][:,0],\
-                               ['$x$, km',labs[key]])
+         F  = fields[key]
+         if F.ndim==2:
+            F  = F[:,0]
+         f,ax,line   = plot_1d(x,F,labs=['$x$, km',labs[key]])
+         ax.set_ylim(zlim)
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close(f)
    return
