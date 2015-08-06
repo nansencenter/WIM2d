@@ -10,7 +10,25 @@ from matplotlib import ticker
 import fns_get_data as Fdat
 
 #######################################################################
-def plot_1d(x,y,labs=None,pobj=None,**kwargs):
+def step_1d(x,y):
+   # vectors for constant-panel plotting
+
+   nx       = len(x)
+   dx       = x[1]-x[0]
+   #
+   xx       = np.zeros(2*nx)
+   xx[::2]  = x-.5*dx
+   xx[1::2] = x+.5*dx
+   #
+   yy       = np.zeros(2*nx)
+   yy[::2]  = y
+   yy[1::2] = y
+
+   return xx,yy
+#######################################################################
+
+#######################################################################
+def plot_1d(x,y,labs=None,plot_steps=True,pobj=None,**kwargs):
    # f  = plt.figure(figsize=[6,6],dpi=50)
    # plt.pcolor(grid_prams.X,grid_prams.Y,ice_fields.icec,cmap=cm.jet,vmax=Vmax,vmin=Vmin)
 
@@ -25,6 +43,9 @@ def plot_1d(x,y,labs=None,pobj=None,**kwargs):
       pobj  = f,ax
    else:
       f,ax  = pobj
+
+   if plot_steps:
+      x,y   = step_1d(x,y)
 
    line ,= ax.plot(x,y,**kwargs)
    pobj  = f,ax,line
