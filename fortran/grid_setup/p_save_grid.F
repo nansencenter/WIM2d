@@ -54,6 +54,14 @@
          reals(4) = 0.     !y0
       end if
 
+      print*,'nx     : ',ii
+      print*,'ny     : ',jj
+      print*,'dx (m) : ',reals(1)
+      print*,'dy (m) : ',reals(2)
+      print*,'x0 (m) : ',reals(3)
+      print*,'y0 (m) : ',reals(4)
+      print*,' '
+
       call set_grid(outdir,ii,jj,GRID_OPT,reals)
 
       !! save main parameters to grid_info.h:
@@ -64,7 +72,6 @@
       inquire(file=trim(infile),exist=fex) 
       if (fex) then
          !! read from infile
-         print*,' '
          print*,'Reading ',infile
          print*,' '
          call read_infile_waves(infile,nfreq,ndir,Tmin,Tmax)
@@ -74,6 +81,13 @@
          Tmin  = 2.5
          Tmax  = 25.
       end if
+
+      print*,'nfreq    : ',nfreq
+      print*,'ndir     : ',ndir
+      print*,'Tmin (s) : ',Tmin
+      print*,'Tmax (s) : ',Tmax
+      print*,' '
+
       call save_wave_info_hdr(outdir2,nfreq,ndir,Tmin,Tmax)
 
       end program p_save_grid
@@ -146,10 +160,6 @@
          stop
       end if
 
-      write(ctmp,212) 2.5
-      print*,ctmp
-      write(ctmp,212) 25.
-      print*,ctmp
       read(fid,112)  ,nfreq      ,ctmp !nx
       read(fid,113)  ,ndir       ,ctmp !ny
       read(fid,212)  ,Tmin       ,ctmp !dx
