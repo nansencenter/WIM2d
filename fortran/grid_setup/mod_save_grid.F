@@ -40,6 +40,7 @@
       !! write .h file
       hfile = trim(outdir)//'/wave_info.h'
       print*,'Making header file : ',hfile
+      print*,' '
 
       open(unit=2,file=trim(hfile),status = 'replace')
 
@@ -76,6 +77,7 @@
       !! write .h file
       hfile = trim(outdir)//'/grid_info.h'
       print*,'Making header file : ',hfile
+      print*,' '
 
       open(unit=2,file=trim(hfile),status = 'replace')
 
