@@ -45,8 +45,10 @@ if 1:
    else:
       # strip
       strip_width = 100.e3
-      xe          = .5*(gf['X'].min()+gf['X'].max())\
-                     -.7*.5*(-gf['X'].min()+gf['X'].max())
+      xav         = .5*(gf['X'].min()+gf['X'].max())
+      x0          = gf['X'].min()-.5*gf['dx']
+      xm          = .5*(dx+gf['X'].max()-gf['X'].min())
+      xe          = xav -.7*xm
       ICEMASK     = 1+0*gf['X']
       #
       ICEMASK[abs(gf['X'])<xe]               = 0.
@@ -58,8 +60,7 @@ if 1:
       D_in  = 100.
 
    # edge of wave mask
-   xw                   = .5*(gf['X'].min()+gf['X'].max())\
-                           -.8*.5*(-gf['X'].min()+gf['X'].max())
+   xw                   = xav -.8*xm
    WAVEMASK             = 1+0*gf['X']
    WAVEMASK[gf['X']>xw] = 0.
    WAVEMASK[gfl>0]      = 0.

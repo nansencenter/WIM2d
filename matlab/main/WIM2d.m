@@ -716,12 +716,15 @@ end
 
 SV_BIN   = 1;
 reps_ab  = 10;
+SV_SPEC  = 1;% save final spectrum to file
+
 if (SV_BIN==1) & (MEX_OPT==0)
    %% save matlab files as binaries
    %% to matlab results
-   !mkdir -p m_out
-   !mkdir -p m_out/binaries
-   !mkdir -p m_out/binaries/prog
+   !mkdir -p  m_out
+   !mkdir -p  m_out/binaries
+   !rm    -rf m_out/binaries/prog
+   !mkdir -p  m_out/binaries/prog
    dims  = [nx,ny,nw,ndir];
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -760,8 +763,9 @@ if (SV_BIN==1) & (MEX_OPT==0)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% 1st prog file
    Fdir  = 'm_out/binaries/prog';
-   nnn   = num2str(0,'%3.3d');
-   Froot = [Fdir,'/wim_prog',nnn];
+   cn    = num2str(nt);
+   cn(:) = '0';
+   Froot = [Fdir,'/wim_prog',cn];
    %%
    pairs = {};
    pairs{end+1}   = {'Dmax',ice_fields.Dmax};
@@ -1338,16 +1342,20 @@ else
       if (SV_BIN==1)&(mod(n,reps_ab)==0)&(MEX_OPT==0)
          %% save matlab files as binaries
          %% to matlab results
-         Fdir  = 'm_out/binaries/prog';
-         nnn   = num2str(n,'%3.3d');
-         Froot = [Fdir,'/wim_prog',nnn];
+         Fdir              = 'm_out/binaries/prog';
+         cnt               = num2str(nt);
+         cnt(:)            = '0';
+         cn                = num2str(n);
+         lc                = length(cn);
+         cnt(end+1-lc:end) = cn;
+         Froot = [Fdir,'/wim_prog',cnt];
          %%
          pairs = {};
-         pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+         pairs{end+1}   = {'Dmax' ,ice_fields.Dmax};
          pairs{end+1}   = {'tau_x',ice_fields.tau_x};
          pairs{end+1}   = {'tau_y',ice_fields.tau_y};
-         pairs{end+1}   = {'Hs',wave_fields.Hs};
-         pairs{end+1}   = {'Tp',wave_fields.Tp};
+         pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
+         pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
          %%
          dims  = [nx,ny,nw,ndir];
          fn_save_binary(Froot,dims,n*dt,pairs);
@@ -1363,11 +1371,11 @@ if (SV_BIN==1)&(MEX_OPT==0)
    Froot = [Fdir,'/wim_out'];
    %%
    pairs = {};
-   pairs{end+1}   = {'Dmax',ice_fields.Dmax};
+   pairs{end+1}   = {'Dmax' ,ice_fields.Dmax};
    pairs{end+1}   = {'tau_x',ice_fields.tau_x};
    pairs{end+1}   = {'tau_y',ice_fields.tau_y};
-   pairs{end+1}   = {'Hs',wave_fields.Hs};
-   pairs{end+1}   = {'Tp',wave_fields.Tp};
+   pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
+   pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
    %%
    fn_save_binary(Froot,dims,duration,pairs);
 end
@@ -1415,6 +1423,16 @@ fprintf(logid,'%s,%7.1f\n','Elapsed time (min):',t0_fac*(t1-t0));
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n',' ');
 fclose(logid);
+
+if SV_SPEC
+   %% save final directional spectrum
+   !mkdir -p m_out
+   freq_vec = om_vec/2/pi;
+   S_inc    = wave_stuff.dir_spec;
+   Hs       = wave_fields.Hs;
+   save('m_out/Sdir.mat','Sdir','wavdir','freq_vec','grid_prams','S_inc','cice','Hs');
+   clear freq_vec S_inc;
+end
 
 if TEST_FINAL_SPEC==1
    disp(' ');
