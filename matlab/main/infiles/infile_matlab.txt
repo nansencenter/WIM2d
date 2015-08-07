@@ -10,7 +10,7 @@
 # only numerical values accepted currently
 
 # mex function to use
-2     # MEX_OPT   : 0 = pure matlab; 1 = pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes
+0     # MEX_OPT   : 0 = pure matlab; 1 = pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes
                   # 2 = pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
 
 # numerical parameters
@@ -27,7 +27,7 @@
 0     # x0  : min(X(:))
 0     # y0  : min(Y(:))
 150   # nx  : grid size in x dirn
-10    # ny  : grid size in y dirn
+01    # ny  : grid size in y dirn
 4e3   # dx  : grid resolution in x dirn (m)
 4e3   # dy  : grid resolution in y dirn (m)
 
