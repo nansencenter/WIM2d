@@ -132,6 +132,8 @@ mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
 
 all:	py exec mex1 mex2 mex3
 
+All:	py exec
+
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
 $(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
