@@ -54,12 +54,14 @@
          reals(4) = 0.     !y0
       end if
 
-      print*,'nx     : ',ii
-      print*,'ny     : ',jj
-      print*,'dx (m) : ',reals(1)
-      print*,'dy (m) : ',reals(2)
-      print*,'x0 (m) : ',reals(3)
-      print*,'y0 (m) : ',reals(4)
+      print*,'nx            : ',ii
+      print*,'ny            : ',jj
+      print*,'dx       (km) : ',reals(1)/1.e3
+      print*,'dy       (km) : ',reals(2)/1.e3
+      print*,'x0       (km) : ',reals(3)/1.e3
+      print*,'y0       (km) : ',reals(4)/1.e3
+      print*,'x extent (km) : ',ii*reals(1)/1.e3
+      print*,'y extent (km) : ',jj*reals(2)/1.e3
       print*,' '
 
       call set_grid(outdir,ii,jj,GRID_OPT,reals)
