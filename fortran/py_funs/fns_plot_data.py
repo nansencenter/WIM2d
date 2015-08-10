@@ -237,11 +237,7 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
              'ICE_MASK':[0,1],'WAVE_MASK':[0,1]}
 
    # allow for other variations of key names
-   aliases  = {'Dmax':'dfloe',\
-               'cice':'icec',\
-               'hice':'iceh',\
-               'tau_x':'taux',\
-               'tau_y':'tauy'}
+   aliases  = Fdat.key_aliases()
 
    for key in aliases.keys():
       key2  = aliases[key]
@@ -275,56 +271,8 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
 #######################################################################
 def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 
-   from matplotlib import pyplot as plt
-
-   if not os.path.exists(figdir):
-      os.mkdir(figdir)
-
-   nx = grid_prams['nx']
-   ny = grid_prams['ny']
-   dx = grid_prams['dx']
-   dy = grid_prams['dy']
-   if ny==1:
-      x  = grid_prams['X'][:,0]/1.e3
-   else:
-      x  = grid_prams['X'][:,0]+dx/2.
-      x  = np.concatenate([[x[0]-dx],x])/1.e3
-      y  = grid_prams['Y'][0,:]+dy/2.
-      y  = np.concatenate([[y[0]-dy],y])/1.e3
-
-   # ice fields
-   # dictionary of figure names
-   figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png'}
-   # dictionary of labels for colorbars
-   labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m'}
-
-   for key in labs.keys():
-      fig   = figdir+figs[key]
-      if ny>1:
-         f,ax  = cmap_3d(x,y,ice_fields[key].transpose(),\
-                        ['$x$, km','$y$, km',labs[key]])
-      else:
-         f,ax,line   = plot_1d(x,ice_fields[key][:,0],\
-                               ['$x$, km',labs[key]])
-      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close(f)
-
-   # wave fields
-   # dictionary of figure names
-   figs     = {'Hs':'Hs.png'    ,'Tp':'Tp.png'   ,'mwd':'mwd.png'}
-   # dictionary of labels for colorbars
-   labs  = {'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees'}
-
-   for key in labs.keys():
-      fig   = figdir+'/'+figs[key]
-      if ny>1:
-         f,ax  = cmap_3d(x,y,wave_fields[key].transpose(),\
-                         ['$x$, km','$y$, km',labs[key]])
-      else:
-         f,ax,line   = plot_1d(x,wave_fields[key][:,0],\
-                               ['$x$, km',labs[key]])
-      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close(f)
+   ice_fields.update(wave_fields)
+   fn_plot_gen(grid_prams,ice_fields,figdir)
 
    return
 ############################################################################
@@ -332,41 +280,7 @@ def fn_plot_init(grid_prams,ice_fields,wave_fields,figdir):
 ############################################################################
 def fn_plot_final(grid_prams,out_fields,figdir):
 
-   from matplotlib import pyplot as plt
-
-   if not os.path.exists(figdir):
-      os.mkdir(figdir)
-
-   nx = grid_prams['nx']
-   ny = grid_prams['ny']
-   dx = grid_prams['dx']
-   dy = grid_prams['dy']
-   if ny==1:
-      x  = grid_prams['X'][:,0]/1.e3
-   else:
-      x  = grid_prams['X'][:,0]+dx/2.
-      x  = np.concatenate([[x[0]-dx],x])/1.e3
-      y  = grid_prams['Y'][0,:]+dy/2.
-      y  = np.concatenate([[y[0]-dy],y])/1.e3
-
-   # dictionary of figure names
-   figs  = {'dfloe':'Dmax.png','taux':'taux.png','tauy':'tauy.png',
-            'Hs':'Hs.png','Tp':'Tp.png'}
-
-   # dictionary of labels for colorbars
-   labs  = {'dfloe':'$D_{max}$, m','taux':'Stress (x dir.), Pa','tauy':'Stress (y dir.), Pa',
-            'Hs':'$H_s$, m','Tp':'$T_p$, s'}
-
-   for key in out_fields.keys():
-      fig   = figdir+'/'+figs[key]
-      if ny>1:
-         f,ax  = cmap_3d(x,y,out_fields[key].transpose(),\
-                         ['$x$, km','$y$, km',labs[key]])
-      else:
-         f,ax,line   = plot_1d(x,out_fields[key][:,0],\
-                               ['$x$, km',labs[key]])
-      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close(f)
+   fn_plot_gen(grid_prams,out_fields,figdir)
 
    return
 ############################################################################

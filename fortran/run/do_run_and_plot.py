@@ -2,6 +2,7 @@ import numpy as np
 import os,sys
 import shutil
 import struct
+from matplotlib import pyplot as plt
 
 ##
 ## NB run from 'run' directory !!
@@ -15,8 +16,8 @@ import run_WIM2d     as Rwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-RUN_OPT  = 2 # rerun then plot
-# RUN_OPT  = 3 # plot saved results
+# RUN_OPT  = 2 # rerun then plot
+RUN_OPT  = 3 # plot saved results
 
 gf          = Fdat.fn_check_grid('inputs')
 gfl         = gf['LANDMASK']
@@ -28,7 +29,7 @@ grid_prams  = gf
 # set inputs: (icec,iceh,dfloe), (Hs,Tp,mwd)
 if 1:
 
-   if 1:
+   if 0:
       # "semi-infinite" ice sheet
 
       # ice edge
@@ -47,7 +48,7 @@ if 1:
       strip_width = 100.e3
       xav         = .5*(gf['X'].min()+gf['X'].max())
       x0          = gf['X'].min()-.5*gf['dx']
-      xm          = .5*(dx+gf['X'].max()-gf['X'].min())
+      xm          = .5*(gf['dx']+gf['X'].max()-gf['X'].min())
       xe          = xav -.7*xm
       ICEMASK     = 1+0*gf['X']
       #
@@ -92,7 +93,7 @@ if 1:
    # change real parameters:
    young          = 5.49e9
    visc_rp        = 0.0
-   duration_hours = 6.0
+   duration_hours = 72.0
    duration       = duration_hours*60*60
    real_prams     = np.array([young,visc_rp,duration])
 
@@ -132,71 +133,86 @@ if 1:
    ################################################################
    # Plot progress files (if they exist)
    # - as colormaps
-   figdir3     = figdir+'/prog'
-   prog_files  = os.listdir(bindir+'/prog')
-   steps       = []
+   figdir3     = figdir+'/prog/'
+   pdir        = bindir+'/prog/'
+   prog_files  = os.listdir(pdir)
+
+   ################################################################
+   # checks
+   if len(prog_files)>0:
+      # make dir for progress plots
+      if (not os.path.exists(figdir3)):
+         os.mkdir(figdir3)
+      else:
+         # clear old progress plots
+         old_dirs = os.listdir(figdir3)
+         for od in old_dirs:
+            # need this for macs
+            if od!='.DS_Store':
+               # os.rmdir(figdir3+'/'+od)
+               shutil.rmtree(figdir3+'/'+od)
+   else:
+      raise ValueError('No progress files to plot')
+   ################################################################
+
    for pf in prog_files:
       if '.a'==pf[-2:]:
-         stepno   = pf.strip('wim_prog').strip('.a')
-         steps.append(stepno)
-
-   # make dir for progress plots
-   if (not os.path.exists(figdir3)) and len(steps)>0:
-      os.mkdir(figdir3)
-
-   # clear old progress plots
-   old_dirs = os.listdir(figdir3)
-   for od in old_dirs:
-      # need this for macs
-      if od!='.DS_Store':
-         # os.rmdir(figdir3+'/'+od)
-         shutil.rmtree(figdir3+'/'+od)
-
-   for stepno in steps:
-      print("Plotting results at time step "+stepno+" ...")
-      prog_fields = Fdat.fn_check_prog(outdir,stepno)
-      figdir3_0   = figdir3+'/'+stepno
-      Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-      print("Plots in "+figdir3_0+'\n')
+         print("Reading "+pf+" ...")
+         prog_fields,info  = Fdat.fn_read_general_binary(pdir+pf)
+         #
+         stepno      = pf.strip('wim_prog').strip('.a')
+         figdir3_0   = figdir3+'/'+stepno
+         Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
+         print("Plots in "+figdir3_0+'\n')
    ################################################################
 
    print(' ')
    print("To make a movie of progress images:")
-   print("cd "+figdir+'/prog')
-   print(dd+'/tools/prog2mp4.sh Hs (or Dmax,taux,tauy)')
+   print(dd+'/tools/prog2mp4.sh Hs '+figdir3)
 
 elif 1:
    ################################################################
    # Plot progress files (if they exist)
-   # - as profiles
+   # - as profiles on one graph
    cols     = ['k','b','r','g','m','c']
    lstil    = ['-','--','-.',':']
    Nc       = len(cols)
+   Ns       = len(lstil)
    loop_c   = -1
-   loop_s   = 0
+   loop_s   = -1
 
-   figdir3     = figdir+'/prog'
-   prog_files  = os.listdir(bindir+'/prog')
-   steps       = []
+   pdir        = bindir+'/prog/'
+   prog_files  = os.listdir(pdir)
+
+   ################################################################
+   # checks
+   if len(prog_files)>0:
+      # make dir for progress plots
+      if (not os.path.exists(figdir)):
+         os.mkdir(figdir)
+   else:
+      raise ValueError('No progress files to plot')
+   ################################################################
+
+   fig   = plt.figure()
+   ax    = fig.add_subplot(1,1,1)
+   xx    = gf['X'][:,0]/1.e3
+   labs  = ['$x$, km','$H_s$, m']
+
+   ################################################################
    for pf in prog_files:
       if '.a'==pf[-2:]:
-         stepno   = pf.strip('wim_prog').strip('.a')
-         steps.append(stepno)
+         print("Reading "+pf+" ...")
+         out_fields,info   = Fdat.fn_read_general_binary(pdir+pf)
 
-   for step in steps:
-      out_fields  = Fdat.fn_check_prog(outdir,step) # load ice/wave conditions from binaries
-      Hs_n        = out_fields['Hs']
-      #
-      if loop_c==Nc-1:
-         loop_c   = 0
-         loop_s   = loop_s+1
-      else:
-         loop_c   = loop_c+1
+         Hs_n     = out_fields['Hs'][:,0]
+         loop_c   = np.mod(loop_c+1,Nc)
+         if loop_c==0:
+            loop_s   = np.mod(loop_s+1,Ns)
 
-      fig      = Fplt.plot_1d(xx,Hs_n,labs=labs,f=fig,color=cols[loop_c],linestyle=lstil[loop_s])
+         fig,ax,line = Fplt.plot_1d(xx,Hs_n,labs=labs,pobj=[fig,ax],color=cols[loop_c],linestyle=lstil[loop_s])
    #
    figname  = figdir+'/convergence2steady.png'
    print('saving to '+figname+'...')
-   plt.savefig(figname,bbox_inches='tight',pad_inches=0.05)
-   plt.close()
-   fig.clf()
+   fig.savefig(figname,bbox_inches='tight',pad_inches=0.05)
+   plt.close(fig)
