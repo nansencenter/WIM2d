@@ -110,10 +110,10 @@ else:
    if RUN_OPT==3:
       outdir   = 'out_io'
    else:
-      out_fields,outdir
-         = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,\
-                       int_prams=int_prams,\
-                       real_prams=real_prams)
+      out_fields,outdir = \
+         Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,\
+                     int_prams=int_prams,\
+                     real_prams=real_prams)
 
 ##########################################################################
 # Make plots
@@ -173,24 +173,22 @@ else:
    fig   = None
 ##########################################################################
 
-pfiles   = os.listdir(bindir+'/prog')
+pdir     = bindir+'/prog/'
+pfiles   = os.listdir(pdir)
 afiles   = []
 psteps   = []
 psteps_i = []
 tsteps   = []
+
 for pf in pfiles:
    if pf[-2:]=='.a':
       afiles.append(pf)
-      psteps.append(pf[8:-2])
-      psteps_i.append(int(pf[8:-2]))
    elif pf[-2:]=='.b':
-      bid      = open(pf)
-      blines   = bid.readlines()
-      bid.close()
-      t_out = float(blines[4].split()[0])
-      tsteps.append(t_out)
-      psteps.append(pf[8:-2])
-      psteps_i.append(int(pf[8:-2]))
+      binfo,vlist = Fdat.fn_bfile_info(pdir+pf)
+      tsteps.append(binfo['t_out'])
+      stepno   = pf.strip('.b').strip('wim_prog')
+      psteps.append(stepno)
+      psteps_i.append(int(stepno))
 
 # # get approx time step from log file - now get from .b file
 # logfil   = outdir+'/log/wim2d.log'
@@ -208,23 +206,32 @@ def find_nearest(nparr,val):
    return int(ival)
 
 ################################################ 
+Nprog = np.max(np.array(psteps_i))
 if 0:
    if 1:
       # compare every stp steps
-      stp         = 40
+      stp         = 80
       steps2plot  = range(0,Nprog,stp)
       steps2plot.extend([Nprog])
+      times2plot  = []
+      for step in steps2plot:
+         ip = steps2plot.index(step)
+         times2plot.append(tsteps[ip])
    else:
       # just compare final prog file
       steps2plot  = [Nprog]
+      times2plot  = [tsteps[-1]]
 else:
    # specify the times manually
    times = [0.,1.,1.5,2.,2.5,3.] # times in h
    times.extend([6.,12.,18.,24.,48,72.])
    steps2plot  = []
+   times2plot  = []
+   tsteps      = np.array(tsteps)
    for tval in times:
       i_t   = find_nearest(tsteps,tval*3600)
       steps2plot.append(psteps_i[i_t])
+      times2plot.append(tsteps[i_t])
 ################################################ 
 
 
@@ -244,8 +251,8 @@ if do_legend:
    lines_t     = []
    times_leg   = []
 
-for nstep in steps2plot:
-   print(nstep,int(nstep)*dt)
+print('\n')
+for i,nstep in enumerate(steps2plot):
    out_fields  = Fdat.fn_check_prog(outdir,int(nstep)) # load ice/wave conditions from binaries
    Hs_n        = out_fields['Hs'][:,0]
    tx_n        = out_fields['taux'][:,0]
@@ -260,11 +267,12 @@ for nstep in steps2plot:
    fig,ax2,line_t = Fplt.plot_1d(xx,tx_n,labs=labs2,pobj=(fig,ax2),\
                                  color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
 
+   tt = times2plot[i]/3600.
+   print('n, t(h): '+str(nstep)+', '+str(tt))
    if do_legend:
       lines_h.append(line_h)
       lines_t.append(line_t)
       #
-      tt = dt*nstep/3600.
       ss = '%5.1fh' % (tt)
       times_leg.append(ss)
 
@@ -281,7 +289,7 @@ if do_legend:
 
 # figname  = figdir+'/convergence2steady.png'
 figname  = figdir+'/convergence2steady.eps'
-print('saving to '+figname+'...')
+print('\nSaving to '+figname+'...')
 fig.savefig(figname,bbox_inches='tight',pad_inches=0.05)
 plt.close(fig)
 
@@ -310,7 +318,7 @@ if 1:
       lin   = lin+blk + ('%f' % (tx_n[loop_x])     )
       fid.write(lin+'\n')
    fid.close()
-   print('saving to '+dfil+'...')
+   print('saving to '+dfil+'...\n')
    #####################################################
 
 if 0:

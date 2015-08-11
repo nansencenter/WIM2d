@@ -244,7 +244,7 @@ def fn_check_prog(outdir,cts):
       cts0  = fils[0].strip('wim_prog')[:-2]
       fmt   = '%'+str(len(cts0))+'.'+str(len(cts0))+'d'
       cts   = fmt %(cts)
-      print(cts0,cts)
+      # print(cts0,cts)
 
    afile       = outdir+'/binaries/prog/wim_prog'+cts+'.a'
    bfile       = outdir+'/binaries/prog/wim_prog'+cts+'.b'
