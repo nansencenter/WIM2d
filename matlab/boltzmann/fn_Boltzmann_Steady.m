@@ -637,16 +637,20 @@ if PLOT
     %%%%%%%%%%%%%%%
     if absorb==0 %%
     %%%%%%%%%%%%%%%
+%      I0 = [u0,V]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
+%      H0 = real(sqrt(sum([I0(end);I0]))); clear I0
      I0 = [u0,V]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
-     H0 = real(sqrt(sum([I0(end);I0]))); clear I0
-     H_vec = 0*x;
+     H0 = real(sqrt(sum([I0(incs)]))); clear I0
+     H_vec = 0*x; 
      for loop_x=1:length(x)
       I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
       I = [I(end);I];
       H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
      end
      plot(x/1e3,H_vec,col); set(gca,'box','on')
-     xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+     xlabel('x [km]','fontsize',14); 
+     %ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+     ylabel('H_{s}(x)/H_{s,inc}','fontsize',14);
     %%%%%%%
     else %%
     %%%%%%%
