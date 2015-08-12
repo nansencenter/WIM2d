@@ -2,7 +2,7 @@
 %% Author: Timothy Williams
 %% Date: 20141112, 15:14:20 CET
 
-%%test outputs from adv_atten_isoptopic.m
+%%test outputs from adv_atten_isotropic.m
 load test_fou
 oo = ones(ndir,ndir);
 id = eye(ndir);

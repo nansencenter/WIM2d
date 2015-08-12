@@ -66,8 +66,17 @@ S_freq   = zeros(nx,ny);
 tau_x    = zeros(nx,ny);
 tau_y    = zeros(nx,ny);
 %%
-oo       = ones(ndir,ndir);
-id       = eye(ndir);
+oo                = ones(ndir,ndir);
+id                = eye(ndir);
+
+%% method of solving \partial_t E=S (2nd part of split step)
+%% NB E is variance spectrum [m^2/s], S are sources [m^2]
+TIME_SOLN_METHOD  = 1;  %% 1: Fourier method (generalises to non-isotropic case)
+                        %% 2: Position space, exact calculation of evals/evecs (specific to isotropic case)
+                        %% 3: Position space, numerical calculation of evals/evecs
+                        %%    (generalises to non-isotropic case and non-linear scattering)
+
+CHECK_STOP  = 0;%% stop Fourier method run and save results for checking
 
 for i = 1:nx
 for j = 1:ny
@@ -80,7 +89,7 @@ for j = 1:ny
       q_tot    = q_scat + damp_dim(i,j);
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      if 1
+      if TIME_SOLN_METHOD==1
          %%use Fourier method
 
          %%fourier coeff's of Boltzmann kernel
@@ -122,41 +131,43 @@ for j = 1:ny
             %% ON the waves (cf Donelan et al, 2012, JGR)
             %% - we want the stress on the ice
 
-%        %%uncomment below to give a test
-%        %%(also save results to ../numerics/test_fou.mat
-%        %% and test with test_AA_isotropic.m)
-%        if abs(S_fou(1))>1e-4
-%           %%"inputs"
-%           theta
-%           S_th
-%           S_fou
-%
-%           %%old way
-%           M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
-%           source1  = cg*M_bolt*S_th;
-%           tau_x1   = -(cos(theta).*wt_theta)'*source1%% [m^2]
-%           tau_y1   = -(sin(theta).*wt_theta)'*source1%% [m^2]
-%
-%           %%compare to results computed the new way
-%           tst_taux = [tau_x1,tau_x(i,j)]
-%           tst_tauy = [tau_y1,tau_y(i,j)]
-%
-%           %%check attenuation also
-%           S_th2       = squeeze(S(i,j,:));
-%           [U,DD]      = eig(M_bolt);
-%           dd2         = diag(DD);
-%           cc          = U'*S_th;                          %%expand in terms of eigenvectors
-%           tst_atten   = [S_th2,U*diag(exp(dd2*cg*dt))*cc] %%exponential attenuation
-%           save('../numerics/testing/test_fou.mat','S_th2','evals_x','S_th','S_fou',...
-%                'K_fou','M_bolt','q_scat','q_tot','ndir','ag_eff','i','j',...
-%                'tau_x','tau_y','theta');
-%           GEN_pause
-%        end
+         if CHECK_STOP
+            %% Give a test and exit
+            %% (also save results to ../numerics/testing/test_fou.mat
+            %%  and test with testing/test_AA_isotropic.m)
+            if abs(S_fou(1))>1e-4
+               %%"inputs"
+               theta
+               S_th
+               S_fou
+    
+               %%old way
+               M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
+               source1  = cg*M_bolt*S_th;
+               tau_x1   = -(cos(theta).*wt_theta)'*source1%% [m^2]
+               tau_y1   = -(sin(theta).*wt_theta)'*source1%% [m^2]
+    
+               %%compare to results computed the new way
+               tst_taux = [tau_x1,tau_x(i,j)]
+               tst_tauy = [tau_y1,tau_y(i,j)]
+    
+               %%check attenuation also
+               S_th2       = squeeze(S(i,j,:));
+               [U,DD]      = eig(M_bolt);
+               dd2         = diag(DD);
+               cc          = U'*S_th;                          %%expand in terms of eigenvectors
+               tst_atten   = [S_th2,U*diag(exp(dd2*cg*dt))*cc] %%exponential attenuation
+               save('../numerics/testing/test_fou.mat','S_th2','evals_x','S_th','S_fou',...
+                    'K_fou','M_bolt','q_scat','q_tot','ndir','ag_eff','i','j',...
+                    'tau_x','tau_y','theta');
+               error('Saving test resuls and stopping');
+            end
+         end
 
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       else
          M_bolt   = ( q_scat*oo/ndir-q_tot*id );% [m^{-1}]
-         if 1
+         if TIME_SOLN_METHOD==2
             %% get eigenvalues by inspection
             %% eigenvalues are -q_scat*[1/dth,1/dth,...,1/dth,0]-q_abs/dth
             %% - should be the same as solving in Fourier space
@@ -173,8 +184,7 @@ for j = 1:ny
             U  = [uu,null(uu')];
          else
             [U,D]    = eig(M_bolt);
-            evals_x       = diag(D);
-            %GEN_pause;
+            evals_x  = diag(D);
          end
          S_th        = squeeze(S(i,j,:));
          cg          = ag_eff(i,j);
@@ -190,8 +200,8 @@ for j = 1:ny
             %% ON the waves (cf Donelan et al, 2012, JGR)
             %% - we want the stress on the ice
 
-         cc       = U'*S_th;                    %%expand in terms of eigenvectors
-         S(i,j,:) = U*diag(exp(evals_x*cg*dt))*cc;   %%exponential attenuation
+         cc       = U'*S_th;                       %% expand in terms of eigenvectors
+         S(i,j,:) = U*diag(exp(evals_x*cg*dt))*cc; %% do exponential attenuation then transform back
       end%%choice of method
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

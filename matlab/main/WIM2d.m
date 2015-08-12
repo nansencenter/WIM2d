@@ -1200,18 +1200,21 @@ else
       % {jmiz}
 
       %% progress report;
-      [round(n/reps),(n/reps)]
       if round(n/reps)==(n/reps)
+
          if GET_OUT
             Dmax_all(:,:,n/reps) = Dmax;
          end
-         disp([num2str(n),...
-               ' time steps done, out of ',...
-                  num2str(nt)]);
-         %%
-         t1    = now;
-         disp(['time taken (mins): ',...
-               num2str(t0_fac*(t1-t0))]);
+
+         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+         disp('##############################################################');
+         t1 = now;
+         disp([num2str(n),' time steps done, out of ',num2str(nt)]);
+         disp(['Time taken (mins)      : ' ,num2str(t0_fac*(t1-t0))]);
+         disp(['Model time passed (h)  : ' ,num2str(n*dt/3600.)]);
+         disp('##############################################################');
+         disp(' ');
+         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
          disp(strvcat(Info));
 
@@ -1492,47 +1495,53 @@ if PLOT_FINAL%%check exponential attenuation
          Dmax,ice_fields.tau_y);
    end
    %%
-   figure(3),clf;
-   fn_fullscreen;
-   xx = X(:,1);
    if 0
-      vbl   = 'Hs';
-      Vbl   = wave_fields.(vbl);
-   else
-      vbl   = 'tau_x';
-      Vbl   = ice_fields.(vbl);
-   end
-   if 1
-      subplot(2,1,2)
-      yy    = Y(1,:);
-      xp    = 110e3;
-      ix    = find(abs(xx-xp)==min(abs(xx-xp)));
-      ix    = ix(1);
-      xp    = xx(ix);
-      Vy    = Vbl(ix,:);
-      plot(yy/1e3,Vy);
-      if strcmp(vbl,'Hs')
-         GEN_proc_fig('{\ity}, km','{\itH}_s, m');
-      elseif strcmp(vbl,'tau_x')
-         GEN_proc_fig('{\ity}, km','{\tau}_x, Pa');
+      %% figure testing how 1d results are (only appropriate for 1d geometries)
+      figure(3),clf;
+      fn_fullscreen;
+      xx = X(:,1);
+      if 0
+         vbl   = 'Hs';
+         Vbl   = wave_fields.(vbl);
+      else
+         vbl   = 'tau_x';
+         Vbl   = ice_fields.(vbl);
       end
-      ttl   = title(['Profile at x = ',num2str(xp/1e3,'%7.2f'),'km']);
-      GEN_font(ttl);
-      ylim(sort([0,1.1*max(Vy)]));
-      %%
-      subplot(2,1,1)
+
+      if 1
+         subplot(2,1,2)
+         yy    = Y(1,:);
+         xp    = 110e3;
+         ix    = find(abs(xx-xp)==min(abs(xx-xp)));
+         ix    = ix(1);
+         xp    = xx(ix);
+         Vy    = Vbl(ix,:);
+         plot(yy/1e3,Vy);
+         if strcmp(vbl,'Hs')
+            GEN_proc_fig('{\ity}, km','{\itH}_s, m');
+         elseif strcmp(vbl,'tau_x')
+            GEN_proc_fig('{\ity}, km','{\tau}_x, Pa');
+         end
+         ttl   = title(['Profile at x = ',num2str(xp/1e3,'%7.2f'),'km']);
+         GEN_font(ttl);
+         if Vy>0
+            ylim(sort([0,1.1*max(Vy)]));
+         end
+         %%
+         subplot(2,1,1)
+      end
+      plot(xx/1e3,mean(Vbl,2),'-k');
+      hold on;
+      plot(xx/1e3,min(Vbl,[],2),'--r');
+      plot(xx/1e3,max(Vbl,[],2),'--c');
+      %set(gca,'yscale','log');
+      if strcmp(vbl,'Hs')
+         GEN_proc_fig('{\itx}, km','{\itH}_s, m');
+      elseif strcmp(vbl,'tau_x')
+         GEN_proc_fig('{\itx}, km','{\tau}_x, Pa');
+      end
+      legend('Mean','Min','Max');
    end
-   plot(xx/1e3,mean(Vbl,2),'-k');
-   hold on;
-   plot(xx/1e3,min(Vbl,[],2),'--r');
-   plot(xx/1e3,max(Vbl,[],2),'--c');
-   %set(gca,'yscale','log');
-   if strcmp(vbl,'Hs')
-      GEN_proc_fig('{\itx}, km','{\itH}_s, m');
-   elseif strcmp(vbl,'tau_x')
-      GEN_proc_fig('{\itx}, km','{\tau}_x, Pa');
-   end
-   legend('Mean','Min','Max');
    %%
    if DIAG1d==1
       %% final
@@ -1553,7 +1562,6 @@ if PLOT_FINAL%%check exponential attenuation
          dfiles  {end+1} = [fdir,'/test_steady1.dat']; % file name
          leg_text{end+1} = 'F77 (time-dep)';          % legend text
          fortcols{end+1} = 'b';                       % colour
-
 
          % steady-state results (from python code)
          dfiles  {end+1} = [fdir,'/test_steady2.dat']; % file name
