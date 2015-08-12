@@ -2,7 +2,7 @@ function [ice_fields,wave_fields] = WIM2d()
 
 %DO_SAVE     = 0;
 infile         = 'infile_matlab.txt';
-infile_version = 5;%%latest infile version
+infile_version = 6;%%latest infile version
 
 if ~exist(infile)
    %% now need infile to run code
@@ -36,7 +36,6 @@ end
 
 %% TURN ON/OFF PLOTTING:
 PLOT_OPT    = 2;%%plot option (only used if doing plotting)
-SV_FIG      = 1;
 adv_options = struct('ADV_DIM',ADV_DIM,...
                      'ADV_OPT',ADV_OPT);
 TEST_INC_SPEC     = 0;
@@ -714,11 +713,10 @@ if PLOT_INIT
    %pause;
 end
 
-SV_BIN   = 1;
-reps_ab  = 10;
-SV_SPEC  = 1;% save final spectrum to file
 
 if (SV_BIN==1) & (MEX_OPT==0)
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% save matlab files as binaries
    %% to matlab results
    !mkdir -p  m_out
@@ -726,6 +724,9 @@ if (SV_BIN==1) & (MEX_OPT==0)
    !rm    -rf m_out/binaries/prog
    !mkdir -p  m_out/binaries/prog
    dims  = [nx,ny,nw,ndir];
+
+   reps_ab  = 10;%%save every 10 time-steps
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %%grid files
@@ -1708,14 +1709,16 @@ if PLOT_FINAL%%check exponential attenuation
       saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
       saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
 
-      figure(3);
       if 0
-         %%fix position so that comparison is easier between computers
-         pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
-         set(gca,'position',pos);
+         figure(3);
+         if 0
+            %%fix position so that comparison is easier between computers
+            pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
+            set(gca,'position',pos);
+         end
+         saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
+         saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
       end
-      saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
-      saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
    end
 end
 

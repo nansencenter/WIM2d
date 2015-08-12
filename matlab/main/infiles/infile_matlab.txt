@@ -1,4 +1,5 @@
-5     # infile_version_ : infile version number
+6     # infile_version_ : infile version number
+
 # keep version number on 1st line
 # change this if there are significant changes to structure of infile and/or code
 # (will be a warning in code if version number there doesn't match this one)
@@ -10,8 +11,8 @@
 # only numerical values accepted currently
 
 # mex function to use
-0     # MEX_OPT   : 0 = pure matlab; 1 = pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes
-                  # 2 = pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
+0     # MEX_OPT   : 0 = pure matlab; 1 = mex: pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes
+                  # 2 = mex: pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
 
 # numerical parameters
 0.7   # CFL             : CFL number (cg*dt/dx)
@@ -50,7 +51,7 @@
 
 # correspond to "int_prams" in fortran code 
 1     # SCATMOD         : Scattering model: 0 = old way; 1 = scatter E isotropically
-2     # ADV_DIM         : Dimension of advection (1/2) TODO: use this
+2     # ADV_DIM         : Dimension of advection (1/2)
 2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
 1     # DO_CHECK_FINAL  : 1/0: do/don't dump binary files for final conditions
 1     # DO_CHECK_PROG   : 1/0: do/don't dump binary files at regular time intervals
@@ -69,5 +70,8 @@
 0     # PLOT_INIT
 0     # PLOT_PROG
 1     # PLOT_FINAL
-0     # DIAG1d          : do 1-d diagnostics (eg plot profile of Hs)
-1     # DIAG1d_OPT      : options for 1-d diagnostics
+0     # DIAG1d       : do 1-d diagnostics (eg plot profile of Hs)
+1     # DIAG1d_OPT   : options for 1-d diagnostics
+0     # SV_BIN       : save binary files regularly
+0     # SV_SPEC      : save final spectrum to mat-file
+0     # SV_FIG       : save figures that are plotted
