@@ -96,7 +96,7 @@ elseif OPT==2
    %%ice in lower-left corner
    xav      = mean(X(:));
    yav      = mean(Y(:));
-   WTR_MASK = ((X-av)<0)|((Y-yav)>0);
+   WTR_MASK = ((X-xav)<0)|((Y-yav)>0);
    jW       = find(WTR_MASK==1);
    ICE_MASK = (1-WTR_MASK).*(1-LANDMASK);%%0 on land & water
    jI       = find( ICE_MASK==1 );

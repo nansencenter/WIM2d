@@ -648,21 +648,21 @@ if PLOT_INIT
       fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
          Dmax,ice_fields.tau_y);
    end
-   if OPT==1
-      subplot(2,2,1);
-      hold on;
-      x0 = min(X(:));
-      x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1);
-      % {x0/1e3,x1/1e3}
-      yc = .3*max(Y(:))/1e3;
-      x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
-      y_ = [0,0,yc*[1,1],0,0];
-      plot(x_,y_,'k');
-      plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-      xlabel('$x$, km','interpreter','latex','fontsize',20); 
-      ylabel('$\hat{H}_{s}$, m','interpreter','latex','fontsize',20)
-      hold off;
-   end
+   %if OPT==1
+   %   subplot(2,2,1);
+   %   hold on;
+   %   x0 = min(X(:));
+   %   x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1);
+   %   % {x0/1e3,x1/1e3}
+   %   yc = .3*max(Y(:))/1e3;
+   %   x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+   %   y_ = [0,0,yc*[1,1],0,0];
+   %   plot(x_,y_,'k');
+   %   plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc,'--k');
+   %   xlabel('$x$, km','interpreter','latex','fontsize',20); 
+   %   ylabel('$\hat{H}_{s}$, m','interpreter','latex','fontsize',20)
+   %   hold off;
+   %end
    %%
    clear s1;
    %%
@@ -1230,25 +1230,25 @@ else
                      Dmax,ice_fields.tau_y);
                end
 
-               if OPT==1
-                  subplot(2,2,1);
-                  hold on;
-                  x0 = min(X(:))+uc*n*dt;
-                  x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
-                  % {uc,x0/1e3,x1/1e3}
-                  yc = .3*max(Y(:))/1e3;
-                  x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
-                  y_ = [0,0,yc*[1,1],0,0];
-                  plot(x_,y_,'k');
-                  plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-                  hold off;
-                  %%
-                  subplot(2,2,2);
-                  hold on;
-                  plot(x_,y_,'k');
-                  plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc/Hs0,'--k');
-                  hold off;
-               end
+               %if OPT==1
+               %   subplot(2,2,1);
+               %   hold on;
+               %   x0 = min(X(:))+uc*n*dt;
+               %   x1 = X(find(WAVE_MASK(:,1)==0,1,'first'),1)+uc*n*dt;
+               %   % {uc,x0/1e3,x1/1e3}
+               %   yc = .3*max(Y(:))/1e3;
+               %   x_ = [min(X(:)),x0,x0,x1,x1,max(X(:))]/1e3;
+               %   y_ = [0,0,yc*[1,1],0,0];
+               %   plot(x_,y_,'k');
+               %   plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc,'--k');
+               %   hold off;
+               %   %%
+               %   subplot(2,2,2);
+               %   hold on;
+               %   plot(x_,y_,'k');
+               %   plot(X(:,1)/1e3,wave_fields.Hs(:,1)*yc,'--k');
+               %   hold off;
+               %end
             else
                %% DIAG1d==1
                %% during run
@@ -1518,7 +1518,7 @@ if PLOT_FINAL%%check exponential attenuation
       end
       ttl   = title(['Profile at x = ',num2str(xp/1e3,'%7.2f'),'km']);
       GEN_font(ttl);
-      ylim([0,1.1*max(Vy)]);
+      ylim(sort([0,1.1*max(Vy)]));
       %%
       subplot(2,1,1)
    end
