@@ -65,3 +65,5 @@ neXtSIMcoupling/tutorial/out/*
 CXX/run/outputs
 
 fortran/grid_setup/infile_waves.txt
+
+matlab/numerics/testing/test_fou.mat
