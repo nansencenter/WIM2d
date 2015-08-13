@@ -53,7 +53,7 @@ elif OPT==3:
    print("\n************************************************")
    print("Checking progress files...")
    print("************************************************\n")
-   n_prog   = 9
+   n_prog   = 5
 ##########################################################################
 
 ##########################################################################
@@ -97,7 +97,7 @@ for j in range(2):
       stepno   = steps[n_prog]
       print("Checking results at time step "+stepno+" ...")
       print(outdir)
-      prog_fields = Fdat.fn_check_prog(outdir,stepno) # dictionary eg {'Hs':Hs_array,...} 
+      prog_fields = Fdat.fn_check_prog(outdir,stepno) # dictionary eg {'Hs':Hs_array,...}
       arrays[j]   = prog_fields
       #############################################################
 

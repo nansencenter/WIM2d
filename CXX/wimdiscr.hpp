@@ -66,6 +66,7 @@ public:
 
     void wimGrid();
 	void readFile(std::string const& filein);
+    void readData(std::string const& filein);
     void writeFile(size_type const& timestp, value_type const& t_out) const;
     void wimInit();
     void wimStep();
@@ -76,7 +77,9 @@ public:
     void waveAdvWeno(array2_type& h, array2_type const& u, array2_type const& v);
     void weno3pdV2(array2_type const& gin, array2_type const& u, array2_type const& v, array2_type const& scuy,
                    array2_type const& scvx, array2_type const& scp2i, array2_type const& scp2, array2_type& saoout);
+
     void padVar(array2_type const& u, array2_type& upad);
+    //void padVar2d(array2_type const& u, array2_type& upad);
     void calcMWD();
 
     array2_type getX() const { return X_array; }
@@ -86,7 +89,6 @@ public:
     array2_type getSCP2() const { return SCP2_array; }
     array2_type getSCP2I() const { return SCP2I_array; }
     array2_type getLANDMASK() const { return LANDMASK_array; }
-
 
 
 private:
@@ -121,6 +123,8 @@ private:
 
     // variables for calcMWD
     //array2_type cmom0, cmom_dir, CSfreq, cmom_dir0, CF;
+
+    array2_type Fdmax, Ftaux, Ftauy, Fhs, Ftp;
 
 };
 
@@ -170,8 +174,8 @@ WimDiscr<T>::wimGrid()
     {
         for (int j = 0; j < ny; j++)
         {
-            X_array[i][j] = x0 + i*dx;
-            Y_array[i][j] = y0 + j*dy;
+            X_array[i][j] = x0 + i*dx+.5*dx;
+            Y_array[i][j] = y0 + j*dy+.5*dy;
             SCUY_array[i][j] = dy;
             SCVX_array[i][j] = dx;
             SCP2_array[i][j] = dx*dy;
@@ -217,7 +221,6 @@ WimDiscr<T>::wimGrid()
         std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
         std::abort();
     }
-
 }
 
 template<typename T>
@@ -398,6 +401,78 @@ WimDiscr<T>::writeFile (size_type const& timestp, value_type const& t_out) const
 
 
 }
+
+template<typename T>
+void
+WimDiscr<T>::readData (std::string const& filein)
+{
+
+    //array2_type X_array(boost::extents[nx][ny],boost::fortran_storage_order());
+    // X_array.resize(boost::extents[nx][ny]);
+    // Y_array.resize(boost::extents[nx][ny]);
+    // SCUY_array.resize(boost::extents[nx][ny]);
+    // SCVX_array.resize(boost::extents[nx][ny]);
+    // SCP2_array.resize(boost::extents[nx][ny]);
+    // SCP2I_array.resize(boost::extents[nx][ny]);
+    // LANDMASK_array.resize(boost::extents[nx][ny]);
+
+    Fdmax.resize(boost::extents[nx][ny]);
+    Ftaux.resize(boost::extents[nx][ny]);
+    Ftauy.resize(boost::extents[nx][ny]);
+    Fhs.resize(boost::extents[nx][ny]);
+    Ftp.resize(boost::extents[nx][ny]);
+
+    // dx = vm["dx"].template as<double>();
+    // dy = vm["dy"].template as<double>();
+
+    char * senv = ::getenv( "WIM2D_PATH" );
+
+    std::string str = std::string( senv ) + "/fortran/run/out/binaries/prog";
+
+
+    fs::path path(str);
+
+    std::string _filein = (boost::format("%1%/%2%") % path.string() % filein).str();
+
+    // s::path path(str);
+    // path /= "outputs/binaries/prog";
+
+    //std::fstream in(filein, std::ios::binary | std::ios::in);
+    std::fstream in(_filein, std::ios::binary | std::ios::in);
+
+    if (in.is_open())
+    {
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+                in.read((char *)&Fdmax[i][j], sizeof(int));
+
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+                in.read((char *)&Ftaux[i][j], sizeof(int));
+
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+                in.read((char *)&Ftauy[i][j], sizeof(int));
+
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+                in.read((char *)&Fhs[i][j], sizeof(int));
+
+        for (int j = 0; j < ny; j++)
+            for (int i = 0; i < nx; i++)
+                in.read((char *)&Ftp[i][j], sizeof(int));
+
+        in.close();
+    }
+    else
+    {
+        std::cout << "Cannot open " << _filein  << "\n";
+        std::cerr << "error: open file " << _filein << " for input failed!" <<"\n";
+        std::abort();
+    }
+}
+
+
 
 } // namespace WIM2D
 

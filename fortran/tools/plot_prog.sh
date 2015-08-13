@@ -18,6 +18,7 @@ outdir=$2
 cd $outdir
 outdir=`pwd` # change to full path
 bindir=$outdir/binaries/prog
+rm -rf $outdir/figs/prog
 
 afiles=($bindir/wim_prog*.a)
 if [ ${#afiles[@]} -eq 0 ]

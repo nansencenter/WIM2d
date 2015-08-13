@@ -1,14 +1,14 @@
 PROGNAME=prog_wim2d.exec
 
 CXX = g++
-CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC #-v # -MMD -MP -lm #-Wall
+CXXFLAGS += -std=c++0x -std=c++11 -pedantic  -ftemplate-depth-256 -Wno-inline -fPIC -g #-v # -MMD -MP -lm #-Wall
 CXXFLAGS += -I headers -I . -I $(BOOST_DIR)/include
 
 LDFLAGS += -Wl,-rpath,$(BOOST_DIR)/lib
 LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboost_system
 
 CC = gcc
-CFLAGS += -pedantic -Wno-inline -fPIC #-v # -MMD -MP -lm #-Wall
+CFLAGS += -pedantic -Wno-inline -fPIC -g #-v # -MMD -MP -lm #-Wall
 CFLAGS += -I headers -I .
 
 EXEC=$(PROGNAME)
