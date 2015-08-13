@@ -33,6 +33,9 @@ else
    fclose(fid);
 end
 
+if (ADV_DIM==2)&(ny<4)
+   error('incompatible values of ADV_DIM and ny: increase ny or use ADV_DIM=1');
+end
 
 %% TURN ON/OFF PLOTTING:
 PLOT_OPT    = 2;%%plot option (only used if doing plotting)
@@ -713,23 +716,20 @@ if PLOT_INIT
    %pause;
 end
 
-
-if (SV_BIN==1) & (MEX_OPT==0)
-
+CSUM  = DO_CHECK_INIT+DO_CHECK_PROG+DO_CHECK_FINAL;
+if (SV_BIN==1) & (MEX_OPT==0) & (CSUM>0)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %% save matlab files as binaries
-   %% to matlab results
+   %% save some fields as binaries to m_out
    !mkdir -p  m_out
    !mkdir -p  m_out/binaries
    !rm    -rf m_out/binaries/prog
-   !mkdir -p  m_out/binaries/prog
-   dims  = [nx,ny,nw,ndir];
+   Bdims = [nx,ny,nw,ndir];
 
-   reps_ab  = 10;%%save every 10 time-steps
+   reps_ab  = 10;%%save every 10 time-steps if DO_CHECK_PROG==1
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%grid files
+   %% save grid files
    Fdir  = 'm_out/binaries';
    Froot = [Fdir,'/wim_grid'];
    %%
@@ -742,11 +742,16 @@ if (SV_BIN==1) & (MEX_OPT==0)
    pairs{end+1}   = {'scp2i'     ,grid_prams.scp2i};
    pairs{end+1}   = {'LANDMASK'  ,grid_prams.LANDMASK};
    %%
-   fn_save_binary(Froot,dims,[],pairs);
+   fn_save_binary(Froot,Bdims,[],pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+else
+   SV_BIN   = 0;
+end
 
+
+if (SV_BIN==1) & (DO_CHECK_INIT==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%init files
+   %% save init files
    Fdir  = 'm_out/binaries';
    Froot = [Fdir,'/wim_init'];
    %%
@@ -758,11 +763,15 @@ if (SV_BIN==1) & (MEX_OPT==0)
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    pairs{end+1}   = {'mwd',wave_fields.mwd};
    %%
-   fn_save_binary(Froot,dims,[],pairs);
+   fn_save_binary(Froot,Bdims,[],pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+end
+
+if (SV_BIN==1) & (DO_CHECK_PROG==1)
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% 1st prog file
+   !mkdir -p  m_out/binaries/prog
    Fdir  = 'm_out/binaries/prog';
    cn    = num2str(nt);
    cn(:) = '0';
@@ -775,8 +784,7 @@ if (SV_BIN==1) & (MEX_OPT==0)
    pairs{end+1}   = {'Hs',wave_fields.Hs};
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    %%
-   dims  = [nx,ny,nw,ndir];
-   fn_save_binary(Froot,dims,0,pairs);
+   fn_save_binary(Froot,Bdims,0,pairs);
    %eval(['!cat ',Froot,'.b'])
    %pause;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -790,13 +798,15 @@ if MEX_OPT==1
    disp('Running fortran code with mex function: run_WIM2d_io_mex_v2');
    disp('*****************************************************************');
    disp(' ');
-   real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
-   CHECK_FINAL = 1;
-   CHECK_PROG  = 1;
-   CHECK_INIT  = 1;
+
+   % real parameters
+   real_prams  = [ice_prams.young,ice_prams.visc_rp,duration,CFL];
+
+   % integer parameters
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
-                  CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
+                  DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,...
                   DO_BREAKING,STEADY];
+
    in_arrays   = zeros(nx,ny,6);
    in_arrays(:,:,1)  = ice_fields.cice;
    in_arrays(:,:,2)  = ice_fields.hice;
@@ -841,14 +851,11 @@ elseif MEX_OPT==2
    disp(' ');
 
    % real parameters
-   real_prams  = [ice_prams.young,ice_prams.visc_rp,duration];
-   CHECK_FINAL = 1;
-   CHECK_PROG  = 1;
-   CHECK_INIT  = 1;
+   real_prams  = [ice_prams.young,ice_prams.visc_rp,duration,CFL];
 
    % integer parameters
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
-                  CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
+                  DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,...
                   DO_BREAKING,STEADY];
 
    in_arrays         = zeros(nx,ny,3);
@@ -1343,7 +1350,7 @@ else
          pause
       end
 
-      if (SV_BIN==1)&(mod(n,reps_ab)==0)&(MEX_OPT==0)
+      if (SV_BIN==1)&(mod(n,reps_ab)==0)&(DO_CHECK_PROG==1)
          %% save matlab files as binaries
          %% to matlab results
          Fdir              = 'm_out/binaries/prog';
@@ -1361,14 +1368,13 @@ else
          pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
          pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
          %%
-         dims  = [nx,ny,nw,ndir];
-         fn_save_binary(Froot,dims,n*dt,pairs);
+         fn_save_binary(Froot,Bdims,n*dt,pairs);
       end
 
    end%% end time loop
 end%%MEX_OPT==0 option
 
-if (SV_BIN==1)&(MEX_OPT==0)
+if (SV_BIN==1)&(DO_CHECK_FINAL==1)
    %% save matlab files as binaries
    %% to matlab results
    Fdir  = 'm_out/binaries';
@@ -1381,7 +1387,7 @@ if (SV_BIN==1)&(MEX_OPT==0)
    pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
    pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
    %%
-   fn_save_binary(Froot,dims,duration,pairs);
+   fn_save_binary(Froot,Bdims,duration,pairs);
 end
 
 t1 = now;
@@ -1739,7 +1745,8 @@ function fn_plot_spec(X,Y,Hs,Tw,Dmax,s1)
 
 subplot(2,2,1);
 if ny==1
-   plot(X/1e3,Hs);
+   [xx,yy]  = step_1d(X/1e3,Hs);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\itH}_{\rm s}, m');
 else
    H  = pcolor(X/1e3,Y/1e3,Hs);
@@ -1753,7 +1760,8 @@ end
 
 subplot(2,2,2);
 if ny==1
-   plot(X/1e3,Dmax);
+   [xx,yy]  = step_1d(X/1e3,Dmax);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\itD}_{\rm max}, m');
 else
    H  = pcolor(X/1e3,Y/1e3,Dmax);
@@ -1768,7 +1776,8 @@ end
 
 subplot(2,2,3);
 if ny==1
-   plot(X/1e3,Tw);
+   [xx,yy]  = step_1d(X/1e3,Tw);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\itT}_{\rm w}, s');
 else
    H  = pcolor(X/1e3,Y/1e3,Tw);
@@ -1783,7 +1792,8 @@ end
 subplot(2,2,4);
 detls = ['S: ',num2str(s1.period),'s, ',num2str(s1.dir),'^o'];
 if ny==1
-   plot(X/1e3,s1.Sdir);
+   [xx,yy]  = step_1d(X/1e3,s1.Sdir);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm',detls);
 else
    H  = pcolor(X/1e3,Y/1e3,s1.Sdir);
@@ -1812,7 +1822,8 @@ pos4  = [0.570340909090909   0.110000000000000   0.334659090909091   0.341162790
 %subplot(2,2,1);
 subplot('position',pos1);
 if ny==1
-   plot(X/1e3,Hs);
+   [xx,yy]  = step_1d(X/1e3,Hs);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\itH}_{\rm s}, m');
 else
    H  = pcolor(X/1e3,Y/1e3,Hs);
@@ -1828,7 +1839,8 @@ end
 %subplot(2,2,2);
 subplot('position',pos2);
 if ny==1
-   plot(X/1e3,Dmax);
+   [xx,yy]  = step_1d(X/1e3,Dmax);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\itD}_{\rm max}, m');
 else
    H  = pcolor(X/1e3,Y/1e3,Dmax);
@@ -1845,7 +1857,8 @@ end
 %subplot(2,2,3);
 subplot('position',pos3);
 if ny==1
-   plot(X/1e3,tau_x);
+   [xx,yy]  = step_1d(X/1e3,tau_x);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\tau}_{x}, Pa');
 else
    H  = pcolor(X/1e3,Y/1e3,tau_x);
@@ -1861,7 +1874,8 @@ end
 %subplot(2,2,4);
 subplot('position',pos4);
 if ny==1
-   plot(X/1e3,tau_y);
+   [xx,yy]  = step_1d(X/1e3,tau_y);
+   plot(xx,yy);
    GEN_proc_fig('\itx, \rmkm','{\tau}_{y}, Pa');
 else
    H  = pcolor(X/1e3,Y/1e3,tau_y);
