@@ -78,8 +78,9 @@ if ~exist('real_prams','var')
    visc_rp        = 13;
    duration_hours = 24;
    duration       = duration_hours*60*60;%s
+   CFL            = .7;
    disp('run_WIM2d_io_mex_v2: using default for real_prams:')
-   real_prams     = [young,visc_rp,duration]
+   real_prams     = [young,visc_rp,duration,CFL]
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

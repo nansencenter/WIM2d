@@ -22,8 +22,6 @@
       integer,parameter :: REF_Hs_ICE  = 0
       integer,parameter :: USE_ICE_VEL = 0
       !!
-      real,parameter    :: CFL      = 0.7
-      !!
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
 
@@ -39,7 +37,7 @@
 
       contains
 
-      subroutine wim_init(STEADY,DO_ATTEN)
+      subroutine wim_init(STEADY,DO_ATTEN,CFL)
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
@@ -51,6 +49,8 @@
       implicit none
 
       integer, intent(in) :: STEADY,DO_ATTEN
+      real,    intent(in) :: CFL
+      !!
       real     :: PI,tmp
       real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap

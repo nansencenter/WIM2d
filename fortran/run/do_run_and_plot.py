@@ -95,7 +95,8 @@ if 1:
    visc_rp        = 0.0
    duration_hours = 72.0
    duration       = duration_hours*60*60
-   real_prams     = np.array([young,visc_rp,duration])
+   CFL            = .7
+   real_prams     = np.array([young,visc_rp,duration,CFL])
 
 
 # call gateway between python and pre-compiled f2py module

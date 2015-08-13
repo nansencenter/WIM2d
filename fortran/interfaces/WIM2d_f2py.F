@@ -24,7 +24,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny,int_prams(8)
-      real,intent(in)                     :: real_prams(3)
+      real,intent(in)                     :: real_prams(4)
       real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy
 !f2py intent(hide)   :: nx,ny
@@ -60,7 +60,7 @@
       real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2    !! pass in/out directional spec
 
       !! parameters
-      real,intent(in)      :: real_prams(3),Tp_io,mwd_io
+      real,intent(in)      :: real_prams(4),Tp_io,mwd_io
       integer,intent(in)   :: int_prams(8)
       !!
       integer  :: i,j,w,wth

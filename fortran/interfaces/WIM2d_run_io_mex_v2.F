@@ -28,7 +28,7 @@ C
       integer,parameter :: Nin   = 3   ! no of inputs
       integer,parameter :: nx3d  = 6   ! size(x3d) = ii*jj*nx3d
       integer,parameter :: ni    = 8   ! length of int_prams
-      integer,parameter :: nr    = 3   ! length of real_prams
+      integer,parameter :: nr    = 4   ! length of real_prams
 
       !!pointers to outputs
       mwpointer y3d_pr!collect all 2d output arrays into 1 3d array (input as vector)

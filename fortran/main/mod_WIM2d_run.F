@@ -16,7 +16,7 @@
       integer  :: DO_BREAKING !can turn off breaking for testing of waves
       integer  :: DO_ATTEN    !can turn off attenuation to test advection
 
-      real     :: x_ext,y_ext,u_ref,duration
+      real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
 
       character(len=80) :: log_file,this_subr,outdir,indir
@@ -47,7 +47,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
       use mod_wavesice, only:
-     &    amax,amin,CFL,dt                                              &
+     &    amax,amin,dt                                                  &
      &   ,wim_init,wim_step                                             &
      &   ,check_grid,check_init,check_prog
             !! need these to:
@@ -103,7 +103,7 @@
 
       inquire(file=infile,exist=fex2)
       if (fex2) then
-         call read_infile(wim_prams_in,duration)
+         call read_infile(wim_prams_in)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
@@ -146,7 +146,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN)
+      call wim_init(STEADY,DO_ATTEN,CFL)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -230,7 +230,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
       use mod_wavesice, only:
-     &    amax,amin,CFL,dt                                              &
+     &    amax,amin,dt                                                  &
      &   ,wim_init,wim_step                                             &
      &   ,check_grid,check_init,check_prog
             !! need these to:
@@ -249,7 +249,7 @@
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
       ! DO_BREAKING,STEADY
 
-      real,dimension(3),intent(in)        :: real_prams  !! young,visc_rp,duration
+      real,dimension(4),intent(in)        :: real_prams  !! young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy
 
@@ -295,6 +295,7 @@
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
       duration       = real_prams(3)      !!length of sim [s]
+      CFL            = real_prams(4)      !!cg*dt/dx
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -396,7 +397,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN)
+      call wim_init(STEADY,DO_ATTEN,CFL)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -481,7 +482,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
       use mod_wavesice, only:
-     &    amax,amin,CFL,dt                                              &
+     &    amax,amin,dt                                                  &
      &   ,wim_init,wim_step                                             &
      &   ,check_grid,check_init,check_prog                              &
      &   ,do_wim_integrals
@@ -503,7 +504,7 @@
       ! DO_BREAKING,STEADY
 
       real,dimension(ii,jj,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
-      real,dimension(3),intent(in)        :: real_prams        !! young,visc_rp,duration
+      real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
 
       real              :: PI
       real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
@@ -546,6 +547,7 @@
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
       duration       = real_prams(3)      !!length of simulation [s]
+      CFL            = real_prams(4)      !!cg*dt/dx
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -596,7 +598,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN)
+      call wim_init(STEADY,DO_ATTEN,CFL)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -923,7 +925,7 @@
       use mod_gridinfo
       use mod_common_wim
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
-      use mod_wavesice, only: amax,amin,CFL,dt
+      use mod_wavesice, only: amax,amin,dt
 
       implicit none
 
@@ -961,7 +963,7 @@
       use mod_wim_prams
       use mod_common_wim
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
-      use mod_wavesice, only: amax,amin,CFL,dt
+      use mod_wavesice, only: amax,amin,dt
 
       implicit none
 
@@ -1075,12 +1077,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine read_infile(wim_prams_in,duration)
+      subroutine read_infile(wim_prams_in)
       !!determines where to read inputs/outputs from
       
       implicit none
       
-      real,intent(out)  :: wim_prams_in(2),duration
+      real,intent(out)  :: wim_prams_in(2)
       integer,parameter :: fid=99
       character(len=80) :: ctmp
 
@@ -1122,6 +1124,8 @@
       print*,"RP damping: ",wim_prams_in(2)
       read(fid,'(f7.2,a)'),   duration        ,ctmp
       print*,"Duration (s): ",duration
+      read(fid,'(f7.2,a)'),   CFL            ,ctmp
+      print*,"Duration (s): ",CFL
       print*,'******************************************************'
       print*,' '
       !!

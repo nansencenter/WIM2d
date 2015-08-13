@@ -92,8 +92,8 @@ if 1:
    visc_rp        = 0.0
    duration_hours = 6.0
    duration       = duration_hours*60*60
-   real_prams     = np.array([young,visc_rp,duration])
-
+   CFL            = 0.7
+   real_prams     = np.array([young,visc_rp,duration,CFL])
 
 # call gateway between python and pre-compiled f2py module
 out_fields,outdir = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0,\

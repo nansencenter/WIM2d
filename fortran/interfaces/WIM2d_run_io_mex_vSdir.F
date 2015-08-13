@@ -35,7 +35,7 @@ C
       integer,parameter :: Nin   = 6   ! no of inputs
       integer,parameter :: nx3d  = 3   ! size(x3d) = ii*jj*nx3d -- ice_arrays rearranged to a vector
       integer,parameter :: ni    = 8   ! length of int_prams
-      integer,parameter :: nr    = 3   ! length of real_prams
+      integer,parameter :: nr    = 4   ! length of real_prams
 
       !!pointers to outputs
       integer,parameter :: Nout  = 2   ! no of outputs

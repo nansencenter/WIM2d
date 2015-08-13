@@ -59,7 +59,7 @@ if ~exist('int_prams','var')
    DO_BREAKING = 1;
    STEADY      = 1;
    %%
-   disp('run_WIM2d_io_mex_v2: using default for int_prams:')
+   disp('run_WIM2d_io_mex_vSdir: using default for int_prams:')
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
                   CHECK_FINAL,CHECK_PROG,CHECK_INIT,...
                   DO_BREAKING,STEADY]
@@ -71,8 +71,9 @@ if ~exist('real_prams','var')
    visc_rp        = 13;
    duration_hours = 24;
    duration       = duration_hours*60*60;%s
-   disp('run_WIM2d_io_mex_v2: using default for real_prams:')
-   real_prams     = [young,visc_rp,duration]
+   CFL            = .7;
+   disp('run_WIM2d_io_mex_vSdir: using default for real_prams:')
+   real_prams     = [young,visc_rp,duration,CFL]
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

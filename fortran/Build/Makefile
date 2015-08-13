@@ -57,15 +57,8 @@ TARGET_F	:=	WIM2d.exec
 PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
-# mex function to run interactive WIM in matlab (old version)
-MX_EXT		:=	mex
-MX1		:=	WIM2d_run_io_mex
-MEX1		:=	$(src)/interfaces/$(MX1).F
-TARGET_MEX1	:=	$(MX1).$(MX_EXT)
-# mex function is $(TARGET_MEX1)maci64  for mac OSX
-# mex function is $(TARGET_MEX1)a64 	for linux
-
 # mex function to run interactive WIM in matlab
+MX_EXT		:=	mex
 MX2		:=	WIM2d_run_io_mex_v2
 MEX2		:=	$(src)/interfaces/$(MX2).F
 TARGET_MEX2	:=	$(MX2).$(MX_EXT)
@@ -115,11 +108,6 @@ py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
 	mv $(TARGET_PY).so $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
-mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
-	mkdir -p $(bin)
-	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX1)* $(bin)
-
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
 	mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
@@ -130,7 +118,7 @@ mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX3)* $(bin)
 
-all:	py exec mex1 mex2 mex3
+all:	py exec mex2 mex3
 
 All:	py exec
 
