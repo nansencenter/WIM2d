@@ -342,11 +342,49 @@
             end if
          end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         if (.true.) then!!new way (split advection from attenuation)
+
+         !! advect 1 frequency
+         call advect_1freq(sdf_dir(:,:,:,w),S_freq                      &
+     &      ,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
+
+         if (DO_ATTEN.eq.1) then
+
+            !! *do attenuation/scattering
+            !! *also calc momentum flux due to this process
+
+            if (SCATMOD.eq.0) then
+               !! Simple attenuation scheme
+               !! - doesn't conserve scattered energy
+               print*,'Simple atten'
+               call atten_simple(sdf_dir(:,:,:,w)                       &
+     &            ,S_freq,taux_om,tauy_om                               &
+     &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+
+            elseif (SCATMOD.eq.1) then
+               !! scattered energy is distributed isotropically
+               print*,'Isotropic atten'
+               call atten_isotropic(sdf_dir(:,:,:,w)                    &
+     &            ,S_freq,taux_om,tauy_om                               &
+     &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
+
+            end if
+
+            !! integrate stress densities over frequency
+            !! TODO: check if this is correct for ice-covered water
+            tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)  !![Pa*s]
+            tau_x = tau_x+wt_om(w)*tmp1                   !![Pa]
+            tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
+            tau_y = tau_y+wt_om(w)*tmp1                   !![Pa]
+
+         end if!!DO_ATTEN
+         else!!old way
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !! Transport waves and attenuate them
          if (SCATMOD.eq.0) then
             !! Simple attenuation scheme - doesn't conserve scattered energy
+            print*,'Simple atten 0'
             call adv_atten_simple(sdf_dir(:,:,:,w)                      &
      &         ,S_freq,taux_om,tauy_om                                  &
      &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
@@ -356,6 +394,7 @@
          elseif (SCATMOD.eq.1) then
             !! same as SCATMOD==0, but scattered energy
             !! is distributed isotropically
+            print*,'Isotropic atten 0'
             call adv_atten_isotropic(sdf_dir(:,:,:,w)                   &
      &         ,S_freq,taux_om,tauy_om                                  &
      &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
@@ -368,6 +407,8 @@
          tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
          tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
          tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
+
+         end if!!old way (end)
 
          !! INTEGRALS FOR BREAKING PROB:
          do j=1,jj
@@ -396,7 +437,7 @@
          end do!! i, end spatial loop x;
          end do!! j, end spatial loop y;
 
-      end do!! end spectral loop;
+      end do!! w, end spectral loop;
 
       if (REF_Hs_ICE.eq.1) then
          Hs = 4*sqrt(mom0)
