@@ -585,7 +585,7 @@ fprintf(logid,'%s%4.4d%s%4.4d\n','Grid dimensions:                  ' ,...
 fprintf(logid,'%s%4.1f%s%4.1f\n','Spatial resolution (km):          ' ,...
    dx/1.0e3,' ',dy/1.0e3);
 fprintf(logid,'%s%4.1f%s%4.1f\n','Extent of domain   (km):          ' ,...
-   nx*dx/1.0e3,' ',nx*dy/1.0e3);
+   nx*dx/1.0e3,' ',ny*dy/1.0e3);
 
 fprintf(logid,'%s\n',' ');
 fprintf(logid,'%s%5.2f\n','Minimum period (s):               ',1/max(wave_stuff.freq) );
@@ -805,7 +805,7 @@ if MEX_OPT==1
    % integer parameters
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
                   DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,...
-                  DO_BREAKING,STEADY];
+                  STEADY,DO_BREAKING,DO_ATTEN];
 
    in_arrays   = zeros(nx,ny,6);
    in_arrays(:,:,1)  = ice_fields.cice;
@@ -856,7 +856,7 @@ elseif MEX_OPT==2
    % integer parameters
    int_prams   = [SCATMOD,ADV_DIM,ADV_OPT,...
                   DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,...
-                  DO_BREAKING,STEADY];
+                  STEADY,DO_BREAKING,DO_ATTEN];
 
    in_arrays         = zeros(nx,ny,3);
    in_arrays(:,:,1)  = ice_fields.cice;
@@ -1427,9 +1427,9 @@ fprintf(logid,'%s%10.3e%s%10.3e\n','tau_y range (Pa): ',...
    tauy_min,' ',tauy_max);
 fprintf(logid,'%s\n','***********************************************');
 
-fprintf(logid,'%s,\n',' ');
+fprintf(logid,'%s\n',' ');
 fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s,%7.1f\n','Elapsed time (min):',t0_fac*(t1-t0));
+fprintf(logid,'%s%7.1f\n','Elapsed time (min): ',t0_fac*(t1-t0));
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n',' ');
 fclose(logid);

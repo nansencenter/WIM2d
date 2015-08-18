@@ -84,12 +84,13 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       CHECK_FINAL = 1
       CHECK_PROG  = 1
       CHECK_INIT  = 1
-      DO_BREAKING = 1
       STEADY      = 1
+      DO_BREAKING = 1
+      DO_ATTEN    = 1
       #
       int_prams_def  = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                                  CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                                 DO_BREAKING,STEADY])
+                                 STEADY,DO_BREAKING,DO_ATTEN])
 
       if int_prams is None:
          int_prams   = int_prams_def
