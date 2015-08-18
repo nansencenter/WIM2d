@@ -104,7 +104,9 @@ elseif OPT==2
 elseif OPT==3
    %% ice strip in middle
    xav         = mean(X(:));
-   xm          = .5*(dx+max(X(:))-min(X(:)));
+   xmin        = min(X(:));
+   xmax        = max(X(:));
+   xm          = .5*(dx+xmax-xmin);
    xe          = xav-.7*xm;
    strip_width = 100.0e3;
    xe2         = xe+strip_width;
