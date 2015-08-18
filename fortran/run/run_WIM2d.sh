@@ -5,6 +5,7 @@ mkdir -p $outdir/log
 mkdir -p $outdir/binaries
 mkdir -p $outdir/binaries/prog
 rm -f $outdir/binaries/prog/*
+rm -rf $outdir/figs/prog/*
 
 # run model
 w2d=$WIM2D_PATH
