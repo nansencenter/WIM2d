@@ -230,11 +230,17 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
              'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees',\
              'ICE_MASK':'Ice mask','WAVE_MASK':'Wave mask'}
 
-   # Typical limits for parameters
-   zlims  = {'icec':[0,1],'iceh':[0,5],'dfloe':[0,300],\
-             'taux':[-.5,.5],'tauy':[-.05,.05],\
-             'Hs':[0,5],'Tp':[10,20],'mwd':[-180,180],\
-             'ICE_MASK':[0,1],'WAVE_MASK':[0,1]}
+   # Default is let python choose range for variables
+   zlims  = {'icec':        None,   \
+             'iceh':        None,   \
+             'dfloe':       None,   \
+             'taux':        None,   \
+             'tauy':        None,   \
+             'Hs':          None,   \
+             'Tp':          None,   \
+             'mwd':         None,   \
+             'ICE_MASK':    None,   \
+             'WAVE_MASK':   None}
 
    # allow for other variations of key names
    aliases  = Fdat.key_aliases()
@@ -261,7 +267,7 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
          F  = fields[key]
          if F.ndim==2:
             F  = F[:,0]
-         f,ax,line   = plot_1d(x,F,labs=['$x$, km',labs[key]])
+         f,ax,line  = plot_1d(x,F,labs=['$x$, km',labs[key]])
          ax.set_ylim(zlim)
       f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
       plt.close(f)

@@ -17,18 +17,22 @@ import fns_plot_data as Fplt
 ##########################################################################
 mdir  = w2d+'/matlab/main/'
 fdir  = w2d+'/fortran/run/'
-if 0:
-   odir  = [fdir+'out',fdir+'out_io']
-   # odir  = [fdir+'out',fdir+'out_2']
-   # odir  = [fdir+'out_io',fdir+'out_2']
-elif 1:
-   # can compare pure matlab results with results saved from mex functions
-   # odir  = [mdir+'out_2',mdir+'out_io']
-   # odir  = [mdir+'m_out',mdir+'out_io']
-   odir  = [mdir+'m_out',mdir+'out_2']
-elif 1:
-   # matlab vs py interfaces
-   odir  = [fdir+'out_io',mdir+'out_io']
+
+# choose first set of results to compare
+# odir    = [fdir+'out'   ] # fortran, non-IO
+odir    = [fdir+'out_io'] # fortran, IO
+# odir    = [fdir+'out_2' ] # fortran, IO, full spec
+# odir    = [mdir+'m_out' ] # pure matlab
+# odir    = [mdir+'out_io'] # mex, IO
+# odir    = [mdir+'out_2' ] # mex, full spec
+
+# choose second set of results to compare
+# odir.append(fdir+'out'   ) # fortran, non-IO
+# odir.append(fdir+'out_io') # fortran, IO
+# odir.append(fdir+'out_2' ) # fortran, IO, full spec
+odir.append(mdir+'m_out' ) # pure matlab
+# odir.append(mdir+'out_io') # mex, IO
+# odir.append(mdir+'out_2' ) # mex, full spec
 
 print('Comparing directories:')
 print(odir)
@@ -36,7 +40,7 @@ print('\n')
 ##########################################################################
 
 ##########################################################################
-OPT   = 2   # 1: initial conditions; 2: final results; 3: prog results
+OPT   = 1   # 1: initial conditions; 2: final results; 3: prog results
 if OPT==1:
    print("\n************************************************")
    print("Checking initial conditions...")
