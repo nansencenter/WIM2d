@@ -27,6 +27,7 @@ then
 fi
 
 echo In `pwd`:
+rm -rf figs/prog/*
 echo python $tools/plot_prog.py
 python $tools/plot_prog.py
 

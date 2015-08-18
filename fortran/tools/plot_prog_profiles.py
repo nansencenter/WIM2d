@@ -39,6 +39,17 @@ figdir3     = figdir+'/prog_profiles'
 if not os.path.exists(figdir3):
    os.mkdir(figdir3)
 
+# Typical limits for parameters
+# NB use the same key names as in the .b file
+zlims  = {'icec':[0,1],      \
+         'iceh':[0,5],      \
+         'Dmax':[0,300],    \
+         'tau_x':[-.5,.5],  \
+         'tau_y':[-.05,.05],\
+         'Hs':[0,4],        \
+         'Tp':[10,20],      \
+         'mwd':[-180,180]}
+
 if PROG_OPT==1:
    # plot each variable, save different fig for each time step
    for pf in prog_files:
@@ -65,7 +76,7 @@ if PROG_OPT==1:
             grid_profiles.update({key:F})
 
          grid_profiles['ny']  = 1
-         Fplt.fn_plot_gen(grid_profiles,field_profiles,figdir3B)
+         Fplt.fn_plot_gen(grid_profiles,field_profiles,figdir3B,zlims_in=zlims)
 
    print('\n**********************************************************************')
    print('to make movie, type')
@@ -113,7 +124,8 @@ elif PROG_OPT==2:
          if loop_c==0:
             loop_s   = np.mod(loop_s+1,Ns)
 
-         fig,ax,line = Fplt.plot_1d(xx,Hs_n,labs=labs,pobj=[fig,ax],color=cols[loop_c],linestyle=lstil[loop_s])
+         fig,ax,line = Fplt.plot_1d(xx,Hs_n,labs=labs,pobj=[fig,ax],\
+                                    color=cols[loop_c],linestyle=lstil[loop_s])
          lines.append(line)
          legs.append(leg)
    #

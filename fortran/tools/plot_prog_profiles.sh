@@ -26,6 +26,7 @@ then
    exit
 fi
 
+rm -rf figs/prog_profiles/*
 echo In `pwd`:
 echo python $tools/plot_prog_profiles.py
 python $tools/plot_prog_profiles.py
