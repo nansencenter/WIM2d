@@ -34,7 +34,7 @@ C
       integer,parameter :: nxy4d  = n_wavdir*n_wave_freq  ! size(xy4d) = ii*jj*nxy4d
       integer,parameter :: Nin   = 6   ! no of inputs
       integer,parameter :: nx3d  = 3   ! size(x3d) = ii*jj*nx3d -- ice_arrays rearranged to a vector
-      integer,parameter :: ni    = 8   ! length of int_prams
+      integer,parameter :: ni    = 9   ! length of int_prams
       integer,parameter :: nr    = 4   ! length of real_prams
 
       !!pointers to outputs

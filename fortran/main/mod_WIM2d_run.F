@@ -126,6 +126,14 @@
          call set_wim_prams() ! - ice properties like Young's modulus
 
       end if
+
+      if ((ADV_DIM.eq.2).and.(jj.eq.1)) then
+         print*,'Invalid value of ADV_DIM (2) for jj = 1'
+         print*,'Stopping'
+         print*,''
+         STOP
+      end if
+
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! set idealised incident ice parameters
@@ -244,7 +252,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-      integer,dimension(8),intent(in)     :: int_prams
+      integer,dimension(9),intent(in)     :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
       ! DO_BREAKING,STEADY
@@ -288,9 +296,9 @@
       DO_CHECK_FINAL = int_prams(4)
       DO_CHECK_PROG  = int_prams(5)
       DO_CHECK_INIT  = int_prams(6)
-      DO_BREAKING    = int_prams(7)
-      STEADY         = int_prams(8)
-      DO_ATTEN       = 1 ! TODO put into int_prams
+      STEADY         = int_prams(7)
+      DO_BREAKING    = int_prams(8)
+      DO_ATTEN       = int_prams(9)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
@@ -299,6 +307,13 @@
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
+
+      if ((ADV_DIM.eq.2).and.(jj.eq.1)) then
+         print*,'Invalid value of ADV_DIM (2) for jj = 1'
+         print*,'Stopping'
+         print*,''
+         STOP
+      end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!locations of inputs/outputs
@@ -498,7 +513,7 @@
       !!variables
       integer,parameter                :: ndir  = n_wavdir
       integer,parameter                :: nw    = n_wave_freq
-      integer,dimension(8),intent(in)  :: int_prams
+      integer,dimension(9),intent(in)  :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
       ! DO_BREAKING,STEADY
@@ -540,9 +555,9 @@
       DO_CHECK_FINAL = int_prams(4)
       DO_CHECK_PROG  = int_prams(5)
       DO_CHECK_INIT  = int_prams(6)
-      DO_BREAKING    = int_prams(7)
-      STEADY         = int_prams(8)
-      DO_ATTEN       = 1 ! TODO put into int_prams
+      STEADY         = int_prams(7)
+      DO_BREAKING    = int_prams(8)
+      DO_ATTEN       = int_prams(9)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
@@ -551,6 +566,13 @@
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
+
+      if ((ADV_DIM.eq.2).and.(jj.eq.1)) then
+         print*,'Invalid value of ADV_DIM (2) for jj = 1'
+         print*,'Stopping'
+         print*,''
+         STOP
+      end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!locations of inputs/outputs

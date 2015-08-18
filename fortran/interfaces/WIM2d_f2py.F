@@ -23,7 +23,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,intent(in)                  :: nx,ny,int_prams(8)
+      integer,intent(in)                  :: nx,ny,int_prams(9)
       real,intent(in)                     :: real_prams(4)
       real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
       real,dimension(nx,ny,5),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy
@@ -61,7 +61,7 @@
 
       !! parameters
       real,intent(in)      :: real_prams(4),Tp_io,mwd_io
-      integer,intent(in)   :: int_prams(8)
+      integer,intent(in)   :: int_prams(9)
       !!
       integer  :: i,j,w,wth
       real     :: PI,STEADY,adv_dir
