@@ -1,5 +1,37 @@
 function out_fields = run_WIM2d(params_in,grid_prams,...
                                 ice_fields,wave_fields,wave_stuff)
+%% CALL: out_fields = run_WIM2d(params_in,grid_prams,...
+%%                              ice_fields,wave_fields,wave_stuff)
+%%
+%% ALL INPUTS ARE OPTIONAL
+%% *params_in is a structure that can be used to overwrite particular parameters
+%% from infile_matlab.txt (eg in a loop over 1 parameter)
+%% *ice_fields  = structure eg:
+%%      cice: [51x51 double]
+%%      hice: [51x51 double]
+%%      Dmax: [51x51 double]
+%%  WTR_MASK: [51x51 logical]
+%%  ICE_MASK: [51x51 double]
+%% *wave_fields  = structure eg:
+%%         Hs: [150x10 double]
+%%         Tp: [150x10 double]
+%%        mwd: [150x10 double]
+%%  WAVE_MASK: [150x10 logical]
+%% *wave_stuff = structure eg
+%%        nfreq: 25
+%%         ndir: 16
+%%         freq: [25x1 double]
+%%         dirs: [16x1 double]
+%%     dir_spec: [150x20x16x2 double]
+%%
+%% OUTPUTS:
+%% *out_fields = structure eg
+%%  tau_x: [150x20 double]
+%%  tau_y: [150x20 double]
+%%   Dmax: [150x20 double]
+%%     Hs: [150x20 double]
+%%     Tp: [150x20 double]
+%% *wave_stuff - like the input, but modified by WIM2d.m
 
 infile         = 'infile_matlab.txt';
 infile_version = 6;%%latest infile version
@@ -174,7 +206,7 @@ end
 if HAVE_ICE==0
    %%
    ice_fields  = iceinit(params,grid_prams);
-   %% ice_fields  = structure:
+   %% ice_fields  = structure eg:
    %%      cice: [51x51 double]
    %%      hice: [51x51 double]
    %%      Dmax: [51x51 double]
@@ -210,7 +242,6 @@ if HAVE_WAVES==0
    %%         Tp: [150x10 double]
    %%        mwd: [150x10 double]
    %%  WAVE_MASK: [150x10 logical]
-   %%
 end
 
 if ~exist('wave_stuff','var')
