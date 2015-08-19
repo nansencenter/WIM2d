@@ -16,7 +16,18 @@ else
    vbl='Hs'
 fi
 
-P=`pwd` # run from figs/prog/ folder or pass in path there as 2nd argument
+P=`pwd`  # run from figs/prog/ folder or pass in path there as 2nd argument
+P0=`basename $P`
+
+cd ..   # figs
+movdir=../movies
+mkdir -p $movdir
+cd $movdir
+Q=`pwd`
+outdir2=$Q/$P0 # where movies are saved
+mkdir -p $outdir2
+
+cd $P
 mkdir tmp
 
 n=-1
@@ -37,7 +48,7 @@ done
 
 # make movie
 fps=7 # frames per second
-mov=${vbl}_prog.mp4
+mov=${vbl}.mp4
 cd tmp
 echo ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
 
@@ -52,8 +63,6 @@ ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -vf "scale=trunc(iw/2)*2:t
 
 
 #clean up
-outdir2=$P/../prog_movies
-mkdir -p $outdir2
 mv $mov $outdir2
 cd ..
 rm -r tmp
