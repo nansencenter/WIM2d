@@ -50,11 +50,15 @@ end
 s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
 
 %%Breaking criterion option
+if ~isfield(s1,'break_opt');
+   s1.break_opt = 0;
+end
 if s1.break_opt==0%%beam test
    s1.strain_c = s1.sigma_c/s1.young;
-else%%Marchenko's stress criterion
+else%% Marchenko's stress criterion
     %% - convert to strain criterion
-   stress_c    = 2.6*s1.sigma_c;%%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+   stress_c    = 2.6*s1.sigma_c;
+      %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
    s1.strain_c = (1-s1.poisson^2)*stress_c/s1.young;
 end
 

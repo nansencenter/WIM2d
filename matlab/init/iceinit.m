@@ -1,61 +1,49 @@
 %% iceinit.m
 %% Author: Timothy Williams
 %% Date: 20141016, 12:00:41 CEST
-function [ice_fields,ice_prams] = iceinit(ice_prams,grid_prams,OPT)
+function ice_fields = iceinit(ice_prams,grid_prams)
 %% ice_prams is struct eg:
-%%   c: 0.750000000000000  (conc)
-%%   h: 1                  (thickness)
-%% optional fields 'young'  (Young's modulus)
-%%             and 'bc_opt' [breaking criteria = 0(beam) or 1(Marchenko)]
-%% grid_prams is struct eg:
-%%   nx: 15                (size of grid in x dirn)
-%%   ny: 15                (size of grid in y dirn)
-%% opts is struct eg:
-%%   ICE_SHAPE: 1          (0/1/2: different options for initial conditions)
+%%   conc_init : 0.750000000000000  (conc)
+%%   h_init    : 1                  (thickness)
+%%   Dmax_init : 1                  (max floe size)
+%%   OPT       : 1
+%% OPT can be 1,2,3 (different options for initial conditions)
+%%
+%% grid_prams  = structure, eg:
+%%        x0: 0
+%%        y0: 0
+%%        nx: 51
+%%        ny: 51
+%%        dx: 4000
+%%        dy: 4000
+%%         X: [51x51 double]
+%%         Y: [51x51 double]
+%%  LANDMASK: [51x51 double]
+%%      scuy: [51x51 double]
+%%      scvx: [51x51 double]
+%%      scp2: [51x51 double]
+%%     scp2i: [51x51 double]
+%%
 
 do_test  = 0;
 if nargin==0
    do_test     = 1;
-   h           = 2;
-   c           = 0.75;
-   ice_prams   = struct('c'         ,c,...
-                        'h'         ,h,...
-                        'bc_opt'    ,0,...
-                        'young_opt' ,2)
    %%
-   nx          = 51;
-   dx          = 4e3;
+   ice_prams.conc_init  = .75;
+   ice_prams.h_init     = 2;
+   ice_prams.Dmax_init  = 300;
+   ice_prams.OPT        = 1
    %%
-   OPT         = 1;
+   nx = 150;
+   ny = 40;
+   dx = 2e3;
+   %%
    grid_prams  = struct('x0',0,'y0',0,...
-                        'nx',nx,'ny',nx,...
+                        'nx',nx,'ny',ny,...
                         'dx',dx,'dy',dx);
-   grid_prams  = get_grid(grid_prams,OPT)
+   grid_prams  = get_grid(grid_prams,ice_prams.OPT)
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% get rest of ice_prams
-ice_prams   = fn_fill_iceprams(ice_prams);
-%% structure eg:
-%%               c: 0.750000000000000
-%%               h: 2
-%%            Dmax: 300
-%%           young: 2.000000000000000e+09
-%%          bc_opt: 0
-%%         visc_rp: 13
-%%          rhowtr: 1.025000000000000e+03
-%%          rhoice: 9.225000000000000e+02
-%%               g: 9.810000000000000
-%%         poisson: 0.300000000000000
-%%             vbf: 0.100000000000000
-%%              vb: 100
-%%         sigma_c: 2.741429878818372e+05
-%%        strain_c: 1.370714939409186e-04
-%%  flex_rig_coeff: 1.831501831501831e+08
-%%            Dmin: 20
-%%              xi: 2
-%%       fragility: 0.900000000000000
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+OPT   = ice_prams.OPT;
 
 %% cice/hice/Dmax in ice_fields
 nx       = grid_prams.nx;
@@ -117,22 +105,23 @@ elseif OPT==3
    jI       = find(ICE_MASK==1);
 end
 
-cice(jI) = ice_prams.c;%% ice
+cice(jI) = ice_prams.conc_init;%% ice
 cice(jL) = NaN;%% land
 %%
-Dmax(jI) = ice_prams.Dmax;
+Dmax(jI) = ice_prams.Dmax_init;
 Dmax(jL) = NaN;
 %%
-hice(jI) = ice_prams.h;
+hice(jI) = ice_prams.h_init;
 hice(jL) = NaN;
 
 %% outputs:
-ice_fields  = struct('cice',cice,...
-                     'hice',hice,...
-                     'Dmax',Dmax,...
-                     'WTR_MASK',WTR_MASK,...
-                     'ICE_MASK',ICE_MASK);
+ice_fields  = struct('cice'      ,cice    ,...
+                     'hice'      ,hice    ,...
+                     'Dmax'      ,Dmax    ,...
+                     'WTR_MASK'  ,WTR_MASK,...
+                     'ICE_MASK'  ,ICE_MASK);
 
 if do_test
    fn_plot_ice(grid_prams,ice_fields);
+   fn_fullscreen;
 end

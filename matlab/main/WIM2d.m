@@ -1,46 +1,34 @@
-function [ice_fields,wave_fields] = WIM2d()
+function out_fields = WIM2d(params_in,grid_prams,ice_fields,wave_fields,wave_stuff)
 
-%DO_SAVE     = 0;
-infile         = 'infile_matlab.txt';
-infile_version = 6;%%latest infile version
-
-if ~exist(infile)
-   %% now need infile to run code
-   error([infile,' not present - get example from "matlab/main/infiles" directory'])
-else
-   disp('********************************************************')
-   disp('reading options from infile:')
-   disp(infile)
-   disp('********************************************************')
-   disp(' ')
-   fid   = fopen(infile);
-
-   %%check infile version:
-   infile_version_   = read_next(fid);
-   if infile_version_~=infile_version
-      error(['Infile version number is: ',num2str(infile_version_),' - should be: ',num2str(infile_version)]);
-   end
-
-   %%read in rest of variables:
-   while ~feof(fid)
-      [x,name] = read_next(fid);
-      if ~isempty(x)
-         cmd   = [name,' = ',num2str(x),';'];
-         disp(cmd);
-         eval(cmd);
-      end
-   end
-   fclose(fid);
+%% Get parameters
+fnames   = fieldnames(params_in);
+for loop_i=1:length(fnames)
+   vbl   = fnames{loop_i};
+   eval([vbl,' = ','params_in.',vbl,';']);
 end
+clear params_in;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% grid stuff
+nx       = grid_prams.nx;
+ny       = grid_prams.ny;
+dx       = grid_prams.dx;
+dy       = grid_prams.dy;
+LANDMASK = grid_prams.LANDMASK;
+X        = grid_prams.X;
+Y        = grid_prams.Y;
 
 if (ADV_DIM==2)&(ny<4)
    error('incompatible values of ADV_DIM and ny: increase ny or use ADV_DIM=1');
+else
+   adv_options = struct('ADV_DIM',ADV_DIM,...
+                        'ADV_OPT',ADV_OPT);
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %% TURN ON/OFF PLOTTING:
-PLOT_OPT    = 2;%%plot option (only used if doing plotting)
-adv_options = struct('ADV_DIM',ADV_DIM,...
-                     'ADV_OPT',ADV_OPT);
+PLOT_OPT          = 2;%%plot option (only used if doing plotting)
 TEST_INC_SPEC     = 0;
 TEST_FINAL_SPEC   = 0;
 
@@ -65,232 +53,23 @@ fprintf(logid,'%s\n','Main parameters:');
 fprintf(logid,'%s%2.2d\n','SCATMOD:                          ',SCATMOD);
 fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',ADV_DIM);
 fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',ADV_OPT);
-fprintf(logid,'%s%2.2d\n','DO_BREAKING:                      ',DO_BREAKING);
 fprintf(logid,'%s%2.2d\n','STEADY:                           ',STEADY);
+fprintf(logid,'%s%2.2d\n','DO_BREAKING:                      ',DO_BREAKING);
+fprintf(logid,'%s%2.2d\n','DO_ATTEN:                         ',DO_ATTEN);
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n',' ');
 fclose(logid);
 
-%if DO_SAVE
-%   filename=['wim2d_out',num2str(Tm),...
-%            's_',num2str(mwd_dim),...
-%            'deg_spread','.mat'];
-%else
-%   disp('not saving');
-%   %disp('not saving - push any key');
-%   %pause;
-%end
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%important settings
 itest = 24;
 jtest = 1;
 format long
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Initialization')
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%check what inputs we are given;
-if MEX_OPT>0
-   infile_dirs = 'infile_dirs.txt';
-   if ~exist(infile_dirs)
-      error([infile_dirs,' not present (needed by mex functions)'])
-   else
-      disp(' ');
-      disp('*******************************************************');
-      disp(['Reading ',infile_dirs,'...']);
-      fid      = fopen(infile_dirs);
-      indir    = strtrim(fgets(fid));
-      outdir   = strtrim(fgets(fid));
-      fclose(fid);
-   end
-
-   %% get grid
-   disp(' ');
-   disp(['Getting grid from ',indir,'...']);
-   grid_prams     = fn_get_grid(indir);
-   grid_prams.x0  = min(grid_prams.X(:));
-   grid_prams.y0  = min(grid_prams.Y(:));
-
-   %% get nw,ndir,Tmin,Tmax from wave_info.h
-   fdir  = '../../fortran';
-   hfil  = [fdir,'/header_files/wave_info.h'];
-   disp(' ');
-   disp(['Getting wave grid from ',hfil,'...']);
-   fid   = fopen(hfil);
-   lin   = strsplit(strtrim(fgets(fid)));
-   ndir  = find_num(lin{5});
-   lin   = strsplit(strtrim(fgets(fid)));
-   nw    = find_num(lin{5});
-   lin   = strsplit(strtrim(fgets(fid)));
-   lin   = strsplit(strtrim(fgets(fid)));
-   Tmin  = find_num(lin{5});
-   lin   = strsplit(strtrim(fgets(fid)));
-   Tmax  = find_num(lin{5});
-   fclose(fid);
-
-   disp(' ');
-   disp(['Will save results in ',outdir]);
-   disp('*******************************************************');
-   disp(' ');
-
-   if 0
-      %% get initial conditions from fortran run
-      [grid_prams,ice_fields,wave_fields] = fn_check_init(outdir);
-      ice_prams.c          = 'given';
-      ice_prams.h          = 'given';
-      ice_prams.Dmax       = 'given';
-      ice_prams.break_opt  = 0;
-      if ~isnan(young)
-         ice_prams.young_opt  = NaN;
-      else
-         ice_prams.young_opt  = 1;
-      end
-      if ~isnan(visc_rp)
-         ice_prams.visc_rp = visc_rp;
-      end
-   end
-end
-HAVE_GRID   = exist('grid_prams','var');
-
-HAVE_ICE    = exist('ice_fields','var');
-if HAVE_ICE
-   if ~isfield(ice_fields,'cice')
-      ice_prams   = ice_fields;
-      HAVE_ICE    = 0;
-   else
-      %% have ice_fields (arrays) already
-      ice_prams.c          = 'given';
-      ice_prams.h          = 'given';
-      ice_prams.Dmax       = 'given';
-      ice_prams.break_opt  = 0;
-      if ~isnan(young)
-         ice_prams.young_opt  = NaN;
-      else
-         ice_prams.young_opt  = 1;
-      end
-      if ~isnan(visc_rp)
-         ice_prams.visc_rp = visc_rp;
-      end
-      ice_prams   = fn_fill_iceprams(ice_prams);
-   end
-end
-
-HAVE_WAVES  = exist('wave_prams','var');
-if HAVE_WAVES
-   %%check if full info is given or just partial info;
-   if isfield(wave_prams,'dir_spec')
-      wave_fields = wave_prams;
-   else
-      HAVE_WAVES  = 0;
-   end
-end
-
-HAVE2 = HAVE_ICE+HAVE_WAVES;
-if (0<HAVE2)&(HAVE2<3)
-   disp(' ');
-   disp('*********************************************************************');
-   disp('Please specify both of ''ice_fields'' and ''wave_fields''');
-   disp('(or specify none, and let configuration be chosen through local variable ''OPT'')');
-   disp(['HAVE_ICE    = ',num2str(HAVE_ICE  )]);
-   disp(['HAVE_WAVES  = ',num2str(HAVE_WAVES)]);
-   disp('*********************************************************************');
-   error('WIM2d initialisation');
-   return
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% Grid
-if HAVE_GRID==0
-
-   %%can pass in all/none of grid_prams,ice_fields,wave_fields
-   %%but not some
-   if exist('ice_fields','var')|exist('wave_fields','var')
-      disp('WIM2d.m');
-      disp('Please specify all 3 of ''grid_prams'',''ice_fields'',''wave_fields''');
-      disp('(at least ''grid_prams'' not given)');
-      return;
-   end
-
-   grid_prams  = struct('x0',x0,'y0',y0,...
-                        'nx',nx,'ny',ny,...
-                        'dx',dx,'dy',dy);
-   grid_prams  = get_grid(grid_prams,OPT);
-   %% grid_prams  = structure, eg:
-   %%        x0: 0
-   %%        y0: 0
-   %%        nx: 51
-   %%        ny: 51
-   %%        dx: 4000
-   %%        dy: 4000
-   %%         X: [51x51 double]
-   %%         Y: [51x51 double]
-   %%  LANDMASK: [51x51 double]
-   %%      scuy: [51x51 double]
-   %%      scvx: [51x51 double]
-   %%      scp2: [51x51 double]
-   %%     scp2i: [51x51 double]
-end
-nx       = grid_prams.nx;
-ny       = grid_prams.ny;
-dy       = grid_prams.dy;
-dy       = grid_prams.dy;
-X        = grid_prams.X;
-Y        = grid_prams.Y;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Ice/water;
-if HAVE_ICE==0
-   ice_prams.c    = conc_init;
-   ice_prams.h    = h_init;
-   ice_prams.Dmax = Dmax_init;
-
-   break_opt   = 0;%% breaking condition (0=beam;1=Marchenko)
-   ice_prams.break_opt  = break_opt;
-   if ~isnan(young)
-      ice_prams.young      = young;%%Young's modulus [Pa]
-      ice_prams.young_opt  = NaN;%%not used
-   else
-      %%Option for selecting Young's modulus
-      %% - only used if Young's modulus not given
-      %% 0: 2e9 [Marchenko estimate]
-      %% 1: Vernon's estimate from brine volume fraction (vbf)
-      %% 2: same as above but with vbf=.1 -> young = 5.49e9 Pa
-      ice_prams.young_opt  = 0;
-   end
-   if ~isnan(visc_rp)
-      ice_prams.visc_rp = visc_rp;%%Robinson-Palmer damping [Pa/(m/s)]
-   end
-   %%
-   [ice_fields,ice_prams]  = iceinit(ice_prams,grid_prams,OPT);
-   %% ice_fields  = structure:
-   %%      cice: [51x51 double]
-   %%      hice: [51x51 double]
-   %%      Dmax: [51x51 double]
-   %%  WTR_MASK: [51x51 logical]
-   %%  ICE_MASK: [51x51 double]
-
-   %% ice_prams = structure eg:
-   %%               c: 0.750000000000000
-   %%               h: 2
-   %%            Dmax: 300
-   %%           young: 2.000000000000000e+09
-   %%          bc_opt: 0
-   %%         visc_rp: 13
-   %%          rhowtr: 1.025000000000000e+03
-   %%          rhoice: 9.225000000000000e+02
-   %%               g: 9.810000000000000
-   %%         poisson: 0.300000000000000
-   %%             vbf: 0.100000000000000
-   %%              vb: 100
-   %%         sigma_c: 2.741429878818372e+05
-   %%        strain_c: 1.370714939409186e-04
-   %%  flex_rig_coeff: 1.831501831501831e+08
-   %%            Dmin: 20
-   %%              xi: 2
-   %%       fragility: 0.900000000000000
-end
-
+%% ICE
 cice     = ice_fields.cice;
 hice     = ice_fields.hice;
 Dmax     = ice_fields.Dmax;
@@ -298,8 +77,48 @@ WTR_MASK = ice_fields.WTR_MASK;
 ICE_MASK = ice_fields.ICE_MASK;
 
 %% add wave stress computation
-ice_fields.tau_x  = 0*cice;
-ice_fields.tau_y  = 0*cice;
+out_fields.tau_x  = 0*cice;
+out_fields.tau_y  = 0*cice;
+
+%% WAVES
+WAVE_MASK   = wave_fields.WAVE_MASK;
+nw          = wave_stuff.nfreq;     %% number of frequencies
+om_vec      = 2*pi*wave_stuff.freq; %% radial freq
+ndir        = wave_stuff.ndir;      %% number of directions
+wavdir      = wave_stuff.dirs;      %% wave from, degrees, clockwise
+Sdir        = wave_stuff.dir_spec;  %% initial directional spectrum
+
+%% get rest of ice_prams
+if ~isnan(young)
+   ice_prams.young      = young;
+   ice_prams.young_opt  = NaN;
+else
+   ice_prams.young_opt  = 1;
+end
+if ~isnan(visc_rp)
+   ice_prams.visc_rp = visc_rp;
+end
+ice_prams.break_opt  = 0;%%TODO put this into params_in/infile
+ice_prams   = fn_fill_iceprams(ice_prams);
+%% ice_prams = structure eg:
+%%               c: 0.750000000000000
+%%               h: 2
+%%            Dmax: 300
+%%           young: 2.000000000000000e+09
+%%          bc_opt: 0
+%%         visc_rp: 13
+%%          rhowtr: 1.025000000000000e+03
+%%          rhoice: 9.225000000000000e+02
+%%               g: 9.810000000000000
+%%         poisson: 0.300000000000000
+%%             vbf: 0.100000000000000
+%%              vb: 100
+%%         sigma_c: 2.741429878818372e+05
+%%        strain_c: 1.370714939409186e-04
+%%  flex_rig_coeff: 1.831501831501831e+08
+%%            Dmin: 20
+%%              xi: 2
+%%       fragility: 0.900000000000000
 
 %% Model Parameters
 rho_wtr  = ice_prams.rhowtr;   % Water density   [m/s^2]
@@ -317,7 +136,7 @@ if 0
    fn_plot_ice(grid_prams,ice_fields);
    return
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%append to log file
 logid = fopen(log_file,'a');
@@ -334,29 +153,6 @@ fclose(logid);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%waves
-if HAVE_WAVES==0
-   if ~exist('wave_prams','var');
-      wave_prams  = struct('Hs',Hs_init,...
-                           'Tp',T_init,...
-                           'mwd',dir_init);
-   end
-   wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
-   %% structure eg:
-   %%         Hs: [150x10 double]
-   %%         Tp: [150x10 double]
-   %%        mwd: [150x10 double]
-   %%  WAVE_MASK: [150x10 logical]
-   WAVE_MASK   = wave_fields.WAVE_MASK;
-   %%
-   nw,ndir,Tmin,Tmax
-   inc_options = struct('nw',nw,...
-                        'ndir',ndir,...
-                        'Tmin',Tmin,...
-                        'Tmax',Tmax,...
-                        'DIRSPEC_INC_OPT',DIRSPEC_INC_OPT);
-   wave_stuff  = set_incident_waves(grid_prams,wave_fields,inc_options);
-end
-
 nw       = wave_stuff.nfreq;     %% number of frequencies
 om_vec   = 2*pi*wave_stuff.freq; %% radial freq
 ndir     = wave_stuff.ndir;      %% number of directions
@@ -383,9 +179,9 @@ if TEST_INC_SPEC==1
 end
 
 if STEADY==1
-   S_inc    = Sdir;
-   theta    = -pi/180*(90+wavdir);
-   j_fwd    = find(cos(theta)>=0);
+   S_inc             = Sdir;
+   theta             = -pi/180*(90+wavdir);
+   j_fwd             = find(cos(theta)>=0);
    WAVE_MASK2        = 0*WAVE_MASK;
    WAVE_MASK2(1:3,:) = 1;
    %[i1,j1]  = find(WAVE_MASK==1,1,'first');
@@ -412,10 +208,19 @@ atten_nond  = zeros(nx,ny,nw);
 damping     = zeros(nx,ny,nw);
 
 % Display some parameters here (since initialisation can be slow)
+Nice  = sum(ICE_MASK);
+h_av  = sum(ice_fields.hice)/Nice;
+c_av  = sum(ice_fields.cice)/Nice;
+%%
+Nwav  = sum(WAVE_MASK);
+Hs_av = sum(wave_fields.Hs)/Nwav;
+Tp_av = sum(wave_fields.Tp)/Nwav;
+
 Info  = { '------------------------------------';
-         ['h          = ' num2str(ice_prams.h) ' m const'];
-         ['Tp         = ' num2str(wave_prams.Tp) ' s'];
-         ['Hs         = ' num2str(wave_prams.Hs) ' m'];
+         ['c          = ' num2str(c_av)  ' const'];
+         ['h          = ' num2str(h_av)  ' m const'];
+         ['Hs         = ' num2str(Hs_av) ' m'];
+         ['Tp         = ' num2str(Tp_av) ' s'];
          ['CFL        = ' num2str(CFL)];
          ['nfreq      = ' num2str(nw)];
          ['ndir       = ' num2str(ndir)];
@@ -533,12 +338,12 @@ Info  = { '------------------------------------';
          ['sigma_c            = '  num2str(ice_prams.sigma_c,'%5.5e') ' Pa'];
          ['fragility          = '  num2str(fragility)];
          ['strain_c           = '  num2str(strain_c,'%5.5e')];
-         ['h                  = '  num2str(ice_prams.h) ' m const'];
-         ['c                  = '  num2str(ice_prams.c) ' const'];
+         ['h                  = '  num2str(h_av) ' m const'];
+         ['c                  = '  num2str(c_av) ' const'];
          ['Damping            = '  num2str(visc_rp) ' Pa.s/m'];
          [' '];
-         ['Tp                 = '  num2str(wave_prams.Tp) ' s'];
-         ['Hs                 = '  num2str(wave_prams.Hs) ' m'];
+         ['Tp                 = '  num2str(Tp_av) ' s'];
+         ['Hs                 = '  num2str(Hs_av) ' m'];
          ['nfreq              = '  num2str(nw)];
          ['ndir               = '  num2str(ndir)];
          ['SCATMOD            = '  num2str(SCATMOD)];
@@ -570,10 +375,9 @@ logid = fopen(log_file,'a');
 fprintf(logid,'%s\n',' ');
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n','Other Parameters:');
-fprintf(logid,'%s%6.1f\n','Time step (s):                    ' ,dt);
-fprintf(logid,'%s%4.3f\n','CFL number:                       ' ,CFL);
-fprintf(logid,'%s%5.2f\n','Maximum wave group velocity (m/s):' ,amax);
-fprintf(logid,'%s%6.1f\n','Time step (s):                    ' ,dt);
+fprintf(logid,'%s%6.1f\n','Time step (s):                    ',dt);
+fprintf(logid,'%s%4.3f\n','CFL number:                       ',CFL);
+fprintf(logid,'%s%5.2f\n','Maximum wave group velocity (m/s):',amax);
 fprintf(logid,'%s%4.4d\n','Number of time steps:             ',nt);
 fprintf(logid,'%s%5.2f\n','Time interval (h):                ',nt*dt/3600 );
 fprintf(logid,'%s\n','***********************************************');
@@ -647,8 +451,8 @@ if PLOT_INIT
    if PLOT_OPT==1
       fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
    else
-      fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
-         Dmax,ice_fields.tau_y);
+      fn_plot_spec_2(X,Y,wave_fields.Hs,out_fields.tau_x,...
+         Dmax,out_fields.tau_y);
    end
    %if OPT==1
    %   subplot(2,2,1);
@@ -779,8 +583,8 @@ if (SV_BIN==1) & (DO_CHECK_PROG==1)
    %%
    pairs = {};
    pairs{end+1}   = {'Dmax',ice_fields.Dmax};
-   pairs{end+1}   = {'tau_x',ice_fields.tau_x};
-   pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+   pairs{end+1}   = {'tau_x',out_fields.tau_x};
+   pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs',wave_fields.Hs};
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    %%
@@ -823,7 +627,6 @@ if MEX_OPT==1
    %pause
 
    %% make the call!
-   prep_mex_dirs(outdir);
    tic;
    out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),int_prams,real_prams);
    toc;
@@ -832,11 +635,8 @@ if MEX_OPT==1
    fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[nx,ny,Nout]);
-   for j=1:3
-      ice_fields.(fldnames{j})   = out_arrays(:,:,j);
-   end
-   for j=4:5
-      wave_fields.(fldnames{j})  = out_arrays(:,:,j);
+   for j=1:Nout
+      out_fields.(fldnames{j})   = out_arrays(:,:,j);
    end
 
    % delete annoying file
@@ -864,7 +664,6 @@ elseif MEX_OPT==2
    in_arrays(:,:,3)  = ice_fields.Dmax;
 
    %% make the call!
-   prep_mex_dirs(outdir);
    tic;
    [Sdir,out_arrays] = WIM2d_run_io_mex_vSdir(...
       Sdir(:),in_arrays(:),int_prams,real_prams,T_init,dir_init);
@@ -875,11 +674,8 @@ elseif MEX_OPT==2
    fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[nx,ny,Nout]);
-   for j=1:3
-      ice_fields.(fldnames{j})   = out_arrays(:,:,j);
-   end
-   for j=4:5
-      wave_fields.(fldnames{j})  = out_arrays(:,:,j);
+   for j=1:Nout
+      out_fields.(fldnames{j})   = out_arrays(:,:,j);
    end
   
    % delete annoying file
@@ -1134,8 +930,8 @@ else
       end
 
       %% wave stresses
-      ice_fields.tau_x  = tau_x;
-      ice_fields.tau_y  = tau_y;
+      out_fields.tau_x  = tau_x;
+      out_fields.tau_y  = tau_y;
 
       %% FINALLY DO FLOE BREAKING;
       for i=1:nx
@@ -1237,8 +1033,8 @@ else
                               'Sdir',Sdir(:,:,jdir,jchq));
                   fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
                else
-                  fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
-                     Dmax,ice_fields.tau_y);
+                  fn_plot_spec_2(X,Y,wave_fields.Hs,out_fields.tau_x,...
+                     Dmax,out_fields.tau_y);
                end
 
                %if OPT==1
@@ -1363,8 +1159,8 @@ else
          %%
          pairs = {};
          pairs{end+1}   = {'Dmax' ,ice_fields.Dmax};
-         pairs{end+1}   = {'tau_x',ice_fields.tau_x};
-         pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+         pairs{end+1}   = {'tau_x',out_fields.tau_x};
+         pairs{end+1}   = {'tau_y',out_fields.tau_y};
          pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
          pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
          %%
@@ -1374,6 +1170,11 @@ else
    end%% end time loop
 end%%MEX_OPT==0 option
 
+%% final outputs
+out_fields.Dmax   = ice_fields.Dmax;
+out_fields.Hs     = wave_fields.Hs;
+out_fields.Tp     = wave_fields.Tp;
+
 if (SV_BIN==1)&(DO_CHECK_FINAL==1)
    %% save matlab files as binaries
    %% to matlab results
@@ -1382,8 +1183,8 @@ if (SV_BIN==1)&(DO_CHECK_FINAL==1)
    %%
    pairs = {};
    pairs{end+1}   = {'Dmax' ,ice_fields.Dmax};
-   pairs{end+1}   = {'tau_x',ice_fields.tau_x};
-   pairs{end+1}   = {'tau_y',ice_fields.tau_y};
+   pairs{end+1}   = {'tau_x',out_fields.tau_x};
+   pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
    pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
    %%
@@ -1404,10 +1205,10 @@ if (OPT==1)|(OPT==3)
    disp(['MIZ width = ',num2str(Wmiz),' km']);
 end
 
-taux_min = min(ice_fields.tau_x(:))
-taux_max = max(ice_fields.tau_x(:))
-tauy_min = min(ice_fields.tau_x(:))
-tauy_max = max(ice_fields.tau_y(:))
+taux_min = min(out_fields.tau_x(:))
+taux_max = max(out_fields.tau_x(:))
+tauy_min = min(out_fields.tau_x(:))
+tauy_max = max(out_fields.tau_y(:))
 disp(['max tau_x = ',num2str(taux_max),' Pa']);
 disp(['max tau_y = ',num2str(tauy_max),' Pa']);
 disp(' ');
@@ -1469,8 +1270,8 @@ if TEST_FINAL_SPEC==1
       of2         = fn_check_final(outdir);%%set in infile_dirs.txt
       of1.Hs      = wave_fields.Hs;
       of1.Tp      = wave_fields.Tp;
-      of1.tau_x   = ice_fields.tau_x;
-      of1.tau_y   = ice_fields.tau_y;
+      of1.tau_x   = out_fields.tau_x;
+      of1.tau_y   = out_fields.tau_y;
       of1.Dmax    = ice_fields.Dmax;
       %%
       vbls  = {'Hs','Tp','tau_x','tau_y','Dmax'};%,'mwd'};%mwd currently not updated
@@ -1498,8 +1299,8 @@ if PLOT_FINAL%%check exponential attenuation
                   'Sdir',Sdir(:,:,jdir,jchq));
       fn_plot_spec(X,Y,wave_fields.Hs,wave_fields.Tp,Dmax,s1);
    else
-      fn_plot_spec_2(X,Y,wave_fields.Hs,ice_fields.tau_x,...
-         Dmax,ice_fields.tau_y);
+      fn_plot_spec_2(X,Y,wave_fields.Hs,out_fields.tau_x,...
+         Dmax,out_fields.tau_y);
    end
    %%
    if 0
@@ -1805,6 +1606,7 @@ else
    ttl   = title({'\itS, \rmm^2s',ttl});
    GEN_font(ttl);
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function fn_plot_spec_2(X,Y,Hs,tau_x,Dmax,tau_y)
@@ -1896,61 +1698,6 @@ if ~exist('col','var')
 end
 H  = plot(x,y,col);
 GEN_proc_fig(labs{1},labs{2});
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x,name]  = read_next(fid)
-%% read next line in text file
-
-lin   = strtrim(fgets(fid));  %% trim leading white space
-lin2  = strsplit(lin);        %%split using spaces
-x     = lin2{1};              %%get 1st thing in line
-
-if strcmp(x,'')
-   % blank line
-   disp(' ');
-   x     = [];
-   name  = [];
-elseif strcmp(x,'#')
-   % comment
-   disp(lin);
-   x     = [];
-   name  = [];
-else
-   % proper variable
-   x     = str2num(x);
-   name  = lin2{3};
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function x=find_num(txt)
-
-x0 = strsplit(txt,'!');
-x  = str2num(x0{1});
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function prep_mex_dirs(outdir)
-%% mex function saves results as binary files:
-%% needs some directories to exist - otherwise it crashes
-
-if ~exist(outdir,'dir')
-   eval(['!mkdir ',outdir]);
-end
-
-odirs = {[outdir,'/binaries'],...
-         [outdir,'/binaries/prog'],...
-         [outdir,'/log'],...
-         [outdir,'/figs'],...
-         [outdir,'/figs/prog']};
-for j=1:length(odirs)
-   outdir   = odirs{j};
-   if ~exist(outdir,'dir')
-      eval(['!mkdir ',outdir]);
-   end
-end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

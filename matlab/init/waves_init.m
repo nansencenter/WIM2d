@@ -2,7 +2,7 @@
 %% Author: Timothy Williams
 %% Date: 20141016, 18:13:51 CEST
 
-function wave_fields = waves_init(grid_prams,wave_prams,ice_fields,OPT);
+function wave_fields = waves_init(grid_prams,wave_prams,ice_fields);
 
 do_test  = 0;
 if nargin==0
@@ -24,18 +24,26 @@ if nargin==0
    %%
    Hs          = 3;
    Tp          = 11;
-   wave_prams  = struct('Hs',Hs,'Tp',Tp);
+
+   if OPT==0
+      mwd   = 135;%%waves-from direction (deg)
+   elseif OPT==1
+      mwd   = -90;%%waves-from direction (deg)
+   elseif OPT==2
+      mwd   = 135;%%waves-from direction (deg)
+   elseif OPT==3
+      mwd   = -90;%%waves-from direction (deg)
+   end
+
+   wave_prams  = struct('Hs',Hs,'Tp',Tp,'mwd',mwd,'OPT',OPT);
+   clear Hs Tp mwd OPT;
 end
 
-if OPT==0
-   mwd   = 135;%%waves-from direction (deg)
-elseif OPT==1
-   mwd   = -90;%%waves-from direction (deg)
-elseif OPT==2
-   mwd   = 135;%%waves-from direction (deg)
-elseif OPT==3
-   mwd   = -90;%%waves-from direction (deg)
-end
+Hs    = wave_prams.Hs;
+Tp    = wave_prams.Tp;
+mwd   = wave_prams.mwd;
+OPT   = wave_prams.OPT;
+
 
 X     = grid_prams.X;
 Y     = grid_prams.Y;
@@ -65,8 +73,6 @@ elseif OPT==3
    jWV         = find(WAVE_MASK==1);
 end
 
-Hs = wave_prams.Hs;
-Tp = wave_prams.Tp;
 
 Hs_mat   = zeros(nx,ny);
 Tp_mat   = zeros(nx,ny);
