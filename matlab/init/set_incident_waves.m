@@ -3,7 +3,7 @@
 %% Date: 20141016, 18:55:20 CEST
 function wave_stuff = set_incident_waves(grid_prams,wave_fields,inc_options)
 
-grid_prams,wave_fields,inc_options
+%grid_prams,wave_fields,inc_options
 if ~exist('inc_options','var')
    %%default options
    nw                = 1;  %% Single frequency

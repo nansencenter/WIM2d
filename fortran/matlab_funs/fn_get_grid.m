@@ -18,6 +18,6 @@ end
 
 %% extra info
 grid_prams.nx  = info.nx;
-grid_prams.ny] = info.ny;;
+grid_prams.ny  = info.ny;
 grid_prams.dx  = mean(grid_prams.scvx(:));
 grid_prams.dy  = mean(grid_prams.scuy(:));
