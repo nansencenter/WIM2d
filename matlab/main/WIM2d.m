@@ -1,4 +1,4 @@
-function out_fields = WIM2d(params_in,grid_prams,ice_fields,wave_fields,wave_stuff)
+function [out_fields,wave_stuff] = WIM2d(params_in,grid_prams,ice_fields,wave_fields,wave_stuff)
 
 %% Get parameters
 fnames   = fieldnames(params_in);
@@ -132,8 +132,11 @@ Dmin        = ice_prams.Dmin;      % [m]
 xi          = ice_prams.xi;        % [-]
 fragility   = ice_prams.fragility; % [-]
 
-if 0
+if 1
+   figure,fn_fullscreen;
    fn_plot_ice(grid_prams,ice_fields);
+   figure,fn_fullscreen;
+   fn_plot_waves(grid_prams,wave_fields);
    return
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -311,7 +314,7 @@ end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-amax     = max(ag_eff(:))
+amax     = max(ag_eff(:));
 dt       = CFL*dx/max(ag_eff(:)); 
 
 if 0
@@ -329,7 +332,7 @@ else
    %%
    nt = floor(duration_hours*3600/dt);
 end
-duration = nt*dt%%duration in seconds;
+duration = nt*dt;%%duration in seconds;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display parameters
@@ -349,14 +352,14 @@ Info  = { '------------------------------------';
          ['SCATMOD            = '  num2str(SCATMOD)];
          [' '];
          ['CFL                = '  num2str(CFL)];
-         ['dt                 = '  num2str(dt,'%1.1f')];
+         ['dt                 = '  num2str(dt,'%1.1f') ' s'];
          ['nt                 = '  num2str(nt)];
-         ['Time interval      = '  num2str(duration/3600,'%1.1f') 'h'];
+         ['Time interval      = '  num2str(duration/3600,'%1.1f') ' h'];
          [' '];
          ['nx                 = '  num2str(nx)];
          ['ny                 = '  num2str(ny)];
-         ['dx                 = '  num2str(dx/1e3) ' km'];
-         ['dy                 = '  num2str(dy/1e3) ' km'];
+         ['dx                 = '  num2str(dx/1e3)    ' km'];
+         ['dy                 = '  num2str(dy/1e3)    ' km'];
          ['x extent           = '  num2str(nx*dx/1e3) ' km'];
          ['y extent           = '  num2str(ny*dy/1e3) ' km'];
          '------------------------------------';
@@ -440,6 +443,11 @@ if PLOT_INIT
    pause(0.1);
    %%
    figure(2),clf;
+   fn_fullscreen;
+   fn_plot_waves(grid_prams,wave_fields);
+   pause(0.1);
+   %%
+   figure(3),clf;
    fn_fullscreen;
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
@@ -563,9 +571,9 @@ if (SV_BIN==1) & (DO_CHECK_INIT==1)
    pairs{end+1}   = {'cice',ice_fields.cice};
    pairs{end+1}   = {'hice',ice_fields.hice};
    pairs{end+1}   = {'Dmax',ice_fields.Dmax};
-   pairs{end+1}   = {'Hs',wave_fields.Hs};
-   pairs{end+1}   = {'Tp',wave_fields.Tp};
-   pairs{end+1}   = {'mwd',wave_fields.mwd};
+   pairs{end+1}   = {'Hs'  ,wave_fields.Hs};
+   pairs{end+1}   = {'Tp'  ,wave_fields.Tp};
+   pairs{end+1}   = {'mwd' ,wave_fields.mwd};
    %%
    fn_save_binary(Froot,Bdims,[],pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -594,7 +602,7 @@ if (SV_BIN==1) & (DO_CHECK_PROG==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
-disp('beginning main integration...');
+disp('BEGINNING MAIN INTEGRATION...');
 if MEX_OPT==1
 
    disp(' ');
@@ -721,9 +729,9 @@ else
          end
          v2    = F_fields.(vc{1});
          subplot(2,1,1);
-         fn_plot_vbl(X,Y,v1,vc{2});
+         fn_pcolor(X,Y,v1,{'\itx, \rmkm','\ity, \rmkm',vc{1}});
          subplot(2,1,2);
-         fn_plot_vbl(X,Y,v2,vc{2});
+         fn_pcolor(X,Y,v2,{'\itx, \rmkm','\ity, \rmkm',vc{2}});
          maxes = {max(v1(:)),max(v1(:))}
       elseif 1
          %% plot relative diff's
@@ -736,7 +744,7 @@ else
             Z     = 0*v2;
             jn    = find(abs(v2)>0);
             Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
-            fn_plot_vbl(X,Y,Z,lbl{j})
+            fn_pcolor(X,Y,Z,{'\itx, \rmkm','\ity, \rmkm',lbl{j}});
          end
          for j=3:3
             subplot(3,1,j);
@@ -745,7 +753,7 @@ else
             Z     = 0*v2;
             jn    = find(abs(v2)>0);
             Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
-            fn_plot_vbl(X,Y,Z,lbl{j})
+            fn_pcolor(X,Y,Z,{'\itx, \rmkm','\ity, \rmkm',lbl{j}});
          end
       end
    end
@@ -761,7 +769,7 @@ else
 
    %nt = 13%%stop straight away for testing
    for n = 1:nt
-      disp([n nt])
+      %disp([n nt])
 
       %% spectral moments;
       mom0  = zeros(nx,ny);
@@ -964,7 +972,7 @@ else
                   %% interpolate (to check fortran code)
                   %% NB slight difference due to RT_param_outer
                   %% using finite depth wavelength approx to
-                  %% inifinit depth one
+                  %% inifinite depth one
                   om       = 2*pi/T_crit;
                   om_min   = om_vec(1);
                   om_max   = om_vec(end);
@@ -976,7 +984,7 @@ else
                      wlng_crest  = wlng_ice(i,j,nw);
                   else
                      jcrest      = floor((om-om_min+dom)/dom);
-                     om1         = 2*PI*freq_vec(jcrest);
+                     om1         = 2*pi*wave_stuff.freq(jcrest);
                      lam1        = wlng_ice(i,j,jcrest);
                      lam2        = wlng_ice(i,j,jcrest+1);
                      wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom;
@@ -1024,7 +1032,7 @@ else
 
          if PLOT_PROG
             if DIAG1d==0
-               figure(2),clf;
+               figure(3),clf;
                fn_fullscreen;
                %%
                if PLOT_OPT==1
@@ -1291,7 +1299,7 @@ if TEST_FINAL_SPEC==1
 end
 
 if PLOT_FINAL%%check exponential attenuation
-   figure(2),clf;
+   figure(3),clf;
    fn_fullscreen;
    if PLOT_OPT==1
       s1 = struct('dir',wave_stuff.dirs(jdir),...
@@ -1305,7 +1313,7 @@ if PLOT_FINAL%%check exponential attenuation
    %%
    if 0
       %% figure testing how 1d results are (only appropriate for 1d geometries)
-      figure(3),clf;
+      figure(4),clf;
       fn_fullscreen;
       xx = X(:,1);
       if 0
@@ -1418,7 +1426,7 @@ if PLOT_FINAL%%check exponential attenuation
 
                %% check y-dependance
                if k==1
-                  figure(3);
+                  figure(4);
                   ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
                   subplot(2,1,2)
                   hold on;
@@ -1512,7 +1520,7 @@ if PLOT_FINAL%%check exponential attenuation
          mkdir([fig_dir,'/png']);
       end
 
-      figure(2);
+      figure(3);
       saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
       saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
 
@@ -1530,6 +1538,13 @@ if PLOT_FINAL%%check exponential attenuation
 end
 
 %%display info again
+disp('##############################################################');
+t1 = now;
+disp([num2str(n),' time steps done, out of ',num2str(nt)]);
+disp(['Time taken (mins)      : ' ,num2str(t0_fac*(t1-t0))]);
+disp(['Model time passed (h)  : ' ,num2str(n*dt/3600.)]);
+disp('##############################################################');
+disp(' ');
 disp(strvcat(Info));
 
 %% save time-stepped Dmax;
@@ -1543,68 +1558,25 @@ function fn_plot_spec(X,Y,Hs,Tw,Dmax,s1)
 %% S for 1 particular freq and dir
 
 [nx,ny]  = size(X);
-
-subplot(2,2,1);
+vbls     = {'Hs','Dmax','Tw','s1.Sdir'};
+lab3     = {'{\itH}_{\rm s}, m','{\itD}_{\rm max}, m','{\itT}_{\rm w}, s'};
+detls    = ['S: ',num2str(s1.period),'s, ',num2str(s1.dir),'^o'];
 if ny==1
-   [xx,yy]  = step_1d(X/1e3,Hs);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\itH}_{\rm s}, m');
+   lab3{4}  = detls;
 else
-   H  = pcolor(X/1e3,Y/1e3,Hs);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   ttl   = title('{\itH}_{\rm s}, m');
-   GEN_font(ttl);
+   lab3{4}  = {'\itS, \rmm^2s',detls};
 end
 
-subplot(2,2,2);
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,Dmax);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\itD}_{\rm max}, m');
-else
-   H  = pcolor(X/1e3,Y/1e3,Dmax);
-   caxis([0 250]);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   ttl   = title('{\itD}_{\rm max}, m');
-   GEN_font(ttl);
-end
-
-subplot(2,2,3);
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,Tw);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\itT}_{\rm w}, s');
-else
-   H  = pcolor(X/1e3,Y/1e3,Tw);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   ttl   = title('{\itT}_{\rm w}, s');
-   GEN_font(ttl);
-end
-
-subplot(2,2,4);
-detls = ['S: ',num2str(s1.period),'s, ',num2str(s1.dir),'^o'];
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,s1.Sdir);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm',detls);
-else
-   H  = pcolor(X/1e3,Y/1e3,s1.Sdir);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   ttl   = dtls;
-   ttl   = title({'\itS, \rmm^2s',ttl});
-   GEN_font(ttl);
+for j=1:4
+   subplot(2,2,j);
+   eval(['Z = ',vbls{j},';']);
+   if ny==1
+      labs  = {'\itx, \rmkm',lab3{j}};
+      fn_plot1d(X/1e3,Z,labs);
+   else
+      labs  = {'\itx, \rmkm','\ity, \rmkm',lab3{j}};
+      fn_pcolor(X(:,1)/1e3,Y(1,:)/1e3,Z,labs);
+   end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1614,101 +1586,25 @@ function fn_plot_spec_2(X,Y,Hs,tau_x,Dmax,tau_y)
 %% S for 1 particular freq and dir
 
 [nx,ny]  = size(X);
+vbls     = {'Hs','Dmax','tau_x','tau_y'};
+lab3     = {'{\itH}_{\rm s}, m','{\itD}_{\rm max}, m',...
+            '{\tau}_{x}, \rmPa','{\tau}_{y}, \rmPa'};
 
 %%fix positions so figures can be compared more easily between computers
-pos1  = [0.130000000000000   0.583837209302326   0.334659090909091   0.341162790697674];
-pos2  = [0.570340909090909   0.583837209302326   0.334659090909091   0.341162790697674];
-pos3  = [0.130000000000000   0.110000000000000   0.334659090909091   0.341162790697674];
-pos4  = [0.570340909090909   0.110000000000000   0.334659090909091   0.341162790697674];
+pos{1}   = [0.130000000000000   0.583837209302326   0.334659090909091   0.341162790697674];
+pos{2}   = [0.570340909090909   0.583837209302326   0.334659090909091   0.341162790697674];
+pos{3}   = [0.130000000000000   0.110000000000000   0.334659090909091   0.341162790697674];
+pos{4}   = [0.570340909090909   0.110000000000000   0.334659090909091   0.341162790697674];
 
-%subplot(2,2,1);
-subplot('position',pos1);
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,Hs);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\itH}_{\rm s}, m');
-else
-   H  = pcolor(X/1e3,Y/1e3,Hs);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   GEN_font(gca);
-   ttl   = title('{\itH}_{\rm s}, m');
-   GEN_font(ttl);
+for j=1:4
+   subplot('position',pos{j});
+   eval(['Z = ',vbls{j},';']);
+   if ny==1
+      labs  = {'\itx, \rmkm',lab3{j}};
+      fn_plot1d(X/1e3,Z,labs);
+   else
+      labs  = {'\itx, \rmkm','\ity, \rmkm',lab3{j}};
+      fn_pcolor(X(:,1)/1e3,Y(1,:)/1e3,Z,labs);
+   end
 end
-
-%subplot(2,2,2);
-subplot('position',pos2);
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,Dmax);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\itD}_{\rm max}, m');
-else
-   H  = pcolor(X/1e3,Y/1e3,Dmax);
-   caxis([0 250]);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   GEN_font(gca);
-   ttl   = title('{\itD}_{\rm max}, m');
-   GEN_font(ttl);
-end
-
-%subplot(2,2,3);
-subplot('position',pos3);
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,tau_x);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\tau}_{x}, Pa');
-else
-   H  = pcolor(X/1e3,Y/1e3,tau_x);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   GEN_font(gca);
-   ttl   = title('{\tau}_{x}, Pa');
-   GEN_font(ttl);
-end
-
-%subplot(2,2,4);
-subplot('position',pos4);
-if ny==1
-   [xx,yy]  = step_1d(X/1e3,tau_y);
-   plot(xx,yy);
-   GEN_proc_fig('\itx, \rmkm','{\tau}_{y}, Pa');
-else
-   H  = pcolor(X/1e3,Y/1e3,tau_y);
-   set(H,'EdgeColor', 'none');
-   daspect([1 1 1]);
-   GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-   colorbar;
-   GEN_font(gca);
-   ttl   = title('{\tau}_{y}, Pa');
-   GEN_font(ttl);
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function H = fn_plot1d(x,y,labs,col)
-if ~exist('col','var')
-   col   = '-k';
-end
-H  = plot(x,y,col);
-GEN_proc_fig(labs{1},labs{2});
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function fn_plot_vbl(X,Y,Z,lbl)
-
-H  = pcolor(X/1e3,Y/1e3,Z);
-set(H,'EdgeColor', 'none');
-daspect([1 1 1]);
-GEN_proc_fig('\itx, \rmkm','\ity, \rmkm');
-colorbar;
-GEN_font(gca);
-ttl   = title(lbl);
-GEN_font(ttl);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
