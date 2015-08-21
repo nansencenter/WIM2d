@@ -65,6 +65,7 @@ wimdirs{end+1} = [wimdir1,'/run'];%%interface to mex funs
 wimdirs{end+1} = [wimdir1,'/matlab_funs'];
 wimdirs{end+1} = [wimdir1,'/../matlab/other_deps'];
 wimdirs{end+1} = [gitdir,'/matlab/Semi-Infinite-Elastic-Plate/GEN_progs'];
+wimdirs{end+1} = [gitdir,'/WIM2d/matlab/misc'];
 for loop_i=1:length(wimdirs)
    addpath(wimdirs{loop_i});
 end

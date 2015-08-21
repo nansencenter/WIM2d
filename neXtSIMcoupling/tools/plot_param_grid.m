@@ -15,8 +15,8 @@ function plot_param_grid(param,simul_outfile,varargin)
 %   Created 2014-07-01 by Philipp 
 
 % default values
-domain='bigarctic'; 
-domain=''; 
+%domain   = 'bigarctic'; 
+domain   = ''; 
 colormap_name='jet'; 
 manual_axis_range = []; 
 figure_format=''; % with '' the plot is not saved 
@@ -24,6 +24,7 @@ box_bound=[];
 date_flag=1; %Set to 1 to plot the date, 0 to disable Phil
 plot_coastline  =   1; %0: A coarse Arctic mesh is plotted which is loaded from artic_coasts_light.mat
                        %1: The actual domain boundaries are plotted, black for closed and white for open
+visible      = 1;
 
 
 
@@ -53,8 +54,8 @@ else
 end
 
 % Load/read mesh
-X  = simul_out.wim.gridprams.X/1.e3;%km
-Y  = simul_out.wim.gridprams.Y/1.e3;%km
+X  = simul_out.wim.gridprams.X(:,1)/1.e3;%km
+Y  = simul_out.wim.gridprams.Y(1,:)/1.e3;%km
 
 % for param == 'speed' we plot the speed in km/day
 tstr  = param;
@@ -97,30 +98,15 @@ elseif strcmp(param,'Nfloes')
    tstr  = 'Nfloes, km^{-2}';
 end
 
-P  = pcolor(X',Y',Z');
+labs  = {'\itx, km','ity, km',tstr};
+P     = fn_pcolor(X,Y,Z,labs);
 colormap(colormap_name);
-colorbar;
-
-ttl   = title(tstr);
-set(P, 'EdgeColor', 'none');
-fn_fullscreen;
-daspect([1 1 1]);
-xl = xlabel('x, km');
-yl = ylabel('y, km');
-set(xl,'fontname','times','fontsize',16);
-set(yl,'fontname','times','fontsize',16);
-set(ttl,'fontname','times','fontsize',16);
 
 if ~isempty(manual_axis_range)
    caxis(manual_axis_range);
 end
 
-%Setting other plotting values for plot_tricorner
-title_figure = simul_outfile(1:end-4);
-
-masked       = 0;
 if nVarargs < 6
-   visible      = 1;
 end
 if date_flag == 1 && isfield(simul_out,'current_time')
    textstring = datestr(simul_out.current_time,'yyyy/mm/dd   HH:MM');
