@@ -217,21 +217,23 @@
       do i=1,ii
          scp2i(i,j)  = 1/scp2(i,j)
 
-         !!set LANDMASK (0: no land)
-         if (GRID_OPT.eq.1) then
+         !!set LANDMASK
+         if (GRID_OPT.eq.0) then
+            !!no land
+         elseif (GRID_OPT.eq.1) then
 
             !!column of land to right
-            x1 = x0+1.5*xm
+            x1 = x0+1.8*xm
             if (X(i,j).gt.x1) then
                LANDMASK(i,j)  = 1
             end if
 
-         elseif (GRID_OPT.eq.1) then
+         elseif (GRID_OPT.eq.2) then
 
             !!make an island;
             x1    = x0+2*xm-.25*(2*xm) !!centre
             y1    = y0+.25*(2*ym)      !!centre
-            R0    = 30.e3              !!radius
+            R0    = .2*ym              !!radius
             Rsq   = (X(i,j)-x1)**2+(Y(i,j)-y1)**2
             if (Rsq.lt.R0**2) then
                LANDMASK(i,j)  = 1
@@ -239,12 +241,10 @@
 
          elseif (GRID_OPT.eq.3) then
 
-            !!land in bottom right corner
-            x1 = x0+1.5*xm
-            y1 = y0+0.5*ym
-            if ( (X(i,j).gt.x1).and.(Y(i,j).lt.y1) ) then
-               LANDMASK(i,j)  = 1
-            end if
+            !!land in top,bottom and right cells
+            LANDMASK(ii,:) = 1   !far right cells
+            LANDMASK(:,jj) = 1   !top cells
+            LANDMASK(:,1)  = 1   !bottom cells
 
          end if
 

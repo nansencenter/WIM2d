@@ -5,4 +5,4 @@
 4.e3  # dy - y resolution
 0.    # x0 - 1st grid cell in x dirn
 0.    # y0 - 1st grid cell in y dirn
-0     # LAND_OPT - land option: 0, no land; 1, land at right hand end; 2, island in middle
+3     # LAND_OPT - land option: 0, no land; 1, land at right hand end; 2, island in middle

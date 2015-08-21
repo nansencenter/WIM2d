@@ -10,3 +10,9 @@ echo " "
 echo "Now compile in :  ../Build"
 echo "Run in         :  ../run"
 echo " " 
+
+if [ 1 -eq 1 ]
+then
+   python grid_plot.py
+   open test/out/land_mask.png
+fi

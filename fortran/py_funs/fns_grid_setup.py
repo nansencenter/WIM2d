@@ -78,9 +78,11 @@ def get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
       gf['Y'][i,:]   = vy
 
    # LANDMASK:
-   if LAND_OPT is 1:
+   if LAND_OPT is 0:
+      print('\nNo land present\n')
+   elif LAND_OPT is 1:
       # standard 2d setup (works with the standard 1d/2d grids):
-      xl                         = x0+.9*(vx.max()-x0)
+      xl                        = x0+.9*(vx.max()-x0)
       gf['LANDMASK'][vx>xl,:]   = 1.0
       print('\nLand in last 10% of domain\n')
    elif LAND_OPT is 2:
@@ -97,8 +99,14 @@ def get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
             if R<Rc:
                gf['LANDMASK'][i,j]  = 1.
       print('\nMaking island\n')
+   elif LAND_OPT is 3:
+      print('\nLand on 3 out of 4 boundaries (not left-most one)\n')
+      gf['LANDMASK'][-1,: ]  = 1. # far right cells
+      gf['LANDMASK'][: ,0 ]   = 1.# bottom cells
+      gf['LANDMASK'][: ,-1]  = 1. # top cells
    else:
-      print('\nNo land present\n')
+      raise ValueError('Invalid value of LAND_OPT ('+str(LAND_OPT)+' - should be 0/1/2/3)')
+
    ###########################################################
 
    ###########################################################

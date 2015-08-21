@@ -222,25 +222,28 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
    figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png',\
              'taux':'taux.png','tauy':'tauy.png',\
              'Hs':'Hs.png'    ,'Tp':'Tp.png'   ,'mwd':'mwd.png',\
-             'ICE_MASK':'ice_mask.png','WAVE_MASK':'wave_mask.png'}
+             'ICE_MASK':'ice_mask.png','WAVE_MASK':'wave_mask.png',\
+             'LANDMASK':'land_mask.png'}
 
    # dictionary of labels for colorbars
    labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m',\
              'taux':r'$\tau_x$, Pa','tauy':r'$\tau_y$, Pa',\
              'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees',\
-             'ICE_MASK':'Ice mask','WAVE_MASK':'Wave mask'}
+             'ICE_MASK':'Ice mask','WAVE_MASK':'Wave mask',\
+             'LANDMASK':'Land mask'}
 
    # Default is let python choose range for variables
-   zlims  = {'icec':        None,   \
-             'iceh':        None,   \
-             'dfloe':       None,   \
-             'taux':        None,   \
-             'tauy':        None,   \
-             'Hs':          None,   \
-             'Tp':          None,   \
-             'mwd':         None,   \
-             'ICE_MASK':    None,   \
-             'WAVE_MASK':   None}
+   zlims  = {'icec'     : None,   \
+             'iceh'     : None,   \
+             'dfloe'    : None,   \
+             'taux'     : None,   \
+             'tauy'     : None,   \
+             'Hs'       : None,   \
+             'Tp'       : None,   \
+             'mwd'      : None,   \
+             'ICE_MASK' : None,   \
+             'WAVE_MASK': None,   \
+             'LANDMASK' : None}
 
    # allow for other variations of key names
    aliases  = Fdat.key_aliases()
