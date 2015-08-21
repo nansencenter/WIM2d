@@ -13,7 +13,7 @@ if ~exist('inc_options','var')
    DIRSPEC_INC_OPT   = 1;  %% cos^2 spreading
 else
    nw                = inc_options.nw;
-   ndir              = inc_options.ndir
+   ndir              = inc_options.ndir;
    Tmin              = inc_options.Tmin;
    Tmax              = inc_options.Tmax;
    DIRSPEC_INC_OPT   = inc_options.DIRSPEC_INC_OPT;
@@ -21,7 +21,7 @@ end
 
 %%frequency grid:
 if nw==1%%single freq
-   T     = max(wave_fields.Tp(:))
+   T     = max(wave_fields.Tp(:));
    freq  = 1/T;
 else
    f      = 1/Tmax;%0.042;% min freq/ resolution
