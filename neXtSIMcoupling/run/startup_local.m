@@ -1,20 +1,21 @@
 %%define location of /Data/sim:
 SHOW_WARNING   = 0;
+try_extHD      = 1;
 
 if exist('/Volumes/sim')
    %% johansen
-   data_sim = '/Volumes/sim'
-   try_ext  = 0;
+   data_sim    = '/Volumes/sim'
+   try_extHD   = 0;
 
    %% sometimes this dir shows up even if it's not loaded
    dd       = dir(data_sim);
    if length(dd)==2
       %%only ".", ".." in dir
-      try_ext  = 1;
+      try_extHD   = 1;
    end
 end
    
-if try_ext
+if try_extHD
    %% can't find johansen
 
    if exist('/Volumes/Tim_Ext_HD2/WORK/neXtSIM')
@@ -72,7 +73,8 @@ end
 if exist('data_sim','var')
 
    johansen_paths = [data_sim,'/data'];%%+all subdirs
-   topaz_path     = [johansen_paths,'/TOPAZ4/198910_201102'];%topaz data
+   topaz_path     = [johansen_paths,'/TOPAZ4/198910_201112'];%topaz data
+   %topaz_path     = [johansen_paths,'/TOPAZ4/198910_201312'];%topaz data
    amsre_path     = [johansen_paths,'/AMSRE_ice_conc/2008'];%ice conc
    etopo_path     = [johansen_paths,'/BATHYMETRY/etopo1_ice_c_i2'];%%bathymetry
 
@@ -81,6 +83,7 @@ if exist('data_sim','var')
                amsre_path,...
                etopo_path};
    for loop_i=1:length(joh_dirs)
+      disp(joh_dirs{loop_i})
       addpath(joh_dirs{loop_i});
    end
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
