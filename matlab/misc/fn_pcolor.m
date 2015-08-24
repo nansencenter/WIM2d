@@ -27,7 +27,7 @@ Z(1:nx,1:ny)   = z;
 xx = cen2edges(x);
 yy = cen2edges(y);
 
-H  = pcolor(xx,yy,Z');
+H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
 set(H,'EdgeColor', 'none');
 
 if ~exist('labs','var')
