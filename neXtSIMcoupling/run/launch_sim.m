@@ -14,10 +14,22 @@ end
 
 if 0
    % Rewrite the simul in file
+   % (use restart)
    step_restart           = 12;
    simul_in.use_simul_out = 1;
    simul_in.step_nb       = step_restart;
    save(saved_simul_in,'simul_in')
+end
+
+if 1
+   % Rewrite the simul in file
+   days_in_sec                = 24*3600;
+   simul_in.duration          = 7*days_in_sec;
+   simul_in.wim.init.Hs       = 4;
+   simul_in.wim.init.Tp       = 12;
+   simul_in.wim.init.mwd      = -90;
+   simul_in.wim.init.STEADY   = 1;
+   save(saved_simul_in,'simul_in');
 end
 
 
@@ -134,7 +146,7 @@ odir  = [outdir,'/figs'];
 eval(['!mkdir -p ',odir]);
 odir  = [odir,'/init_final'];
 eval(['!mkdir -p ',odir]);
-cmd   = ['!mv *','test',num2str(test_i),'*.png ',outdir,'/png'];
+cmd   = ['!mv *','test',num2str(test_i),'*.png ',odir];
 eval(cmd);
 
 !rm -f fort.6

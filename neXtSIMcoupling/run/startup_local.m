@@ -108,6 +108,9 @@ if exist('data_sim','var')
    %% - need all the sub-directories in these folders
    lookin_dirs{2} = johansen_paths;
    lookin_dirs{3} = [mat_path,'/m_map/'];
+else
+   %% have to work locally
+   addpath([getenv('HOME'),'/matlab/custom-packages/m_map']);
 end
 
 lookin_dirs{1} = [nextsim_path,'/tools'];
