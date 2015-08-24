@@ -67,7 +67,7 @@ jtest = 1;
 format long
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp('Initialization')
+if DO_DISP; disp('Initialization'); end
 
 %% ICE
 cice     = ice_fields.cice;
@@ -132,7 +132,7 @@ Dmin        = ice_prams.Dmin;      % [m]
 xi          = ice_prams.xi;        % [-]
 fragility   = ice_prams.fragility; % [-]
 
-if 1
+if 0
    figure,fn_fullscreen;
    fn_plot_ice(grid_prams,ice_fields);
    figure,fn_fullscreen;
@@ -163,19 +163,19 @@ wavdir   = wave_stuff.dirs;      %% wave from, degrees, clockwise
 Sdir     = wave_stuff.dir_spec;  %% initial directional spectrum
 
 if TEST_INC_SPEC==1
-   disp(' ');
-   disp('Testing initial spectrum...');
+   if DO_DISP; disp(' ');
+   disp('Testing initial spectrum...'); end
    [wf.Hs,wf.Tp,wf.mwd] = fn_spectral_integrals(om_vec,wavdir,Sdir);
    vbls  = {'Hs','Tp','mwd'};
    for n=1:length(vbls)
       vbl   = vbls{n};
-      disp(' ');
-      disp(['comparing field: ',vbl]);
+      if DO_DISP; disp(' ');
+      disp(['comparing field: ',vbl]); end
       v1    = wf.(vbl);
       v2    = wave_fields.(vbl);
       diff  = abs(v2-v1);
-      disp(['max diff: ',num2str(max(diff(:)))]);
-      disp(' ');
+      if DO_DISP; disp(['max diff: ',num2str(max(diff(:)))]);
+      disp(' '); end
    end
 
    return
@@ -230,7 +230,7 @@ Info  = { '------------------------------------';
          ['SCATMOD    = ' num2str(SCATMOD)];
          '------------------------------------';
          ' '};
-disp(strvcat(Info));
+if DO_DISP; disp(strvcat(Info)); end
 
 for i = 1:nx
 for j = 1:ny
@@ -365,7 +365,7 @@ Info  = { '------------------------------------';
          '------------------------------------';
          ' '};
 
-disp(strvcat(Info));
+if DO_DISP; disp(strvcat(Info)); end
 
 %% Integration
 t0       = now;   %%days
@@ -602,14 +602,14 @@ if (SV_BIN==1) & (DO_CHECK_PROG==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
-disp('BEGINNING MAIN INTEGRATION...');
+if DO_DISP; disp('BEGINNING MAIN INTEGRATION...'); end
 if MEX_OPT==1
 
-   disp(' ');
+   if DO_DISP; disp(' ');
    disp('*****************************************************************');
    disp('Running fortran code with mex function: run_WIM2d_io_mex_v2');
    disp('*****************************************************************');
-   disp(' ');
+   disp(' '); end
 
    % real parameters
    real_prams  = [ice_prams.young,ice_prams.visc_rp,duration,CFL];
@@ -652,11 +652,11 @@ if MEX_OPT==1
 
 elseif MEX_OPT==2
 
-   disp(' ');
+   if DO_DISP; disp(' ');
    disp('*****************************************************************');
    disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
    disp('*****************************************************************');
-   disp(' ');
+   disp(' '); end
 
    % real parameters
    real_prams  = [ice_prams.young,ice_prams.visc_rp,duration,CFL];
@@ -690,7 +690,7 @@ elseif MEX_OPT==2
    !rm -f fort.6
 
 else
-   disp('Running pure matlab code');
+   if DO_DISP; disp('Running pure matlab code'); end
    COMP_F   = 0;
    if COMP_F==1
       %% load prog binaries and compare saved wim_prog*.[ab] files
@@ -861,8 +861,8 @@ else
 
          if ndir==1
             if SCATMOD~=0
-               disp('warning: changing SCATMOD option as not enough directions');
-               disp(['(ndir = ',num2str(ndir)]);
+               if DO_DISP; disp('warning: changing SCATMOD option as not enough directions');
+               disp(['(ndir = ',num2str(ndir)]); end
             end
             SCATMOD  = 0;
          end
@@ -1019,16 +1019,16 @@ else
          end
 
          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         disp('##############################################################');
+         if DO_DISP; disp('##############################################################'); end
          t1 = now;
-         disp([num2str(n),' time steps done, out of ',num2str(nt)]);
+         if DO_DISP; disp([num2str(n),' time steps done, out of ',num2str(nt)]);
          disp(['Time taken (mins)      : ' ,num2str(t0_fac*(t1-t0))]);
          disp(['Model time passed (h)  : ' ,num2str(n*dt/3600.)]);
          disp('##############################################################');
-         disp(' ');
+         disp(' '); end
          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-         disp(strvcat(Info));
+         if DO_DISP; disp(strvcat(Info)); end
 
          if PLOT_PROG
             if DIAG1d==0
@@ -1209,17 +1209,17 @@ if (OPT==1)|(OPT==3)
    Dmax_min = min(Dmax_j);
    Dmax_max = max(Dmax_j);
    %%
-   disp(' ');
-   disp(['MIZ width = ',num2str(Wmiz),' km']);
+   if DO_DISP; disp(' ');
+   disp(['MIZ width = ',num2str(Wmiz),' km']); end
 end
 
-taux_min = min(out_fields.tau_x(:))
-taux_max = max(out_fields.tau_x(:))
-tauy_min = min(out_fields.tau_x(:))
-tauy_max = max(out_fields.tau_y(:))
-disp(['max tau_x = ',num2str(taux_max),' Pa']);
+taux_min = min(out_fields.tau_x(:));
+taux_max = max(out_fields.tau_x(:));
+tauy_min = min(out_fields.tau_x(:));
+tauy_max = max(out_fields.tau_y(:));
+if DO_DISP; disp(['max tau_x = ',num2str(taux_max),' Pa']);
 disp(['max tau_y = ',num2str(tauy_max),' Pa']);
-disp(' ');
+disp(' '); end
 
 %%append to log file
 logid = fopen(log_file,'a');
@@ -1254,27 +1254,27 @@ if SV_SPEC
 end
 
 if TEST_FINAL_SPEC==1
-   disp(' ');
-   disp('Testing final spectrum...');
+   if DO_DISP; disp(' ');
+   disp('Testing final spectrum...'); end
 
    if 0
-      disp('(Check integrals of output spectrum vs output Hs,Tp,etc)');
+      if DO_DISP; disp('(Check integrals of output spectrum vs output Hs,Tp,etc)');end
       %% check consistency of Sdir with Hs,Tp
       [wf.Hs,wf.Tp,wf.mwd] = fn_spectral_integrals(om_vec,wavdir,Sdir);
 
       vbls  = {'Hs','Tp'};%,'mwd'};%mwd currently not updated
       for n=1:length(vbls)
          vbl   = vbls{n};
-         disp(' ');
-         disp(['comparing field: ',vbl]);
+         if DO_DISP; disp(' ');
+         disp(['comparing field: ',vbl]); end
          v1    = wf.(vbl);
          v2    = wave_fields.(vbl);
          diff  = abs(v2-v1);
-         disp(['max diff: ',num2str(max(diff(:)))]);
-         disp(' ');
+         if DO_DISP; disp(['max diff: ',num2str(max(diff(:)))]);
+         disp(' '); end
       end
    elseif MEX_OPT>0
-      disp('(Check outputs vs values in binary files)');
+      if DO_DISP; disp('(Check outputs vs values in binary files)'); end
       of2         = fn_check_final(outdir);%%set in infile_dirs.txt
       of1.Hs      = wave_fields.Hs;
       of1.Tp      = wave_fields.Tp;
@@ -1285,13 +1285,13 @@ if TEST_FINAL_SPEC==1
       vbls  = {'Hs','Tp','tau_x','tau_y','Dmax'};%,'mwd'};%mwd currently not updated
       for n=1:length(vbls)
          vbl   = vbls{n};
-         disp(' ');
-         disp(['comparing field: ',vbl]);
+         if DO_DISP; disp(' ');
+         disp(['comparing field: ',vbl]); end
          v1    = of1.(vbl);
          v2    = of2.(vbl);
          diff  = abs(v2-v1);
-         disp(['max diff: ',num2str(max(diff(:)))]);
-         disp(' ');
+         if DO_DISP; disp(['max diff: ',num2str(max(diff(:)))]);
+         disp(' '); end
       end
    end
 
@@ -1402,7 +1402,7 @@ if PLOT_FINAL%%check exponential attenuation
                leg_text_used{end+1} = leg_text{k};
                fortcols_used{end+1} = fortcols{k};
                %%
-               disp(['opening ',dfil,'']);
+               if DO_DISP; disp(['opening ',dfil,'']); end
                fid   = fopen(dfil,'r');
 
                %% search for hash lines
@@ -1436,9 +1436,9 @@ if PLOT_FINAL%%check exponential attenuation
                   figure(5);
                end
             else
-               disp([dfil,' not present']);
+               if DO_DISP; disp([dfil,' not present']);
                disp('To create, run ../../fortran/run/fig_scripts/fig_test_convergence2steady.py');
-               disp('or ../boltmann/fig_Boltzmann_Steady.m');
+               disp('or ../boltmann/fig_Boltzmann_Steady.m'); end
             end
          end
          leg_text = leg_text_used;
@@ -1538,14 +1538,14 @@ if PLOT_FINAL%%check exponential attenuation
 end
 
 %%display info again
-disp('##############################################################');
+if DO_DISP; disp('##############################################################'); 
 t1 = now;
 disp([num2str(n),' time steps done, out of ',num2str(nt)]);
 disp(['Time taken (mins)      : ' ,num2str(t0_fac*(t1-t0))]);
 disp(['Model time passed (h)  : ' ,num2str(n*dt/3600.)]);
 disp('##############################################################');
 disp(' ');
-disp(strvcat(Info));
+disp(strvcat(Info)); end
 
 %% save time-stepped Dmax;
 %if DO_SAVE
