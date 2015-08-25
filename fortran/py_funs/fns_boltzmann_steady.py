@@ -613,7 +613,7 @@ def solve_boltzmann_ft(width=1.,alp=1.0,N=8,alp_dis=0.0,cg=1.0,Hs = 1.,f_inc=Non
 
    ##############################################
    # RH matrix: S
-   Ds       = np.diag(sn)
+   Ds = np.diag(sn)
 
    # get eigenvalues & eigenvectors
    # - solve DS*U=\lambda*Lmat*U

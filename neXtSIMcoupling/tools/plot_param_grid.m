@@ -98,7 +98,7 @@ elseif strcmp(param,'Nfloes')
    tstr  = 'Nfloes, km^{-2}';
 end
 
-labs  = {'\itx, km','ity, km',tstr};
+labs  = {'\itx, \rmkm','\ity, \rmkm',tstr};
 P     = fn_pcolor(X,Y,Z,labs);
 colormap(colormap_name);
 

@@ -3,7 +3,7 @@ function plot_steps_grid(rootdir);
 if ~exist('rootdir','var');
    %% location of outputs
    run_no   = 2;
-   if 0
+   if 1
       %%johansen
       rootdir  = '/Volumes/sim/tim';
    else

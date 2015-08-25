@@ -65,7 +65,7 @@ kwtr        = atten_out[2]
 cp          = om/kwtr # phase vel (open water) [m/s]
 cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
 
-if 1:
+if 0:
    #semi-infinite:
    out   = Fbs.solve_boltzmann_ft_semiinf(
             alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=None,Hs=Hs)
@@ -82,7 +82,7 @@ if 1:
    # plot energy
    out_plot = Fbs.plot_energy(out,width=None,n_test=0,Hs=Hs)
 
-# elif 1:
+elif 1:
    #finite width [width in metres]:
    #for width in [50.,500.,5000.,50.e3,500.e3,5000.e3]:
    for width in [500.e3]:
@@ -91,6 +91,8 @@ if 1:
       print('width = '+str(width)+'m')
       print('\n')
       out   = Fbs.solve_boltzmann_ft(width=width,
+               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs)
+      out2  = Fbs.solve_boltzmann_ft(width=width,
                alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs)
 
       if 1:
