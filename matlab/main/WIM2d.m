@@ -80,6 +80,11 @@ ICE_MASK = ice_fields.ICE_MASK;
 out_fields.tau_x  = 0*cice;
 out_fields.tau_y  = 0*cice;
 
+%% add max distance at which waves could have broken the ice
+if ~DO_BREAKING
+ out_fields.break_max = nan;
+end
+
 %% WAVES
 WAVE_MASK   = wave_fields.WAVE_MASK;
 nw          = wave_stuff.nfreq;     %% number of frequencies
@@ -999,13 +1004,29 @@ else
 
                Dc          = max(Dmin,wlng_crest/2);
                Dmax(i,j)   = min(Dc,Dmax(i,j));
+               
             end%% end breaking action;
 
             if 0%i==11 & j==1
                BREAK_CRIT
                Dmax(i,j)
             end
-
+            
+            if ~DO_BREAKING
+             P_crit         = exp(-1);
+             BREAK_CRIT     = ( Pstrain>=P_crit );
+             brkcrt(i,j,n)  = BREAK_CRIT;
+             if BREAK_CRIT
+              if isnan(out_fields.break_max)
+               out_fields.break_max = X(i);
+              else
+               if X(i)>out_fields.break_max
+                out_fields.break_max = X(i);
+               end
+              end
+             end
+            end
+            
          elseif WTR_MASK(i,j)==1%% only water present
             Dmax(i,j)   = 0;
          end
@@ -1177,6 +1198,9 @@ else
          pairs{end+1}   = {'tau_y',out_fields.tau_y};
          pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
          pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
+         if ~DO_BREAKING
+          pairs{end+1}   = {'break_max',out_fields.break_max};
+         end
          %%
          fn_save_binary(Froot,Bdims,n*dt,pairs);
       end
@@ -1201,6 +1225,9 @@ if (SV_BIN==1)&(DO_CHECK_FINAL==1)
    pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
    pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
+   if ~DO_BREAKING
+    pairs{end+1}   = {'break_max',out_fields.break_max}; 
+   end
    %%
    fn_save_binary(Froot,Bdims,duration,pairs);
 end

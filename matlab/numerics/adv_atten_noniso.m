@@ -94,9 +94,9 @@ for j = 1:ny
 
          %%fourier coeff's of Boltzmann kernel
          %K_fou = q_scat*eye(ndir,1);%%K(theta)=q_scat/2/pi: isotropic scattering
-         %K_fou = 2*(2^-2)*q_scat*[2;0;1;zeros(ndir-3,1)];%%cos-squared shape
-         %K_fou = (8/3)*(2^-4)*q_scat*[6;0;4;0;1;zeros(ndir-5,1)];%%cos-4 shape
-         K_fou = (128/35)*(2^-8)*q_scat*[70;0;56;0;28;0;8;0;1;zeros(ndir-9,1)];%%cos-8 shape
+         K_fou = 2*(2^-2)*q_scat*[2;0;1;zeros(ndir-5,1);1;0];%%cos-squared shape
+         %K_fou = (8/3)*(2^-4)*q_scat*[6;0;4;0;1;zeros(ndir-9,1);1;0;4;0];%%cos-4 shape
+         %K_fou = (128/35)*(2^-8)*q_scat*[70;0;56;0;28;0;8;0;1;zeros(ndir-17,1);1;0;8;0;28;0;56;0];%%cos-8 shape
          %%fourier coeff's of directional spectrum
          S_th     = squeeze(S(i,j,:));
          %S_fou    = 2*pi*ifft(S_th);%% - for some reason this is different
