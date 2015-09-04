@@ -13,8 +13,8 @@ wavdir      = s1.wavdir;
 S           = s1.Sdir;%% size(S)=[nx,ny,ndir] - do 1 freq at a time;
 ag_eff      = s1.ag_eff;
 %%atten_dim   = s1.atten_dim + s1.damp_dim;%%treat scattered E and damped E in same way
-atten_dim   = s1.atten_dim;%%treat scattered E and damped E in same way
-damp_dim    = s1.damp_dim;%%treat scattered E and damped E in same way
+atten_dim   = s1.atten_dim;%%for scattering
+damp_dim    = s1.damp_dim; %%for damping
 ICE_MASK    = s1.ICE_MASK;
 clear s1;
 
