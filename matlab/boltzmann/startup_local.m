@@ -1,6 +1,12 @@
+addpath('misc_numeric');
 addpath('misc');
 addpath('roots');
+addpath('../misc');
+addpath('../attenuation_youngs');
+hmdir    = getenv('HOME');
+gitdir   = getenv('GIT_REPOS');
 
+%%rm ISSM paths
 issmdir  = getenv('ISSM_DIR');
 spath    = path;
 jissm    = strfind(path,issmdir);
