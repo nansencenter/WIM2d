@@ -888,7 +888,12 @@ else
             %% is distributed non-isotropically
             [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
                adv_atten_noniso(grid_prams,ice_prams,s1,dt,adv_options);
-            clear s1 S_out;            
+            clear s1 S_out;    
+         elseif SCATMOD==-1
+            %% Simple attenuation scheme - doesn't conserve scattered energy
+            [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
+               adv_atten_simple_cons(grid_prams,ice_prams,s1,dt,adv_options);
+            clear s1 S_out;  
          end
 
          %% integrate stress densities over frequency
