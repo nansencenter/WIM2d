@@ -266,3 +266,140 @@ def fn_check_prog(outdir,cts):
    # outputs
    return out_fields
 ##############################################################
+
+########################################################
+def read_datfile(dname):
+   print('\nOpening '+dname+'\n')
+   fid = open(dname,'r')
+   
+   #####################################################
+   # simple object
+   class var_info:
+      def __init__(self,value,unit=None):
+
+         # set units
+         if unit is not '':
+            self.unit   = unit
+         else:
+            self.unit   = None
+
+         if hasattr(value,'ndim'):
+            # an array
+            self.data   = value
+         else:
+            # a number
+            self.value  = value
+
+         return
+   #####################################################
+
+   #####################################################
+   # get header info
+   in_hdr   = True
+   while in_hdr:
+      lin0  = fid.readline()
+
+      ##################################################
+      if 'File info:' in lin0:
+         # start to extract file info
+         # (no of variables, length of records)
+         info  = {}
+         pos   = fid.tell()
+         lin0  = fid.readline()
+         while ':' in lin0:
+            ss    = lin0.split()
+            val   = int(ss[-1])
+            vbl   = ss[1]
+            info.update({vbl:val})
+            #
+            pos   = fid.tell()
+            lin0  = fid.readline()
+
+         # go back to start of line
+         fid.seek(pos)
+      ##################################################
+
+      ##################################################
+      elif 'Parameters:' in lin0:
+         # start to extract parameters
+         pos      = fid.tell()
+         lin0     = fid.readline()
+         Params   = {}
+         while ':' in lin0:
+            if '(' not in lin0:
+               ss    = lin0.split()
+               val   = float(ss[-1])
+               obj   = var_info(val)
+               vbl   = ss[1]
+            else:
+               i0    = lin0.index('(')
+               i1    = lin0.index(')')
+               unit  = lin0[i0+1:i1]
+               val   = float(lin0[i1+1:].split()[-1])
+               vbl   = lin0[:i0].split()[1]
+               obj   = var_info(val,unit)
+
+            # update dictionary
+            Params.update({vbl:obj})
+
+            # read next line
+            pos   = fid.tell()
+            lin0  = fid.readline()
+
+         # go back to start of line
+         fid.seek(pos)
+      ##################################################
+
+      ##################################################
+      elif 'Variables:' in lin0:
+         # get variable names and units
+         Vlist    = []
+         Vunits   = []
+         for Nv in range(info['Nvars']):
+
+            lin0  = fid.readline()
+            if '(' not in lin0:
+               vbl   = lin0.split()[1]
+               unit  = ''
+            else:
+               ss    = lin0.split('(')
+               vbl   = ss[0].split()[-1]
+               unit  = ss[-1].split(')')[0]
+
+            Vlist .append(vbl)
+            Vunits.append(unit)
+      ##################################################
+         
+      ##################################################
+      elif lin0.split()!=[]:
+         # check if 2nd-to-last line of header
+         in_hdr   = not('#######' in lin0)
+      ##################################################
+
+
+   #####################################################
+   # skip next line (blank) - then we are up to the data
+   lin0     = fid.readline() 
+   #####################################################
+
+
+   #####################################################
+   # get data
+   arr      = []
+   for i in range(info['Lvars']):
+      line  = fid.readline().split()
+      row   = []
+      for thing in line:
+         row.append(float(thing))
+      arr.append(row)
+   fid.close()
+   #####################################################
+
+   arr   = np.array(arr).transpose()
+   out   = {}
+   for n,vbl in enumerate(arr):
+      obj   = var_info(vbl,Vunits[n])
+      out  .update({Vlist[n]:obj})
+   
+   return out,info,Params
+########################################################
