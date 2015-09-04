@@ -286,6 +286,7 @@ def read_datfile(dname):
          if hasattr(value,'ndim'):
             # an array
             self.data   = value
+            self.length = len(value)
          else:
             # a number
             self.value  = value
@@ -401,5 +402,5 @@ def read_datfile(dname):
       obj   = var_info(vbl,Vunits[n])
       out  .update({Vlist[n]:obj})
    
-   return out,info,Params
+   return out,Params
 ########################################################

@@ -41,8 +41,10 @@ def plot_1d(x,y,labs=None,plot_steps=True,pobj=None,**kwargs):
       f     = plt.figure()
       ax    = f.add_subplot(1,1,1)
       pobj  = f,ax
-   else:
+   elif len(pobj)==2:
       f,ax  = pobj
+   else:
+      f,ax,line = pobj
 
    if plot_steps:
       x,y   = step_1d(x,y)
