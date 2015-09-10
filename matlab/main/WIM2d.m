@@ -883,11 +883,11 @@ else
             [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
                adv_atten_isotropic(grid_prams,ice_prams,s1,dt,adv_options);
             clear s1 S_out;
-         elseif SCATMOD==2
+         elseif floor(SCATMOD)==2
             %% same as SCATMOD==1, but scattered energy
             %% is distributed non-isotropically
             [Sdir(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_noniso(grid_prams,ice_prams,s1,dt,adv_options);
+               adv_atten_noniso(grid_prams,ice_prams,s1,dt,adv_options,10*(SCATMOD-2));
             clear s1 S_out;    
          elseif SCATMOD==-1
             %% Simple attenuation scheme - doesn't conserve scattered energy

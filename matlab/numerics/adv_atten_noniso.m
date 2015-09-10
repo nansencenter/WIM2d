@@ -3,7 +3,7 @@
 %% Date: 20141018, 18:04:46 CEST
 
 function [S,S_freq,tau_x,tau_y] = ...
-   adv_atten_timestep_noniso(grid_prams,ice_prams,s1,dt,adv_options)
+   adv_atten_timestep_noniso(grid_prams,ice_prams,s1,dt,adv_options,SHPOPT)
 
 nx = grid_prams.nx;
 ny = grid_prams.ny;
@@ -94,9 +94,13 @@ for j = 1:ny
 
          %%fourier coeff's of Boltzmann kernel
          %K_fou = q_scat*eye(ndir,1);%%K(theta)=q_scat/2/pi: isotropic scattering
-         K_fou = 2*(2^-2)*q_scat*[2;0;1;zeros(ndir-5,1);1;0];%%cos-squared shape
-         %K_fou = (8/3)*(2^-4)*q_scat*[6;0;4;0;1;zeros(ndir-9,1);1;0;4;0];%%cos-4 shape
-         %K_fou = (128/35)*(2^-8)*q_scat*[70;0;56;0;28;0;8;0;1;zeros(ndir-17,1);1;0;8;0;28;0;56;0];%%cos-8 shape
+         if SHPOPT==1
+          K_fou = 2*(2^-2)*q_scat*[2;0;1;zeros(ndir-5,1);1;0];%%cos-squared shape
+         elseif SHPOPT==2
+          K_fou = (8/3)*(2^-4)*q_scat*[6;0;4;0;1;zeros(ndir-9,1);1;0;4;0];%%cos-4 shape
+         elseif SHPOPT==3
+          K_fou = (128/35)*(2^-8)*q_scat*[70;0;56;0;28;0;8;0;1;zeros(ndir-17,1);1;0;8;0;28;0;56;0];%%cos-8 shape
+         end
          %%fourier coeff's of directional spectrum
          S_th     = squeeze(S(i,j,:));
          %S_fou    = 2*pi*ifft(S_th);%% - for some reason this is different
