@@ -30,6 +30,8 @@ yy = cen2edges(y);
 H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
 set(H,'EdgeColor', 'none');
 
+set(gca,'xlim',[xx(1),xx(end)],'ylim',[yy(1),yy(end)])
+
 if ~exist('labs','var')
    labs  = {'\itx, \rmkm','\ity, \rmkm',[]};
 end

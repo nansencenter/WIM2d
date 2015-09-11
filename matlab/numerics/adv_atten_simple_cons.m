@@ -85,7 +85,7 @@ inv_Mat0 = 0.5*Mat0;
 
 %% do everything at once for source calc
 M_bolt0  = zeros(ndir,ndir);
-for lp=1:N/2
+for lp=1:ndir/2
    M_bolt0(lp,lp+ndir/2)   = 1;
    M_bolt0(lp+ndir/2,lp)   = 1;
 end
@@ -135,7 +135,7 @@ for j = 1:ny
        dumS = c_vec(1)*evec0 + ...
         c_vec(2)*exp(-2*atten_dim(i,j)*cg*dt);%%do scattering
        %%S(i,j,[lp,lp+ndir/2]) = dumS;
-       S(i,j,[lp,lp+ndir/2]) = dumS*exp(-damp_dim*cg*dt);
+       S(i,j,[lp,lp+ndir/2]) = dumS*exp(-damp_dim(i,j)*cg*dt);
          %% do damping
          %% -both get damped equally by damp_dim
       end
