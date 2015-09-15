@@ -1,4 +1,4 @@
-function [out_fields,wave_stuff] = WIM2d(params_in,grid_prams,ice_fields,wave_fields,wave_stuff)
+function [out_fields,wave_stuff,diagnostics] = WIM2d(params_in,grid_prams,ice_fields,wave_fields,wave_stuff)
 
 %% Get parameters
 fnames   = fieldnames(params_in);
@@ -82,7 +82,7 @@ out_fields.tau_y  = 0*cice;
 
 %% add max distance at which waves could have broken the ice
 if ~DO_BREAKING
- out_fields.break_max = nan;
+ diagnostics.break_max = nan;%%TW move scalar outputs to new structure "diagnostics"
 end
 
 %% WAVES
@@ -1022,11 +1022,11 @@ else
              BREAK_CRIT     = ( Pstrain>=P_crit );
              brkcrt(i,j,n)  = BREAK_CRIT;
              if BREAK_CRIT
-              if isnan(out_fields.break_max)
-               out_fields.break_max = X(i);
+              if isnan(diagnostics.break_max)
+               diagnostics.break_max = X(i);
               else
-               if X(i)>out_fields.break_max
-                out_fields.break_max = X(i);
+               if X(i)>diagnostics.break_max
+                diagnostics.break_max = X(i);
                end
               end
              end
@@ -1203,9 +1203,10 @@ else
          pairs{end+1}   = {'tau_y',out_fields.tau_y};
          pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
          pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
-         if ~DO_BREAKING
-          pairs{end+1}   = {'break_max',out_fields.break_max};
-         end
+         %if ~DO_BREAKING
+         % TW: keep out_fields and binary files for arrays
+         % pairs{end+1}   = {'break_max',out_fields.break_max};
+         %end
          %%
          fn_save_binary(Froot,Bdims,n*dt,pairs);
       end
@@ -1230,9 +1231,9 @@ if (SV_BIN==1)&(DO_CHECK_FINAL==1)
    pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
    pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
-   if ~DO_BREAKING
-    pairs{end+1}   = {'break_max',out_fields.break_max}; 
-   end
+   %if ~DO_BREAKING
+   % pairs{end+1}   = {'break_max',out_fields.break_max}; 
+   %end
    %%
    fn_save_binary(Froot,Bdims,duration,pairs);
 end

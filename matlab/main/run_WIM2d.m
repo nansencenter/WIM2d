@@ -1,4 +1,4 @@
-function out_fields = run_WIM2d(params_in,grid_prams,...
+function [out_fields,diagnostics] = run_WIM2d(params_in,grid_prams,...
                                 ice_fields,wave_fields,wave_stuff)
 %% CALL: out_fields = run_WIM2d(params_in,grid_prams,...
 %%                              ice_fields,wave_fields,wave_stuff)
@@ -252,7 +252,7 @@ if TEST_INC_SPEC==1
    return
 end
 
-[out_fields,wave_stuff] = WIM2d(params,grid_prams,ice_fields,wave_fields,wave_stuff);
+[out_fields,wave_stuff,diagnostics] = WIM2d(params,grid_prams,ice_fields,wave_fields,wave_stuff);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function prep_mex_dirs(outdir)
