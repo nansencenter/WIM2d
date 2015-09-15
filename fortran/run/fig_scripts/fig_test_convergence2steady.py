@@ -26,8 +26,12 @@ import fns_plot_data as Fplt
 import fns_boltzmann_steady as Fbs
 
 # RUN_OPT  = 1 # plot from saved dir (not in default location)
-RUN_OPT  = 2 # rerun then plot
-# RUN_OPT  = 3 # plot saved results (from default location)
+# RUN_OPT  = 2 # rerun then plot
+RUN_OPT  = 3 # plot saved results (from default location)
+
+do_legend       = 1 # show times as legends
+cmp_steady      = 1 # compare to steady state solution
+cmp_steady_num  = 0 # compare to steady state Galerkin solution from matlab
 
 gf          = Fdat.fn_check_grid('inputs')
 gfl         = gf['LANDMASK']
@@ -46,7 +50,7 @@ if 1:
    ICEMASK[gfl>0]       = 0.
 
    # right hand ice edge
-   ice_width                        = 100.e3
+   ice_width                        = 150.e3
    ICEMASK[gf['X']>(xe+ice_width)]  = 0.
 
    # edge of wave mask
@@ -78,11 +82,12 @@ if 1:
    CHECK_FINAL = 1
    CHECK_PROG  = 1
    CHECK_INIT  = 1
-   DO_BREAKING = 0 # no breaking - testing convergence of Hs to steady-state
    STEADY      = 1
+   DO_BREAKING = 0 # no breaking - testing convergence of Hs to steady-state
+   DO_ATTEN    = 1 # no breaking - testing convergence of Hs to steady-state
    int_prams   = np.array([SCATMOD,ADV_DIM,ADV_OPT,
                            CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                           DO_BREAKING,STEADY])
+                           STEADY,DO_BREAKING,DO_ATTEN])
 
 if 1:
    # change real parameters:
@@ -93,7 +98,6 @@ if 1:
    CFL            = 0.7
    real_prams     = np.array([young,visc_rp,duration,CFL])
 
-do_legend   = 1 # show times as legends
 if RUN_OPT==1:
    # specify manually where results are
    # outdir   = '/Volumes/Tim_Ext_HD2/WORK/Model-Results/Boltzmann/convergence/16dirs/500m'
@@ -109,7 +113,8 @@ else:
    if not os.path.exists(figdir):
       os.mkdir(figdir)
    if RUN_OPT==3:
-      outdir   = 'out_io'
+      outdir   = 'out_io'            # usual place
+      # outdir   = '../../matlab/main/m_out' # matlab results
    else:
       out_fields,outdir = \
          Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,\
@@ -128,10 +133,18 @@ labs1       = ['','$H_s$, m']
 labs2       = ['$x$, km',r'$\tau_x$, Pa']
 
 ##########################################################################
-if 0:
-   # get steady state solution # TODO get this working
+fig   = plt.figure()
+ax1   = fig.add_subplot(2,1,1)
+ax2   = fig.add_subplot(2,1,2)
+# 
+if do_legend:
+   lines_h     = []
+   lines_t     = []
+   text_leg   = []
+
+if cmp_steady:
+   # get steady state solution
    om          = 2*np.pi/Tp_in
-   # gravity     = 9.81
    atten_in    = np.array([h_in,om,young,visc_rp])
    atten_out   = Mwim.atten_youngs(atten_in)
    alp         = c_in/D_in*atten_out[4]   # scattering "attenuation" [m^{-1}]
@@ -139,39 +152,51 @@ if 0:
    kwtr        = atten_out[2]
    cp          = om/kwtr # phase vel (open water) [m/s]
    cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
+   print('alp_scat = '+str(alp)+'; alp_dis = '+str(alp_dis))
    #
-   N     = pow(2,7);
-   nx0         = 1.e3
+   N           = pow(2,7);
+   nx0         = 500
    x_ice       = np.linspace(0.,ice_width,nx0)
-   if 1:
-      # solve in Fourier space
-      meth  = '_FT'
-      out   = Fbs.solve_boltzmann_ft(width=ice_width,
-               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+
+   #############################################################
+   # solve in position space
+   out   = Fbs.solve_boltzmann(width=ice_width,
+            alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
+   #
+   E_th        = Fbs.calc_expansion(out,x_ice,L=ice_width)
+   dtheta      = 2*np.pi/float(N)
+   E0          = dtheta*E_th.sum(1)                      # integral over directions (freq spec)
+   Hs_steady   = 4*np.sqrt(E0.real)
+   #
+   S_th        = E_th.dot(out['solution']['Rmat'].transpose())
+   S_cos       = S_th.dot(dtheta*np.cos(out['angles']))  # integral with cos over directions
+   rhow        = 1025 # kg/m^3
+   gravity     = 9.81 # m/s^2
+   tx_steady   = -(rhow*gravity/cp)*S_cos.real
+   #############################################################
+
+   # plot Hs
+   pobj  = Fplt.plot_1d(1.e-3*(xe+x_ice),Hs_steady,pobj=[fig,ax1],plot_steps=False,\
+            labs=labs1,color='y',linewidth=3)
+   lines_h.append(pobj[-1])
+   
+   # plot taux
+   pobj  = Fplt.plot_1d(1.e-3*(xe+x_ice),tx_steady,pobj=[fig,ax2],plot_steps=False,\
+            labs=labs1,color='y',linewidth=3)
+   lines_t.append(pobj[-1])
+   text_leg.append('Steady')
+
+   if cmp_steady_num:
+      # compare to numerical scheme from matlab
+      # NB needs to be run for the same parameters
+      w2d   = os.getenv('WIM2D_PATH')
+      tdir  = w2d+'/matlab/boltzmann/out/'
+      tfil  = tdir+'boltzmann_steady_numeric.dat'
       #
-      E_n         = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=[0])
-      Hs_steady   = 4*np.sqrt(E_n[:,0].real)
-   else:
-      # solve in position space
-      meth  = ''
-      out   = Fbs.solve_boltzmann(width=ice_width,
-               alp=alp,N=N,alp_dis=alp_dis,cg=cg,f_inc=Fbs.dirspec_inc_spreading,Hs=Hs_in)
-      #
-      E_th        = Fbs.calc_energy(out,x_ice,L=ice_width,n_test=range(N))
-      dtheta      = 2*np.pi/float(N)
-      E0          = dtheta*E_th.sum(1) # integrate over directions
-      Hs_steady   = 4*np.sqrt(E0.real)
-
-   # alp2  = out['inputs'][0]
-   # print(alp,alp2)
-   # sys.exit('fig_test_convergence2steady')
-
-
-   # print(x_ice)
-   # print(Hs_steady)
-   fig      = Fplt.plot_1d(1.e-3*(xe+x_ice),Hs_steady,labs=labs1,color='y',linewidth=3)
-else:
-   fig   = None
+      t_out,t_prams  = Fdat.read_datfile(tfil)
+      xm             = t_out['x'] .data
+      Hm             = t_out['Hs'].data
+      ax1.plot((xe+xm)/1.e3,Hm,'.k')
 ##########################################################################
 
 pdir     = bindir+'/prog/'
@@ -243,39 +268,38 @@ Ns       = len(lstil)
 loop_c   = -1
 loop_s   = -1
 
-fig   = plt.figure()
-ax1   = fig.add_subplot(2,1,1)
-ax2   = fig.add_subplot(2,1,2)
-# 
-if do_legend:
-   lines_h     = []
-   lines_t     = []
-   times_leg   = []
 
 print('\n')
+print('prog files in '+outdir+'\n')
 for i,nstep in enumerate(steps2plot):
    out_fields  = Fdat.fn_check_prog(outdir,int(nstep)) # load ice/wave conditions from binaries
-   Hs_n        = out_fields['Hs'][:,0]
-   tx_n        = out_fields['taux'][:,0]
+   ny = grid_prams['ny']
+   if ny>1:
+      Hs_n  = out_fields['Hs']   [:,int(np.ceil(ny/2.))]
+      tx_n  = out_fields['taux'] [:,int(np.ceil(ny/2.))]
+   else:
+      Hs_n  = out_fields['Hs'][:,0]
+      tx_n  = out_fields['taux'][:,0]
+
    #
    loop_c   = np.mod(loop_c+1,Nc)
    if loop_c==0:
       loop_s   = np.mod(loop_s+1,Ns)
    
    # plot and set up for legend
-   fig,ax1,line_h = Fplt.plot_1d(xx,Hs_n,labs=labs1,pobj=(fig,ax1),\
-                                 color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
-   fig,ax2,line_t = Fplt.plot_1d(xx,tx_n,labs=labs2,pobj=(fig,ax2),\
-                                 color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
+   pobj  = Fplt.plot_1d(xx,Hs_n,labs=labs1,pobj=(fig,ax1),\
+                        color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
+   if do_legend:
+      lines_h.append(pobj[-1])
 
-   tt = times2plot[i]/3600.
+   pobj  = Fplt.plot_1d(xx,tx_n,labs=labs2,pobj=(fig,ax2),\
+                        color=cols[loop_c],linestyle=lstil[loop_s],linewidth=2)
+   tt    = times2plot[i]/3600.
    print('n, t(h): '+str(nstep)+', '+str(tt))
    if do_legend:
-      lines_h.append(line_h)
-      lines_t.append(line_t)
-      #
+      lines_t.append(pobj[-1])
       ss = '%5.1fh' % (tt)
-      times_leg.append(ss)
+      text_leg.append(ss)
 
 ax1.set_xlim([0,300])
 ax2.set_ylim([0,0.3])
@@ -284,9 +308,9 @@ ax2.set_xlim([0,300])
 # legends
 if do_legend:
    if len(lines_h)>0:
-      ax1.legend(lines_h,times_leg,loc='upper right', bbox_to_anchor=(1.3, .78))
+      ax1.legend(lines_h,text_leg,loc='upper right', bbox_to_anchor=(1.3, .78))
    # if len(lines_t)>0:
-   #    ax2.legend(lines_t,times_leg)
+   #    ax2.legend(lines_t,text_leg)
 
 # figname  = figdir+'/convergence2steady.png'
 figname  = figdir+'/convergence2steady.eps'
@@ -322,10 +346,10 @@ if 1:
    print('saving to '+dfil+'...\n')
    #####################################################
 
-if 0:
+if cmp_steady:
    #####################################################
    # print  steady-state results to dat-file
-   dfil  = figdir+'/test_steady2'+meth+'.dat'
+   dfil  = figdir+'/test_steady2.dat'
    fid   = open(dfil,'w')
 
    # header:

@@ -3,6 +3,34 @@ import os
 import sys
 import struct
 
+#####################################################
+class var_info:
+   # simple object
+   # scalars: obj.value,obj.unit
+   # numpy arrays: obj.data,obj.unit,obj.length
+   def __init__(self,value,unit=None):
+
+      # set units
+      if unit is not '':
+         self.unit   = unit
+      else:
+         self.unit   = None
+
+      if hasattr(value,'ndim'):
+         # an array
+         self.data   = value
+         self.length = len(value)
+         self.min    = np.min(value)
+         self.max    = np.max(value)
+         self.first  = value[0]
+         self.last   = value[-1]
+      else:
+         # a number
+         self.value  = value
+
+      return
+#####################################################
+
 ##############################################################
 def key_aliases(inverse=False):
    if not inverse:
@@ -241,7 +269,10 @@ def fn_check_prog(outdir,cts):
       # convert from int to str of correct length
       import os
       fils  = os.listdir(outdir+'/binaries/prog/')
-      cts0  = fils[0].strip('wim_prog')[:-2]
+      n     = 0
+      while '.swp' in fils[n] or '.DS_Store' in fils[n]:
+          n = n+1
+      cts0  = fils[n].strip('wim_prog')[:-2]
       fmt   = '%'+str(len(cts0))+'.'+str(len(cts0))+'d'
       cts   = fmt %(cts)
       # print(cts0,cts)
@@ -272,31 +303,11 @@ def read_datfile(dname):
    print('\nOpening '+dname+'\n')
    fid = open(dname,'r')
    
-   #####################################################
-   # simple object
-   class var_info:
-      def __init__(self,value,unit=None):
-
-         # set units
-         if unit is not '':
-            self.unit   = unit
-         else:
-            self.unit   = None
-
-         if hasattr(value,'ndim'):
-            # an array
-            self.data   = value
-            self.length = len(value)
-         else:
-            # a number
-            self.value  = value
-
-         return
-   #####################################################
 
    #####################################################
    # get header info
    in_hdr   = True
+   Params   = None
    while in_hdr:
       lin0  = fid.readline()
 
@@ -403,4 +414,78 @@ def read_datfile(dname):
       out  .update({Vlist[n]:obj})
    
    return out,Params
+########################################################
+
+########################################################
+def write_datfile(dname,Vars,title=None,Params=None):
+   print('\nWriting to '+dname+'\n')
+   fid = open(dname,'w')
+
+   #####################################################
+   # write title
+   if title is not None:
+      if title[0]!='#':
+         title = '# '+title
+      fid.write(title+'\n\n')
+   #####################################################
+
+   #####################################################
+   # Get variable info
+   Varr     = []
+   Vlines   = []
+   for vbl in Vars.keys():
+      line  = '# '+vbl+'('+Vars[vbl].unit+')\n'
+      Vlines.append(line)
+      Varr.append(Vars[vbl].data)
+   Varr        = np.array(Varr).transpose()
+   Lvars,Nvars = Varr.shape
+
+   # Write file info:
+   fid.write('# File info:\n')
+   fid.write('# Nvars   : %d\n'     %(Nvars))
+   fid.write('# Lvars   : %d\n\n'   %(Lvars))
+   #####################################################
+
+   #####################################################
+   # write parameters
+   if Params is not None:
+      fid.write('# Parameters:\n')
+      for vbl in Params.keys():
+         if Params[vbl].unit is None:
+            line  = '# '+vbl+' : '
+         else:
+            line  = '# '+vbl+'('+Params[vbl].unit+') : '
+         line  = line+str(Params[vbl].value)+'\n'
+         fid.write(line)
+      fid.write('\n')
+   #####################################################
+
+   #####################################################
+   # write variable info
+   fid.write('# Variables:\n')
+   for line in Vlines:
+      fid.write(line)
+   line  = 50*'#'
+   fid.write(line+'\n\n')
+   #####################################################
+
+   #####################################################
+   # write variables
+   blk   = 4*' '
+   Nv    = 0
+   for row in Varr:
+      line  = ''
+      Nv    = Nv+1
+      for val in row:
+         line  = line+blk+str(val)
+
+      line  = line[len(blk):]
+      if Nv==Lvars:
+         fid.write(line)
+      else:
+         fid.write(line+'\n')
+   #####################################################
+
+   # close file
+   fid.close()
 ########################################################

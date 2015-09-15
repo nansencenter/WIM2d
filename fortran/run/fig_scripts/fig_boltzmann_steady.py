@@ -66,7 +66,8 @@ cp          = om/kwtr # phase vel (open water) [m/s]
 cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
 print('alp_scat,alp_dis (m$^{-1}$): '+str(alp)+','+str(alp_dis))
 
-if 1:
+#############################################################
+if 0:
    #semi-infinite:
    out   = Fbs.solve_boltzmann(alp=alp,N=N,alp_dis=alp_dis,Hs=Hs,cg=cg,
                                f_inc=Fbs.dirspec_inc_spreading)
@@ -76,11 +77,52 @@ if 1:
    semiinf  = True
    width    = None
 
-   # test edge conditions
-   Fbs.test_edge_cons(out,semiinf=semiinf,lhs=True)
+   if 0:
+      # test edge conditions
+      Fbs.test_edge_cons(out,semiinf=semiinf,lhs=True)
 
    # # plot energy
    # out_plot = Fbs.plot_energy(out,width=None,n_test=0,Hs=Hs)
+   if 1:
+      L        = 200.e3
+      xx       = np.linspace(0.,L,num=800)
+      E_all    = Fbs.calc_expansion(out,xx)
+      En_all   = E_all.dot(out['M_E2En'].transpose())
+      #
+      fig   = plt.figure()
+      Na    = 2
+      ax1   = fig.add_subplot(1,Na,1)
+      ax1.plot(xx/1.e3,4*np.sqrt(En_all[:,0]))
+      ax1.set_xlabel('$x$, km',fontsize=16)
+      ax1.set_ylabel('$H_s$, m',fontsize=16)
+      #
+      Lmat     = out['solution']['Lmat']
+      Rmat     = out['solution']['Rmat']
+      th_vec   = out['angles']
+      dth      = 2*np.pi/N
+
+      if Na==2:
+         # plot one element of source
+         ax2   = fig.add_subplot(1,Na,2)
+         dE_mid   = (E_all[2:,:]-E_all[:-2,:])/(2.*dx)
+         dE_all   = Fbs.calc_expansion_deriv(out,xx,L=width)
+         LHS      = dE_mid.dot(Lmat.transpose()) # Lmat*[num   deriv]
+         LHS2     = dE_all.dot(Lmat.transpose()) # Lmat*[exact deriv]
+         RHS      =  E_all.dot(Rmat.transpose()) # Rmat*E
+         #
+         Ntst  = 0
+         xmid  = xx[1:-1]
+         ax2.plot(xx  /1.e3,RHS[:,Ntst],'b')
+         ax2.plot(xmid/1.e3,LHS[:,Ntst],'g')
+         ax2.plot(xx  /1.e3,LHS2[:,Ntst],'--r')
+         ax2.set_title(r'testing ODE at $\theta=$'+str(180/np.pi*th_vec[Ntst])+'$^o$')
+
+      plt.show(fig)
+      ax1.cla()
+      if Na==2:
+         ax2.cla()
+      plt.close(fig)
+#############################################################
 
 elif 1:
    #finite width [width in metres]:
@@ -140,7 +182,7 @@ elif 1:
             tdir  = '/Users/timill/GITHUB-REPOSITORIES/WIM2d/matlab/boltzmann/out/'
             tfil  = tdir+'boltzmann_steady_numeric.dat'
             #
-            t_out = Fdat.read_datfile(tfil)[0]
+            t_out,t_prams   = Fdat.read_datfile(tfil)
             xm    = t_out['x'] .data
             Hm    = t_out['Hs'].data
             ax1.plot(xm/1.e3,Hm,'--r')

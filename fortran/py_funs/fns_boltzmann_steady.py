@@ -773,6 +773,7 @@ def calc_expansion_deriv(out,xx,L=None,n_test=None):
       No2      = len(cn)
       N        = 2*No2
       Ul       = soln['evecs_neg']
+
    else:
       # finite width
       semiinf  = False
@@ -784,7 +785,7 @@ def calc_expansion_deriv(out,xx,L=None,n_test=None):
       n_test   = range(Nrows)
    E_n   = np.zeros((npts,len(n_test)))*0j
 
-   print('Reconstructing energy from eigenvalues in calc_expansion...')
+   print('Reconstructing energy from eigenvalues in calc_expansion_deriv...')
 
    #############################################
    if not semiinf:
@@ -822,7 +823,7 @@ def calc_expansion_deriv(out,xx,L=None,n_test=None):
          for n in range(npts):
             x        = xx[n]
             cn_x     = np.exp(lam*x)*cn         # element by element multiplication (lam[i] corresponds to cn[i])
-            E_n[n,m] = E_n[n,m] + Ul[m,:].dot(cn_x)
+            E_n[n,m] = E_n[n,m] + Ul[m,:].dot(cn_x*lam)
          ##########################################
       else:
          ##########################################
@@ -1121,4 +1122,61 @@ def plot_energy(out,width=None,n_test=0,Hs=1.,f_inc=None):
    #######################################################
 
    return out
+##############################################
+
+##############################################
+def boltz_main_outputs(N=2**5,h=2.,period=12.,youngs=5.e9,\
+        visc_rp=0,width=100.,Hs_inc=3.,conc=.7,dmean=100.,ax=None):
+
+   import WIM2d_f2py             as Mwim
+   # N         : no of directions
+   # h         : # thickness [m]
+   # period    : # period [s]
+   # youngs    : # period [s]
+   # visc_rp   : # R-P damping parameter [m^s/s]
+   # Hs        : # sig wave height [m]
+   # conc      : # concentration [0-1]
+   # dmean     : # mean floe size [m]
+
+   om          = 2*np.pi/period
+   gravity     = 9.81
+   atten_in    = np.array([h,om,youngs,visc_rp])
+   atten_out   = Mwim.atten_youngs(atten_in)
+   # print(atten_in)
+   # print(atten_out)
+
+   alp         = conc/dmean*atten_out[4]  # scattering "attenuation" [m^{-1}]
+   alp_dis     = 2*conc*atten_out[0]      # damping [m^{-1}]
+   kwtr        = atten_out[2]
+   cp          = om/kwtr # phase vel (open water) [m/s]
+   cg          = cp/2.   # group vel (open water, inf depth relation) [m/s]
+
+   print('\n')
+   print('width = '+str(width)+'m')
+   print('\n')
+
+   out   = Fbs.solve_boltzmann(width=width,
+                                alp=alp,N=N,alp_dis=alp_dis,cg=cg,Hs=Hs_inc,
+                                f_inc=dirspec_inc_spreading)
+
+   th_vec  = out['angles']
+   dth     = 2*np.pi/N
+
+   xx    = np.linspace(0,width,num=800)
+   E_th  = Fbs.calc_expansion(out,xx,L=width)
+   #
+   E0          = dth*E_th.sum(1) # integral over directions (freq spec)
+   Hs_steady   = 4*np.sqrt(E0.real)
+   #
+   S_th        = E_th.dot(out['solution']['Rmat'].transpose()) # source term
+   S_cos       = S_th.dot(dtheta*np.cos(out['angles']))        # integral with cos over directions
+   rhow        = 1025 # kg/m^3
+   gravity     = 9.81 # m/s^2
+   taux_steady = -(rhow*gravity/cp)*S_cos.real
+
+   #test plot if desired
+   if ax is not None:
+      ax.plot(xx/1.e3,Hs_out)
+
+   return xx,Hs_out
 ##############################################
