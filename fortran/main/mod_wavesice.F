@@ -356,14 +356,14 @@
             if (SCATMOD.eq.0) then
                !! Simple attenuation scheme
                !! - doesn't conserve scattered energy
-               print*,'Simple atten'
+               !print*,'Simple atten'
                call atten_simple(sdf_dir(:,:,:,w)                       &
      &            ,S_freq,taux_om,tauy_om                               &
      &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
 
             elseif (SCATMOD.eq.1) then
                !! scattered energy is distributed isotropically
-               print*,'Isotropic atten'
+               !print*,'Isotropic atten'
                call atten_isotropic(sdf_dir(:,:,:,w)                    &
      &            ,S_freq,taux_om,tauy_om                               &
      &            ,atten_dim,damp_dim,ag_eff(:,:,w),dt)
