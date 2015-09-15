@@ -6,12 +6,13 @@ else
    fxn   = @rmpath;
 end
 
-feval(fxn,'../init');
-feval(fxn,'../attenuation_youngs');
-feval(fxn,'../misc');
-feval(fxn,'../numerics');
-feval(fxn,'../numerics/testing');
-feval(fxn,'../other_deps');
+w2d   = getenv('WIM2D_PATH');
+feval(fxn,[w2d,'/matlab/init']);
+feval(fxn,[w2d,'/matlab/attenuation_youngs']);
+feval(fxn,[w2d,'/matlab/misc']);
+feval(fxn,[w2d,'/matlab/numerics']);
+feval(fxn,[w2d,'/matlab/numerics/testing']);
+feval(fxn,[w2d,'/matlab/other_deps']);
 
 %%mex functions and related
 fdir  = '../../fortran';
