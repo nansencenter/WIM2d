@@ -23,7 +23,6 @@
 2.5   # Tmin            : minimum period
 25    # Tmax            : maximum period
 
-
 # grid (overwritten if using mex functions, which need a pre-compiled grid)
 0     # x0  : min(X(:))
 0     # y0  : min(Y(:))
@@ -44,7 +43,6 @@
 # other options
 1     # OPT             : ice-water-land configuration
 0     # USE_ICE_VEL     : 0 = approx ice group vel by water group vel
-1     # DO_ATTEN        : 0 = just advect waves without attenuation
 0     # CHK_ATTEN       : check by running with old attenuation
 0     # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice;
                         # 0 = give Hs for displacement of the surrounding water
@@ -56,9 +54,10 @@
 1     # DO_CHECK_FINAL  : 1/0: do/don't dump binary files for final conditions
 1     # DO_CHECK_PROG   : 1/0: do/don't dump binary files at regular time intervals
 1     # DO_CHECK_INIT   : 1/0: do/don't dump binary files for initial conditions
-1     # DO_BREAKING     : 1 = include ice breakage; 0 = turn off breaking for testing
 1     # STEADY          : 1 = Steady-state solution, top-up waves inside wave mask;
                         # 0 = wave packet that just travels through
+1     # DO_BREAKING     : 1 = include ice breakage; 0 = turn off breaking for testing
+1     # DO_ATTEN        : 0 = just advect waves without attenuation
 
 # correspond to "real_prams" in fortran code 
 5.49e9   # young           : Young's modulus
