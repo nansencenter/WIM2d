@@ -208,6 +208,9 @@ wlng     = g.*T.^2./(2.*pi);
 ap       = sqrt(g.*wlng./(2.*pi)); % Phase speed
 ag       = ap./2;                  % Group speed
 
+diagnostics.phase_speed = ap;
+diagnostics.group_speed = ag;
+
 ag_eff      = zeros(nx,ny,nw);
 ap_eff      = zeros(nx,ny,nw);
 wlng_ice    = zeros(nx,ny,nw);
@@ -338,6 +341,8 @@ else
    nt = floor(duration_hours*3600/dt);
 end
 duration = nt*dt;%%duration in seconds;
+
+diagnostics.wave_travel_dist = duration*ag;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display parameters
