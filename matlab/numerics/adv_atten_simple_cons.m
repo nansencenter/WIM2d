@@ -133,7 +133,7 @@ for j = 1:ny
        dumS = squeeze(S(i,j,[lp,lp+ndir/2]));
        c_vec = inv_Mat0*dumS;%%expand in terms of eigen vectors
        dumS = c_vec(1)*evec0 + ...
-        c_vec(2)*exp(-2*atten_dim(i,j)*cg*dt);%%do scattering
+        c_vec(2)*exp(-2*atten_dim(i,j)*cg*dt)*evec1;%%do scattering
        %%S(i,j,[lp,lp+ndir/2]) = dumS;
        S(i,j,[lp,lp+ndir/2]) = dumS*exp(-damp_dim(i,j)*cg*dt);
          %% do damping
