@@ -46,8 +46,10 @@ fmt   = ['%',sprintf( '%d.%dd', length(num2str(N0)), length(num2str(N0)) )];
 domain   = '';
 
 for n=0:N0
-   saved_simul_out0  = [outdir,'/',dir0(n+1).name];
-   saved_simul_out   = dir0(n+1).name;
+   saved_simul_out   = [f0,num2str(n),'.mat'];
+   saved_simul_out0  = [outdir,'/',saved_simul_out];
+   %saved_simul_out0  = [outdir,'/',dir0(n+1).name];
+   %saved_simul_out   = dir0(n+1).name;
    %%
    for k=1:Nv
       vbl   = vbls{k};

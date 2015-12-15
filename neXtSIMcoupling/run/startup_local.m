@@ -1,34 +1,42 @@
 %%define location of /Data/sim:
+if exist('data_sim','var');
+   clear data_sim
+end
+
 SHOW_WARNING   = 0;
 try_extHD      = 1;
+try_local      = 1;
 
-if exist('/Volumes/sim')
-   %% johansen
-   data_sim    = '/Volumes/sim'
-   try_extHD   = 0;
+data_locs   = {'/Volumes/sim',...
+               '/Volumes/Tim_Ext_HD2/WORK/neXtSIM',...
+               '../local_data'};
 
-   %% sometimes this dir shows up even if it's not loaded
-   dd       = dir(data_sim);
-   if length(dd)==2
-      %%only ".", ".." in dir
-      try_extHD   = 1;
+for loop_i=1:length(data_locs)
+   dloc     = data_locs{loop_i+1};
+   %%
+   disp(['Checking for ',dloc]);
+   if exist(dloc)
+      dd = dir(dloc);
+      if length(dd)>2
+         %% sometimes dir can show up even if it's not loaded
+         %% more than only ".", ".." in dir
+         data_sim = dloc;
+         disp(['Using SIM data from',data_sim]);
+         break;
+      end
    end
 end
-   
-if try_extHD
-   %% can't find johansen
 
-   if exist('/Volumes/Tim_Ext_HD2/WORK/neXtSIM')
-   %% external hard drive
-   data_sim = '/Volumes/Tim_Ext_HD2/WORK/neXtSIM'
-   else
-      SHOW_WARNING   = 1;
-      %%
-      warnings = {'No paths to neXtSIM data present';
-                  '- eg may need to connect to johansen (/Data/sim) with cmd+k';
-                  '  or attach external HD.'};
-   end
+if ~exist('data_sim','var')
+   disp({'No path to SIM data';
+         '- may need to:';
+         ' > connect to johansen (/Data/sim) with cmd+k';
+         ' > attach external HD';
+         ' > mkdir ../local_data and add/link basic data:';
+         '     mesh, m_map'});
+   return;
 end
+
 rmpaths;
 
 %% if we need to make a new grid
@@ -51,10 +59,20 @@ local_dirs     = {nextsim_path,...
                   [nextsim_path,'/WIM/code'],...
                   [nextsim_path,'/tools'],...
                   bamg_path};
+
 for loop_i=1:length(local_dirs)
    addpath(local_dirs{loop_i});
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% need to compile SuiteSparse3 locally (neXtSIM solvers)
+ss3   = [getenv('HOME'),'/MATHS/programs/matlab/SuiteSparse3']
+addpath([ss3,'/CHOLMOD/MATLAB/']);
+addpath([ss3,'/AMD/MATLAB/']);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% add wim2d paths
@@ -71,47 +89,39 @@ for loop_i=1:length(wimdirs)
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if exist('data_sim','var')
 
-   johansen_paths = [data_sim,'/data'];%%+all subdirs
-   topaz_path     = [johansen_paths,'/TOPAZ4/198910_201112'];%topaz data
-   %topaz_path     = [johansen_paths,'/TOPAZ4/198910_201312'];%topaz data
-   amsre_path     = [johansen_paths,'/AMSRE_ice_conc/2008'];%ice conc
-   etopo_path     = [johansen_paths,'/BATHYMETRY/etopo1_ice_c_i2'];%%bathymetry
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Rest of SIM data
+data_paths = [data_sim,'/data'];%%+all subdirs
+topaz_path     = [data_paths,'/TOPAZ4/198910_201112'];%topaz data
+%topaz_path     = [data_paths,'/TOPAZ4/198910_201312'];%topaz data
+amsre_path     = [data_paths,'/AMSRE_ice_conc/2008'];%ice conc
+etopo_path     = [data_paths,'/BATHYMETRY/etopo1_ice_c_i2'];%%bathymetry
 
-   %% add paths
-   joh_dirs = {topaz_path,...
-               amsre_path,...
-               etopo_path};
-   for loop_i=1:length(joh_dirs)
-      disp(joh_dirs{loop_i})
-      addpath(joh_dirs{loop_i});
-   end
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %% other "MATLAB" paths
-   mat_path = [data_sim,'/MATLAB'];
-   addpath([mat_path]);
-   addpath([mat_path,'/age/']);
-   addpath([mat_path,'/defo_rgps/']);
-   addpath([mat_path,'/from An/']);
-   addpath([mat_path,'/m_map/']);
-
-   %% need to compile SuiteSparse3 locally
-   %addpath([mat_path,'/SuiteSparse/CHOLMOD/MATLAB/']);
-   ss3   = [getenv('HOME'),'/MATHS/programs/matlab/SuiteSparse3']
-   addpath([ss3,'/CHOLMOD/MATLAB/']);
-   addpath([ss3,'/AMD/MATLAB/']);
-
-   %% get all the tools,data:
-   %% - need all the sub-directories in these folders
-   lookin_dirs{2} = johansen_paths;
-   lookin_dirs{3} = [mat_path,'/m_map/'];
-else
-   %% have to work locally
-   addpath([getenv('HOME'),'/matlab/custom-packages/m_map']);
+%% add paths
+joh_dirs = {topaz_path,...
+            amsre_path,...
+            etopo_path};
+for loop_i=1:length(joh_dirs)
+   disp(joh_dirs{loop_i})
+   addpath(joh_dirs{loop_i});
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% other "MATLAB" paths
+mat_path = [data_sim,'/MATLAB'];
+addpath([mat_path]);
+addpath([mat_path,'/age/']);
+addpath([mat_path,'/defo_rgps/']);
+addpath([mat_path,'/from An/']);
+addpath([mat_path,'/m_map/']);
+
+
+%% get all the tools,data:
+%% - need all the sub-directories in these folders
+lookin_dirs{2} = data_paths;
+lookin_dirs{3} = [mat_path,'/m_map/'];
 
 lookin_dirs{1} = [nextsim_path,'/tools'];
 
@@ -134,17 +144,7 @@ end
 
 showpaths;
 
-ll = '***********************************************************************';
-if SHOW_WARNING==1
-   disp(' ');
-   disp(ll);
-   for j=1:length(warnings)
-      disp(warnings{j});
-   end
-   disp(ll);
-   disp(' ');
-end
-
+ll = '*****************************************************************';
 disp(' ');
 disp(ll);
 disp('Remember to open "Parallel>Manage Cluster Profiles..." menu,');

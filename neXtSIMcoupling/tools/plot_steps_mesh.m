@@ -16,6 +16,7 @@ OVER_WRITE  = 0;
 DO_RM       = 1;
 
 outdir   = [rootdir,'/simul_out_steps_mat'];
+indir    = [rootdir,'/simul_in'];
 figdir   = [rootdir,'/figs'];
 eval(['!mkdir -p ',figdir]);
 figdir   = [figdir,'/simul_out_steps_mesh'];
@@ -28,7 +29,7 @@ if 1
    vbls  = {'c'       ,'h'  ,'log1md','Dmax' ,'taux_waves','tauy_waves','Nfloes'};
    cmaps = {'rev_gris','jet','jet'   ,'jet'  ,'jet'       ,'jet'       ,'jet'   };
    lims  = {[0,1]     ,[0 2],[-3.7 0],[0,300],twlim       ,.2*twlim    ,[0,250] };
-elseif 1
+elseif 0
    %% Dmax,Nfloes
    vbls  = {'Dmax' ,'Nfloes'};
    cmaps = {'jet'  ,'jet'   };
@@ -48,10 +49,18 @@ f0    = strsplit(dir0(1).name,'0.mat');
 f0    = f0{1};%start of files
 fmt   = ['%',sprintf( '%d.%dd', length(num2str(N0)), length(num2str(N0)) )];
 
+%%get simul_in file
+simul_name     = strsplit(dir0(1).name,'_step0.mat');
+simul_name     = strsplit(simul_name{1},'simul_out_');
+simul_name     = simul_name{2};
+saved_simul_in = ['simul_in_',simul_name,'.mat'];
+cmd            = ['!cp ',[indir,'/',saved_simul_in],' .'];
+eval(cmd);
+
 domain   = '';
 for n=0:N0
-   saved_simul_out0  = [outdir,'/',dir0(n+1).name];
-   saved_simul_out   = dir0(n+1).name;
+   saved_simul_out   = [f0,num2str(n),'.mat'];
+   saved_simul_out0  = [outdir,'/',saved_simul_out];
 
    for k=1:Nv
       vbl   = vbls{k};
@@ -78,7 +87,11 @@ for n=0:N0
          %%
          if DO_RM
             eval(['!rm ',saved_simul_out]);
-         end
-      end
-   end
+         end%want to delete simul_out from current dir
+      end%check if fig is present already
+   end%loop over variables
+end%loop over time steps
+
+if DO_RM
+   eval(['!rm ',saved_simul_in]);
 end

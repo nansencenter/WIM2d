@@ -61,6 +61,7 @@ neXtSIMcoupling/run/*
 !neXtSIMcoupling/run/*.sh
 !neXtSIMcoupling/run/infiles
 neXtSIMcoupling/tutorial/out/*
+neXtSIMcoupling/local_data/*
 
 CXX/run/outputs
 

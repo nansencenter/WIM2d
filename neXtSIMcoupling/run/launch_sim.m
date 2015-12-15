@@ -1,6 +1,22 @@
 DO_COMPILE  = 0;
+USE_WIM     = 0;
 
-test_i   =  16;%% idealised domain+WIM, doesn't need forcing files on johansen
+if 0
+   %% idealised domain (simplesquare)
+   %% - doesn't need forcing files on johansen
+   test_i   =  2;
+elseif 0
+   %% idealised domain
+   %% - doesn't need forcing files on johansen
+   test_i   =  16;
+elseif 1
+   %% idealised domain
+   %% - doesn't need forcing files on johansen
+   %% - use WIM
+   test_i   = 16;
+   USE_WIM  = 1;
+end
+
 
 % --------------
 % 1. compile mex files
@@ -23,13 +39,39 @@ end
 
 if 1
    % Rewrite the simul in file
-   days_in_sec                = 24*3600;
-   simul_in.duration          = 7*days_in_sec;
-   simul_in.wim.init.Hs       = 4;
-   simul_in.wim.init.Tp       = 12;
-   simul_in.wim.init.mwd      = -90;
-   simul_in.wim.init.STEADY   = 1;
+   simul_in = load(saved_simul_in);
+   simul_in = simul_in.simul_in;
+
+   if 0
+      %change length of simulation
+      days_in_sec                = 24*3600;
+      simul_in.duration          = 7*days_in_sec;
+   end
+
+   if 1
+      %change wind
+      simul_in.constant_u  = 0;
+      simul_in.constant_v  = 0;
+   end
+
+   if 1
+      %add waves
+      simul_in.wim.use_wim = 1;
+      simul_in.wim.MEX_OPT = 1;
+
+      if strfind(simul_in.domain,'wim_grid')
+         simul_in.wim.init_waves = 1;
+      elseif strfind(simul_in.domain,'squaresmall')
+         simul_in.wim.init_waves = 0;
+      end
+
+      simul_in.wim.init.Hs       = 4;
+      simul_in.wim.init.Tp       = 12;
+      simul_in.wim.init.mwd      = -90;
+      simul_in.wim.init.STEADY   = 1;
+   end
    save(saved_simul_in,'simul_in');
+   clear simul_in;
 end
 
 
@@ -149,7 +191,8 @@ eval(['!mkdir -p ',odir]);
 cmd   = ['!mv *','test',num2str(test_i),'*.png ',odir];
 eval(cmd);
 
-!rm -f fort.6
+%!rm -f fort.6
+
 %cmd   = ['!mv *','test',num2str(test_i),'*.txt ',outdir];
 %eval(cmd);
 %cmd   = ['!mv *','test',num2str(test_i),'*.fig ',outdir];
