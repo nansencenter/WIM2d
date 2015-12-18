@@ -13,7 +13,7 @@ if ~exist('rootdir','var');
    rootdir  = [rootdir,'/Model-Results/neXtSIM/Oban-test16/run',num2str(run_no)];
 end
 OVER_WRITE  = 0;
-DO_RM       = 1;
+DO_RM       = 0;%don't leave files in working folder after plotting
 
 outdir   = [rootdir,'/simul_out_steps_mat'];
 indir    = [rootdir,'/simul_in'];
@@ -23,22 +23,18 @@ figdir   = [figdir,'/simul_out_steps_mesh'];
 eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
+twlim = .5*[-1 1];%%tau_x range
+vbls  = {'Dmax' ,'taux_waves','tauy_waves','c'       ,'h'  ,'log1md','Nfloes'};
+cmaps = {'jet'  ,'jet'       ,'jet'       ,'rev_gris','jet','jet'   ,'jet'   };
+lims  = {[0,300],twlim       ,.2*twlim    ,[0,1]     ,[0 2],[-3.7 0],[0,250] };
+
 if 1
-   %% everything
-   twlim = .5*[-1 1];%%tau_x range
-   vbls  = {'c'       ,'h'  ,'log1md','Dmax' ,'taux_waves','tauy_waves','Nfloes'};
-   cmaps = {'rev_gris','jet','jet'   ,'jet'  ,'jet'       ,'jet'       ,'jet'   };
-   lims  = {[0,1]     ,[0 2],[-3.7 0],[0,300],twlim       ,.2*twlim    ,[0,250] };
-elseif 0
-   %% Dmax,Nfloes
-   vbls  = {'Dmax' ,'Nfloes'};
-   cmaps = {'jet'  ,'jet'   };
-   lims  = {[0,300],[0,250] };
-elseif 1
-   %% no wave stuff
-   vbls  = {'c'       ,'h'  ,'log1md'};
-   cmaps = {'rev_gris','jet','jet'};
-   lims  = {[0,1]     ,[0 2],[-3.7 0]};
+   %%shorten plotting list
+   jkeep = [1,2,4,5,6];
+   %jkeep = [5];
+   vbls  = vbls(jkeep);
+   cmaps = cmaps(jkeep);
+   lims  = lims(jkeep);
 end
 Nv    = length(vbls);
 

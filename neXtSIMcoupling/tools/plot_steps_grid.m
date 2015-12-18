@@ -13,7 +13,7 @@ if ~exist('rootdir','var');
    rootdir  = [rootdir,'/Model-Results/neXtSIM/Oban-test16/run',num2str(run_no)];
 end
 OVER_WRITE  = 0;
-DO_RM       = 1;%don't leave file in working folder after plotting
+DO_RM       = 0;%don't leave files in working folder after plotting
 
 outdir   = [rootdir,'/simul_out_steps_mat']
 figdir   = [rootdir,'/figs'];
@@ -22,17 +22,16 @@ figdir   = [figdir,'/simul_out_steps_grid'];
 eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
+twlim = .25*[-1 1];%%tau_x range
+vbls  = {'Dmax' ,'Hs' ,'Tp'  ,'taux_waves','tauy_waves','cice'    ,'hice','Nfloes'};
+cmaps = {'jet'  ,'jet','jet' ,'jet'       ,'jet'       ,'rev_gris','jet' ,'jet'   };
+lims  = {[0,300],[0 6],[0 20],twlim       ,.1*twlim    ,[0 1]     ,[0 2] ,[0,250] };
 if 1
-   %%everything
-   twlim = .75*[-1 1];%%tau_x range
-   vbls  = {'Dmax' ,'Hs' ,'Tp'  ,'taux_waves','tauy_waves','cice'    ,'hice','Nfloes'};
-   cmaps = {'jet'  ,'jet','jet' ,'jet'       ,'jet'       ,'rev_gris','jet' ,'jet'   };
-   lims  = {[0,300],[0 6],[0 20],twlim       ,.1*twlim    ,[0 1]     ,[0 2] ,[0,250] };
-elseif 1
-   %% Dmax,Nfloes
-   vbls  = {'Dmax' ,'Nfloes'};
-   cmaps = {'jet'  ,'jet'   };
-   lims  = {[0,300],[0,250] };
+   %%shorten:
+   jkeep = [1,2,4];
+   vbls  = vbls (jkeep);
+   cmaps = cmaps(jkeep);
+   lims  = lims (jkeep);
 end
 Nv    = length(vbls);
 
