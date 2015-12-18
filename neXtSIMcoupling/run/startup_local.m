@@ -56,7 +56,8 @@ bamg_path      = [xsimdir,'/ISSM-trunk-jpl-svn/lib'];
 %% add local paths
 local_dirs     = {nextsim_path,...
                   [nextsim_path,'/code'],...
-                  [nextsim_path,'/WIM/code'],...
+                  [nextsim_path,'/bin'],...
+                  [nextsim_path,'/code/WIM'],...
                   [nextsim_path,'/tools'],...
                   bamg_path};
 
@@ -84,6 +85,17 @@ wimdirs{end+1} = [wimdir1,'/matlab_funs'];
 wimdirs{end+1} = [wimdir1,'/../matlab/other_deps'];
 wimdirs{end+1} = [gitdir,'/matlab/Semi-Infinite-Elastic-Plate/GEN_progs'];
 wimdirs{end+1} = [gitdir,'/WIM2d/matlab/misc'];
+
+if 1
+   %%if want to run pure matlab code (not mex)
+   wimdirs{end+1} = [wimdir1,'/../matlab/misc'];
+   wimdirs{end+1} = [wimdir1,'/../matlab/main'];
+   wimdirs{end+1} = [wimdir1,'/../matlab/init'];
+   wimdirs{end+1} = [wimdir1,'/../matlab/numerics'];
+   wimdirs{end+1} = [wimdir1,'/../matlab/boltzmann'];
+   wimdirs{end+1} = [wimdir1,'/../matlab/attenuation_youngs'];
+end
+
 for loop_i=1:length(wimdirs)
    addpath(wimdirs{loop_i});
 end

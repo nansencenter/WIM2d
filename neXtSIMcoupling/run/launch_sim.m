@@ -56,8 +56,11 @@ if 1
 
    if 1
       %add waves
-      simul_in.wim.use_wim = 1;
-      simul_in.wim.MEX_OPT = 1;
+      simul_in.wim.use_wim          = 1;
+      simul_in.wim.MEX_OPT          = 0;
+      simul_in.wim.test_and_exit    = 0;
+      simul_in.wim.DAMAGE_OPT       = 1;
+      simul_in.wim.wim_break_damage = .95;
 
       if strfind(simul_in.domain,'wim_grid')
          simul_in.wim.init_waves = 1;
