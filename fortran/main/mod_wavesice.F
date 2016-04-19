@@ -229,6 +229,11 @@
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
       E_tot = 0.
 
+
+      !print*,'Min= ',minval(sdf_dir)
+      !print*,'Max= ',maxval(sdf_dir)
+
+
       !! spectral moments;
       mom0  = 0.0
       mom2  = 0.0
@@ -346,11 +351,19 @@
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !! Transport waves and attenuate them
          if (SCATMOD.eq.0) then
-            !! Simple attenuation scheme - doesn't conserve scattered energy
+!! Simple attenuation scheme - doesn't conserve scattered energy
+            !print*,'min 1= ',minval(taux_om)
+            !print*,'max 1= ',maxval(taux_om)
+
             call adv_atten_simple(sdf_dir(:,:,:,w)                      &
      &         ,S_freq,taux_om,tauy_om                                  &
      &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
-            !print*,'Spectrum at',itest,jtest
+!print*,'Spectrum at',itest,jtest
+
+            !print*,'min 2= ',minval(taux_om)
+            !print*,'max 2= ',maxval(taux_om)
+
+
             !print*,S_freq(itest,jtest)
             !print*,sdf_dir(itest,jtest,:,w)
          elseif (SCATMOD.eq.1) then
@@ -362,12 +375,19 @@
          end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+         !print*,'min= ',minval(ap_eff)
+         !print*,'max= ',maxval(ap_eff)
+
          !! integrate stress densities over frequency
          !! TODO: check if this is correct for ice-covered water
          tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)   !![Pa*s]
          tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
          tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
          tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
+
+         !print*,'min f= ',minval(tau_x)
+         !print*,'max f= ',maxval(tau_x)
+
 
          !! INTEGRALS FOR BREAKING PROB:
          do j=1,jj
@@ -397,6 +417,10 @@
          end do!! j, end spatial loop y;
 
       end do!! end spectral loop;
+
+      print*,'min f= ',minval(mom0w)
+      print*,'max f= ',maxval(mom0w)
+
 
       if (REF_Hs_ICE.eq.1) then
          Hs = 4*sqrt(mom0)

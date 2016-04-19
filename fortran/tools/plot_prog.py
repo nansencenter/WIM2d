@@ -72,6 +72,12 @@ if PLOT_PROG:
    if not os.path.exists(figdir3):
       os.mkdir(figdir3)
 
+   # Typical limits for parameters (can change to better ones)
+   # NB use same key names as in .b file
+   zlims  = {'icec':[0,1],'iceh':[0,5],'Dmax':[0,300],\
+             'tau_x':[-.03,.03],'tau_y':[-.05,.05],\
+             'Hs':[0,5],'Tp':[10,20],'mwd':[-180,180]}
+
    for pf in prog_files:
       if '.a'==pf[-2:]:
          stepno   = pf.strip('wim_prog').strip('.a')
@@ -81,7 +87,7 @@ if PLOT_PROG:
          #
          fields,info = Fdat.fn_read_general_binary(afile)
          figdir3B    = figdir3+'/'+stepno
-         Fplt.fn_plot_gen(grid_prams,fields,figdir3B)    # plot final results
+         Fplt.fn_plot_gen(grid_prams,fields,figdir3B,zlims_in=zlims)    # plot final results
 
    ################################################################
    print('\n**********************************************************************')

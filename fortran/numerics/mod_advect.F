@@ -128,6 +128,10 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!u_pad = 1
+
+      !print*,'*******sum= ',sum(u_pad)
+
 ! --- Prediction step
       call weno3pd_v2(h_pad,sao,u_pad,v_pad,                            &
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
@@ -156,7 +160,8 @@
       !! final output
       do j=1,jj
       do i=1,ii!![TW 28.1.2014]
-           h(i,j) = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
+         h(i,j) = .5*(h_pad(i,j)+hp(i,j)+dt*sao(i,j))
+         !h(i,j) = (sao(i,j))
       enddo
       enddo
 
@@ -257,6 +262,8 @@
       fvl  = 0.
       fvh  = 0.
 
+      !print*,'*******sum= ',sum(u)
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!fluxes in x dirn:
       do j=0,jj+1
@@ -284,7 +291,7 @@
             ! wave to left
             ! dont use very left point
             q0=cq11*g(im1,j)+cq10*g(i  ,j)!im1, one after left
-            q1=cq01*g(i  ,j)+cq00*g(ip1,j)!ip1=i+1: 1 -> ii+3 , all the way to right 
+            q1=cq01*g(i  ,j)+cq00*g(ip1,j)!ip1=i+1: 1 -> ii+3 , all the way to right
 !
             a0=ca1
             a1=ca0*(abs(g(im1,j)-g(i  ,j))+eps)                         &
@@ -341,8 +348,8 @@
 ! --- Update field with low order fluxes.
       do j=0,jj+1
       do i=0,ii+1!![TW 28.1.2014]
-          gt(i,j)=g(i,j)-dt*(ful(i+1,j)-ful(i,j)                        &
-     &                      +fvl(i,j+1)-fvl(i,j))*scp2i(i,j)
+         gt(i,j)=g(i,j)-dt*(ful(i+1,j)-ful(i,j)                               &
+     &        +fvl(i,j+1)-fvl(i,j))*scp2i(i,j)
       enddo
       enddo
 
@@ -365,7 +372,8 @@
 ! --- Compute the spatial advective operator.
       do j=1,jj
       do i=1,ii!![TW 28.1.2014]
-          sao(i,j)=-(fuh(i+1,j)-fuh(i,j)+fvh(i,j+1)-fvh(i,j))*scp2i(i,j)
+         !sao(i,j)=(fvl(i,j+1)-fvl(i,j))*scp2i(i,j)
+         sao(i,j)=-(fuh(i+1,j)-fuh(i,j)+fvh(i,j+1)-fvh(i,j))*scp2i(i,j)
       enddo
       enddo
 

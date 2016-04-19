@@ -37,17 +37,33 @@
       !print*,'Before advection',Sdir(itest,jtest,1)
       uwave = 0.0
       vwave = 0.0
+
+      !print*,'max= ',maxval(ag_eff)
+      !print*,'min= ',minval(ag_eff)
+
       do wth  = 1,ndir
          !!define wave direction & speeds
          adv_dir  = -PI/180.0*(90.0+wavdir(wth))
+         !print*,'adv_dir= ',cos(adv_dir)
          uwave    = ag_eff*cos(adv_dir)
 
          if (ADV_DIM.eq.2) then
             !! normal 2d advection
             vwave = ag_eff*sin(adv_dir)
 
+            !if (wth.eq.4) then
+             !  print*,'min 1= ',minval(Sdir(:,:,wth))
+              ! print*,'max 1= ',maxval(Sdir(:,:,wth))
+            !end if
+
             !!advect
             call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
+
+            !if (wth.eq.4) then
+            !   print*,'min 2= ',minval(Sdir(:,:,wth))
+            !   print*,'max 2= ',maxval(Sdir(:,:,wth))
+            !end if
+
          else
             !! * in some situations where no variation is expected
             !! in the 'y' dirn, we can ignore the speed in this
@@ -75,6 +91,10 @@
       Sfreq    = 0.0
       taux_om  = 0.0
       tauy_om  = 0.0
+
+      print*,'min= ',minval(damp_dim)
+      print*,'max= ',maxval(damp_dim)
+
 
       do j = 1,jj
       do i = 1,ii
@@ -141,7 +161,7 @@
       real,intent(in)      :: dt
       integer,intent(in)   :: ADV_DIM,ADV_OPT
       !!
-      integer                 :: i,j,wth,nth,n,jp1,jm1
+      integer                 :: i,j,wth,nth,n,jp1,jm1,ss
       integer,dimension(ndir) :: nvec
       real,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::                &
      &   uwave,vwave
@@ -153,6 +173,7 @@
       complex                 :: zi,src_fou_p1,src_fou_m1
       real,dimension(ncs)     :: S_cos,S_sin
       real  :: cg,q_scat,q_abs,q_tot,src_cos_1,src_sin_1
+      integer :: cpt = 0
 
       PI = 4.0*atan(1.0)
       !zi = cmplx(1,0)!sqrt(-1)
@@ -175,8 +196,17 @@
             !! normal 2d advection
             vwave = ag_eff*sin(adv_dir)
 
-            !!advect
+!!advect
+
+            !print*,'Min 1= ',minval(Sdir(:,:,wth))
+            !print*,'Max 1= ',maxval(Sdir(:,:,wth))
+
             call waveadv_weno(Sdir(:,:,wth),uwave,vwave,dt,ADV_OPT)
+
+            !print*,'Min 2= ',minval(Sdir(:,:,wth))
+            !print*,'Max 2= ',maxval(Sdir(:,:,wth))
+
+
          else
             !! * in some situations where no variation is expected
             !! in the 'y' dirn, we can ignore the speed in this
@@ -190,6 +220,9 @@
 
          !!useful later
          theta_vec(wth) = adv_dir
+
+         print*,'theta_vec[',wth-1,']= ',theta_vec(wth)
+
          nvec(wth)      = wth-1
       end do
 !     print*,'ag,adv_dir      ',ag_eff(itest,jtest),adv_dir
@@ -202,6 +235,8 @@
       taux_om  = 0.0
       tauy_om  = 0.0
 
+      cpt = 0
+
       do j = 1,jj
       do i = 1,ii
 
@@ -213,7 +248,17 @@
          !! S_fou(1) = \int_0^{2\pi}S(\theta)d\theta
          S_fou(1) = cmplx( sum(wt_theta*S_th) ) !n=0 Fourier coefficient
 
+         !if ((i.eq.1).and.(j.eq.1)) then
+         !if (cpt.eq.0) then
+         !   print*,'S_fou R= ',realpart(S_fou(1))
+         !   print*,'S_fou I= ',imagpart(S_fou(1))
+         !end if
+
+         !cpt = cpt+1
+
          if (ICE_MASK(i,j).gt.0.0) then
+
+            cpt = cpt+1
 
             !! atten_dim,damp_dim = ENERGY attenuation coeffs [m^{-1}]
             if (dfloe(i,j).lt.dfloe_pack_init) then
@@ -282,8 +327,22 @@
 
             !!S_fou(n) = s_n = \int_0^{2\pi}S(\theta)e^{i*n*\theta}d\theta
             do nth=1,ncs
+
+               !wt_theta = 1.0
+               !theta_vec = 1.0
                S_cos(nth)     = sum(wt_theta*S_th*cos(nth*theta_vec))
                S_sin(nth)     = sum(wt_theta*S_th*sin(nth*theta_vec))
+
+               !if ((cpt.eq.1).and.(nth.eq.1)) then
+               if ((cpt.eq.1)) then
+                  !print*,'ncs  = ',ncs
+                  !print*,'S_th= ',sum(S_th)
+                  !print*,'Real= ',S_cos(nth)
+!print*,'Imag= ',S_sin(nth)
+                  print*,'S_th= ',S_th(1)
+                  print*,'S_th= ',S_th(2)
+               end if
+
 
                !! 1<=n<=N/2: e^{i*n*\theta}=\cos(n\theta)+i*\sin(n\theta)
                S_fou(nth+1)   = cmplx(S_cos(nth),S_sin(nth))
@@ -309,6 +368,14 @@
             taux_om(i,j)   = -src_cos_1
             tauy_om(i,j)   = -src_sin_1
 
+            !if ((cpt.eq.1)) then
+               !print*,'ncs  = ',ncs
+               !print*,'S_th= ',sum(S_th)
+            !   print*,'Real= ',-src_cos_1
+            !   print*,'Imag= ',-src_sin_1
+            !end if
+
+
 !           !!uncomment below for testing against WIM2d.m
 !           if ((i.eq.24).and.(j.eq.1)) then
 !              print*,'Hs',4.0*sqrt(real(S_fou(1)))                     &
@@ -323,14 +390,51 @@
 
             !!do scattering/attenuation and transform back
             S_fou = S_fou*exp(evals_x*cg*dt)
+
+            !if ((cpt.eq.1)) then
+            !   !print*,'S_th= ',sum(S_th)
+            !   print*,'***S_fou R= ',realpart(S_fou(1))
+            !   print*,'***S_fou I= ',imagpart(S_fou(1))
+            !end if
+
+
             !!S(\theta)=(1/2/\pi)*\sum_n.S_n.e^{-i*n*\theta}
             do wth=1,ndir
 !              tmp1  = real(    S_fou)*cos(nvec*theta_vec(wth))         &
 !    &                -real(-zi*S_fou)*sin(nvec*theta_vec(wth))
                tmp1  = realpart(S_fou)*cos(nvec*theta_vec(wth))         &
      &                -imagpart(S_fou)*sin(nvec*theta_vec(wth))
-               !!
+!     !
+               !tmp1=1
                Sdir(i,j,wth)  = 1.0/(2*PI)*sum(tmp1)
+
+             !  if ((cpt.eq.1)) then
+             !     do ss=1,ndir
+              !       print*,'tmp1[',ss-1,']= ',tmp1(ss)
+              !    end do
+              ! end if
+
+
+               !if ((cpt.eq.1).and.(wth.eq.1)) then
+               if ((cpt.eq.1).and.(wth.eq.2)) then
+
+                  !do ss=1,ndir
+                  !   print*,'tmp1[',ss-1,']= ',tmp1(ss)
+                  !end do
+
+                  !print*,'***Temp R= ',realpart(S_fou(1))
+!     print*,'***Temp I= ',imagpart(S_fou(1))
+                  !print*,'theta[',wth-1,']=',theta_vec(wth)
+                  !print*,'Sdir[',wth-1,']=',Sdir(i,j,wth)
+               end if
+
+               !if ((cpt.eq.1).and.(wth.eq.2)) then
+               !   print*,'Min OUT= ',minval(Sdir)
+               !   print*,'Max OUT= ',maxval(Sdir)
+               !end if
+
+
+
                S_th(wth)      = Sdir(i,j,wth)
             end do
 
@@ -350,8 +454,24 @@
          !! already when getting the Fourier transform
          !! NB do this in water also
          Sfreq(i,j)  = real(S_fou(1))
+
+         !if ((cpt.eq.1)) then
+         !   print*,'Sfreq[',i,j,']=',Sfreq(i,j)
+!end if
+
+         !print*,'Sfreq[',i,j,']=',Sfreq(i,j)
+
       end do!i
-      end do!j
+      end do                    !j
+
+!print*,'cpt= ',cpt
+
+      !print*,'Min OUT= ',minval(Sdir)
+      !print*,'Max OUT= ',maxval(Sdir)
+
+      print*,'Min OUT= ',minval(Sfreq)
+      print*,'Max OUT= ',maxval(Sfreq)
+
 
       end subroutine adv_atten_isotropic
 

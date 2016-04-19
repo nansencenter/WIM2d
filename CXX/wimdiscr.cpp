@@ -355,7 +355,6 @@ WimDiscr<T>::wimInit()
                     // for (int i=0; i < 8; ++i)
                     //     std::cout<<"params["<< i <<"]= " << outputs[i] << "\n";
 
-
                     disp_ratio[i][j][fq] = (kice*modT)/kwtr;
                     //std::cout<<"RATIO= "<< iceh[i][j] <<"\n";
                     wlng_ice[i][j][fq] = 2*PI/kice;
@@ -469,7 +468,6 @@ WimDiscr<T>::wimStep()
     // std::fill( mom0w.data(), mom0w.data() + mom0w.num_elements(), 0. );
     // std::fill( mom2w.data(), mom2w.data() + mom2w.num_elements(), 0. );
 
-
     std::fill( tau_x.data(), tau_x.data() + tau_x.num_elements(), 0. );
     std::fill( tau_y.data(), tau_y.data() + tau_y.num_elements(), 0. );
 
@@ -481,6 +479,11 @@ WimDiscr<T>::wimStep()
     var_strain.resize(boost::extents[nx][ny]);
     mom0w.resize(boost::extents[nx][ny]);
     mom2w.resize(boost::extents[nx][ny]);
+
+    // value_type _min = *std::min_element(sdf_dir.data(),sdf_dir.data() + sdf_dir.num_elements());
+    // value_type _max = *std::max_element(sdf_dir.data(),sdf_dir.data() + sdf_dir.num_elements());
+    // std::cout<<"Min= " << _min <<"\n";
+    // std::cout<<"Max= " << _max <<"\n";
 
 
     value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
@@ -504,7 +507,7 @@ WimDiscr<T>::wimStep()
                     {
                         for (int l = 0; l < ny; l++)
                         {
-                            if (wave_mask2[k][l] >= 0.)
+                            if (wave_mask2[k][l] > 0.)
                             {
                                 sdf_dir[k][l][j][i] = sdf_inc[k][l][j][i];
                                 //std::cout<<"sdf_dir[k][l][j][i]= "<< sdf_dir[k][l][j][i] <<"\n";
@@ -612,11 +615,6 @@ WimDiscr<T>::wimStep()
             }
         }
 
-        // value_type _min = *std::min_element(S_freq.data(),S_freq.data() + S_freq.num_elements());
-        // value_type _max = *std::max_element(S_freq.data(),S_freq.data() + S_freq.num_elements());
-        // std::cout<<"Min= " << _min <<"\n";
-        // std::cout<<"Max= " << _max <<"\n";
-
         // integrals for breaking program
         for (int i = 0; i < nx; i++)
         {
@@ -657,6 +655,13 @@ WimDiscr<T>::wimStep()
             }
         }
     }
+
+
+    // _min = *std::min_element(mom0w.data(),mom0w.data() + mom0w.num_elements());
+    // _max = *std::max_element(mom0w.data(),mom0w.data() + mom0w.num_elements());
+    // std::cout<<"Min f= " << _min <<"\n";
+    // std::cout<<"Max f= " << _max <<"\n";
+
 
     // for (int i = 0; i < nx; i++)
     //     for (int j = 0; j < ny; j++)
@@ -728,7 +733,7 @@ WimDiscr<T>::wimStep()
                 // probability of critical strain
                 // being exceeded from Rayleigh distribution
                 Pstrain = std::exp( -std::pow(epsc,2.)/(2*var_strain[i][j]) );
-                P_crit = (1-breaking)+std::exp(-1.0);
+                P_crit = (1.-breaking)+std::exp(-1.0);
 
                 break_criterion = (Pstrain >= P_crit) && breaking;
 
@@ -758,7 +763,9 @@ WimDiscr<T>::wimStep()
                 }
             }
             else if (wtr_mask[i][j] == 1.)
+            {
                 dfloe[i][j] = 0;
+            }
         }
     }
 
@@ -773,8 +780,6 @@ WimDiscr<T>::wimStep()
 
     // std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
     // std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
-
-
 
 }
 
@@ -812,7 +817,6 @@ WimDiscr<T>::wimRun()
     // std::cout<<"Min= " << _min <<"\n";
     // std::cout<<"Max= " << _max <<"\n";
 
-
     x_ext = nx*dx/1.e+03;
     y_ext = ny*dy/1.e+03;
     u_ref = amin + 0.7*(amax-amin);
@@ -834,7 +838,7 @@ WimDiscr<T>::wimRun()
     //nt = 1;
 
     //readData("wim_prog001.a");
-    readData("wim_prog10.a");
+    readData("wim_prog20.a");
 
     while (cpt < nt)
     {
@@ -856,8 +860,8 @@ WimDiscr<T>::wimRun()
         array2_type diff;
         diff.resize(boost::extents[nx][ny]);
 
-#if 1
-        if (cpt==10)
+#if 0
+        if (cpt==20)
         {
             for (int i = 0; i < nx; i++)
             {
@@ -876,10 +880,10 @@ WimDiscr<T>::wimRun()
 
 #endif
 
-#if 1
+#if 0
         for (int i = 0; i < nx; i++)
         {
-            if (cpt==10 && (i<10 || i==1))
+            if (cpt==20 && (i<20 || i==1))
                 for (int j = 0; j < ny; j++)
                 {
                     //std::cout<<"Hs[" << i <<"][" << j <<"]= " << Hs[i][j]-Fhs[i][j] <<"\n";
@@ -1076,7 +1080,7 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
     vwave.resize(boost::extents[nx][ny]);
     temp.resize(boost::extents[nx][ny]);
 
-	std::vector<int> nvec(nwavedirn);
+    std::vector<value_type> nvec(nwavedirn);
 	std::vector<value_type> K_fou(nwavedirn), S_th(nwavedirn), theta_vec(nwavedirn), wt_theta(nwavedirn);
 	std::vector<value_type> tmp1(nwavedirn), evals_x(nwavedirn);
 	value_type adv_dir, tmp, alp_dim, source;
@@ -1128,12 +1132,17 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
         }
 
         theta_vec[k] = adv_dir;
-        nvec[k] = k;
+
+        //std::cout<<"theta_vec["<< k <<"]= "<< std::setprecision(9) << std::sin((k+1)*theta_vec[k]) <<"\n";
+
+        nvec[k] = (value_type)k;
     }
 
     std::fill( Sfreq.data(), Sfreq.data() + Sfreq.num_elements(), 0. );
     std::fill( taux_omega.data(), taux_omega.data() + taux_omega.num_elements(), 0. );
     std::fill( tauy_omega.data(), tauy_omega.data() + tauy_omega.num_elements(), 0. );
+
+    int cpt=0;
 
 	for (int i = 0; i < nx; i++)
     {
@@ -1149,6 +1158,8 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
 
             if (ice_mask[i][j] > 0.)
             {
+                ++cpt;
+
                 if (dfloe[i][j] < dfloe_pack_init)
                 {
                     q_scat = atten_dim[i][j];
@@ -1169,49 +1180,38 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
                 std::fill(evals_x.begin(), evals_x.end(), -q_tot);
                 evals_x[0] = -q_abs;
 
-                // for (int cps = 0; cps < nwavedirn; cps++)
-                //     std::cout<<"K[" << cps <<"]= " << S_th[cps] <<"\n";
-
-                //std::cout<< "NCS= "<<ncs <<"\n";
-
-                //ncs = 1;
-
-                // std::vector<int> pos;
-                // std::vector<int> neg;
 
                 for (int nth = 0; nth < ncs; nth++)
                 {
-                    //std::vector<value_type> prodtmp(S_th.size());
                     std::vector<value_type> prodtmp = theta_vec;
-                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos(nth*f); });
+
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos((nth+1)*f); });
+
                     std::transform(prodtmp.begin(), prodtmp.end(), S_th.begin(), prodtmp.begin(),
-                                   std::multiplies<value_type>());
+                                  std::multiplies<value_type>());
+
                     S_cos[nth] = std::inner_product(prodtmp.begin(), prodtmp.end(), wt_theta.begin(), 0.);
 
-                    // for (int cps = 0; cps < nwavedirn; cps++)
-                    //     std::cout<<"K[" << cps <<"]= " << prodtmp[cps] << " and "<< wt_theta[cps] <<"\n";
-                    // std::cout<<"taux= "<< S_cos[nth] <<"\n";
-
+                    prodtmp.clear();
+                    prodtmp.resize(theta_vec.size());
                     prodtmp = theta_vec;
-                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::sin(nth*f); });
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::sin((nth+1)*f); });
+
                     std::transform(prodtmp.begin(), prodtmp.end(), S_th.begin(), prodtmp.begin(),
                                    std::multiplies<value_type>());
+
                     S_sin[nth] = std::inner_product(prodtmp.begin(), prodtmp.end(), wt_theta.begin(), 0.);
 
-                    // pos.push_back(nth+1);
                     S_fou[nth+1] = std::complex<value_type>(S_cos[nth],S_sin[nth]);
                     //S_fou[nwavedirn-nth] = std::complex<value_type>(S_cos[nth],-S_sin[nth]);
 
                     if (nth != ncs-1)
                     {
                         S_fou[nwavedirn-(nth+1)] = std::complex<value_type>(S_cos[nth],-S_sin[nth]);
-                        // neg.push_back(nwavedirn-(nth+1));
                     }
 
                     // std::cout<<"nth= " << nth << ": and ncs+nth= "<< ncs+nth <<"\n";
-
                     // std::cout<<"taux= "<< S_sin[nth] <<"\n";
-
                 }
 
                 // stresses
@@ -1226,81 +1226,58 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
                 taux_omega[i][j] = -src_cos_1;
                 tauy_omega[i][j] = -src_sin_1;
 
+                // if (cpt==1)
+                // {
+                //     std::cout<<"taux_omega= "<< taux_omega[i][j] <<"\n";
+                //     std::cout<<"tauy_omega= "<< tauy_omega[i][j] <<"\n";
+                // }
+
                 std::vector<value_type> prodtmp = evals_x;
                 std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::exp(cg*dt*f); });
                 std::transform(S_fou.begin(), S_fou.end(), prodtmp.begin(), S_fou.begin(),
                                std::multiplies<std::complex<value_type> >());
 
-                std::vector<std::complex<value_type> > Sfoutempcos = S_fou;
-                std::vector<std::complex<value_type> > Sfoutempsin = S_fou;
+                std::vector<value_type> Sfoutempcos(S_fou.size());// = S_fou;
+                std::vector<value_type> Sfoutempsin(S_fou.size());// = S_fou;
 
-#if 0
-                // for (int cps = 0; cps < S_fou.size(); cps++)
-                //     std::cout<<"S_fou["<< cps <<"]= "<< S_fou[cps] <<"\n";
-
-                // for (int cps = 0; cps < S_fou.size(); cps++)
-                //     std::cout<<"S_fou["<< cps <<"]= "<< Sfoutempcos[cps] <<"\n";
-
-                prodtmp = theta_vec;
-                std::transform(prodtmp.begin(), prodtmp.end(), nvec.begin(), prodtmp.begin(),
-                               std::multiplies<value_type>());
-                std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos(f); });
-
-                std::fill(prodtmp.begin(), prodtmp.end(), 1.);
-                std::transform(Sfoutempcos.begin(), Sfoutempcos.end(), prodtmp.begin(), Sfoutempcos.begin(),
-                               std::multiplies<std::complex<value_type> >());
-
-                for (int cps = 0; cps < S_fou.size(); cps++)
-                {
-                    //std::cout<<"S_fou["<< cps <<"]= "<< Sfoutempcos[cps] <<"\n";
-                    std::cout<<"S_fou["<< cps <<"]= Real= "
-                             << std::real(Sfoutempcos[cps])-std::imag(Sfoutempcos[cps])
-                             <<"\n"; // << " and Imag= "<< std::imag(Sfoutempcos[cps]) <<"\n";
-                    //tmp1[kin] = std::real(Sfoutempcos[kin])-std::imag(Sfoutempcos[kin]);
-                }
-#endif
                 for (int k = 0; k < nwavedirn; k++)
                 {
-                    // Sfoutempcos
                     // prodtmp = std::vector<value_type>(nvec.begin(), nvec.end()); // also works
 
-                    prodtmp.clear();
-                    prodtmp.insert(prodtmp.end(), nvec.begin(), nvec.end());
-
-                    // for (int cvt = 0; cvt < prodtmp.size(); cvt++)
-                    //     std::cout<<"prodtmp["<< cvt <<"]= "<< prodtmp[cvt] <<" : and "<< "nvec["<< cvt <<"]= "<< nvec[cvt] <<"\n";
-
-                    // std::transform(prodtmp.begin(), prodtmp.end(), nvec.begin(), prodtmp.begin(), std::multiplies<value_type>());
-                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos(theta_vec[k]*f); });
-                    std::transform(Sfoutempcos.begin(), Sfoutempcos.end(), prodtmp.begin(), Sfoutempcos.begin(),
-                                   std::multiplies<std::complex<value_type> >());
-
-
-                    // Sfoutempsin
-                    // prodtmp = std::vector<value_type>(nvec.begin(), nvec.end()); // also works
-
-                    prodtmp.clear();
-                    prodtmp.insert(prodtmp.end(), nvec.begin(), nvec.end());
-
-                    // for (int cvt = 0; cvt < prodtmp.size(); cvt++)
-                    //     std::cout<<"prodtmp["<< cvt <<"]= "<< prodtmp[cvt] <<" : and "<< "nvec["<< cvt <<"]= "<< nvec[cvt] <<"\n";
-
-                    // std::transform(prodtmp.begin(), prodtmp.end(), nvec.begin(), prodtmp.begin(), std::multiplies<value_type>());
-                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::sin(theta_vec[k]*f); });
-                    std::transform(Sfoutempsin.begin(), Sfoutempsin.end(), prodtmp.begin(), Sfoutempsin.begin(),
-                                   std::multiplies<std::complex<value_type> >());
-
-                    for (int kin = 0; kin < Sfoutempcos.size(); kin++)
+                    for (int ss=0; ss<S_fou.size(); ++ss)
                     {
-                        tmp1[kin] = std::real(Sfoutempcos[kin])-std::imag(Sfoutempsin[kin]);
+                        Sfoutempcos[ss] = std::real(S_fou[ss]);
+                        Sfoutempsin[ss] = std::imag(S_fou[ss]);
                     }
 
-                    //Sdir[i][j][k] = std::inner_product(tmp1.begin(), tmp1.end(), tmp1.begin(), 0.)/(2*PI);
+                    prodtmp.clear();
+                    prodtmp.resize(nwavedirn);
+                    prodtmp = nvec;
+
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::cos(theta_vec[k]*f); });
+
+                    std::transform(Sfoutempcos.begin(), Sfoutempcos.end(), prodtmp.begin(), Sfoutempcos.begin(),
+                                   std::multiplies<value_type>());
+
+
+                    // prodtmp = std::vector<value_type>(nvec.begin(), nvec.end()); // also works
+                    prodtmp.clear();
+                    prodtmp.resize(nwavedirn);
+                    prodtmp = nvec;
+
+                    std::for_each(prodtmp.begin(), prodtmp.end(), [&](value_type& f){ f = std::sin(theta_vec[k]*f); });
+
+                    std::transform(Sfoutempsin.begin(), Sfoutempsin.end(), prodtmp.begin(), Sfoutempsin.begin(),
+                                   std::multiplies<value_type>());
+
+                    for (int kin = 0; kin < nwavedirn; kin++)
+                    {
+                        tmp1[kin] = Sfoutempcos[kin]-Sfoutempsin[kin];
+                    }
+
                     Sdir[i][j][k] = std::accumulate(tmp1.begin(), tmp1.end(), 0.0)/(2*PI);
 
-                    // std::cout<<"Sdir[i][j][k]= "<< Sdir[i][j][k] <<"\n";
                     // std::cout<<"std::numeric_limits<short>::max()=  "<< std::numeric_limits<float>::min() <<"\n";
-
                     S_th[k] = Sdir[i][j][k];
                 }
             }
@@ -1309,8 +1286,18 @@ WimDiscr<T>::advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq, array2_typ
 	    }
     }
 
-    // std::cout<<"max_element= " << *std::min_element(Sdir.data(), Sdir.data() + Sdir.num_elements()) <<"\n";
+#if 0
+    // value_type _min = *std::min_element(Sdir.data(),Sdir.data() + Sdir.num_elements());
+    // value_type _max = *std::max_element(Sdir.data(),Sdir.data() + Sdir.num_elements());
+    // std::cout<<"Min OUT= " << _min <<"\n";
+    // std::cout<<"Max OUT= " << _max <<"\n";
 
+
+    value_type _min = *std::min_element(Sfreq.data(),Sfreq.data() + Sfreq.num_elements());
+    value_type _max = *std::max_element(Sfreq.data(),Sfreq.data() + Sfreq.num_elements());
+    std::cout<<"Min OUT= " << _min <<"\n";
+    std::cout<<"Max OUT= " << _max <<"\n";
+#endif
 }
 
 template<typename T>

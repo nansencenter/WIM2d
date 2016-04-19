@@ -15,7 +15,7 @@
 #include <math.h>
 #include <algorithm>
 // #include <complex>
-// #include <cmath>
+//#include <cmath>
 
 #include <boost/multi_array.hpp>
 #include <boost/array.hpp>
@@ -39,6 +39,7 @@ extern "C"
 
 
 #define PI M_PI
+//#define PI (float)M_PI
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
