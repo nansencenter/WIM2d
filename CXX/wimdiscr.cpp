@@ -837,8 +837,12 @@ WimDiscr<T>::wimRun()
     int cpt = 0;
     //nt = 1;
 
+#if 0
+#define COMP_FORTRAN
+    //TO COMPARE TO FORTRAN RESULTS
     //readData("wim_prog001.a");
-    readData("wim_prog20.a");
+    //readData("wim_prog10.a");
+#endif
 
     while (cpt < nt)
     {
@@ -857,11 +861,12 @@ WimDiscr<T>::wimRun()
         // if (critter)
         //     writeFile(cpt);
 
+#if defined (COMP_FORTRAN)
+        /*COMPARE TO FORTRAN*/
         array2_type diff;
         diff.resize(boost::extents[nx][ny]);
 
-#if 0
-        if (cpt==20)
+        if (cpt==10)
         {
             for (int i = 0; i < nx; i++)
             {
@@ -877,7 +882,6 @@ WimDiscr<T>::wimRun()
             value_type error = *std::max_element(diff.data(),diff.data() + diff.num_elements());
             std::cout<<"Diff= " << error <<"\n";
         }
-
 #endif
 
 #if 0
