@@ -15,7 +15,7 @@ bin	:=	$(src)/bin
 # NB relative to this directory
 VPATH 	:=	$(src)/main:$(src)/misc:$(src)/init:$(src)/numerics
 VPATH 	:=	$(VPATH):$(src)/attenuation_youngs:$(src)/header_files
-VPATH 	:=	$(VPATH):$(src)/interfaces
+VPATH 	:=	$(VPATH):$(src)/interfaces:$(src)/extern
 
 # directory where objects are kept
 ODIR	:=	objs
@@ -75,6 +75,7 @@ TARGET_MEX3	:=	$(MX3).$(MX_EXT)
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
 OBJS		:=      \
+			$(ODIR)/mod_interp.o \
 			$(ODIR)/mod_file_utils.o \
                         $(ODIR)/mod_gridinfo.o \
 			$(ODIR)/mod_wim_init.o \
@@ -90,6 +91,9 @@ OBJS		:=      \
 
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
+$(ODIR)/%.o:	%.f90
+	mkdir -p $(ODIR) $(MDIR)
+	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 $(ODIR)/%.o:	%.F
 	mkdir -p $(ODIR) $(MDIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
@@ -130,7 +134,9 @@ $(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
 $(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
 				$(ODIR)/mod_advect.o
 $(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o		$(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o 		$(ODIR)/mod_adv_atten.o
+				$(ODIR)/mod_advect.o 		$(ODIR)/mod_adv_atten.o	 \
+				$(ODIR)/mod_interp.o
+# $(ODIR)/interp.o:		$(ODIR)/r8lib.o
 #
 $(ODIR)/RTparam_outer.o:        $(ODIR)/RTparam_fast.o
 $(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o

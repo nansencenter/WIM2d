@@ -5,8 +5,9 @@
 
       implicit none
 
-      integer,parameter :: itest = 24
-      integer,parameter :: jtest = 1
+      integer,parameter :: itest       = 24
+      integer,parameter :: jtest       = 1
+      integer,parameter :: nmesh_vars  = 6 !no of fields taken in with info about mesh
 
       real,dimension(ii,jj)   :: icec,iceh,dfloe,ICE_MASK
       real,dimension(ii,jj)   :: WTR_MASK

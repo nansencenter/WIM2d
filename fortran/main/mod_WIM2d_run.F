@@ -196,7 +196,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-      call wim2d_run_common()
+      call wim2d_run_common(1) !wim2d_run
 
       et = etime(tictoc)!!finish etime
       print*,' '
@@ -449,7 +449,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-      call wim2d_run_common()
+      call wim2d_run_common(1) !wim2d_run_io
 
       et = etime(tictoc)!!finish etime
       print*,' '
@@ -480,7 +480,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_vSdir(out_arrays,int_prams,real_prams)
+      subroutine wim2d_run_vSdir(out_arrays,int_prams,real_prams
+     &   ,nmesh_e,mesh_e)
 
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
@@ -520,6 +521,9 @@
 
       real,dimension(ii,jj,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
       real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
+
+      integer,intent(in)            :: nmesh_e
+      real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
 
       real              :: PI
       real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
@@ -654,7 +658,12 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-      call wim2d_run_common()
+      if (present(mesh_e)) then
+         ! run while doing interpolation onto the mesh points
+         call wim2d_run_common(nmesh_e,mesh_e)   !wim2d_run_vSdir
+      else
+         call wim2d_run_common(1)   !wim2d_run_vSdir
+      end if
 
       et = etime(tictoc)!!finish etime
       print*,' '
@@ -687,7 +696,7 @@
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_common()
+      subroutine wim2d_run_common(nmesh_e,mesh_e)
 
       use mod_gridinfo
       use mod_wim_prams
@@ -697,6 +706,8 @@
 
       implicit none
 
+      integer,intent(in)            :: nmesh_e
+      real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
       integer  :: nMIZ
 
       !!TODO remove from wim2d_run_io between **
@@ -722,8 +733,13 @@
          end if
 
          print*,'n/nt',n,nt
-         call wim_step(SCATMOD,ADV_DIM,ADV_OPT                          &
-     &                 ,DO_BREAKING,STEADY,DO_ATTEN)
+         if (.not.present(mesh_e)) then
+            call wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
+     &                     ,DO_BREAKING,STEADY,DO_ATTEN,nmesh_e)
+         else
+            call wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
+     &                     ,DO_BREAKING,STEADY,DO_ATTEN,nmesh_e,mesh_e)
+         end if
 
       end do!! n - finish time stepping
 
@@ -912,7 +928,7 @@
          !print*,mwd_io
       end if
 
-      call wim2d_run_vSdir(out_arrays,int_prams,real_prams)
+      call wim2d_run_vSdir(out_arrays,int_prams,real_prams,1)!1=dummy arg for nmesh_e
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum

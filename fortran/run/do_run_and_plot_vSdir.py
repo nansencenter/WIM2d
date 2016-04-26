@@ -2,6 +2,7 @@ import numpy as np
 import os,sys
 import shutil
 import struct
+from matplotlib import pyplot as plt
 
 ##
 ## NB run from 'run' directory !!
@@ -56,6 +57,17 @@ if 1:
       D_in  = 100.
 
    ice_fields0 = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK}
+   if 0:
+      # test plot of inputs:
+      fig   = plt.figure()
+      ax1   = fig.add_subplot(3,1,1)
+      ax2   = fig.add_subplot(3,1,2)
+      ax3   = fig.add_subplot(3,1,3)
+      ax1.plot(gf['X']/1.e3,ice_fields0['icec' ])
+      ax2.plot(gf['X']/1.e3,ice_fields0['iceh' ])
+      ax3.plot(gf['X']/1.e3,ice_fields0['dfloe'])
+      plt.show(fig)
+      sys.exit()
 
    # edge of wave mask
    xw                   = .5*(gf['X'].min()+gf['X'].max())\
@@ -74,35 +86,127 @@ real_prams  = None # default real parameters
 
 if 1:
    # change integer parameters:
-   SCATMOD     = 1
-   ADV_DIM     = 1
-   ADV_OPT     = 2
-   CHECK_FINAL = 1
-   CHECK_PROG  = 1
-   CHECK_INIT  = 1
-   DO_BREAKING = 1
-   STEADY      = 1
-   int_prams   = np.array([SCATMOD,ADV_DIM,ADV_OPT,
-                           CHECK_FINAL,CHECK_PROG,CHECK_INIT,
-                           DO_BREAKING,STEADY])
+   ip,rp,ii,ri       = Rwim.default_params(convert=False)
+   ip['SCATMOD']     = 1
+   ip['ADV_DIM']     = 1
+   ip['ADV_OPT']     = 2
+   ip['CHECK_FINAL'] = 1
+   ip['CHECK_PROG']  = 1
+   ip['CHECK_INIT']  = 1
+   ip['STEADY']      = 1
+   ip['DO_BREAKING'] = 1
+   ip['DO_ATTEN']    = 1
 
 if 1:
    # change real parameters:
-   young          = 5.49e9
-   visc_rp        = 0.0
+   rp['young']    = 5.49e9
+   rp['visc_rp']  = 0.0
+
    duration_hours = 6.0
-   duration       = duration_hours*60*60
-   CFL            = 0.7
-   real_prams     = np.array([young,visc_rp,duration,CFL])
+   rp['duration'] = duration_hours*60*60
+   rp['CFL']      = 0.7
+
+int_prams   = Rwim.convert_dict(ip,ii)
+real_prams  = Rwim.convert_dict(rp,ri)
+
+if 1:
+   # inputs on test mesh
+   ny       = gf['ny']
+   nx       = gf['nx']
+   mesh_e   = {}
+   if ny==1:
+      xx = .5*(gf['X'][:-1]+gf['X'][1:])
+      cc = .5*(ice_fields0['icec'][:-1]+ice_fields0['icec'][1:])
+      hh = .5*(ice_fields0['iceh'][:-1]+ice_fields0['iceh'][1:])
+      dd = .5*(ice_fields0['dfloe'][:-1]+ice_fields0['dfloe'][1:])
+   else:
+      ninterp  = int(np.ceil(ny/2.))
+      xx = .5*(gf['X'][:-1,ninterp]+gf['X'][1:,ninterp])
+      cc = .5*(ice_fields0['icec'] [:-1,ninterp]+ice_fields0['icec'] [1:,ninterp])
+      hh = .5*(ice_fields0['iceh'] [:-1,ninterp]+ice_fields0['iceh'] [1:,ninterp])
+      dd = .5*(ice_fields0['dfloe'][:-1,ninterp]+ice_fields0['dfloe'][1:,ninterp])
+
+   yy             = gf['Y'][:-1,ninterp]
+   bb             = 0*xx
+   Nfloes         = 0*xx
+   Nfloes[dd>0]   = cc[dd>0]/dd[dd>0]**2
+   mesh_e.update({'x':xx})
+   mesh_e.update({'y':yy})
+   mesh_e.update({'conc':cc})
+   mesh_e.update({'thick':hh})
+   mesh_e.update({'broken':bb})
+   mesh_e.update({'Nfloes':Nfloes})
+   # print(mesh_e)
+   # sys.exit()
+
+   if 0:
+      # test plot of grid inputs:
+      fig   = plt.figure()
+      ax1   = fig.add_subplot(3,1,1)
+      ax2   = fig.add_subplot(3,1,2)
+      ax3   = fig.add_subplot(3,1,3)
+      ax1.plot(gf['X']/1.e3,ice_fields0['icec' ])
+      ax2.plot(gf['X']/1.e3,ice_fields0['iceh' ])
+      ax3.plot(gf['X']/1.e3,ice_fields0['dfloe'])
+      plt.show(fig)
+      sys.exit()
+   elif 0:
+      # test plot of mesh inputs:
+      fig   = plt.figure()
+      ax1   = fig.add_subplot(3,1,1)
+      ax2   = fig.add_subplot(3,1,2)
+      ax3   = fig.add_subplot(3,1,3)
+      ax1.plot(xx/1.e3,cc)
+      ax2.plot(xx/1.e3,hh)
+      ax3.plot(xx/1.e3,dd)
+      plt.show(fig)
+      sys.exit()
+else:
+   mesh_e   = None
 
 # call gateway between python and pre-compiled f2py module
-out_fields,outdir = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0,\
-                                       int_prams=int_prams,real_prams=real_prams)
+out = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0,\
+                                       int_prams=int_prams,real_prams=real_prams,mesh_e=mesh_e)
+out_fields,outdir = out[:2]
+
 
 ##########################################################################
 # Make plots
 bindir   = outdir+'/binaries'
 figdir   = outdir+'/figs'
+
+if mesh_e is not None:
+   mesh_out = out[2]
+   fig      = plt.figure()
+   ax       = fig.add_subplot(1,1,1)
+
+   # input on mesh
+   lines = ax.plot(xx/1.e3,dd,'--b') # tuple of length 1
+
+   # output on original grid
+   lines+= ax.plot(gf['X'][:,0]/1.e3,out_fields['dfloe'][:,ninterp],'k') # tuple of length 2
+
+   # output on mesh
+   Nfloes2        = mesh_out['Nfloes']
+   dd2            = 0*xx
+   dd2[Nfloes2>0] = np.sqrt(cc[Nfloes2>0]/Nfloes2[Nfloes2>0])
+   lines+= ax.plot(xx/1.e3,dd2,'r') # tuple of length 3
+
+   ax.legend(lines,['mesh in','grid out','mesh out'])
+
+   if 0:
+      # plot figure and exit
+      plt.show(fig)
+      sys.exit()
+   else:
+      testdir  = figdir+'/test/'
+      if not os.path.exists(testdir):
+         os.mkdir(testdir)
+      testfig1 = testdir+'test_mesh_interp.png'
+      print('Saving '+testfig1+'...')
+      fig.savefig(testfig1)
+##########################################################################
+
 
 ##########################################################################
 # Look at initial fields:
@@ -159,8 +263,8 @@ if 1:
 
    print(' ')
    print("To make a movie of progress images:")
-   print("cd "+figdir+'/prog')
-   print(dd+'/tools/prog2mp4.sh Hs (or Dmax,taux,tauy)')
+   print(dd+'/tools/prog2mp4.sh Hs '+figdir3)
+   print('or try with eg Dmax,taux,tauy)')
 
 elif 0:
    ################################################################

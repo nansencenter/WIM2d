@@ -17,6 +17,21 @@ C
       use mod_WIM2d_run, only: mex_io_gate_vSdir
       implicit none
 
+      !==================================================================
+      !to add new input array (reshaped to vector) eg x3d:
+      !1. declare pointer to array
+      !     mwpointer x3d_pr
+      !2. declare number of variables in x3d
+      !     integer,parameter :: nx3d = 3 !size(x3d) = ii*jj*nx3d -- ice_arrays rearranged to a vector
+      !4. declare array (double precision) - result of copying pointer to array
+      !     real*8,dimension(ii*jj*nx3d)  :: x3d
+      !5. Check size
+      !6. get pointer
+      !     x3d_pr   = mxGetPr(prhs(2))
+      !7. copy pointer
+      !     call mxCopyPtrToReal8(x3d_pr,x3d,size)
+      !==================================================================
+ 
       include "grid_info.h"
       include "wave_info.h"
 
@@ -58,6 +73,10 @@ C
       mwsize m4,n4,size4   !dimensions of y3d         (out)
       mwsize m5,n5,size5   !dimensions of Tp_io       (in)
       mwsize m6,n6,size6   !dimensions of mwd_io      (in)
+      mwsize,dimension(6)  :: mvec_in,nvec_in,size_vec_in
+      mwsize,dimension(2)  :: mvec_out,nvec_out,size_vec_out
+
+      integer,dimension(6)  :: mvec_in_0,nvec_in_0,size_vec_in_0
       integer,parameter :: DO_TEST  = 0   !!test i-o for reals,integers
 
       !!inputs from matlab - need to be double precision
@@ -75,7 +94,7 @@ C
       !! - use dble
       real,dimension(ii*jj*ny3d)    :: y3d
       real,dimension(ii*jj*nxy4d)   :: y4d
-      character(len=12)             :: cii,cjj,cj,cm,cn,cdum
+      character(len=12)             :: cii,cjj,cj,cm,cn,cm0,cn0,cdum
       character(len=80)             :: msg
 
 C     Check for proper number of arguments.
@@ -86,6 +105,11 @@ C     Check for proper number of arguments.
          write(cdum,'(i2.2)') Nout
          call mexErrMsgTxt(trim(cdum)//' outputs required.')
       endif
+
+      !expected sizes of inputs
+      mvec_in_0      = (/nxy4d,nx3d,1 ,1 ,1,1/)
+      nvec_in_0      = (/1    ,1   ,ni,nr,1,1/)
+      size_vec_in_0  = mvec_in_0*nvec_in_0
 
       m0    = mxGetM(prhs(1))
       n0    = mxGetN(prhs(1))
@@ -105,30 +129,60 @@ C     Check for proper number of arguments.
       m6    = mxGetM(prhs(6))
       n6    = mxGetN(prhs(6))
       size6 = m6*n6
+      do j=1,Nin
+         !! get actual input sizes
+         mvec_in(j)     = mxGetM(prhs(j))
+         nvec_in(j)     = mxGetN(prhs(j))
+         size_vec_in(j) = mvec_in(j)*nvec_in(j)
+
+         !! for error printout (if there is one)
+         write(cj,'(i1.1)')         j
+         write(cm0,'(i4.4)')        mvec_in_0(j)
+         write(cn0,'(i4.4)')        nvec_in_0(j)
+         write(cm,'(i12.12)')       mvec_in(j)
+         write(cn,'(i4.4)')         nvec_in(j)
+
+         !! test sizes
+         critter  = (    (mvec_in(j).ne.mvec_in_0(j))                   &
+     &               .or.(nvec_in(j).ne.nvec_in_0(j))    )
+
+         if (critter) then
+            k  = mexPrintf('Input '//cj//' dimensions:\n')
+            k  = mexPrintf(cm//' x '//cn//'\n')
+            k  = mexPrintf('Should be:'//'\n')
+            k  = mexPrintf(cm0//' x '//cn0//'\n')
+            call mexErrMsgTxt('Wrong dimensions for input '//cj)
+         endif
+
+         !test if input is numeric
+         if(mxIsNumeric(prhs(j)) .eq. 0) then
+            call mexErrMsgTxt('Input '//cj//' must be a numeric array.')
+         endif
+      end do
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Get the size of the input arrays.
 
+      write(cii,'(i4.4)') ii
+      write(cjj,'(i4.4)') jj
       !! x4d (Sdir_io)
       do j=1,1
 
          n4d   = ii*jj*nxy4d
-         write(cdum,'(i12.12)') n4d
-         write(cii,'(i4.4)') ii
-         write(cii,'(i4.4)') ii
-         write(cjj,'(i4.4)') jj
+         write(cm0,'(i12.12)') n4d
+         write(cn0,'(i4.4)') 1
          write(cj,'(i1.1)')  j
          write(cm,'(i12.12)')  mxGetM(prhs(j))
          write(cn,'(i4.4)')  mxGetN(prhs(j))
 
-C        matrices should be ii*jj
+C        matrices should be (n4d)x(1)
          critter  = ((mxGetM(prhs(j)).ne.n4d)                           &
      &               .or.(mxGetN(prhs(j)).ne.1))
          if (critter) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cdum//' x 1\n')
+            k  = mexPrintf(cm0//' x 1\n')
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
       end do
@@ -137,22 +191,20 @@ C        matrices should be ii*jj
       do j=2,2
 
          n3d   = ii*jj*nx3d
-         write(cdum,'(i12.12)') n3d
-         write(cii,'(i4.4)') ii
-         write(cii,'(i4.4)') ii
-         write(cjj,'(i4.4)') jj
+         write(cm0,'(i12.12)') n3d
+         write(cn0,'(i4.4)') 1
          write(cj,'(i1.1)')  j
          write(cm,'(i4.4)')  mxGetM(prhs(j))
          write(cn,'(i4.4)')  mxGetN(prhs(j))
 
-C        matrices should be ii*jj
+C        matrices should be (n3d)x1
          critter  = ((mxGetM(prhs(j)).ne.n3d)                           &
      &               .or.(mxGetN(prhs(j)).ne.1))
          if (critter) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cdum//' x 1\n')
+            k  = mexPrintf(cm0//' x 1\n')
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
 
@@ -160,8 +212,8 @@ C        matrices should be ii*jj
 
       !! int_prams
       do j=3,3
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') ni
+         write(cm0,'(i4.4)') 1
+         write(cn0,'(i4.4)') ni
          write(cj,'(i1.1)')  j
          write(cm,'(i1.1)')  m2
          write(cn,'(i1.1)')  n2
@@ -171,15 +223,15 @@ C        matrices should be 1*ni
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
+            k  = mexPrintf(cm0//' x '//cn0//'\n')
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
       end do
 
       !! real_prams
       do j=4,4
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') nr
+         write(cm0,'(i4.4)') 1
+         write(cn0,'(i4.4)') nr
          write(cj,'(i1.1)')  j
          write(cm,'(i1.1)')  m3
          write(cn,'(i1.1)')  n3
@@ -189,15 +241,15 @@ C        matrices should be 1*nr
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
+            k  = mexPrintf(cm0//' x '//cn0//'\n')
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
       end do
 
       !! Tp_io
       do j=5,5
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') 1
+         write(cm0,'(i4.4)') 1
+         write(cn0,'(i4.4)') 1
          write(cj,'(i1.1)')  j
          write(cm,'(i1.1)')  m5
          write(cn,'(i1.1)')  n5
@@ -207,15 +259,15 @@ C        matrices should be 1*1
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
+            k  = mexPrintf(cm0//' x '//cn0//'\n')
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
       end do
 
       !! mwd_io
       do j=6,6
-         write(cii,'(i4.4)') 1
-         write(cjj,'(i4.4)') 1
+         write(cm0,'(i4.4)') 1
+         write(cn0,'(i4.4)') 1
          write(cj,'(i1.1)')  j
          write(cm,'(i1.1)')  m6
          write(cn,'(i1.1)')  n6
@@ -225,7 +277,7 @@ C        matrices should be 1*1
             k  = mexPrintf('Input '//cj//' dimensions:\n')
             k  = mexPrintf(cm//' x '//cn//'\n')
             k  = mexPrintf('Should be:'//'\n')
-            k  = mexPrintf(cii//' x '//cjj//'\n')
+            k  = mexPrintf(cm0//' x '//cn0//'\n')
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
       end do
@@ -251,12 +303,18 @@ C     Check to ensure the array is numeric (not strings).
       MD_pr    = mxGetPr(prhs(6))
 
       !!copy input memory to fortran arrays
-      call mxCopyPtrToReal8(x4d_pr,x4d,size0)
-      call mxCopyPtrToReal8(x3d_pr,x3d,size)
-      call mxCopyPtrToReal8(ip_pr,ip,size2)
-      call mxCopyPtrToReal8(rp_pr,rp,size3)
-      call mxCopyPtrToReal8(Tp_pr,Tp_io,size5)
-      call mxCopyPtrToReal8(MD_pr,mwd_io,size6)
+      !call mxCopyPtrToReal8(x4d_pr,x4d,size0)
+      !call mxCopyPtrToReal8(x3d_pr,x3d,size)
+      !call mxCopyPtrToReal8(ip_pr,ip,size2)
+      !call mxCopyPtrToReal8(rp_pr,rp,size3)
+      !call mxCopyPtrToReal8(Tp_pr,Tp_io,size5)
+      !call mxCopyPtrToReal8(MD_pr,mwd_io,size6)
+      call mxCopyPtrToReal8(x4d_pr,x4d    ,size_vec_in(1))
+      call mxCopyPtrToReal8(x3d_pr,x3d    ,size_vec_in(2))
+      call mxCopyPtrToReal8(ip_pr,ip      ,size_vec_in(3))
+      call mxCopyPtrToReal8(rp_pr,rp      ,size_vec_in(4))
+      call mxCopyPtrToReal8(Tp_pr,Tp_io   ,size_vec_in(5))
+      call mxCopyPtrToReal8(MD_pr,mwd_io  ,size_vec_in(6))
       y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
       !!
       !k  = mexPrintf('All pointers copied to arrays...\n')

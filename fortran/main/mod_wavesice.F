@@ -10,6 +10,7 @@
 !     use mod_adv_atten    !! advection routine
 
       implicit none
+      private
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
@@ -24,6 +25,7 @@
       !!
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
+      integer,parameter :: ne    = 2
 
       !!common to all subroutines
       real,dimension(idm,jdm)    :: WAVE_MASK2
@@ -34,6 +36,11 @@
       !!needed by outer routine
       real     :: amin,amax,dt
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      public   :: wim_init,wim_step,do_wim_integrals
+     &            ,check_grid,check_init,check_prog
+     &            ,amin,amax,dt,WAVE_MASK2
+      !,calc_mwd
 
       contains
 
@@ -190,7 +197,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       subroutine wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
-     &                     ,DO_BREAKING,STEADY,DO_ATTEN)
+     &                     ,DO_BREAKING,STEADY,DO_ATTEN,nmesh_e,mesh_e)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -198,11 +205,18 @@
 !     use mod_wim_init     !! initial wave fields
       use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
+      use mod_interp, only: pwl_interp_2d_real
 
       implicit none
 
       integer,intent(in)   :: SCATMOD,ADV_DIM,ADV_OPT                   &
      &                        ,DO_BREAKING,STEADY,DO_ATTEN
+     &                        ,nmesh_e
+
+      real,dimension(nmesh_e,nmesh_vars),intent(inout),optional         &
+     &   :: mesh_e
+         ! this is [x_e,y_e,conc_e,thick_e,Nfloes_e,broken_e]
+         ! -1st 4 are unchanged; last 2 get updated
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
@@ -224,6 +238,20 @@
       real     :: F,Dave,c1d,kice,tmp
       integer  :: jcrest
       logical  :: BREAK_CRIT
+
+      logical              :: INTERP_MESH,crit_e
+      real                 :: wim_break_damage,Tp_e,lam_e
+      real,dimension(nmesh_e)  :: x_e,y_e                    !centres of elements
+      real,dimension(nmesh_e)  :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
+      real,dimension(nmesh_e)  :: conc_e,thick_e,Nfloes_e
+     &                              ,broken_e,dmax_e
+      real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(4)
+      !
+      INTERP_MESH = .false.
+      if (present(mesh_e)) then
+         ! check if there is any ice
+         INTERP_MESH = maxval(mesh_e).gt.0.
+      end if
 
       PI    = 4*atan(1.0)
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
@@ -534,6 +562,66 @@
          
       end do!! end spatial loop j in y;
       end do!!end spatial loop i in x;
+
+      if (INTERP_MESH) then
+         x_e      = mesh_e(:,1)
+         y_e      = mesh_e(:,2)
+         conc_e   = mesh_e(:,3)
+         thick_e  = mesh_e(:,4)
+         Nfloes_e = mesh_e(:,5)
+         broken_e = mesh_e(:,6)
+
+         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
+     &      ,nmesh_e,x_e,y_e,mom0_e)
+         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2
+     &         ,nmesh_e,x_e,y_e,mom2_e)
+         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain
+     &      ,nmesh_e,x_e,y_e,var_strain_e)
+
+         dmax_e   = 0.
+         where (Nfloes_e.gt.0)
+            dmax_e   = sqrt(conc_e/Nfloes_e)
+         end where
+
+         do i=1,nmesh_e
+            crit_e   = (conc_e(i).gt.0.)                       !ice present
+     &                 .and.(2*var_strain_e(i).gt.epsc**2)  !big enough waves
+
+            if (crit_e) then
+               ! =============================================================
+               !calculate wavelength
+               !inputs
+               om    = sqrt(mom2_e(i)/mom0_e(i)) !omega=2*pi/T
+               guess = om**2/gravity
+               
+               inputs(1)   = thick_e(i) !absolute thickness
+               inputs(2)   = om
+               inputs(3)   = young
+               inputs(4)   = visc_rp
+
+               ! rest of arguments are outputs, but only need kice
+               ! so use Tp_e,lam_e as dummy variables
+               call RTparam_outer(lam_e,kice,kwtr,int_adm,              &
+     &                  Tp_e,modT,argR,argT,                            &
+     &                  inputs,guess)
+               ! =============================================================
+
+               lam_e = 2*pi/kice
+               if (lam_e.lt.2*dmax_e(i)) then
+                  !breaking occurs
+                  dmax_e(i)   = max(Dmin,lam_e/2.) !keep above Dmin
+                  broken_e(i) = 1.                 !this records ice has been broken this time
+               end if
+            end if
+         end do
+
+         where (dmax_e.gt.0.)
+            Nfloes_e   = conc_e/dmax_e**2
+         end where
+         mesh_e(:,5) = Nfloes_e
+         mesh_e(:,6) = broken_e
+
+      end if
          
       end subroutine wim_step
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

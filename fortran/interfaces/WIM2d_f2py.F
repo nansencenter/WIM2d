@@ -88,7 +88,9 @@
          print*,mwd_io
       end if
 
-      call wim2d_run_vSdir(out_arrays,int_prams,real_prams)
+      !wim2d_run_vSdir(out_arrays,int_prams,real_prams,nmesh_e,mesh_e)
+      ! mesh_e is optional, but need a place holder for nmesh_e
+      call wim2d_run_vSdir(out_arrays,int_prams,real_prams,1)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
@@ -115,6 +117,102 @@
 
 
       end subroutine py_wim2d_run_vSdir
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine py_wim2d_run_vSdir_mesh(Sdir_io2,out_arrays            &
+     &                  ,Sdir_io,ice_arrays,mesh_in,mesh_out            &
+     &                  ,int_prams,real_prams,Tp_io,mwd_io              &
+     &                  ,ndir,nw,nmesh_e,nx,ny)
+
+      use mod_common_wim,  only: icec,iceh,dfloe                        &
+     &                           ,sdf_dir,sdf_inc                       &
+     &                           ,freq_vec,wavdir
+      use mod_wim2d_run,   only: wim2d_run_vSdir
+      use mod_wavesice,    only: WAVE_MASK2
+
+      implicit none
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! array dimensions (detected by python but need to declare them)
+      integer,intent(in)   :: nx,ny,ndir,nw,nmesh_e
+!f2py intent(hide)   :: nx,ny
+
+      !!arrays
+      real,dimension(nx,ny,3),intent(in)        :: ice_arrays   !! pass in  icec,iceh,dfloe
+      real,dimension(nx,ny,5),intent(out)       :: out_arrays   !! pass out Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_io      !! pass in directional spec
+      real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2     !! pass out directional spec
+
+      integer,parameter    :: nmesh_vars = 6
+      real,dimension(nmesh_e*nmesh_vars),intent(in)
+     &   :: mesh_in                                        !! pass in mesh_in
+      real,dimension(nmesh_e*nmesh_vars),intent(out)
+     &   :: mesh_out                                       !! pass out mesh_out
+      real,dimension(nmesh_e,nmesh_vars)  :: mesh_e_dummy  !! reshaped mesh_e
+
+      !! parameters
+      real,intent(in)      :: real_prams(4),Tp_io,mwd_io
+      integer,intent(in)   :: int_prams(9)
+      !!
+      integer  :: i,j,w,wth
+      real     :: PI,STEADY,adv_dir
+
+      PI       = 4.*atan(1.)
+      STEADY   = int_prams(8)
+
+      !! initial ice conditions
+      icec     = ice_arrays(:,:,1)
+      iceh     = ice_arrays(:,:,2)
+      dfloe    = ice_arrays(:,:,3)
+
+      !! get input directional wave spectrum
+      sdf_dir  = reshape(Sdir_io,(/nx,ny,ndir,nw/))
+      sdf_inc  = sdf_dir
+
+      print*,nw,(nw.eq.1),Tp_io
+      if (nw.eq.1) then
+         freq_vec(1) = 1./Tp_io
+         print*,Tp_io,freq_vec
+      end if
+      if (ndir.eq.1) then
+         wavdir(1)   = mwd_io
+         print*,mwd_io
+      end if
+
+      !wim2d_run_vSdir(out_arrays,int_prams,real_prams,nmesh_e,mesh_e)
+      ! mesh_e is optional, but need a place holder for nmesh_e
+      mesh_e_dummy   = reshape(mesh_in,(/nmesh_e,nmesh_vars/))
+      call wim2d_run_vSdir(out_arrays,int_prams,real_prams
+     &                     ,nmesh_e,mesh_e_dummy)
+      mesh_out       = reshape(mesh_e_dummy,(/nmesh_e*nmesh_vars/))
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! get updated directional wave spectrum
+
+      !! correction for STEADY (copied from mod_waves_ice.F)
+      STEADY   = int_prams(8)
+      if (STEADY.eq.1) then
+         do w=1,nw
+         do wth=1,ndir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+      end if
+
+      !!TODO update Hs,Tp,... also?
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      Sdir_io2 = reshape(sdf_dir,(/nx*ny*ndir*nw/))
+
+
+      end subroutine py_wim2d_run_vSdir_mesh
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
