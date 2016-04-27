@@ -48,7 +48,7 @@ if exist('params_in','var')
    clear params_in;
 end
 
-TEST_INC_SPEC  = 0;
+TEST_INC_SPEC     = 0;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,9 +69,9 @@ if params.MEX_OPT>0
       disp(' ');
       disp('*******************************************************');
       disp(['Reading ',infile_dirs,'...']);
-      fid      = fopen(infile_dirs);
-      indir    = strtrim(fgets(fid));
-      outdir   = strtrim(fgets(fid));
+      fid            = fopen(infile_dirs);
+      indir          = strtrim(fgets(fid));
+      params.outdir  = strtrim(fgets(fid));
       fclose(fid);
    end
 
@@ -81,6 +81,18 @@ if params.MEX_OPT>0
    grid_prams     = fn_get_grid(indir);
    grid_prams.x0  = min(grid_prams.X(:));
    grid_prams.y0  = min(grid_prams.Y(:));
+   HAVE_GRID      = 1;
+
+   disp('New grid info:')
+   disp(grid_prams)
+   disp('')
+
+   %% make "params" consistent with fortran
+   fnames      = {'x0','y0','nx','ny','dx','dy'};
+   for loop_i=1:length(fnames)
+      fname = fnames{loop_i};
+      eval(['params.',fname,' = grid_prams.',fname,';']);
+   end
 
    %% get nw,ndir,Tmin,Tmax from wave_info.h
    fdir  = '../../fortran';
@@ -100,16 +112,14 @@ if params.MEX_OPT>0
    fclose(fid);
 
    disp(' ');
-   disp(['Will save results in ',outdir]);
+   disp(['Will save results in ',params.outdir]);
    disp('*******************************************************');
    disp(' ');
 
-   %% create dirs if necessary;
-   prep_mex_dirs(outdir);
-
    if 0
       %% get initial conditions from fortran run
-      [grid_prams,ice_fields,wave_fields] = fn_check_init(outdir);
+      Fdir  = '../../fortran/run/out_io';
+      [grid_prams,ice_fields,wave_fields] = fn_check_init(Fdir);
       ice_prams.c          = 'given';
       ice_prams.h          = 'given';
       ice_prams.Dmax       = 'given';
@@ -133,6 +143,15 @@ elseif exist('grid_prams','var');
       end
    end
 end
+
+
+if params.MEX_OPT==0
+   params.outdir  = 'm_out';
+end
+
+%%create output dirs
+prep_mex_dirs(params.outdir);
+
 
 if HAVE_GRID==0
    fnames      = {'x0','y0','nx','ny','dx','dy'};
@@ -259,20 +278,17 @@ function prep_mex_dirs(outdir)
 %% mex function saves results as binary files:
 %% needs some directories to exist - otherwise it crashes
 
-if ~exist(outdir,'dir')
-   eval(['!mkdir ',outdir]);
-end
+eval(['!rm -rf ',outdir]);
+eval(['!mkdir ',outdir]);
 
 odirs = {[outdir,'/binaries'],...
          [outdir,'/binaries/prog'],...
          [outdir,'/log'],...
          [outdir,'/figs'],...
          [outdir,'/figs/prog']};
+
 for j=1:length(odirs)
-   outdir   = odirs{j};
-   if ~exist(outdir,'dir')
-      eval(['!mkdir ',outdir]);
-   end
+   eval(['!mkdir ',odirs{j}]);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -290,4 +306,11 @@ for j=1:length(sz)
       error(ss);
    end
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function x=find_num(txt)
+
+x0 = strsplit(txt,'!');
+x  = str2num(x0{1});
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -54,12 +54,12 @@ function [out_fields,wave_stuff,diagnostics,mesh_e] =...
 %% - do breaking on mesh as well to try to reduce numerical diffusion
 %%   caused by interpolation between grid and mesh
 %% mesh_e = structure eg
-%%        xe: [760x1 double]
-%%        ye: [760x1 double]
-%%         c: [760x1 double]
-%%         h: [760x1 double]
-%%    Nfloes: [760x1 double]
-%%    damage: [760x1 double]
+%%         xe: [760x1 double]
+%%         ye: [760x1 double]
+%%          c: [760x1 double]
+%%          h: [760x1 double]
+%%     Nfloes: [760x1 double]
+%% DAMAGE_OPT: 1
 %% ============================================================
 
 %%check params_in has the needed fields
@@ -68,7 +68,8 @@ check_params_in(params_in);
 %% check if we want to do breaking on the mesh also
 INTERP_MESH = 0;
 if exist('mesh_e','var') & params_in.MEX_OPT==0
-   INTERP_MESH = 1;
+   INTERP_MESH    = 1;
+   mesh_e.broken  = 0*mesh_e.c;%0/1 if ice was broken by waves this time
 else
    mesh_e  = [];
 end
@@ -89,6 +90,9 @@ PLOT_OPT          = 2;%%plot option (only used if doing plotting)
                       %%(if params_in.PLOT_INIT==1|params_in.PLOT_PROG==1|params_in.PLOT_FINAL==1)
 TEST_INC_SPEC     = 0;
 TEST_FINAL_SPEC   = 0;
+
+COMP_F   = 0
+compFdir = 'out_2/binaries/prog/';
 
 %% make a log file similar to fortran file
 log_dir  = 'log';
@@ -234,7 +238,7 @@ if params_in.STEADY==1
    theta = -pi/180*(90+wave_stuff.dirs);
    j_fwd = find(cos(theta)>=0);
 
-   if isfield(wave_fields,STEADY_MASK);
+   if isfield(wave_fields,'STEADY_MASK');
       WAVE_MASK2  = wave_fields.STEADY_MASK;
    else
       WAVE_MASK2        = 0*WAVE_MASK;
@@ -496,11 +500,21 @@ if params_in.PLOT_INIT
    figure(1),clf;
    fn_fullscreen;
    fn_plot_ice(gridprams,ice_fields);
+   if params_in.SV_FIG==1
+      fig_dir  = [params_in.outdir,'/figs/init'];
+      eval(['!mkdir -p ',fig_dir]);
+      figname  = [fig_dir,'/ice_init.png'];
+      saveas(gcf,figname);
+   end
    pause(0.1);
    %%
    figure(2),clf;
    fn_fullscreen;
    fn_plot_waves(gridprams,wave_fields);
+   if params_in.SV_FIG==1
+      figname  = [fig_dir,'/waves_init.png'];
+      saveas(gcf,figname);
+   end
    pause(0.1);
    %%
    figure(3),clf;
@@ -517,6 +531,11 @@ if params_in.PLOT_INIT
    else
       fn_plot_spec_2(gridprams.X,gridprams.Y,wave_fields.Hs,out_fields.tau_x,...
          out_fields.Dmax,out_fields.tau_y);
+   end
+
+   if params_in.SV_FIG==1
+      figname  = [fig_dir,'/wim_init2d.png'];
+      saveas(gcf,figname);
    end
    %if params_in.OPT==1
    %   subplot(2,2,1);
@@ -579,6 +598,10 @@ if params_in.PLOT_INIT
       hold on;
       %%
       loop_col = loop_col+1;
+      if params_in.SV_FIG==1
+         fig_dir  = [params_in.outdir,'/figs/init'];
+         figname  = [fig_dir,'/wim_diag1d.png'];
+      end
    end
    pause(0.1);
    %pause;
@@ -587,10 +610,7 @@ end
 CSUM  = params_in.DO_CHECK_INIT+params_in.DO_CHECK_PROG+params_in.DO_CHECK_FINAL;
 if (params_in.SV_BIN==1) & (params_in.MEX_OPT==0) & (CSUM>0)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %% save some fields as binaries to m_out
-   !mkdir -p  m_out
-   !mkdir -p  m_out/binaries
-   !rm    -rf m_out/binaries/prog
+   %% save some fields as binaries to [params_in.outdir]/binaries
    Bdims = [gridprams.nx,gridprams.ny,wave_stuff.nfreq,wave_stuff.ndir];
 
    reps_ab  = 10;%%save every 10 time-steps if params_in.DO_CHECK_PROG==1
@@ -598,7 +618,7 @@ if (params_in.SV_BIN==1) & (params_in.MEX_OPT==0) & (CSUM>0)
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% save grid files
-   Fdir  = 'm_out/binaries';
+   Fdir  = [params_in.outdir,'/binaries'];
    Froot = [Fdir,'/wim_grid'];
    %%
    pairs = {};
@@ -620,7 +640,7 @@ end
 if (params_in.SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% save init files
-   Fdir  = 'm_out/binaries';
+   Fdir  = [params_in.outdir,'/binaries'];
    Froot = [Fdir,'/wim_init'];
    %%
    pairs = {};
@@ -639,8 +659,7 @@ if (params_in.SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% 1st prog file
-   !mkdir -p  m_out/binaries/prog
-   Fdir  = 'm_out/binaries/prog';
+   Fdir  = [params_in.outdir,'/binaries/prog'];
    cn    = num2str(nt);
    cn(:) = '0';
    Froot = [Fdir,'/wim_prog',cn];
@@ -769,13 +788,11 @@ elseif params_in.MEX_OPT==2
 
 else
    if params_in.DO_DISP; disp('Running pure matlab code'); end
-   COMP_F   = 0;
    if COMP_F==1
       %% load prog binaries and compare saved wim_prog*.[ab] files
       %% to matlab results
-      
-      Fdir     = 'out_2/binaries/prog/';
-      FF       = dir([Fdir,'wim_prog*.a'])
+
+      FF       = dir([compFdir,'wim_prog*.a'])
       if length(FF)==0
          error('COMP_F==1, but no fortran files to compare to');
       end
@@ -1163,7 +1180,7 @@ else
                Dmax              = max(ice_prams.Dmin,min(Dmax,wlng_crest/2));
                mesh_e.Nfloes(jl) = mesh_e.c(jl)/Dmax^2;
                if mesh_e.DAMAGE_OPT==1
-                  mesh_e.damage(jl) = mesh_e.wim_break_damage;
+                  mesh_e.broken(jl) = 1;
                end
                %disp('Breaking on mesh')
             end
@@ -1214,6 +1231,19 @@ else
                      out_fields.Dmax,out_fields.tau_y);
                end
 
+               if params_in.SV_FIG==1
+
+                  cnt               = num2str(nt);
+                  cnt(:)            = '0';
+                  cn                = num2str(n);
+                  lc                = length(cn);
+                  cnt(end+1-lc:end) = cn;
+
+                  fig_dir  = [params_in.outdir,'/figs/prog'];
+                  figname  = [fig_dir,'/wim_prog2d_',cnt,'.png'];
+                  saveas(gcf,figname);
+               end
+
                %if params_in.OPT==1
                %   subplot(2,2,1);
                %   hold on;
@@ -1246,6 +1276,19 @@ else
                   ttl   = title(['max h = ',num2str(max(wave_fields.Hs(:))),'; x = ',num2str(gridprams.X(imax,1)/1.0e3),'km']);
                   GEN_font(ttl);
                   GEN_proc_fig('y, km','H_s, m')
+
+                  if params_in.SV_FIG==1
+
+                     cnt               = num2str(nt);
+                     cnt(:)            = '0';
+                     cn                = num2str(n);
+                     lc                = length(cn);
+                     cnt(end+1-lc:end) = cn;
+
+                     fig_dir  = [params_in.outdir,'/figs/prog'];
+                     figname  = [fig_dir,'/wim_prog1d_symm',cn,'.png'];
+                     saveas(gcf,figname);
+                  end
                else
                   %%check partition of fwd and back energy
                   figure(4);
@@ -1288,15 +1331,27 @@ else
                   if loop_col>length(cols)
                      loop_col = 1;
                   end
+
+                  if params_in.SV_FIG==1
+
+                     cnt               = num2str(nt);
+                     cnt(:)            = '0';
+                     cn                = num2str(n);
+                     lc                = length(cn);
+                     cnt(end+1-lc:end) = cn;
+
+                     fig_dir  = [params_in.outdir,'/figs/prog'];
+                     figname  = [fig_dir,'/wim_prog1d_Epart',cn,'.png']
+                     saveas(gcf,figname);
+                  end
                end
             end
 
             if COMP_F==1
                %% load prog binaries and compare saved wim_prog*.[ab] files
                %% to matlab results
-               Fdir           = 'out_2/binaries/prog';
                nnn            = num2str(n,'%3.3d');
-               afile          = [Fdir,nnn,'.a'];
+               afile          = [compFdir,nnn,'.a'];
                aid            = fopen(afile,'rb');
                F_fields.Dmax  = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
                F_fields.tau_x = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
@@ -1326,7 +1381,7 @@ else
       if (params_in.SV_BIN==1)&(mod(n,reps_ab)==0)&(params_in.DO_CHECK_PROG==1)
          %% save matlab files as binaries
          %% to matlab results
-         Fdir              = 'm_out/binaries/prog';
+         Fdir              = [params_in.outdir,'/binaries/prog'];
          cnt               = num2str(nt);
          cnt(:)            = '0';
          cn                = num2str(n);
@@ -1359,7 +1414,7 @@ out_fields.Tp     = wave_fields.Tp;
 if (params_in.SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    %% save matlab files as binaries
    %% to matlab results
-   Fdir  = 'm_out/binaries';
+   Fdir  = [params_in.outdir,'/binaries'];
    Froot = [Fdir,'/wim_out'];
    %%
    pairs = {};
@@ -1422,13 +1477,12 @@ fclose(logid);
 
 if params_in.SV_SPEC
    %% save final directional spectrum
-   !mkdir -p m_out
    freq_vec = om_vec/2/pi;
    S_inc    = wave_stuff.dir_spec;
    Hs       = wave_fields.Hs;
    wavdir   = wave_stuff.dirs;
    cice     = ice_fields.cice;
-   save('m_out/Sdir.mat','Sdir','wavdir','freq_vec','gridprams','S_inc','cice','Hs');
+   save([params_in.outdir,'Sdir.mat'],'Sdir','wavdir','freq_vec','gridprams','S_inc','cice','Hs');
    clear wavdir freq_vec S_inc cice;
 end
 
@@ -1674,34 +1728,29 @@ if params_in.PLOT_FINAL%%check exponential attenuation
 
    if params_in.SV_FIG%%save figures
 
-      if wave_stuff.nfreq==1
-         if params_in.SCATMOD==1
-            fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
-         elseif params_in.SCATMOD==0
-            fig_dir  = 'out/simple_1freq';  %%use this for monochromatic wave
-         end
-      else
-         if params_in.SCATMOD==1
-            fig_dir  = 'out/isotropic_spec';  %%use this for spectrum
-         elseif params_in.SCATMOD==0
-            fig_dir  = 'out/simple_spec';  %%use this for spectrum
-         end
-      end
+      %if wave_stuff.nfreq==1
+      %   if params_in.SCATMOD==1
+      %      fig_dir  = 'out/isotropic_1freq';  %%use this for monochromatic wave
+      %   elseif params_in.SCATMOD==0
+      %      fig_dir  = 'out/simple_1freq';  %%use this for monochromatic wave
+      %   end
+      %else
+      %   if params_in.SCATMOD==1
+      %      fig_dir  = 'out/isotropic_spec';  %%use this for spectrum
+      %   elseif params_in.SCATMOD==0
+      %      fig_dir  = 'out/simple_spec';  %%use this for spectrum
+      %   end
+      %end
 
-      if ~exist(fig_dir)
-         mkdir(fig_dir)
-      end
-
-      if ~exist([fig_dir,'/att_fig'])
-         mkdir([fig_dir,'/att_fig']);
-         mkdir([fig_dir,'/att_png']);
-         mkdir([fig_dir,'/fig']);
-         mkdir([fig_dir,'/png']);
-      end
+      fig_dir  = [params_in.outdir,'/figs/final'];
+      eval(['!mkdir -p ',fig_dir])
 
       figure(3);
-      saveas(gcf,[fig_dir,'/fig/B',num2str(ndir,'%3.3d'),'.fig']);
-      saveas(gcf,[fig_dir,'/png/B',num2str(ndir,'%3.3d'),'.png']);
+      eval(['!mkdir -p ',fig_dir,'/fig']);
+      saveas(gcf,[fig_dir,'/fig/B',num2str(wave_stuff.ndir,'%3.3d'),'.fig']);
+
+      eval(['!mkdir -p ',fig_dir,'/png']);
+      saveas(gcf,[fig_dir,'/png/B',num2str(wave_stuff.ndir,'%3.3d'),'.png']);
 
       if 0
          figure(3);
@@ -1710,6 +1759,8 @@ if params_in.PLOT_FINAL%%check exponential attenuation
             pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
             set(gca,'position',pos);
          end
+         eval(['!mkdir -p ',fig_dir,'/att_fig']);
+         eval(['!mkdir -p ',fig_dir,'/att_png']);
          saveas(gcf,[fig_dir,'/att_fig/B',num2str(ndir,'%3.3d'),'_atten.fig']);
          saveas(gcf,[fig_dir,'/att_png/B',num2str(ndir,'%3.3d'),'_atten.png']);
       end
