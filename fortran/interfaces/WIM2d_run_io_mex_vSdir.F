@@ -22,8 +22,11 @@ C
 
       mwpointer plhs(*), prhs(*)
       mwpointer mxCreateDoubleMatrix, mxGetPr
-      integer*4   :: mexPrintf,k
+      integer nlhs, nrhs, mxIsNumeric
+      mwsize mxGetM, mxGetN
+      integer*4   :: mexPrintf,k,j
 
+C-----INPUTS------------------------------------------------------------
       !!pointers to inputs
       mwpointer x3d_pr!collect all 2d input arrays into 1 3d array (input as vector)
       mwpointer x4d_pr!pointer to input of Sdir
@@ -37,42 +40,41 @@ C
       integer,parameter :: ni    = 9   ! length of int_prams
       integer,parameter :: nr    = 4   ! length of real_prams
 
-      !!pointers to outputs
-      integer,parameter :: Nout  = 2   ! no of outputs
-
-      mwpointer y3d_pr!collect all 2d output arrays into 1 3d array (output as vector)
-      integer,parameter :: ny3d  = 5   ! size(y3d) = ii*jj*ny3d
-
-      mwpointer y4d_pr!pointer to output of Sdir
-
-
-C-----------------------------------------------------------------------
-C
-
-      integer nlhs, nrhs, mxIsNumeric
-      mwsize mxGetM, mxGetN
-      mwsize,dimension(2)  :: mvec_out,nvec_out,size_vec_out
-      mwsize,dimension(6)  :: mvec_in,nvec_in,size_vec_in
-      integer,dimension(6) :: mvec_in_0,nvec_in_0,size_vec_in_0
+      mwsize,dimension (Nin)  :: mvec_in,nvec_in,size_vec_in
+      integer,dimension(Nin)  :: mvec_in_0,nvec_in_0,size_vec_in_0
 
       !!inputs from matlab - need to be double precision
       real*8,dimension(ii*jj*nx3d)  :: x3d
       real*8,dimension(ii*jj*nxy4d) :: x4d
       real*8,dimension(ni)          :: ip
       real*8,dimension(nr)          :: rp
+      real*8                        :: Tp_io,mwd_io
+C-----------------------------------------------------------------------
 
-      real*8            :: Tp_io,mwd_io
-      integer           :: j,n3d,n4d
-      logical           :: critter
-      logical,parameter :: PRINT_INFO = .false.
+
+C-----OUTPUTS-----------------------------------------------------------
+      integer,parameter :: Nout  = 2   ! no of outputs
+
+      !!pointers to outputs
+      mwpointer y3d_pr!collect all 2d output arrays into 1 3d array (output as vector)
+      mwpointer y4d_pr!pointer to output of Sdir
+
+      integer,parameter       :: ny3d  = 5   ! size(y3d) = ii*jj*ny3d
+      mwsize,dimension(Nout)  :: mvec_out,nvec_out,size_vec_out
 
       !! outputs from main subroutine (float)
       !! - need to be converted to double before passing to matlab (plhs)
       !! - use dble
       real,dimension(ii*jj*ny3d)    :: y3d
       real,dimension(ii*jj*nxy4d)   :: y4d
-      character(len=12)             :: cj,cm,cn,cm0,cn0,cdum
-      character(len=80)             :: msg
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+      logical           :: critter
+      logical,parameter :: PRINT_INFO = .false.
+      character(len=12) :: cj,cm,cn,cm0,cn0,cdum
+      character(len=80) :: msg
 
 
       ! =================================================
@@ -88,7 +90,8 @@ C     Check for proper number of arguments.
 
 
       ! =================================================
-      ! expected sizes of inputs
+      ! expected sizes of inputs:
+      ! Sdir,ice_arrays,int_prams,real_prams,Tp_io,mwd_io
       mvec_in_0      = (/ii*jj*nxy4d,ii*jj*nx3d,1 ,1 ,1,1/)
       nvec_in_0      = (/1    ,1   ,ni,nr,1,1/)
       size_vec_in_0  = mvec_in_0*nvec_in_0
