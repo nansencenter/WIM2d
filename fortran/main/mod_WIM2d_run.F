@@ -31,7 +31,8 @@
 
       !!only subroutines are public
       public   :: wim2d_run,wim2d_run_io,wim2d_run_vSdir                &
-     &            ,mex_io_gate,mex_io_gate_v2,mex_io_gate_vSdir
+     &            ,mex_io_gate,mex_io_gate_v2                           &
+     &            ,mex_io_gate_vSdir,mex_io_gate_vSdir_mesh
       
       contains
       

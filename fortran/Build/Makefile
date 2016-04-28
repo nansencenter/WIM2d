@@ -69,8 +69,15 @@ TARGET_MEX2	:=	$(MX2).$(MX_EXT)
 MX3		:=	WIM2d_run_io_mex_vSdir
 MEX3		:=	$(src)/interfaces/$(MX3).F
 TARGET_MEX3	:=	$(MX3).$(MX_EXT)
-# mex function is $(TARGET_MEX2)maci64  for mac OSX
-# mex function is $(TARGET_MEX2)a64 	for linux
+# mex function is $(TARGET_MEX3)maci64  for mac OSX
+# mex function is $(TARGET_MEX3)a64 	for linux
+
+# mex function to run interactive WIM in matlab
+MX4		:=	WIM2d_run_io_mex_vSdir_mesh
+MEX4		:=	$(src)/interfaces/$(MX4).F
+TARGET_MEX4	:=	$(MX4).$(MX_EXT)
+# mex function is $(TARGET_MEX4)maci64  for mac OSX
+# mex function is $(TARGET_MEX4)a64 	for linux
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
@@ -122,7 +129,12 @@ mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX3)* $(bin)
 
-all:	py exec mex2 mex3
+mex4:	$(MEX4) $(OBJ_MAIN) $(OBJS)
+	mkdir -p $(bin)
+	$(MXC) $(MEX_FLAGS) $^
+	mv $(TARGET_MEX4)* $(bin)
+
+all:	py exec mex2 mex3 mex4
 
 All:	py exec
 
@@ -148,8 +160,9 @@ $(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
 $(PROG_PY): 		grid_info.h	wave_info.h		$(OBJS)
 
 $(MEX1):		grid_info.h $(OBJ_MAIN)
-
 $(MEX2):		grid_info.h $(OBJ_MAIN)
+$(MEX3):		grid_info.h wave_info.h	$(OBJ_MAIN)
+$(MEX4):		grid_info.h wave_info.h	$(OBJ_MAIN)
 
 .PHONY: clean vclean mex1 mex2
 
@@ -163,7 +176,8 @@ vclean:
 	   	$(bin)/$(TARGET_F) \
 	   	$(bin)/$(TARGET_PY).so \
 	   	$(bin)/$(TARGET_MEX2)* \
-	   	$(bin)/$(TARGET_MEX3)*
+	   	$(bin)/$(TARGET_MEX3)* \
+	   	$(bin)/$(TARGET_MEX4)*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

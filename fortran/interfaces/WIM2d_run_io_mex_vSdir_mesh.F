@@ -14,7 +14,7 @@ C     This is a MEX-file for MATLAB.
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 C-----------------------------------------------------------------------
 C
-      use mod_WIM2d_run, only: mex_io_gate_vSdir
+      use mod_WIM2d_run, only: mex_io_gate_vSdir_mesh
       implicit none
 
       include "grid_info.h"
@@ -24,7 +24,7 @@ C
       mwpointer mxCreateDoubleMatrix, mxGetPr
       integer nlhs, nrhs, mxIsNumeric
       mwsize mxGetM, mxGetN
-      integer*4   :: mexPrintf,k,j
+      integer*4   :: mexPrintf,k,j,nmeshi
 
 C-----INPUTS------------------------------------------------------------
       !!pointers to inputs
@@ -101,12 +101,13 @@ C     Check for proper number of arguments.
       !don't know size of xmesh in advance
       nmesh = mxGetM(prhs(3)) !mwsize
       allocate(xmesh(nmesh))
+      nmeshi   = nmesh
 
       ! =================================================
       ! expected sizes of inputs:
       mvec_in_0      = (/ii*jj*nxy4d   !Sdir      
      &                 ,ii*jj*nx3d     !ice_arrays
-     &                 ,nint(nmesh)    !xmesh
+     &                 ,nmeshi   !xmesh
      &                 ,1              !int_prams
      &                 ,1              !real_prams
      &                 ,1              !Tp_io
@@ -191,7 +192,7 @@ C     Check for proper number of arguments.
 C     Create matrices for the return arguments.
       mvec_out       = (/ii*jj*nxy4d   !y4d
      &                  ,ii*jj*ny3d    !y3d
-     &                  ,nmesh/)       !ymesh
+     &                  ,nmeshi/)       !ymesh
 
       nvec_out       = (/1    !y4d
      &                  ,1    !y3d
