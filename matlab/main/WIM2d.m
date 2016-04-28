@@ -848,22 +848,16 @@ elseif params_in.MEX_OPT==3
             plot(gridprams.X(:,1)/1e3,PP{j},'--g');
          end
       end
-      clear PP;
+      clear PP jp;
    end
 
    %% make the call!
-   %mesh_e(:,[3,6])
    tic;
-   [wave_stuff.dir_spec,out_arrays,mesh_e] = WIM2d_run_io_mex_vSdir_mesh(...
+   [wave_stuff.dir_spec,out_arrays,mesh_out] = WIM2d_run_io_mex_vSdir_mesh(...
       wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
       int_prams,real_prams,T_init,dir_init,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,gridprams.nx,gridprams.ny,wave_stuff.ndir,wave_stuff.nfreq);
    toc;
-
-   mesh_e   = reshape(mesh_e,[nmesh_e,nmesh_vars]);
-   %mesh_e(mesh_e(:,5)>0,5)
-   %mesh_e(:,[4,6])
-   error('HEY!!')
 
    %% extract outputs
    fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
@@ -875,6 +869,31 @@ elseif params_in.MEX_OPT==3
   
    % delete annoying file
    !rm -f fort.6
+
+   mesh_out = reshape(mesh_out,[nmesh_e,nmesh_vars]);
+   if 0
+      %look at Nfloes where ice is
+      mesh_out(mesh_out(:,5)>0,5)
+   elseif 0
+      %%look at where breaking occurred, next to thickness
+      %% (proxy for original thickness)
+      mesh_out(:,[4,6])
+   elseif 0
+      %%look at difference between 1st 4 col's (should be ~0)
+      mesh_out(:,1:4)-mesh_e(:,1:4)
+   elseif 0
+      figure(101);
+      Nfloes_mesh    = mesh_out(:,5);
+      Dmax_mesh      = 0*mesh_out(:,5);
+      jp             = find(Nfloes_mesh>0);
+      Dmax_mesh(jp)  = sqrt(mesh_out(jp,3)./Nfloes_mesh(jp));
+      plot(xm0/1e3,Dmax_mesh);
+      hold on;
+      plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
+      fn_fullscreen;
+   end
+   error('HEY!!')
+
 
 else
    if params_in.DO_DISP; disp('Running pure matlab code'); end
