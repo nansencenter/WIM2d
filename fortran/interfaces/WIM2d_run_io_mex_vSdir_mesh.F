@@ -49,8 +49,7 @@ C-----INPUTS------------------------------------------------------------
       !!inputs from matlab - need to be double precision real
       real*8,dimension(ii*jj*nx3d)  :: x3d
       real*8,dimension(ii*jj*nxy4d) :: x4d
-      !real*8, allocatable           :: xmesh(:)
-      real*8, dimension(600)        :: xmesh
+      real*8, allocatable           :: xmesh(:)
       real*8,dimension(ni)          :: ip
       real*8,dimension(nr)          :: rp
       real*8                        :: Tp_io
@@ -76,8 +75,7 @@ C-----OUTPUTS-----------------------------------------------------------
       !! - use dble
       real,dimension(ii*jj*ny3d)    :: y3d
       real,dimension(ii*jj*nxy4d)   :: y4d
-      !real,   allocatable           :: ymesh(:)
-      real,dimension(600)           :: ymesh
+      real,   allocatable           :: ymesh(:)
 C-----------------------------------------------------------------------
 
 
@@ -104,9 +102,8 @@ C     Check for proper number of arguments.
       
       !don't know size of xmesh in advance
       nmesh = mxGetM(prhs(3)) !mwsize (integer*8)
-      !allocate(xmesh(nmesh))
-      !nmeshi   = int(nmesh)        !integer*4?
-      nmeshi   = 600
+      allocate(xmesh(nmesh))
+      nmeshi   = int(nmesh)   !integer*4
 
       ! =================================================
       ! expected sizes of inputs:
@@ -219,7 +216,7 @@ C     Create matrices for the return arguments.
       !! in/out arrays
       y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
 
-      !allocate(ymesh(nmesh))
+      allocate(ymesh(nmesh))
       ymesh = real(xmesh)!cast to real*4: this goes into the main function with intent(inout)
 
       if (PRINT_INFO) then
@@ -245,8 +242,8 @@ C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(dble(ymesh),ymesh_pr,size_vec_out(3))
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      !deallocate(xmesh)
-      !deallocate(ymesh)
+      deallocate(xmesh)
+      deallocate(ymesh)
 
       return
       end subroutine mexFunction
