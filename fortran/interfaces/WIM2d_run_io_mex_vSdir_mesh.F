@@ -88,8 +88,6 @@ C-----------------------------------------------------------------------
       character(len=80) :: msg
 
 
-      call write_status()
-
       ! =================================================
 C     Check for proper number of arguments.
       if(nrhs .ne. Nin) then
@@ -100,7 +98,8 @@ C     Check for proper number of arguments.
          call mexErrMsgTxt(trim(cdum)//' outputs required.')
       endif
       ! =================================================
-      !call mexErrMsgTxt('HEY MEX!')
+
+      !call write_status()
 
       
       !don't know size of xmesh in advance
@@ -256,7 +255,7 @@ C     Load the data into pointers, which are the outputs to MATLAB
       subroutine write_status()
       implicit none
 
-      open(unit=20,file='status.txt',status='new')
+      open(unit=20,file='status.txt',status='replace')
       write(20,'(a)') 'Mex reached this point'
       close(20)
 

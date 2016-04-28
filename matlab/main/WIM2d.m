@@ -824,7 +824,8 @@ elseif params_in.MEX_OPT==3
       %%test mesh inputs:
       xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
       nmesh_e     = length(xm0);
-      mesh_e      = zeros(nmesh_e,6);
+      nmesh_vars  = 6;
+      mesh_e      = zeros(nmesh_e,nmesh_vars);
       mesh_e(:,1) = xm0.';
       if gridprams.ny==1
          nmy   = 1;
@@ -833,8 +834,11 @@ elseif params_in.MEX_OPT==3
       end
       mesh_e(:,2) = gridprams.Y(1,nmy);
 
-      PP = {ice_fields.cice(:,nmy),ice_fields.hice(:,nmy),...
-            ice_fields.Dmax(:,nmy),0*ice_fields.Dmax(:,nmy)};
+      Nfloes      = 0*ice_fields.Dmax(:,nmy);
+      jp          = find(ice_fields.Dmax(:,nmy)>0);
+      Nfloes(jp)  = ice_fields.cice(jp,nmy)./ice_fields.Dmax(jp,nmy).^2;
+      PP          = {ice_fields.cice(:,nmy),ice_fields.hice(:,nmy),...
+                        Nfloes,0*ice_fields.Dmax(:,nmy)};
       for j=1:4
          mesh_e(:,j+2)  = avg(PP{j});
          if 1
@@ -848,12 +852,17 @@ elseif params_in.MEX_OPT==3
    end
 
    %% make the call!
+   %mesh_e(:,[3,6])
    tic;
-   [wave_stuff.dir_spec,out_arrays] = WIM2d_run_io_mex_vSdir_mesh(...
+   [wave_stuff.dir_spec,out_arrays,mesh_e] = WIM2d_run_io_mex_vSdir_mesh(...
       wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
       int_prams,real_prams,T_init,dir_init,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,gridprams.nx,gridprams.ny,wave_stuff.ndir,wave_stuff.nfreq);
    toc;
+
+   mesh_e   = reshape(mesh_e,[nmesh_e,nmesh_vars]);
+   %mesh_e(mesh_e(:,5)>0,5)
+   %mesh_e(:,[4,6])
    error('HEY!!')
 
    %% extract outputs
