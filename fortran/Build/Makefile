@@ -42,7 +42,7 @@ OFLAGS=-J$(MDIR)
 F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 
 # Flags for mex
-MEX_FLAGS=-largeArrayDims $(IFLAGS)
+MEX_FLAGS=-largeArrayDims -g $(IFLAGS)
 
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh

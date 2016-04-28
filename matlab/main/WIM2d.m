@@ -786,6 +786,87 @@ elseif params_in.MEX_OPT==2
    % delete annoying file
    !rm -f fort.6
 
+elseif params_in.MEX_OPT==3
+
+   if params_in.DO_DISP; disp(' ');
+   disp('*****************************************************************');
+   disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir_mesh');
+   disp('*****************************************************************');
+   disp(' '); end
+
+   % real parameters
+   real_prams  = [ice_prams.young,...
+                  ice_prams.visc_rp,...
+                  duration,...
+                  params_in.CFL];
+
+   % integer parameters
+   int_prams   = [params_in.SCATMOD,...
+                  params_in.ADV_DIM,...
+                  params_in.ADV_OPT,...
+                  params_in.DO_CHECK_FINAL,...
+                  params_in.DO_CHECK_PROG,...
+                  params_in.DO_CHECK_INIT,...
+                  params_in.DO_BREAKING,...
+                  params_in.STEADY,...
+                  params_in.DO_ATTEN];
+
+   in_arrays         = zeros(gridprams.nx,gridprams.ny,3);
+   in_arrays(:,:,1)  = ice_fields.cice;
+   in_arrays(:,:,2)  = ice_fields.hice;
+   in_arrays(:,:,3)  = out_fields.Dmax;
+
+   % defined in case only one period or dirn
+   T_init   = 1/max(wave_stuff.freq)
+   dir_init = max(wave_stuff.dirs)
+
+   if 1
+      %%test mesh inputs:
+      xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
+      nmesh_e     = length(xm0);
+      mesh_e      = zeros(nmesh_e,6);
+      mesh_e(:,1) = xm0.';
+      if gridprams.ny==1
+         nmy   = 1;
+      else
+         nmy   = ceil(gridprams.ny/2);
+      end
+      mesh_e(:,2) = gridprams.Y(1,nmy);
+
+      PP = {ice_fields.cice(:,nmy),ice_fields.hice(:,nmy),...
+            ice_fields.Dmax(:,nmy),0*ice_fields.Dmax(:,nmy)};
+      for j=1:4
+         mesh_e(:,j+2)  = avg(PP{j});
+         if 1
+            subplot(2,2,j);
+            plot(xm0/1e3,mesh_e(:,j+2));
+            hold on;
+            plot(gridprams.X(:,1)/1e3,PP{j},'--g');
+         end
+      end
+      clear PP;
+   end
+
+   %% make the call!
+   tic;
+   [wave_stuff.dir_spec,out_arrays] = WIM2d_run_io_mex_vSdir_mesh(...
+      wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
+      int_prams,real_prams,T_init,dir_init,nmesh_e);
+   wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,gridprams.nx,gridprams.ny,wave_stuff.ndir,wave_stuff.nfreq);
+   toc;
+   error('HEY!!')
+
+   %% extract outputs
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   Nout        = length(fldnames);
+   out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
+   for j=1:Nout
+      out_fields.(fldnames{j})   = out_arrays(:,:,j);
+   end
+  
+   % delete annoying file
+   !rm -f fort.6
+
 else
    if params_in.DO_DISP; disp('Running pure matlab code'); end
    if COMP_F==1
@@ -1838,3 +1919,6 @@ for j=1:4
    end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function y=avg(x)
+y=.5*(x(1:end-1)+x(2:end));

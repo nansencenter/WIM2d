@@ -49,7 +49,8 @@ C-----INPUTS------------------------------------------------------------
       !!inputs from matlab - need to be double precision real
       real*8,dimension(ii*jj*nx3d)  :: x3d
       real*8,dimension(ii*jj*nxy4d) :: x4d
-      real*8, allocatable           :: xmesh(:)
+      !real*8, allocatable           :: xmesh(:)
+      real*8, dimension(600)        :: xmesh
       real*8,dimension(ni)          :: ip
       real*8,dimension(nr)          :: rp
       real*8                        :: Tp_io
@@ -75,16 +76,19 @@ C-----OUTPUTS-----------------------------------------------------------
       !! - use dble
       real,dimension(ii*jj*ny3d)    :: y3d
       real,dimension(ii*jj*nxy4d)   :: y4d
-      real,   allocatable           :: ymesh(:)
+      !real,   allocatable           :: ymesh(:)
+      real,dimension(600)           :: ymesh
 C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
       logical           :: critter
-      logical,parameter :: PRINT_INFO = .false.
+      logical,parameter :: PRINT_INFO = .true.
       character(len=12) :: cj,cm,cn,cm0,cn0,cdum
       character(len=80) :: msg
 
+
+      call write_status()
 
       ! =================================================
 C     Check for proper number of arguments.
@@ -96,18 +100,20 @@ C     Check for proper number of arguments.
          call mexErrMsgTxt(trim(cdum)//' outputs required.')
       endif
       ! =================================================
+      !call mexErrMsgTxt('HEY MEX!')
 
       
       !don't know size of xmesh in advance
-      nmesh = mxGetM(prhs(3)) !mwsize
-      allocate(xmesh(nmesh))
-      nmeshi   = nmesh
+      nmesh = mxGetM(prhs(3)) !mwsize (integer*8)
+      !allocate(xmesh(nmesh))
+      !nmeshi   = int(nmesh)        !integer*4?
+      nmeshi   = 600
 
       ! =================================================
       ! expected sizes of inputs:
       mvec_in_0      = (/ii*jj*nxy4d   !Sdir      
      &                 ,ii*jj*nx3d     !ice_arrays
-     &                 ,nmeshi   !xmesh
+     &                 ,nmeshi         !xmesh
      &                 ,1              !int_prams
      &                 ,1              !real_prams
      &                 ,1              !Tp_io
@@ -214,7 +220,7 @@ C     Create matrices for the return arguments.
       !! in/out arrays
       y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
 
-      allocate(ymesh(nmesh))
+      !allocate(ymesh(nmesh))
       ymesh = real(xmesh)!cast to real*4: this goes into the main function with intent(inout)
 
       if (PRINT_INFO) then
@@ -240,8 +246,18 @@ C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(dble(ymesh),ymesh_pr,size_vec_out(3))
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      deallocate(xmesh)
-      deallocate(ymesh)
+      !deallocate(xmesh)
+      !deallocate(ymesh)
 
       return
       end subroutine mexFunction
+
+
+      subroutine write_status()
+      implicit none
+
+      open(unit=20,file='status.txt',status='new')
+      write(20,'(a)') 'Mex reached this point'
+      close(20)
+
+      end subroutine write_status

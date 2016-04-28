@@ -195,5 +195,15 @@ C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(dble(y3d),y3d_pr,size_vec_out(2))
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      !call write_status()
       return
       end subroutine mexFunction
+
+      subroutine write_status()
+      implicit none
+
+      open(unit=20,file='status.txt',status='new')
+      write(20,'(a)') 'Mex reached this point'
+      close(20)
+
+      end subroutine write_status
