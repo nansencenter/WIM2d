@@ -63,5 +63,6 @@ neXtSIMcoupling/run/*
 neXtSIMcoupling/tutorial/out/*
 
 CXX/run/outputs
+CXX/outputs
 
 fortran/grid_setup/infile_waves.txt

@@ -4,7 +4,7 @@
 
 namespace po = boost::program_options;
 
-namespace WIMOPT
+namespace WimOptions
 {
     po::options_description
     descrOptions()
