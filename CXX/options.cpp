@@ -39,9 +39,14 @@ namespace WimOptions
             ("wim.nz", po::value<int>()->default_value( 1000 ), "Record length in x direction")
             ("young", po::value<double>()->default_value( 5.49e+9 ), "Young's modulus")
             ("viscrp", po::value<double>()->default_value( 13. ), "Robinson-Palmer viscosity")
+            ("hsinc", po::value<double>()->default_value( 2. ), "")
+            ("tpinc", po::value<double>()->default_value( 12. ), "")
+            ("mwdinc", po::value<double>()->default_value( -90. ), "")
+            ("unifc", po::value<double>()->default_value( 0.7 ), "")
+            ("unifh", po::value<double>()->default_value( 2. ), "")
+            ("dfloepackinit", po::value<double>()->default_value( 300. ), "")
             ("outparentdir", po::value<std::string>()->default_value( "." ), "Parent directory for the output files")
             ;
         return desc;
     }
-
 } // WIMOPT

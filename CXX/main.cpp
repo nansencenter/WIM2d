@@ -61,7 +61,7 @@ int main(int argc, char** argv )
     }
 
     // instantiation of wim2d
-    WimDiscr<float> wim2d(vm);
+    WimDiscr<double> wim2d(vm);
 
     // initialization of wim2d
     wim2d.init();

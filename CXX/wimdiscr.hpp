@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <boost/multi_array.hpp>
 #include <boost/array.hpp>
@@ -21,6 +21,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/any.hpp>
 #include <boost/format.hpp>
+#include <boost/mpi/timer.hpp>
 #include <iomanip>
 #include <omp.h>
 
@@ -35,7 +36,6 @@ extern "C"
 
 
 #define PI M_PI
-//#define PI (float)M_PI
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -109,6 +109,8 @@ private:
     array2_type S_freq, taux_om, tauy_om;
     array2_type hp;
     array2_type Fdmax, Ftaux, Ftauy, Fhs, Ftp;
+
+    boost::mpi::timer chrono;
 
 };
 

@@ -2,11 +2,11 @@ PROGNAME=prog_wim2d.exec
 
 CXX = g++
 CXXFLAGS += -std=c++0x -std=c++11 -ftemplate-depth-256 -Wno-inline -fPIC -O3 -pthread -fopenmp -pedantic  -v # -MMD -MP -lm #-Wall
-CXXFLAGS += -I headers -I . -I $(BOOST_DIR)/include
+CXXFLAGS += -I headers -I . -I $(BOOST_DIR)/include -I $(OPENMPI_INCLUDE_DIR)/
 
 LDFLAGS += -fopenmp
-#LDFLAGS += -Wl,-rpath,$(OPENMPI_LIB_DIR)/
-#LDFLAGS += -L $(OPENMPI_LIB_DIR)/ -lmpi_cxx -lmpi -ldl -lstdc++ -lpthread
+LDFLAGS += -Wl,-rpath,$(OPENMPI_LIB_DIR)/
+LDFLAGS += -L $(OPENMPI_LIB_DIR)/ -lmpi_cxx -lmpi -ldl -lstdc++ -lpthread
 
 LDFLAGS += -Wl,-rpath,$(BOOST_DIR)/lib
 LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboost_system -lboost_mpi -lboost_date_time

@@ -23,6 +23,9 @@ if not os.path.exists(bindir):
 else:
    grid_prams  = Fdat.fn_check_grid(bindir)
 
+# print(bindir)
+# print(grid_prams['nx'])
+
 ##########################################################################
 # Make plots
 if not os.path.exists(figdir):

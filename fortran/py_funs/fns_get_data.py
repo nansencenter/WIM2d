@@ -34,7 +34,7 @@ def get_array(fid,nx,ny,fmt_size=4,order='F'):
       fmt_py   = 'd' # python string for double
 
 
-   data  = fid.read(rec_size)
+   data  = fid.read(rec_size) # no of bytes to read
    fld   = struct.unpack(recs*fmt_py,data)
    fld   = np.array(fld)
    fld   = fld.reshape((nx,ny),order=order)
@@ -62,7 +62,7 @@ def fn_check_grid(outdir):
          key2  = aliases[key]
       grid_prams.update({key:fields[key2]})
    ###########################################################
-   
+
    ###########################################################
    # extra info
    nx,ny = grid_prams['X'].shape
@@ -74,7 +74,7 @@ def fn_check_grid(outdir):
    grid_prams.update({'dx':dx})
    grid_prams.update({'dy':dy})
    ###########################################################
-   
+
    # output
    return grid_prams
 ##############################################################
@@ -86,7 +86,7 @@ def fn_check_init(outdir):
    bfile       = outdir+'/wim_init.b'
    fields,info = fn_read_general_binary(afile)
    aliases     = key_aliases(inverse=True)
-   
+
    ###########################################################
    ## ice fields
    keys        = ['icec','iceh','dfloe']
@@ -118,7 +118,7 @@ def fn_check_init(outdir):
    wave_fields.update({'WAVE_MASK':0*wave_fields['Hs']})
    wave_fields['WAVE_MASK'][wave_fields['Hs']>0.0] = 1.0
    ###########################################################
-   
+
    # outputs
    return ice_fields,wave_fields
 ##############################################################
@@ -183,15 +183,25 @@ def fn_read_general_binary(afile):
 
    ###########################################################
    # can now read data from .a file
+   import os
+   sz=os.path.getsize(afile)
+   nv=len(vlist)
+   fmt_size=int(sz/float(nv*nx*ny)) # 4 for single, 8 for double
+
+   # print(sz,4*nx*ny*nv)
+   # print(fmt_size,nx,ny,nv)
+
    aid   = open(afile,'rb')
 
    out   = {}
    for key in vlist:
-      out.update({key:get_array(aid,nx,ny,order=order)})
+      out.update({key:get_array(aid,nx,ny,order=order,fmt_size=fmt_size)})
+      # print(key)
+      # print(out[key].min(),out[key].max())
 
    aid.close()
    ###########################################################
-   
+
    # outputs
    return out,binfo
 ##############################################################
@@ -203,7 +213,7 @@ def fn_check_out_bin(outdir):
    bfile       = outdir+'/wim_out.b'
    fields,info = fn_read_general_binary(afile)
    aliases     = key_aliases(inverse=True)
-   
+
    ###########################################################
    ## out fields
    keys        = ['dfloe','taux','tauy','Hs','Tp']
@@ -215,7 +225,7 @@ def fn_check_out_bin(outdir):
          key2  = aliases[key]
       out_fields.update({key:fields[key2]})
    ###########################################################
-   
+
    # outputs
    return out_fields
 ##############################################################
@@ -228,7 +238,7 @@ def fn_check_out_arr(out_arrays):
    keys  = ['dfloe','taux','tauy','Hs','Tp'] # can be got from s2.keys(),
    for n,key in enumerate(keys):
       out_fields.update({key:out_arrays[:,:,n]})
-   
+
    # outputs
    return out_fields
 ##############################################################
@@ -250,7 +260,7 @@ def fn_check_prog(outdir,cts):
    bfile       = outdir+'/binaries/prog/wim_prog'+cts+'.b'
    fields,info = fn_read_general_binary(afile)
    aliases     = key_aliases(inverse=True)
-   
+
    ###########################################################
    ## out fields
    keys        = ['dfloe','taux','tauy','Hs','Tp']
@@ -262,7 +272,7 @@ def fn_check_prog(outdir,cts):
          key2  = aliases[key]
       out_fields.update({key:fields[key2]})
    ###########################################################
-   
+
    # outputs
    return out_fields
 ##############################################################

@@ -48,11 +48,13 @@ void WimDiscr<T>::gridProssessing()
 
     // int thread_id;
     // int total_threads;
-    // int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
-
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
     // std::cout<<"MAX THREADS= "<< max_threads <<"\n";
 
-    //#pragma omp parallel for num_threads(max_threads) private(thread_id) collapse(2)
+    std::cout<<"grid generation starts\n";
+    chrono.restart();
+
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -65,6 +67,8 @@ void WimDiscr<T>::gridProssessing()
             SCP2I_array[i][j] = 1./(dx*dy);
         }
     }
+
+    std::cout<<"grid generation done in "<< chrono.elapsed() <<"s\n";
 
     // //#pragma omp parallel for num_threads(max_threads) private(thread_id)
     // #pragma omp parallel for num_threads(max_threads)
@@ -82,31 +86,31 @@ void WimDiscr<T>::gridProssessing()
     {
         for (int i = 0; i < X_array.shape()[0]; i++)
             for (int j = 0; j < X_array.shape()[1]; j++)
-                out.write((char *)&X_array[i][j], sizeof(int));
+                out.write((char *)&X_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < Y_array.shape()[0]; i++)
             for (int j = 0; j < Y_array.shape()[1]; j++)
-                out.write((char *)&Y_array[i][j], sizeof(int));
+                out.write((char *)&Y_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < SCUY_array.shape()[0]; i++)
             for (int j = 0; j < SCUY_array.shape()[1]; j++)
-                out.write((char *)&SCUY_array[i][j], sizeof(int));
+                out.write((char *)&SCUY_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < SCVX_array.shape()[0]; i++)
             for (int j = 0; j < SCVX_array.shape()[1]; j++)
-                out.write((char *)&SCVX_array[i][j], sizeof(int));
+                out.write((char *)&SCVX_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < SCP2_array.shape()[0]; i++)
             for (int j = 0; j < SCP2_array.shape()[1]; j++)
-                out.write((char *)&SCP2_array[i][j], sizeof(int));
+                out.write((char *)&SCP2_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < SCP2I_array.shape()[0]; i++)
             for (int j = 0; j < SCP2I_array.shape()[1]; j++)
-                out.write((char *)&SCP2I_array[i][j], sizeof(int));
+                out.write((char *)&SCP2I_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < LANDMASK_array.shape()[0]; i++)
             for (int j = 0; j < LANDMASK_array.shape()[1]; j++)
-                out.write((char *)&LANDMASK_array[i][j], sizeof(int));
+                out.write((char *)&LANDMASK_array[i][j], sizeof(value_type));
 
         out.close();
     }
@@ -140,36 +144,36 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     {
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&X_array[i][j], sizeof(int));
+                in.read((char *)&X_array[i][j], sizeof(value_type));
 
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&Y_array[i][j], sizeof(int));
-
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                in.read((char *)&SCUY_array[i][j], sizeof(int));
+                in.read((char *)&Y_array[i][j], sizeof(value_type));
 
 
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&SCVX_array[i][j], sizeof(int));
+                in.read((char *)&SCUY_array[i][j], sizeof(value_type));
 
 
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&SCP2_array[i][j], sizeof(int));
+                in.read((char *)&SCVX_array[i][j], sizeof(value_type));
 
 
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&SCP2I_array[i][j], sizeof(int));
+                in.read((char *)&SCP2_array[i][j], sizeof(value_type));
 
 
         for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&LANDMASK_array[i][j], sizeof(int));
+                in.read((char *)&SCP2I_array[i][j], sizeof(value_type));
+
+
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < ny; j++)
+                in.read((char *)&LANDMASK_array[i][j], sizeof(value_type));
 
         in.close();
     }
@@ -265,16 +269,16 @@ void WimDiscr<T>::init()
         std::fill( &wave_mask2[0][0], &wave_mask2[3][0], 1. );
 
     // parameters
-    Hs_inc = 2.0;
-    Tp_inc = 12.0;
-    mwd_inc = -90.;//-135.;//-90.;
+    Hs_inc = vm["hsinc"].template as<double>(); /* 2.0 */
+    Tp_inc = vm["tpinc"].template as<double>(); /* 12.0 */
+    mwd_inc = vm["mwdinc"].template as<double>(); /* -90. */ //-135.;//-90.;
     Tmin = 2.5;
     Tmax = 25.;
     gravity = 9.81;
 
-    unifc = 0.7;
-    unifh = 2.0;
-    dfloe_pack_init = 300.0;
+    unifc = vm["unifc"].template as<double>(); /* 0.7 */
+    unifh = vm["unifh"].template as<double>(); /* 2.0 */
+    dfloe_pack_init = vm["dfloepackinit"].template as<double>(); /* 300.0 */
 
     rhowtr = 1025.;
     rhoice = 922.5;
@@ -298,7 +302,7 @@ void WimDiscr<T>::init()
         // multiple frequencies
         fmin = 1./Tmax;
         fmax = 1./Tmin;
-        df = (fmax-fmin)/(nwavefreq-1.0);
+        df = (fmax-fmin)/(nwavefreq-1);
 
         for (int i = 0; i < nwavefreq; i++)
         {
@@ -338,7 +342,7 @@ void WimDiscr<T>::init()
             w +=2;
         }
 
-        dom   = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[1])/(nwavefreq-1.0);
+        dom   = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[0])/(nwavefreq-1);
         //wt_om = dom*wt_simp/3.0;
         wt_om = wt_simp;
         std::for_each(wt_om.begin(), wt_om.end(), [&](value_type& f){ f = dom*f/3.0; });
@@ -375,6 +379,8 @@ void WimDiscr<T>::init()
 
     x_edge = 0.5*(x0+xmax)-0.8*(0.5*(xmax-x0));
 
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -400,6 +406,7 @@ void WimDiscr<T>::init()
     std::cout<<"ymax= "<< ymax <<"\n";
 
     // wtr_mask
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -417,26 +424,30 @@ void WimDiscr<T>::init()
         }
     }
 
-
-
     om = 2*PI*freq_vec[0];
-    std::vector<value_type> Sfreq(nwavefreq);
-    std::vector<value_type> theta_fac(nwavedirn,0.);
-    value_type f1, f2, f3, t_m, om_m, chi;
+    // std::vector<value_type> Sfreq(nwavefreq);
+    // std::vector<value_type> theta_fac(nwavedirn,0.);
+    // value_type f1, f2, f3, t_m, om_m, chi;
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
         {
+            std::vector<value_type> Sfreq(nwavefreq);
+            std::vector<value_type> theta_fac(nwavedirn,0.);
+            value_type f1, f2, f3, t_m, om_m, chi, om;
+
             if (wave_mask[i][j] == 1.)
             {
                 if (nwavefreq > 1)
                 {
                     for (int fq = 0; fq < nwavefreq; fq++)
                     {
+                        om = 2*PI*freq_vec[fq];
                         t_m = 2*PI/om;
                         om_m  = 2*PI/Tp[i][j];
-                        f1 = 5.0/16.0*std::pow(Hs[i][j],2.)*std::pow(om_m,4.);
+                        f1 = (5.0/16.0)*std::pow(Hs[i][j],2.)*std::pow(om_m,4.);
                         f2 = 1.0/std::pow(om,5.);
                         f3 = std::exp(-1.25*std::pow(t_m/Tp[i][j],4.));
                         Sfreq[fq] = f1*f2*f3;
@@ -480,6 +491,7 @@ void WimDiscr<T>::init()
         }
     }
 
+#if 0
     double params[5];
     params[0] = young;
     params[1] = gravity;
@@ -488,12 +500,14 @@ void WimDiscr<T>::init()
     params[4] = poisson;
 
     double outputs[8];
-    for (int i=0; i<8; ++i)
-        outputs[i] = 1.;
+#endif
 
-    int thread_id;
-    int total_threads;
-    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+    // for (int i=0; i<8; ++i)
+    //     outputs[i] = 1.;
+
+    // int thread_id;
+    // int total_threads;
+    // int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
     //std::cout<<"MAX THREADS= "<< max_threads <<"\n";
     //#pragma omp parallel for num_threads(max_threads) private(thread_id) collapse(2)
@@ -501,22 +515,37 @@ void WimDiscr<T>::init()
     //std::cout<<"big loop starts\n";
     for (int fq = 0; fq < nwavefreq; fq++)
     {
-        //#pragma omp parallel for num_threads(max_threads) private(thread_id) collapse(2)
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
             {
+
+                double params[5];
+                params[0] = young;
+                params[1] = gravity;
+                params[2] = rhowtr;
+                params[3] = rhoice;
+                params[4] = poisson;
+
+                double outputs[8];
+
                 if (ice_mask[i][j] == 1.)
                 {
                     om = 2*PI*freq_vec[fq];
 
                     if (fq == 0)
-                        guess = std::pow(om,2.);
+                        guess = std::pow(om,2.)/gravity;
                     else
-                        guess = 2*PI*wlng_ice[i][j][fq-1];
+                        guess = 2*PI/wlng_ice[i][j][fq-1];
 
 
                     RTparam_outer(outputs,iceh[i][j],double(om),double(visc_rp),double(guess),params);
+                    // for (int i=0; i<8; ++i)
+                    //     outputs[i] = 1.;
+
+
+                    value_type kice, kwtr, int_adm, modT, argR, argT;
 
                     damping[i][j][fq] = outputs[0];
                     kice = outputs[1];
@@ -605,7 +634,9 @@ void WimDiscr<T>::timeStep()
     int jcrest;
     bool break_criterion;
 
-    dom = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[0])/(nwavefreq-1.0);
+    dom = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[0])/(nwavefreq-1);
+
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
     if (vm["steady"].template as<bool>())
     {
@@ -617,6 +648,7 @@ void WimDiscr<T>::timeStep()
 
                 if (std::cos(adv_dir) >= 0.)
                 {
+#pragma omp parallel for num_threads(max_threads) collapse(2)
                     for (int k = 0; k < nx; k++)
                     {
                         for (int l = 0; l < ny; l++)
@@ -641,10 +673,12 @@ void WimDiscr<T>::timeStep()
         std::fill( atten_dim.data(), atten_dim.data() + atten_dim.num_elements(), 0. );
         std::fill( damp_dim.data(), damp_dim.data() + damp_dim.num_elements(), 0. );
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
             {
+                value_type dave, c1d;
                 if ((ice_mask[i][j] == 1.) && (atten))
                 {
                     if (dfloe[i][j] <200.)
@@ -666,6 +700,7 @@ void WimDiscr<T>::timeStep()
 
 
         // copy for application of advAttenSimple
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -679,6 +714,7 @@ void WimDiscr<T>::timeStep()
             }
         }
 
+        //std::cout<<"applied advection starts\n";
         if (scatmod == "dissipated")
         {
             advAttenSimple(sdf3d_dir_temp, S_freq, taux_om, tauy_om, ag2d_eff_temp);
@@ -687,8 +723,10 @@ void WimDiscr<T>::timeStep()
         {
             advAttenIsotropic(sdf3d_dir_temp, S_freq, taux_om, tauy_om, ag2d_eff_temp);
         }
+        //std::cout<<"applied advection done\n";
 
         // update after application of advAttenSimple
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -714,6 +752,7 @@ void WimDiscr<T>::timeStep()
         // }
 
         // integrate stress densities over frequency
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -728,11 +767,13 @@ void WimDiscr<T>::timeStep()
             }
         }
 
-        // integrals for breaking program
+        // integrals for breaking program_options
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
             {
+                value_type adv_dir, F, kicel, om, tmp;
                 // convert from water amp's to ice amp's
                 F = disp_ratio[i][j][fq];
                 kicel = 2*PI/wlng_ice[i][j][fq];
@@ -758,7 +799,7 @@ void WimDiscr<T>::timeStep()
                 if (ice_mask[i][j] == 1.)
                 {
                     // strain conversion factor
-                    tmp = F*std::pow(kice,2.)*iceh[i][j]/2.0;
+                    tmp = F*std::pow(kicel,2.)*iceh[i][j]/2.0;
 
                     // strain density
                     tmp = wt_om[fq]*S_freq[i][j]*std::pow(tmp,2.);
@@ -768,8 +809,8 @@ void WimDiscr<T>::timeStep()
         }
     }
 
-    // _min = *std::min_element(mom0w.data(),mom0w.data() + mom0w.num_elements());
-    // _max = *std::max_element(mom0w.data(),mom0w.data() + mom0w.num_elements());
+    // value_type _min = *std::min_element(mom0w.data(),mom0w.data() + mom0w.num_elements());
+    // value_type _max = *std::max_element(mom0w.data(),mom0w.data() + mom0w.num_elements());
     // std::cout<<"Min f= " << _min <<"\n";
     // std::cout<<"Max f= " << _max <<"\n";
 
@@ -786,6 +827,7 @@ void WimDiscr<T>::timeStep()
         std::for_each(Hs.data(), Hs.data()+Hs.num_elements(), [&](value_type& f){ f = 4*std::sqrt(f); });
         // std::fill( Tp.data(), Tp.data() + Tp.num_elements(), 0. );
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -803,6 +845,7 @@ void WimDiscr<T>::timeStep()
         // std::fill( Tp.data(), Tp.data() + Tp.num_elements(), 0. );
         //std::fill( Hs.data(), Hs.data() + Hs.num_elements(), 0. );
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -814,9 +857,11 @@ void WimDiscr<T>::timeStep()
         }
     }
 
+    //std::cout<<"calculation starts\n";
     calcMWD();
+    //std::cout<<"calculation done\n";
 
-    if (!steady && !breaking)
+    if (!(steady) && !(breaking))
     {
         auto temparray = Hs;
         std::for_each(temparray.data(), temparray.data()+temparray.num_elements(), [&](value_type& f){ f *= f; });
@@ -829,10 +874,18 @@ void WimDiscr<T>::timeStep()
 
     // finally do floe breaking
 
+    //std::cout<<"max_threads= "<< max_threads <<"\n";
+
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
         {
+            value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
+            value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, /*dom,*/ dave, c1d, tmp;
+            int jcrest;
+            bool break_criterion;
+
             //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i][j]  <<"\n";
 
             if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
@@ -843,7 +896,7 @@ void WimDiscr<T>::timeStep()
                 // probability of critical strain
                 // being exceeded from Rayleigh distribution
                 Pstrain = std::exp( -std::pow(epsc,2.)/(2*var_strain[i][j]) );
-                P_crit = (1.-breaking)+std::exp(-1.0);
+                P_crit = std::exp(-1.0);
 
                 break_criterion = (Pstrain >= P_crit) && breaking;
 
@@ -888,9 +941,12 @@ void WimDiscr<T>::timeStep()
     //     for (int j = 0; j < ny; j++)
     //         std::cout<<"Hs["<< i << "," << j << "]= "<< Hs[i][j] <<"\n";
 
-    // std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
-    // std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
+    std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
+    std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
 
+    // std::cout<<"------------------------------------------------------\n";
+    // std::cout<<"dfloe_max= "<< *std::max_element(dfloe.data(), dfloe.data()+dfloe.num_elements()) <<"\n";
+    // std::cout<<"dfloe_min= "<< *std::min_element(dfloe.data(), dfloe.data()+dfloe.num_elements()) <<"\n";
 }
 
 template<typename T>
@@ -900,8 +956,15 @@ void WimDiscr<T>::run()
     int nt;
     bool critter;
 
+    std::cout<<"Running starts\n";
+
+    chrono.restart();
+
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+
     std::fill( sdf_dir.data(), sdf_dir.data() + sdf_dir.num_elements(), 0. );
 
+    //#pragma omp parallel for num_threads(max_threads) collapse(4)
     for (int i = 0; i < nwavefreq; i++)
     {
         for (int j = 0; j < nwavedirn; j++)
@@ -958,6 +1021,8 @@ void WimDiscr<T>::run()
 
         ++cpt;
     }
+
+    std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
 }
 
 template<typename T>
@@ -1005,6 +1070,8 @@ void WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_t
 	std::vector<value_type> wt_theta(nwavedirn);
 	value_type adv_dir, S_th, tmp, alp_dim, source;
 
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+
 	for (int k = 0; k < nwavedirn; k++)
     {
         adv_dir = -PI*(90.0+wavedir[k])/180.0;
@@ -1019,6 +1086,7 @@ void WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_t
         }
 
         // copy from 3D input array to 2D temporary array
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -1028,9 +1096,12 @@ void WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_t
         }
 
         // advection
+        //std::cout<<"--------weno started\n";
         waveAdvWeno(temp,uwave,vwave);
+        //std::cout<<"--------weno done\n";
 
         // copy from 2D temporary array to 3D input array
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -1039,7 +1110,6 @@ void WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_t
                 //std::cout<<"Sdir["<< i << "," << j << "]= "<< Sdir[i][j][k] <<"\n";
             }
         }
-
     }
 
     if (nwavedirn == 1)
@@ -1052,10 +1122,13 @@ void WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_t
     std::fill( taux_omega.data(), taux_omega.data() + taux_omega.num_elements(), 0. );
     std::fill( tauy_omega.data(), tauy_omega.data() + tauy_omega.num_elements(), 0. );
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
         {
+            value_type adv_dir, S_th, tmp, alp_dim, source;
+
             if (ice_mask[i][j] > 0.)
             {
                 for (int wnd = 0; wnd < nwavedirn; wnd++)
@@ -1077,7 +1150,22 @@ void WimDiscr<T>::advAttenSimple(array3_type& Sdir, array2_type& Sfreq, array2_t
                     //std::cout<<"tau_x["<< i << "," << j << "]= "<< atten_dim[i][j] <<"\n";
                 }
             }
+#if 0
+            // integrate spectrum over direction
+            for (int wnd = 0; wnd < nwavedirn; wnd++)
+            {
+                Sfreq[i][j] += wt_theta[wnd]*Sdir[i][j][wnd];
+            }
+            //std::cout<<"taux_om["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
+#endif
+        }
+    }
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
             // integrate spectrum over direction
             for (int wnd = 0; wnd < nwavedirn; wnd++)
             {
@@ -1345,9 +1433,12 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
     padVar(SCVX_array, scvx_pad);
     padVar(h, h_pad);
 
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+
     // prediction step
     weno3pdV2(h_pad, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad, sao);
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -1356,6 +1447,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
         }
     }
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -1390,6 +1482,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
     }
 #endif
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -1398,6 +1491,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
         }
     }
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -1428,11 +1522,17 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     else
         ymargin = 0;
 
-    // fluxes in x direction
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+
+    // fluxes in x directional
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = nbdx-1; i < nx+nbdx+2; i++)
     {
         for (int j = nbdy-ymargin; j < ny+nbdy+ymargin; j++)
         {
+            value_type q0, q1, a0, a1, q;
+            int im1, im2, ip1, jm1, jm2, jp1, ymargin;
+
             im1 = i-1;
 
             if (u[i][j] > 0.)
@@ -1469,10 +1569,14 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     // fluxes in y direction
     if (advdim == 2)
     {
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = nbdx-1; i < nx+nbdx+1; i++)
         {
             for (int j = nbdy-1; j < ny+nbdy+2; j++)
             {
+                value_type q0, q1, a0, a1, q;
+                int im1, im2, ip1, jm1, jm2, jp1, ymargin;
+
                 jm1 = j-1;
 
                 if (v[i][j] > 0.)
@@ -1500,6 +1604,7 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     }
 
     // update field with low order fluxes
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = nbdx-1; i < nx+nbdx+1; i++)
     {
         for (int j = nbdy-ymargin; j < ny+nbdy+ymargin; j++)
@@ -1518,6 +1623,7 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     q = 0.25/dt;
 
     // // obtain fluxes with limited high order correction fluxes
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = nbdx; i < nx+nbdx+1; i++)
     {
         for (int j = nbdy; j < ny+nbdy; j++)
@@ -1529,6 +1635,7 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     // obtain fluxes with limited high order correction fluxes
     if (advdim == 2)
     {
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = nbdx; i < nx+nbdx; i++)
         {
             for (int j = nbdy; j < ny+nbdy+1; j++)
@@ -1540,6 +1647,7 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
 
 #if 1
     // compute the spatial advective operator
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = nbdx; i < nx+nbdx; i++)
     {
         for (int j = nbdy; j < ny+nbdy; j++)
@@ -1563,7 +1671,9 @@ void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
 {
     upad.resize(boost::extents[nxext][nyext]);
 
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nxext; i++)
     {
         for (int j = 0; j < nyext; j++)
@@ -1649,13 +1759,14 @@ template<typename T>
 void WimDiscr<T>::calcMWD()
 {
     value_type adv_dir, wt_theta, om;
-
     array2_type cmom0,cmom_dir,CSfreq, cmom_dir0, CF;
     cmom0.resize(boost::extents[nx][ny]);
     cmom_dir.resize(boost::extents[nx][ny]);
     CSfreq.resize(boost::extents[nx][ny]);
     cmom_dir0.resize(boost::extents[nx][ny]);
     CF.resize(boost::extents[nx][ny]);
+
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
     if (nwavedirn == 1)
         wt_theta = 1.;
@@ -1677,6 +1788,7 @@ void WimDiscr<T>::calcMWD()
         {
             adv_dir = -PI*(90.0+wavedir[dn])/180.0;
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
             for (int i = 0; i < nx; i++)
             {
                 for (int j = 0; j < ny; j++)
@@ -1687,7 +1799,7 @@ void WimDiscr<T>::calcMWD()
             }
         }
 
-
+#pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
@@ -1705,6 +1817,7 @@ void WimDiscr<T>::calcMWD()
 
     std::fill( mwd.data(), mwd.data() + mwd.num_elements(), 0. );
 
+#pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
@@ -1786,7 +1899,8 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     if ( !fs::exists(path) )
         fs::create_directories(path);
 
-
+    // std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
+    // std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
 
     std::string timestpstr;
 
@@ -1807,31 +1921,31 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     {
         for (int i = 0; i < icec.shape()[0]; i++)
             for (int j = 0; j < icec.shape()[1]; j++)
-                out.write((char *)&icec[i][j], sizeof(int));
+                out.write((char *)&icec[i][j], sizeof(value_type));
 
         for (int i = 0; i < iceh.shape()[0]; i++)
             for (int j = 0; j < iceh.shape()[1]; j++)
-                out.write((char *)&iceh[i][j], sizeof(int));
+                out.write((char *)&iceh[i][j], sizeof(value_type));
 
         for (int i = 0; i < dfloe.shape()[0]; i++)
             for (int j = 0; j < dfloe.shape()[1]; j++)
-                out.write((char *)&dfloe[i][j], sizeof(int));
+                out.write((char *)&dfloe[i][j], sizeof(value_type));
 
         for (int i = 0; i < tau_x.shape()[0]; i++)
             for (int j = 0; j < tau_x.shape()[1]; j++)
-                out.write((char *)&tau_x[i][j], sizeof(int));
+                out.write((char *)&tau_x[i][j], sizeof(value_type));
 
         for (int i = 0; i < tau_y.shape()[0]; i++)
             for (int j = 0; j < tau_y.shape()[1]; j++)
-                out.write((char *)&tau_y[i][j], sizeof(int));
+                out.write((char *)&tau_y[i][j], sizeof(value_type));
 
         for (int i = 0; i < Hs.shape()[0]; i++)
             for (int j = 0; j < Hs.shape()[1]; j++)
-                out.write((char *)&Hs[i][j], sizeof(int));
+                out.write((char *)&Hs[i][j], sizeof(value_type));
 
         for (int i = 0; i < Tp.shape()[0]; i++)
             for (int j = 0; j < Tp.shape()[1]; j++)
-                out.write((char *)&Tp[i][j], sizeof(int));
+                out.write((char *)&Tp[i][j], sizeof(value_type));
 
         out.close();
     }
@@ -1881,6 +1995,6 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
 template class WimDiscr<float>;
 
 // instantiate wim class for type double
-//template class WimDiscr<double>;
+template class WimDiscr<double>;
 
 } // namespace WIM2D
