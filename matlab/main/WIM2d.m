@@ -678,224 +678,38 @@ if (params_in.SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
 end
 
 if params_in.DO_DISP; disp('BEGINNING MAIN INTEGRATION...'); end
+
+%% =========================================================================
+%% Different versions of mex functions
 if params_in.MEX_OPT==1
 
-   if params_in.DO_DISP; disp(' ');
-   disp('*****************************************************************');
-   disp('Running fortran code with mex function: run_WIM2d_io_mex_v2');
-   disp('*****************************************************************');
-   disp(' '); end
-
-   % real parameters
-   real_prams  = [ice_prams.young,...
-                  ice_prams.visc_rp,...
-                  duration,...
-                  params_in.CFL];
-
-   % integer parameters
-   int_prams   = [params_in.SCATMOD,...
-                  params_in.ADV_DIM,...
-                  params_in.ADV_OPT,...
-                  params_in.DO_CHECK_FINAL,...
-                  params_in.DO_CHECK_PROG,...
-                  params_in.DO_CHECK_INIT,...
-                  params_in.DO_BREAKING,...
-                  params_in.STEADY,...
-                  params_in.DO_ATTEN];
-
-   in_arrays         = zeros(gridprams.nx,gridprams.ny,6);
-   in_arrays(:,:,1)  = ice_fields.cice;
-   in_arrays(:,:,2)  = ice_fields.hice;
-   in_arrays(:,:,3)  = out_fields.Dmax;
-   in_arrays(:,:,4)  = wave_fields.Hs;
-   in_arrays(:,:,5)  = wave_fields.Tp;
-   in_arrays(:,:,6)  = wave_fields.mwd;
-   %[min(ice_fields.cice(:)),max(ice_fields.cice(:))]
-   %[min(ice_fields.hice(:)),max(ice_fields.hice(:))]
-   %[min(out_fields.Dmax(:)),max(out_fields.Dmax(:))]
-   %[min(wave_fields.Hs(:)) ,max(wave_fields.Hs(:)) ]
-   %[min(wave_fields.Tp(:)) ,max(wave_fields.Tp(:)) ]
-   %[min(wave_fields.mwd(:)),max(wave_fields.mwd(:))]
-   %pause
-
-   %% make the call!
-   tic;
-   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),int_prams,real_prams);
-   toc;
-
-   %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
-   Nout        = length(fldnames);
-   out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
-   for j=1:Nout
-      out_fields.(fldnames{j})   = out_arrays(:,:,j);
-   end
-
-   % delete annoying file
-   !rm -f fort.6
+   params_mex  = get_params_mex(params_in,duration,ice_prams);
+   out_fields  = WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields);
 
 elseif params_in.MEX_OPT==2
 
-   if params_in.DO_DISP; disp(' ');
-   disp('*****************************************************************');
-   disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
-   disp('*****************************************************************');
-   disp(' '); end
-
-   % real parameters
-   real_prams  = [ice_prams.young,...
-                  ice_prams.visc_rp,...
-                  duration,...
-                  params_in.CFL];
-
-   % integer parameters
-   int_prams   = [params_in.SCATMOD,...
-                  params_in.ADV_DIM,...
-                  params_in.ADV_OPT,...
-                  params_in.DO_CHECK_FINAL,...
-                  params_in.DO_CHECK_PROG,...
-                  params_in.DO_CHECK_INIT,...
-                  params_in.DO_BREAKING,...
-                  params_in.STEADY,...
-                  params_in.DO_ATTEN];
-
-   in_arrays         = zeros(gridprams.nx,gridprams.ny,3);
-   in_arrays(:,:,1)  = ice_fields.cice;
-   in_arrays(:,:,2)  = ice_fields.hice;
-   in_arrays(:,:,3)  = out_fields.Dmax;
-
-   % defined in case only one period or dirn
-   T_init   = 1/max(wave_stuff.freq)
-   dir_init = max(wave_stuff.dirs)
-
-   %% make the call!
-   tic;
-   [wave_stuff.dir_spec,out_arrays] = WIM2d_run_io_mex_vSdir(...
-      wave_stuff.dir_spec(:),in_arrays(:),int_prams,real_prams,T_init,dir_init);
-   wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,gridprams.nx,gridprams.ny,wave_stuff.ndir,wave_stuff.nfreq);
-   toc;
-
-   %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
-   Nout        = length(fldnames);
-   out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
-   for j=1:Nout
-      out_fields.(fldnames{j})   = out_arrays(:,:,j);
-   end
-  
-   % delete annoying file
-   !rm -f fort.6
+   params_mex  = get_params_mex(params_in,duration,ice_prams);
+   %%
+   [out_fields,wave_stuff ]   =...
+      WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
+                  wave_stuff);
 
 elseif params_in.MEX_OPT==3
 
-   if params_in.DO_DISP; disp(' ');
-   disp('*****************************************************************');
-   disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir_mesh');
-   disp('*****************************************************************');
-   disp(' '); end
+   params_mex  = get_params_mex(params_in,duration,ice_prams);
+   %%
+   [out_fields,wave_stuff,mesh_e]   =...
+      WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
+                  wave_stuff,mesh_e);
 
-   % real parameters
-   real_prams  = [ice_prams.young,...
-                  ice_prams.visc_rp,...
-                  duration,...
-                  params_in.CFL];
-
-   % integer parameters
-   int_prams   = [params_in.SCATMOD,...
-                  params_in.ADV_DIM,...
-                  params_in.ADV_OPT,...
-                  params_in.DO_CHECK_FINAL,...
-                  params_in.DO_CHECK_PROG,...
-                  params_in.DO_CHECK_INIT,...
-                  params_in.DO_BREAKING,...
-                  params_in.STEADY,...
-                  params_in.DO_ATTEN];
-
-   in_arrays         = zeros(gridprams.nx,gridprams.ny,3);
-   in_arrays(:,:,1)  = ice_fields.cice;
-   in_arrays(:,:,2)  = ice_fields.hice;
-   in_arrays(:,:,3)  = out_fields.Dmax;
-
-   % defined in case only one period or dirn
-   T_init   = 1/max(wave_stuff.freq)
-   dir_init = max(wave_stuff.dirs)
-
-   if 1
-      %%test mesh inputs:
-      xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
-      nmesh_e     = length(xm0);
-      nmesh_vars  = 6;
-      mesh_e      = zeros(nmesh_e,nmesh_vars);
-      mesh_e(:,1) = xm0.';
-      if gridprams.ny==1
-         nmy   = 1;
-      else
-         nmy   = ceil(gridprams.ny/2);
-      end
-      mesh_e(:,2) = gridprams.Y(1,nmy);
-
-      Nfloes      = 0*ice_fields.Dmax(:,nmy);
-      jp          = find(ice_fields.Dmax(:,nmy)>0);
-      Nfloes(jp)  = ice_fields.cice(jp,nmy)./ice_fields.Dmax(jp,nmy).^2;
-      PP          = {ice_fields.cice(:,nmy),ice_fields.hice(:,nmy),...
-                        Nfloes,0*ice_fields.Dmax(:,nmy)};
-      for j=1:4
-         mesh_e(:,j+2)  = avg(PP{j});
-         if 1
-            subplot(2,2,j);
-            plot(xm0/1e3,mesh_e(:,j+2));
-            hold on;
-            plot(gridprams.X(:,1)/1e3,PP{j},'--g');
-         end
-      end
-      clear PP jp;
-   end
-
-   %% make the call!
-   tic;
-   [wave_stuff.dir_spec,out_arrays,mesh_out] = WIM2d_run_io_mex_vSdir_mesh(...
-      wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
-      int_prams,real_prams,T_init,dir_init,nmesh_e);
-   wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,gridprams.nx,gridprams.ny,wave_stuff.ndir,wave_stuff.nfreq);
-   toc;
-
-   %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
-   Nout        = length(fldnames);
-   out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
-   for j=1:Nout
-      out_fields.(fldnames{j})   = out_arrays(:,:,j);
-   end
-  
-   % delete annoying file
-   !rm -f fort.6
-
-   mesh_out = reshape(mesh_out,[nmesh_e,nmesh_vars]);
-   if 0
-      %look at Nfloes where ice is
-      mesh_out(mesh_out(:,5)>0,5)
-   elseif 0
-      %%look at where breaking occurred, next to thickness
-      %% (proxy for original thickness)
-      mesh_out(:,[4,6])
-   elseif 0
-      %%look at difference between 1st 4 col's (should be ~0)
-      mesh_out(:,1:4)-mesh_e(:,1:4)
-   elseif 0
-      figure(101);
-      Nfloes_mesh    = mesh_out(:,5);
-      Dmax_mesh      = 0*mesh_out(:,5);
-      jp             = find(Nfloes_mesh>0);
-      Dmax_mesh(jp)  = sqrt(mesh_out(jp,3)./Nfloes_mesh(jp));
-      plot(xm0/1e3,Dmax_mesh);
-      hold on;
-      plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
-      fn_fullscreen;
-   end
-   error('HEY!!')
-
+%% end of options for mex functions
+%% =========================================================================
 
 else
+
+%% =========================================================================
+%% do time-stepping in matlab
+
    if params_in.DO_DISP; disp('Running pure matlab code'); end
    if COMP_F==1
       %% load prog binaries and compare saved wim_prog*.[ab] files
@@ -1143,19 +957,19 @@ else
       end%% end spectral loop;
       %mom0,mom2,wlng_ice,return
 
-      %%calc Hs, Tw (into wave_fields.Tp)
+      %%calc Hs, Tw (into out_fields.Tp)
       if params_in.REF_Hs_ICE==1
          %% diagnostic variables Hs/Tp related to ice displacment in ice-covered areas
-         wave_fields.Hs       = 4*sqrt(mom0);%%diagnostic variable - for waves in water
-         wave_fields.Tp       = 0*gridprams.X;
+         out_fields.Hs       = 4*sqrt(mom0);%%diagnostic variable - for waves in water
+         out_fields.Tp       = 0*gridprams.X;
          jnz                  = find(mom2>0);
-         wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
+         out_fields.Tp(jnz)  = 2*pi*sqrt(mom0(jnz)./mom2(jnz));
       else
          %% diagnostic variables Hs/Tp related to water displacment in ice-covered areas
-         wave_fields.Hs       = 4*sqrt(mom0w);%%diagnostic variable - for waves in water
-         wave_fields.Tp       = 0*gridprams.X;
+         out_fields.Hs       = 4*sqrt(mom0w);%%diagnostic variable - for waves in water
+         out_fields.Tp       = 0*gridprams.X;
          jnz                  = find(mom2w>0);
-         wave_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
+         out_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
       end
 
       %% wave stresses
@@ -1185,7 +999,7 @@ else
             if BREAK_CRIT
                %% use crest period to work out wavelength
                %% - half this is max poss floe length;
-               T_crit   = wave_fields.Tp(i,j);
+               T_crit   = out_fields.Tp(i,j);
                if 0
                   %%get wavelength directly
                   wlng_crest  = ...
@@ -1247,8 +1061,11 @@ else
       end%% end spatial loop j in y;
       end%% end spatial loop i in x;
 
+%% end of time stepping in matlab
+%% =========================================================================
 
-      % ==================================================================================
+%% ==================================================================================
+%% extra task when coupling to neXtSIM:
       if INTERP_MESH==1
          %% FOR neXtSIM COUPLING
          %% - DO FLOE BREAKING ON MESH
@@ -1300,10 +1117,15 @@ else
             DrngM = [min(Dmesh),max(Dmesh(Dmesh<300)),max(Dmesh)]
          end
       end%% INTERP_MESH==1
-      % ==================================================================================
+
+%% end of work for coupling to neXtSIM
+%% ==================================================================================
 
 
-      jmiz              = find((out_fields.Dmax>0)&(out_fields.Dmax<250));
+%% ==================================================================================
+%% print info, plotting...
+
+      jmiz  = find((out_fields.Dmax>0)&(out_fields.Dmax<250));
       % {jmiz}
 
       %% progress report;
@@ -1334,9 +1156,9 @@ else
                   s1 = struct('dir',wave_stuff.dirs(jdir),...
                               'period',Tc,...
                               'Sdir',wave_stuff.dir_spec(:,:,jdir,jchq));
-                  fn_plot_spec(gridprams.X,gridprams.Y,wave_fields.Hs,wave_fields.Tp,out_fields.Dmax,s1);
+                  fn_plot_spec(gridprams.X,gridprams.Y,out_fields.Hs,out_fields.Tp,out_fields.Dmax,s1);
                else
-                  fn_plot_spec_2(gridprams.X,gridprams.Y,wave_fields.Hs,out_fields.tau_x,...
+                  fn_plot_spec_2(gridprams.X,gridprams.Y,out_fields.Hs,out_fields.tau_x,...
                      out_fields.Dmax,out_fields.tau_y);
                end
 
@@ -1363,13 +1185,13 @@ else
                %   x_ = [min(gridprams.X(:)),x0,x0,x1,x1,max(gridprams.X(:))]/1e3;
                %   y_ = [0,0,yc*[1,1],0,0];
                %   plot(x_,y_,'k');
-               %   plot(gridprams.X(:,1)/1e3,wave_fields.Hs(:,1)*yc,'--k');
+               %   plot(gridprams.X(:,1)/1e3,out_fields.Hs(:,1)*yc,'--k');
                %   hold off;
                %   %%
                %   subplot(2,2,2);
                %   hold on;
                %   plot(x_,y_,'k');
-               %   plot(gridprams.X(:,1)/1e3,wave_fields.Hs(:,1)*yc,'--k');
+               %   plot(gridprams.X(:,1)/1e3,out_fields.Hs(:,1)*yc,'--k');
                %   hold off;
                %end
             else
@@ -1378,11 +1200,12 @@ else
                if 1
                   figure(4);
                   %% check symmetry
-                  [hmax,imax] = max(wave_fields.Hs(:,1));
-                  hp          = wave_fields.Hs(imax,:);
+                  [hmax,imax] = max(out_fields.Hs(:,1));
+                  hp          = out_fields.Hs(imax,:);
                   yp          = gridprams.Y(imax,:);
                   plot(yp/1e3,hp);
-                  ttl   = title(['max h = ',num2str(max(wave_fields.Hs(:))),'; x = ',num2str(gridprams.X(imax,1)/1.0e3),'km']);
+                  ttl   = title(['max h = ',num2str(max(out_fields.Hs(:))),...
+                                 '; x = ',num2str(gridprams.X(imax,1)/1.0e3),'km']);
                   GEN_font(ttl);
                   GEN_proc_fig('y, km','H_s, m')
 
@@ -1404,8 +1227,8 @@ else
                   subplot(4,1,1);
                   hold on;
                   %%
-                  %fn_plot1d(gridprams.X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
-                  fn_plot1d(gridprams.X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+                  %fn_plot1d(gridprams.X(:,1)/1e3,out_fields.Hs(:,1),labs1d_1,cols{loop_col});
+                  fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
                   hold on;
                   %%
                   [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,wave_stuff.dir_spec);
@@ -1502,8 +1325,8 @@ else
          pairs{end+1}   = {'Dmax' ,out_fields.Dmax};
          pairs{end+1}   = {'tau_x',out_fields.tau_x};
          pairs{end+1}   = {'tau_y',out_fields.tau_y};
-         pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
-         pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
+         pairs{end+1}   = {'Hs'   ,out_fields.Hs};
+         pairs{end+1}   = {'Tp'   ,out_fields.Tp};
          %if ~params_in.DO_BREAKING
          % TW: keep out_fields and binary files for arrays
          % pairs{end+1}   = {'break_max',out_fields.break_max};
@@ -1512,13 +1335,12 @@ else
          fn_save_binary(Froot,Bdims,n*dt,pairs);
       end
 
+%% end of time step
+%% ==================================================================================
+
    end%% end time loop
 end%%params_in.MEX_OPT==0 option
 
-%% final outputs
-%% - Dmax,tau_x,tau_y are already there
-out_fields.Hs     = wave_fields.Hs;
-out_fields.Tp     = wave_fields.Tp;
 
 if (params_in.SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    %% save matlab files as binaries
@@ -1530,8 +1352,8 @@ if (params_in.SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    pairs{end+1}   = {'Dmax' ,out_fields.Dmax};
    pairs{end+1}   = {'tau_x',out_fields.tau_x};
    pairs{end+1}   = {'tau_y',out_fields.tau_y};
-   pairs{end+1}   = {'Hs'   ,wave_fields.Hs};
-   pairs{end+1}   = {'Tp'   ,wave_fields.Tp};
+   pairs{end+1}   = {'Hs'   ,out_fields.Hs};
+   pairs{end+1}   = {'Tp'   ,out_fields.Tp};
    %if ~params_in.DO_BREAKING
    % pairs{end+1}   = {'break_max',out_fields.break_max}; 
    %end
@@ -1588,7 +1410,7 @@ if params_in.SV_SPEC
    %% save final directional spectrum
    freq_vec = om_vec/2/pi;
    S_inc    = wave_stuff.dir_spec;
-   Hs       = wave_fields.Hs;
+   Hs       = out_fields.Hs;
    wavdir   = wave_stuff.dirs;
    cice     = ice_fields.cice;
    save([params_in.outdir,'Sdir.mat'],'Sdir','wavdir','freq_vec','gridprams','S_inc','cice','Hs');
@@ -1610,7 +1432,7 @@ if TEST_FINAL_SPEC==1
          if params_in.DO_DISP; disp(' ');
          disp(['comparing field: ',vbl]); end
          v1    = wf.(vbl);
-         v2    = wave_fields.(vbl);
+         v2    = out_fields.(vbl);
          diff  = abs(v2-v1);
          if params_in.DO_DISP; disp(['max diff: ',num2str(max(diff(:)))]);
          disp(' '); end
@@ -1618,8 +1440,8 @@ if TEST_FINAL_SPEC==1
    elseif params_in.MEX_OPT>0
       if params_in.DO_DISP; disp('(Check outputs vs values in binary files)'); end
       of2         = fn_check_final(outdir);%%set in infile_dirs.txt
-      of1.Hs      = wave_fields.Hs;
-      of1.Tp      = wave_fields.Tp;
+      of1.Hs      = out_fields.Hs;
+      of1.Tp      = out_fields.Tp;
       of1.tau_x   = out_fields.tau_x;
       of1.tau_y   = out_fields.tau_y;
       of1.Dmax    = out_fields.Dmax;
@@ -1647,9 +1469,9 @@ if params_in.PLOT_FINAL%%check exponential attenuation
       s1 = struct('dir',wave_stuff.dirs(jdir),...
                   'period',Tc,...
                   'Sdir',wave_stuff.dir_spec(:,:,jdir,jchq));
-      fn_plot_spec(gridprams.X,gridprams.Y,wave_fields.Hs,wave_fields.Tp,out_fields.Dmax,s1);
+      fn_plot_spec(gridprams.X,gridprams.Y,out_fields.Hs,out_fields.Tp,out_fields.Dmax,s1);
    else
-      fn_plot_spec_2(gridprams.X,gridprams.Y,wave_fields.Hs,out_fields.tau_x,...
+      fn_plot_spec_2(gridprams.X,gridprams.Y,out_fields.Hs,out_fields.tau_x,...
          out_fields.Dmax,out_fields.tau_y);
    end
    %%
@@ -1660,7 +1482,7 @@ if params_in.PLOT_FINAL%%check exponential attenuation
       xx = gridprams.X(:,1);
       if 0
          vbl   = 'Hs';
-         Vbl   = wave_fields.(vbl);
+         Vbl   = out_fields.(vbl);
       else
          vbl   = 'tau_x';
          Vbl   = ice_fields.(vbl);
@@ -1789,8 +1611,8 @@ if params_in.PLOT_FINAL%%check exponential attenuation
 
       fcols    = cols;
       fcols{1} = '-r';
-      %fn_plot1d(gridprams.X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{1});
-      fn_plot1d(gridprams.X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,fcols{1});
+      %fn_plot1d(gridprams.X(:,1)/1e3,out_fields.Hs(:,1),labs1d_1,cols{1});
+      fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,fcols{1});
       leg_text{end+1}   = 'Total';
       hold on;
       %%
@@ -1948,5 +1770,43 @@ for j=1:4
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function y=avg(x)
-y=.5*(x(1:end-1)+x(2:end));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params_mex  = get_params_mex(params,duration,ice_prams)
+%%           SCATMOD: 1
+%%           ADV_DIM: 2
+%%           ADV_OPT: 2
+%%     DO_CHECK_INIT: 1
+%%     DO_CHECK_PROG: 1
+%%    DO_CHECK_FINAL: 1
+%%       DO_BREAKING: 0
+%%            STEADY: 1
+%%          DO_ATTEN: 1
+%%               CFL: 0.7000
+%%          duration: 7200
+%%         ice_prams: structure (young,visc_rp)
+
+
+%% set some things manually
+params_mex.duration  = duration;
+params_mex.ice_prams = ice_prams;
+
+%% set rest automatically
+fields   = {'MEX_OPT',...
+            'SCATMOD',...
+            'ADV_DIM',...
+            'ADV_OPT',...
+            'DO_CHECK_INIT',...
+            'DO_CHECK_PROG',...
+            'DO_CHECK_FINAL',...
+            'DO_BREAKING',...
+            'STEADY',...
+            'DO_ATTEN',...
+            'CFL',...
+            'DO_DISP'};
+
+for j=1:length(fields)
+   fld   = fields{j};
+   params_mex.(fld)  = params.(fld);
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
