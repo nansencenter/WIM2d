@@ -22,18 +22,15 @@ function [out_fields,wave_stuff,mesh_e] =...
 %% Inputs:
 %%
 %% params_in = structure eg:
-%%           SCATMOD: 1
-%%           ADV_DIM: 2
-%%           ADV_OPT: 2
-%%     DO_CHECK_INIT: 1
-%%     DO_CHECK_PROG: 1
-%%    DO_CHECK_FINAL: 1
-%%       DO_BREAKING: 0
-%%            STEADY: 1
-%%          DO_ATTEN: 1
-%%               CFL: 0.7000
-%%          duration: 7200
-%%         ice_prams: structure (young,visc_rp)
+%%           int_prams: 9x1 vector
+%%          real_prams: 4x1 vector
+%%             MEX_OPT: 3
+%%              DODISP: 1
+%%
+%% gridprams = structure eg:
+%%      cice: [51x51 double]
+%%      hice: [51x51 double]
+%%      Dmax: [51x51 double]
 %%
 %%
 %% ice_fields  = structure eg:
@@ -67,7 +64,6 @@ function [out_fields,wave_stuff,mesh_e] =...
 %%          c: [760x1 double]
 %%          h: [760x1 double]
 %%     Nfloes: [760x1 double]
-%% DAMAGE_OPT: 1
 %% ============================================================
 
 % %%check params_in has the needed fields
@@ -80,28 +76,6 @@ end
 if ~exist('wave_stuff','var')
    wave_stuff  = [];
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% common input parameters
-
-% real parameters
-real_prams  = [params_in.ice_prams.young,...
-               params_in.ice_prams.visc_rp,...
-               params_in.duration,...
-               params_in.CFL];
-
-% integer parameters
-int_prams   = [params_in.SCATMOD,...
-               params_in.ADV_DIM,...
-               params_in.ADV_OPT,...
-               params_in.DO_CHECK_FINAL,...
-               params_in.DO_CHECK_PROG,...
-               params_in.DO_CHECK_INIT,...
-               params_in.DO_BREAKING,...
-               params_in.STEADY,...
-               params_in.DO_ATTEN];
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 if params_in.MEX_OPT==1
 
@@ -128,7 +102,8 @@ if params_in.MEX_OPT==1
 
    %% make the call!
    tic;
-   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),int_prams,real_prams);
+   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),...
+                  params_in.int_prams,params_in.real_prams);
    toc;
 
    %% extract outputs
@@ -168,7 +143,7 @@ elseif params_in.MEX_OPT==2
    [wave_stuff.dir_spec,out_arrays] =...
       WIM2d_run_io_mex_vSdir(...
          wave_stuff.dir_spec(:),in_arrays(:),...
-         int_prams,real_prams,T_init,dir_init);
+         params_in.int_prams,params_in.real_prams,T_init,dir_init);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
@@ -240,7 +215,7 @@ elseif params_in.MEX_OPT==3
    [wave_stuff.dir_spec,out_arrays,mesh_out] =...
       WIM2d_run_io_mex_vSdir_mesh(...
          wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
-         int_prams,real_prams,T_init,dir_init,nmesh_e);
+         params_in.int_prams,params_in.real_prams,T_init,dir_init,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
