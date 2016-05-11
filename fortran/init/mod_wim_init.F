@@ -10,7 +10,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wavecons_ideal()
 
-      use mod_common_wim
+      !use mod_common_wim
 
       implicit none
 
@@ -58,8 +58,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine waves_init_freq()
-
-      use mod_common_wim
 
       implicit none
 
@@ -122,8 +120,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine waves_init_dir()
 
-      use mod_common_wim
-
       implicit none
 
       integer  :: wth
@@ -184,8 +180,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine set_inc_waves()
-
-      use mod_common_wim
 
       implicit none
 
@@ -261,9 +255,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine icecons_ideal()
-
-      use mod_common_wim
-      use mod_gridinfo
 
       implicit none
 

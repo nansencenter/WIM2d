@@ -19,6 +19,7 @@
       !! set number of wave directions and frequencies in wave_info.h
       !! - n_wavdir,n_wave_freq (should be odd - Simpson's rule)
       include "wave_info.h"
+
       real,dimension(n_wave_freq)   :: freq_vec !set in waves_init
       real,dimension(n_wavdir)      :: wavdir   !set in waves_init
 
