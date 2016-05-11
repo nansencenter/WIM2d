@@ -24,7 +24,7 @@ C
       mwpointer mxCreateDoubleMatrix, mxGetPr
       integer nlhs, nrhs, mxIsNumeric
       mwsize mxGetM, mxGetN
-      integer*4   :: mexPrintf,k,j,nmeshi
+      integer*4   :: mexPrintf,j,k,nmeshi
 
 C-----INPUTS------------------------------------------------------------
       !!pointers to inputs
@@ -81,19 +81,37 @@ C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
       logical           :: critter
-      logical,parameter :: PRINT_INFO = .true.
+      logical,parameter :: PRINT_INFO = .false.
       character(len=12) :: cj,cm,cn,cm0,cn0,cdum
       character(len=80) :: msg
 
 
       ! =================================================
 C     Check for proper number of arguments.
-      if(nrhs .ne. Nin) then
+      if(nrhs.ne.Nin) then
+
          write(cdum,'(i2.2)') Nin
-         call mexErrMsgTxt(trim(cdum)//' inputs required.')
-      elseif(nlhs .ne. Nout) then
+         msg  = trim(cdum)//' inputs required.\n'
+         k     = mexPrintf(trim(msg))
+         !!
+         write(cdum,'(i2.2)') nrhs
+         msg   = trim(cdum)//' inputs given.\n'
+         k     = mexPrintf(trim(msg))
+         !!
+         call mexErrMsgTxt('Number of inputs')
+
+      elseif(nlhs.ne.Nout) then
+
          write(cdum,'(i2.2)') Nout
-         call mexErrMsgTxt(trim(cdum)//' outputs required.')
+         msg  = trim(cdum)//' outputs required.\n'
+         k     = mexPrintf(trim(msg))
+         !!
+         write(cdum,'(i2.2)') nlhs
+         msg   = trim(cdum)//' outputs requested.\n'
+         k     = mexPrintf(trim(msg))
+         !!
+         call mexErrMsgTxt('Number of outputs')
+
       endif
       ! =================================================
 
@@ -104,6 +122,8 @@ C     Check for proper number of arguments.
       nmesh = mxGetM(prhs(3)) !mwsize (integer*8)
       allocate(xmesh(nmesh))
       nmeshi   = int(nmesh)   !integer*4
+
+      !call write_status()
 
       ! =================================================
       ! expected sizes of inputs:
@@ -127,21 +147,35 @@ C     Check for proper number of arguments.
 
       size_vec_in_0  = mvec_in_0*nvec_in_0
       do j=1,Nin
+
+         !test if input is numeric
+         if(mxIsNumeric(prhs(j)) .eq. 0) then
+            k  = mexPrintf('Input '//cj//' not numeric.')
+            call mexErrMsgTxt('Input '//cj//' not numeric.')
+         endif
+
          !! get actual input sizes
          mvec_in(j)     = mxGetM(prhs(j))
          nvec_in(j)     = mxGetN(prhs(j))
          size_vec_in(j) = mvec_in(j)*nvec_in(j)
 
          !! for error printout (if there is one)
-         write(cj,'(i1.1)')   j
-         write(cm0,'(i4.4)')  mvec_in_0(j)
-         write(cn0,'(i4.4)')  nvec_in_0(j)
-         write(cm,'(i12.12)') mvec_in(j)
-         write(cn,'(i4.4)')   nvec_in(j)
+         write(cj,'(i1.1)')      j
+         write(cm0,'(i12.12)')   mvec_in_0(j) !expected M
+         write(cn0,'(i4.4)')     nvec_in_0(j) !expected N
+         write(cm,'(i12.12)')    mvec_in(j)   !given M
+         write(cn,'(i4.4)')      nvec_in(j)   !given N
+
+!        msg   = trim(cj) //' | '//                                     &
+!    &           trim(cm0)//' | '//                                     &
+!    &           trim(cn0)//' | '//                                     &
+!    &           trim(cm) //' | '//                                     &
+!    &           trim(cn) //'\n'
+!        k  = mexPrintf(trim(msg)//'\n')
 
          !! test sizes
-         critter  = (    (mvec_in(j).ne.mvec_in_0(j))                   &
-     &               .or.(nvec_in(j).ne.nvec_in_0(j))    )
+         critter  = (    (int(mvec_in(j)).ne.mvec_in_0(j))              &
+     &               .or.(int(nvec_in(j)).ne.nvec_in_0(j))    )
 
          if (critter) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
@@ -151,10 +185,6 @@ C     Check for proper number of arguments.
             call mexErrMsgTxt('Wrong dimensions for input '//cj)
          endif
 
-         !test if input is numeric
-         if(mxIsNumeric(prhs(j)) .eq. 0) then
-            call mexErrMsgTxt('Input '//cj//' must be a numeric array.')
-         endif
       end do
 
       if (PRINT_INFO) then
@@ -222,7 +252,7 @@ C     Create matrices for the return arguments.
       if (PRINT_INFO) then
          k  = mexPrintf('Initialised output arrays...\n')
          k  = mexPrintf('Have pointers, about to do computations...\n')
-         k  = mexPrintf('Entering mex_io_gate_vSdir...\n')
+         k  = mexPrintf('Entering mex_io_gate_vSdir_mesh...\n')
       end if
 
       call mex_io_gate_vSdir_mesh(y4d,y3d,ymesh                         &

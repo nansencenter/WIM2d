@@ -164,7 +164,7 @@ $(MEX2):		grid_info.h $(OBJ_MAIN)
 $(MEX3):		grid_info.h wave_info.h	$(OBJ_MAIN)
 $(MEX4):		grid_info.h wave_info.h	$(OBJ_MAIN)
 
-.PHONY: clean vclean mex1 mex2
+.PHONY: clean vclean mex2 mex3 mex4
 
 # clean: keep executable, but delete modules and objects
 clean:
