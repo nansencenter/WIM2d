@@ -39,4 +39,4 @@ cmd   = ['!',op,' *','test',num2str(test_i),'*.png ',odir];
 eval(cmd);
 
 %% move profile results
-eval(['!mv *profile_results ',odir,'/profile_results']);
+eval(['!mv *profile_results ',outdir,'/profile_results']);

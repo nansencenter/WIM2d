@@ -68,10 +68,10 @@ if 1
       %add waves
       simul_in.wim.use_wim          = 1;
       simul_in.wim.MEX_OPT          = 1;
-      simul_in.wim.test_and_exit    = 0;
       simul_in.wim.DAMAGE_OPT       = 1;
       simul_in.wim.wim_break_damage = .99;
       simul_in.wim.coupling_option  = 1;
+      simul_in.wim.test_and_exit    = 0;
 
       if strfind(simul_in.domain,'wim_grid')
          simul_in.wim.init_waves = 1;
@@ -108,12 +108,19 @@ if 1
       end
    end
    save(saved_simul_in,'simul_in');
+   test_and_exit  = simul_in.wim.test_and_exit;
    clear simul_in;
 end
 
 
 % --------------
 % 3. run the simulation
+
+if test_and_exit==1
+   neXtSIM(saved_simul_in,1)
+   return;
+end
+
 profile on
 neXtSIM(saved_simul_in,1)
 profile off
@@ -121,7 +128,7 @@ profsave(profile('info'),['test_',num2str(test_i),'_profile_results'])
 
 % --------------
 % 4. Plots of the scalar variables
-load(saved_simul_in)
+load(saved_simul_in);
 meshfile = getfield(simul_in,'meshfile');
 domain   = getfield(simul_in,'domain');
 

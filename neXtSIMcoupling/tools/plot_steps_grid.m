@@ -13,7 +13,7 @@ if ~exist('rootdir','var');
    rootdir  = [rootdir,'/Model-Results/neXtSIM/Oban-test16/run',num2str(run_no)];
 end
 OVER_WRITE  = 0;
-DO_RM       = 0;%don't leave files in working folder after plotting
+DO_RM       = 1;%don't leave files in working folder after plotting
 
 outdir   = [rootdir,'/simul_out_steps_mat']
 figdir   = [rootdir,'/figs'];
@@ -46,15 +46,14 @@ eval(cmd);
 
 %% shorten list of var's
 %% check simul_in to see if waves are present
-'ho'
 simul_in = load(saved_simul_in);
 simul_in = simul_in.simul_in;
 if ~isfield(simul_in,'wim')
-   'hey'
+   disp('Nothing to plot\n');
    return;
 else
    if simul_in.wim.use_wim==0
-      'hay'
+      disp('Nothing to plot\n');
       return;
    end
 end
@@ -63,7 +62,7 @@ clear simul_in;
 jkeep    = 1:8;
 if 1
    %%shorten:
-   jkeep = [1,2,4];
+   jkeep = 1:4;
 end
 vbls  = vbls (jkeep);
 cmaps = cmaps(jkeep);
