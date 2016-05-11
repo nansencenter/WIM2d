@@ -1,6 +1,6 @@
 # int_prams - all fortran format '(i2.2)'
-01  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
-01  # ADV_DIM        : dimension of advection scheme (1/2)
+00  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
+02  # ADV_DIM        : dimension of advection scheme (1/2)
 02  # ADV_OPT        : 0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
 01  # DO_BREAKING    : 1/0, do/don't break ice
 01  # STEADY         : 1/0, do/don't top-up incident waves each time-step
@@ -11,5 +11,6 @@
 
 # real_prams:
 0.549E+10   # Young's modulus (Pa)                             - fortran format '(e10.3)'
-0.00       # Robinson-Palmer viscosity parameter (Pa/(m/s))   - fortran format '(f5.2)'
+13.00       # Robinson-Palmer viscosity parameter (Pa/(m/s))   - fortran format '(f5.2)'
 21600.00    # duration of simulation (seconds)                 - fortran format '(f7.2)'
+0.7         # CFL number                                       - fortran format '(f7.2)'

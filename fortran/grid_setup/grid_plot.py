@@ -6,7 +6,7 @@ import fns_get_data as Fdat
 import fns_plot_data as Fplt
 
 if 1:
-   gdir  = '../run/Inputs/'
+   gdir  = '../run/inputs/'
 else:
    gdir  = 'test/out/'
 

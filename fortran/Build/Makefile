@@ -85,8 +85,8 @@ OBJS		:=      \
 			$(ODIR)/mod_interp.o \
 			$(ODIR)/mod_file_utils.o \
                         $(ODIR)/mod_gridinfo.o \
-			$(ODIR)/mod_wim_init.o \
 			$(ODIR)/mod_common_wim.o \
+			$(ODIR)/mod_wim_init.o \
 			$(ODIR)/mod_wim_prams.o \
 			$(ODIR)/RTparam_outer.o \
 			$(ODIR)/RTparam_fast.o \

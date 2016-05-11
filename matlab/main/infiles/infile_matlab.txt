@@ -26,8 +26,8 @@
 # grid (overwritten if using mex functions, which need a pre-compiled grid)
 0     # x0  : min(X(:))
 0     # y0  : min(Y(:))
-150   # nx  : grid size in x dirn
-01    # ny  : grid size in y dirn
+60    # nx  : grid size in x dirn
+10    # ny  : grid size in y dirn
 4e3   # dx  : grid resolution in x dirn (m)
 4e3   # dy  : grid resolution in y dirn (m)
 
@@ -38,7 +38,7 @@
 -90.0 # dir_init        : if only 1 direction, use this value for the wave direction
 0.7   # conc_init       : initial constant value of concentration (used only if no conc field read in)
 2.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
-100.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
+300.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
 
 # other options
 1     # OPT             : ice-water-land configuration
@@ -66,12 +66,12 @@
                            # (NB convert to seconds before inputting to mex functions)
 
 # diagnostic options
-0     # PLOT_INIT
-0     # PLOT_PROG
+1     # PLOT_INIT
+1     # PLOT_PROG
 1     # PLOT_FINAL
 0     # DIAG1d       : do 1-d diagnostics (eg plot profile of Hs)
 1     # DIAG1d_OPT   : options for 1-d diagnostics
 0     # SV_BIN       : save binary files regularly
 0     # SV_SPEC      : save final spectrum to mat-file
 0     # SV_FIG       : save figures that are plotted
-0     # DO_DISP      : display output during calculations in WIM2d
+1     # DO_DISP      : display output during calculations in WIM2d
