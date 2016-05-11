@@ -1,2 +1,2 @@
 inputs
-test_outputs/out
+out
