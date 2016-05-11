@@ -175,10 +175,11 @@ elseif params_in.MEX_OPT==3
    in_arrays(:,:,3)  = ice_fields.Dmax;
 
    % defined in case only one period or dirn
-   T_init   = 1/max(wave_stuff.freq)
-   dir_init = max(wave_stuff.dirs)
+   T_init   = 1/max(wave_stuff.freq);
+   dir_init = max(wave_stuff.dirs);
 
-   if 1
+   TEST_MESH_INTERP  = 0;
+   if TEST_MESH_INTERP
       %%test mesh inputs:
       xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
       nmesh_e     = length(xm0);
@@ -209,12 +210,17 @@ elseif params_in.MEX_OPT==3
       clear PP jp;
    end
 
+   %% get mesh variables
+   nmesh_e     = length(mesh_e.xe);
+   nmesh_vars  = length(fieldnames(mesh_e));
+   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.h,mesh_e.Nfloes,mesh_e.broken];
+   
    %% make the call!
    tic;
    shp   = size(wave_stuff.dir_spec);
-   [wave_stuff.dir_spec,out_arrays,mesh_out] =...
+   [wave_stuff.dir_spec,out_arrays,mesh_arr] =...
       WIM2d_run_io_mex_vSdir_mesh(...
-         wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
+         wave_stuff.dir_spec(:),in_arrays(:),mesh_arr(:),...
          params_in.int_prams,params_in.real_prams,T_init,dir_init,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
@@ -226,24 +232,26 @@ elseif params_in.MEX_OPT==3
    for j=1:Nout
       out_fields.(fldnames{j})   = out_arrays(:,:,j);
    end
-  
-   mesh_out = reshape(mesh_out,[nmesh_e,nmesh_vars]);
+
+   %nmesh_e,nmesh_vars
+   %[length(mesh_arr),nmesh_e*nmesh_vars]
+   mesh_arr = reshape(mesh_arr,[nmesh_e,nmesh_vars]);
    if 0
       %look at Nfloes where ice is
-      mesh_out(mesh_out(:,5)>0,5)
+      mesh_arr(mesh_out(:,5)>0,5)
    elseif 0
       %%look at where breaking occurred, next to thickness
       %% (proxy for original thickness)
-      mesh_out(:,[4,6])
+      mesh_arr(:,[4,6])
    elseif 0
       %%look at difference between 1st 4 col's (should be ~0)
-      mesh_out(:,1:4)-mesh_e(:,1:4)
-   elseif 1
+      mesh_arr(:,1:4)-mesh_e(:,1:4)
+   elseif TEST_MESH_INTERP
       figure(101);
-      Nfloes_mesh    = mesh_out(:,5);
-      Dmax_mesh      = 0*mesh_out(:,5);
+      Nfloes_mesh    = mesh_arr(:,5);
+      Dmax_mesh      = 0*mesh_arr(:,5);
       jp             = find(Nfloes_mesh>0);
-      Dmax_mesh(jp)  = sqrt(mesh_out(jp,3)./Nfloes_mesh(jp));
+      Dmax_mesh(jp)  = sqrt(mesh_arr(jp,3)./Nfloes_mesh(jp));
       plot(xm0/1e3,Dmax_mesh);
       hold on;
       plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
@@ -253,18 +261,26 @@ elseif params_in.MEX_OPT==3
       pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
       colorbar;
       caxis([0 300]);
+
+      error('Finished test of mesh interpolation');
    end
-   %error('HEY!!')
+
+   %% recreate mesh_e
+   fields   = {'Nfloes','broken'};
+   for j=1:2
+      fld            = fields{j};
+      mesh_e.(fld)   = mesh_arr(:,4+j);
+   end
 
    % delete annoying file
    !rm -f fort.6
 
-   mesh_e   = mesh_out;
-   out_fields
    return;%%MEX_OPT==3
 end%%choose mex function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function y=avg(x)
 y=.5*(x(1:end-1)+x(2:end));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
