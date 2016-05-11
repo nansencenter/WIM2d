@@ -91,7 +91,7 @@ PLOT_OPT          = 2;%%plot option (only used if doing plotting)
 TEST_INC_SPEC     = 0;
 TEST_FINAL_SPEC   = 0;
 
-COMP_F   = 0
+COMP_F   = 0;
 compFdir = 'out_2/binaries/prog/';
 
 %% make a log file similar to fortran file

@@ -6,10 +6,11 @@ end
 SHOW_WARNING   = 0;
 try_extHD      = 1;
 try_local      = 1;
+cwd            = pwd;
 
 data_locs   = {'/Volumes/sim',...
                '/Volumes/Tim_Ext_HD2/WORK/neXtSIM',...
-               '../local_data'};
+               [cwd,'/../local_data']};
 
 for loop_i=1:length(data_locs)
    dloc     = data_locs{loop_i+1};
@@ -32,7 +33,7 @@ if ~exist('data_sim','var')
          '- may need to:';
          ' > connect to johansen (/Data/sim) with cmd+k';
          ' > attach external HD';
-         ' > mkdir ../local_data and add/link basic data:';
+         ' > mkdir ',cwd,'/../local_data and add/link basic data:';
          '     mesh, m_map'});
    return;
 end
@@ -40,8 +41,8 @@ end
 rmpaths;
 
 %% if we need to make a new grid
-addpath('../grid_setup');
-addpath('../tools');
+addpath([cwd,'/../grid_setup']);
+addpath([cwd,'/../tools']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% define neXtSIM paths;
