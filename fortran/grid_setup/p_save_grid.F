@@ -149,7 +149,7 @@
  111  format(i1.1,a)
  112  format(i2.2,a)  
  113  format(i3.3,a)  
- 212  format(f5.2,a)  
+ 212  format(f5.1,a)  
 
       open(unit=fid,file=infile,action='read')
       read(fid,111), vers_no,ctmp
