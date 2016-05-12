@@ -13,9 +13,9 @@ if ~exist('rootdir','var');
    rootdir  = [rootdir,'/Model-Results/neXtSIM/Oban-test16/run',num2str(run_no)];
 end
 OVER_WRITE  = 0;
-DO_RM       = 0;%don't leave files in working folder after plotting
+DO_RM       = 1;%don't leave files in working folder after plotting
 
-outdir   = [rootdir,'/simul_out_steps_mat'];
+outdir   = [rootdir,'/simul_out_steps_mat']
 indir    = [rootdir,'/simul_in'];
 figdir   = [rootdir,'/figs'];
 eval(['!mkdir -p ',figdir]);
@@ -27,16 +27,6 @@ twlim = .5*[-1 1];%%tau_x range
 vbls  = {'Dmax' ,'taux_waves','tauy_waves','c'       ,'h'  ,'log1md','Nfloes'};
 cmaps = {'jet'  ,'jet'       ,'jet'       ,'rev_gris','jet','jet'   ,'jet'   };
 lims  = {[0,300],twlim       ,.2*twlim    ,[0,1]     ,[0 2],[-3.7 0],[0,250] };
-
-if 1
-   %%shorten plotting list
-   jkeep = [1,2,4,5,6];
-   %jkeep = [5];
-   vbls  = vbls(jkeep);
-   cmaps = cmaps(jkeep);
-   lims  = lims(jkeep);
-end
-Nv    = length(vbls);
 
 % steps to be loaded
 dir0  = dir([outdir,'/simul_out_*_step*.mat']);
@@ -52,6 +42,33 @@ simul_name     = simul_name{2};
 saved_simul_in = ['simul_in_',simul_name,'.mat'];
 cmd            = ['!cp ',[indir,'/',saved_simul_in],' .'];
 eval(cmd);
+
+%% ==================================================
+%% shorten list of var's
+%% check simul_in to see if waves are present
+shorten  = 1;
+jkeep    = 1:7;
+simul_in = load(saved_simul_in);
+if ~isfield(simul_in,'wim')
+   jkeep    = [4,5,6];
+   shorten  = 0;
+else
+   if simul_in.wim.use_wim==0
+      jkeep    = [4,5,6];
+      shorten  = 0;
+   end
+end
+clear simul_in;
+
+if shorten==1
+   %%shorten more manually
+   jkeep = [1,4,5,6];
+end
+vbls  = vbls(jkeep);
+cmaps = cmaps(jkeep);
+lims  = lims(jkeep);
+Nv = length(vbls);
+%% ==================================================
 
 domain   = '';
 for n=0:N0

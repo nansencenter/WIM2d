@@ -22,18 +22,15 @@ function [out_fields,wave_stuff,mesh_e] =...
 %% Inputs:
 %%
 %% params_in = structure eg:
-%%           SCATMOD: 1
-%%           ADV_DIM: 2
-%%           ADV_OPT: 2
-%%     DO_CHECK_INIT: 1
-%%     DO_CHECK_PROG: 1
-%%    DO_CHECK_FINAL: 1
-%%       DO_BREAKING: 0
-%%            STEADY: 1
-%%          DO_ATTEN: 1
-%%               CFL: 0.7000
-%%          duration: 7200
-%%         ice_prams: structure (young,visc_rp)
+%%           int_prams: 9x1 vector
+%%          real_prams: 4x1 vector
+%%             MEX_OPT: 3
+%%              DODISP: 1
+%%
+%% gridprams = structure eg:
+%%      cice: [51x51 double]
+%%      hice: [51x51 double]
+%%      Dmax: [51x51 double]
 %%
 %%
 %% ice_fields  = structure eg:
@@ -67,7 +64,6 @@ function [out_fields,wave_stuff,mesh_e] =...
 %%          c: [760x1 double]
 %%          h: [760x1 double]
 %%     Nfloes: [760x1 double]
-%% DAMAGE_OPT: 1
 %% ============================================================
 
 % %%check params_in has the needed fields
@@ -80,28 +76,6 @@ end
 if ~exist('wave_stuff','var')
    wave_stuff  = [];
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% common input parameters
-
-% real parameters
-real_prams  = [params_in.ice_prams.young,...
-               params_in.ice_prams.visc_rp,...
-               params_in.duration,...
-               params_in.CFL];
-
-% integer parameters
-int_prams   = [params_in.SCATMOD,...
-               params_in.ADV_DIM,...
-               params_in.ADV_OPT,...
-               params_in.DO_CHECK_FINAL,...
-               params_in.DO_CHECK_PROG,...
-               params_in.DO_CHECK_INIT,...
-               params_in.DO_BREAKING,...
-               params_in.STEADY,...
-               params_in.DO_ATTEN];
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 if params_in.MEX_OPT==1
 
@@ -128,7 +102,8 @@ if params_in.MEX_OPT==1
 
    %% make the call!
    tic;
-   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),int_prams,real_prams);
+   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),...
+                  params_in.int_prams,params_in.real_prams);
    toc;
 
    %% extract outputs
@@ -168,7 +143,7 @@ elseif params_in.MEX_OPT==2
    [wave_stuff.dir_spec,out_arrays] =...
       WIM2d_run_io_mex_vSdir(...
          wave_stuff.dir_spec(:),in_arrays(:),...
-         int_prams,real_prams,T_init,dir_init);
+         params_in.int_prams,params_in.real_prams,T_init,dir_init);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
@@ -235,13 +210,18 @@ elseif params_in.MEX_OPT==3
       clear PP jp;
    end
 
+   %% get mesh variables
+   nmesh_e     = length(mesh_e.xe);
+   nmesh_vars  = length(fieldnames(mesh_e));
+   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.h,mesh_e.Nfloes,mesh_e.broken];
+   
    %% make the call!
    tic;
    shp   = size(wave_stuff.dir_spec);
-   [wave_stuff.dir_spec,out_arrays,mesh_out] =...
+   [wave_stuff.dir_spec,out_arrays,mesh_arr] =...
       WIM2d_run_io_mex_vSdir_mesh(...
-         wave_stuff.dir_spec(:),in_arrays(:),mesh_e(:),...
-         int_prams,real_prams,T_init,dir_init,nmesh_e);
+         wave_stuff.dir_spec(:),in_arrays(:),mesh_arr(:),...
+         params_in.int_prams,params_in.real_prams,T_init,dir_init,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
@@ -252,24 +232,26 @@ elseif params_in.MEX_OPT==3
    for j=1:Nout
       out_fields.(fldnames{j})   = out_arrays(:,:,j);
    end
-  
-   mesh_out = reshape(mesh_out,[nmesh_e,nmesh_vars]);
+
+   %nmesh_e,nmesh_vars
+   %[length(mesh_arr),nmesh_e*nmesh_vars]
+   mesh_arr = reshape(mesh_arr,[nmesh_e,nmesh_vars]);
    if 0
       %look at Nfloes where ice is
-      mesh_out(mesh_out(:,5)>0,5)
+      mesh_arr(mesh_out(:,5)>0,5)
    elseif 0
       %%look at where breaking occurred, next to thickness
       %% (proxy for original thickness)
-      mesh_out(:,[4,6])
+      mesh_arr(:,[4,6])
    elseif 0
       %%look at difference between 1st 4 col's (should be ~0)
-      mesh_out(:,1:4)-mesh_e(:,1:4)
+      mesh_arr(:,1:4)-mesh_e(:,1:4)
    elseif TEST_MESH_INTERP
       figure(101);
-      Nfloes_mesh    = mesh_out(:,5);
-      Dmax_mesh      = 0*mesh_out(:,5);
+      Nfloes_mesh    = mesh_arr(:,5);
+      Dmax_mesh      = 0*mesh_arr(:,5);
       jp             = find(Nfloes_mesh>0);
-      Dmax_mesh(jp)  = sqrt(mesh_out(jp,3)./Nfloes_mesh(jp));
+      Dmax_mesh(jp)  = sqrt(mesh_arr(jp,3)./Nfloes_mesh(jp));
       plot(xm0/1e3,Dmax_mesh);
       hold on;
       plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
@@ -279,18 +261,26 @@ elseif params_in.MEX_OPT==3
       pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
       colorbar;
       caxis([0 300]);
+
+      error('Finished test of mesh interpolation');
    end
-   %error('HEY!!')
+
+   %% recreate mesh_e
+   fields   = {'Nfloes','broken'};
+   for j=1:2
+      fld            = fields{j};
+      mesh_e.(fld)   = mesh_arr(:,4+j);
+   end
 
    % delete annoying file
    !rm -f fort.6
 
-   mesh_e   = mesh_out;
-   out_fields
    return;%%MEX_OPT==3
 end%%choose mex function
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function y=avg(x)
 y=.5*(x(1:end-1)+x(2:end));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

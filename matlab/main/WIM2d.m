@@ -1786,12 +1786,9 @@ function params_mex  = get_params_mex(params,duration,ice_prams)
 %%         ice_prams: structure (young,visc_rp)
 
 
-%% set some things manually
-params_mex.duration  = duration;
-params_mex.ice_prams = ice_prams;
-
-%% set rest automatically
-fields   = {'MEX_OPT',...
+%% ================================================
+%% set int_prams
+fields   = {...
             'SCATMOD',...
             'ADV_DIM',...
             'ADV_OPT',...
@@ -1801,11 +1798,35 @@ fields   = {'MEX_OPT',...
             'DO_BREAKING',...
             'STEADY',...
             'DO_ATTEN',...
-            'CFL',...
-            'DO_DISP'};
+            };
+            
+Ni = length(fields);
+params_mex.int_prams = zeros(1,Ni);
+for j=1:Ni
+   fld   = fields{j};
+   params_mex.int_prams(j)  = params.(fld);
+end
+%% ================================================
+
+%% ================================================
+%% set real_prams
+Nr = 4;
+params_mex.real_prams   = [ice_prams.young,...
+                           ice_prams.visc_rp,...
+                           duration,...
+                           params.CFL];
+%% ================================================
+   
+
+%% ===============================================
+%% set rest automatically
+fields   = {...
+            'MEX_OPT',...
+            'DO_DISP',...
+            };
 
 for j=1:length(fields)
    fld   = fields{j};
    params_mex.(fld)  = params.(fld);
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ===============================================

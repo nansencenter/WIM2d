@@ -28,6 +28,11 @@ end
 % 2. create the standard simul_in
 [saved_simul_in,simul_in_name,domain,resol]=create_simul_in(test_i);
 
+WAVES = 1;
+if WAVES
+   create_simul_in_wim(saved_simul_in);
+end
+
 if 0
    % Rewrite the simul in file
    % (use restart)
@@ -42,25 +47,31 @@ if 1
    simul_in = load(saved_simul_in);
    simul_in = simul_in.simul_in;
 
-   if 0
+   if 1
       %change length of simulation
       days_in_sec                = 24*3600;
-      simul_in.duration          = 7*days_in_sec;
+      simul_in.duration          = 1*days_in_sec;
    end
 
-   if 1
+   if 0
       %change wind
-      simul_in.constant_u  = 0;
+      simul_in.constant_u  = -10;
       simul_in.constant_v  = 0;
    end
 
    if 1
+      %change ice
+      simul_in.init_concentration   = .7; %Initial ice 
+   end
+
+   if WAVES==1
       %add waves
       simul_in.wim.use_wim          = 1;
-      simul_in.wim.MEX_OPT          = 0;
-      simul_in.wim.test_and_exit    = 0;
+      simul_in.wim.MEX_OPT          = 1;
       simul_in.wim.DAMAGE_OPT       = 1;
-      simul_in.wim.wim_break_damage = .95;
+      simul_in.wim.wim_break_damage = .99;
+      simul_in.wim.coupling_option  = 1;
+      simul_in.wim.test_and_exit    = 0;
 
       if strfind(simul_in.domain,'wim_grid')
          simul_in.wim.init_waves = 1;
@@ -68,18 +79,48 @@ if 1
          simul_in.wim.init_waves = 0;
       end
 
-      simul_in.wim.init.Hs       = 4;
-      simul_in.wim.init.Tp       = 12;
-      simul_in.wim.init.mwd      = -90;
-      simul_in.wim.init.STEADY   = 1;
+      simul_in.wim.init.Hs          = 4;
+      simul_in.wim.init.Tp          = 12;
+      simul_in.wim.init.mwd         = -90;
+      simul_in.wim.int_prams.STEADY = 1;
+
+      if simul_in.wim.MEX_OPT == 0
+         simul_in.wim.single_freq   = 1;
+         if simul_in.wim.single_freq==1;
+            %% single frequency
+            %% - not used if using mex function
+            %% - need to pre-compile sizes into fortran code
+            %%   (read wave_info.h)
+            simul_in.wim.init.ndir  = 16;
+            simul_in.wim.init.nfreq = 1;
+            simul_in.wim.init.Tmin  = simul_in.wim.init.Tp;
+            simul_in.wim.init.Tmax  = simul_in.wim.init.Tp;
+         else
+            %% wave spectrum
+            %% - not used if using mex function
+            %% - need to pre-compile sizes into fortran code
+            %%   (read wave_info.h)
+            simul_in.wim.init.ndir  = 16;
+            simul_in.wim.init.nfreq = 25;
+            simul_in.wim.init.Tmin  = 1/.042;
+            simul_in.wim.init.Tmax  = 1/.4;
+         end
+      end
    end
    save(saved_simul_in,'simul_in');
+   test_and_exit  = simul_in.wim.test_and_exit;
    clear simul_in;
 end
 
 
 % --------------
 % 3. run the simulation
+
+if test_and_exit==1
+   neXtSIM(saved_simul_in,1)
+   return;
+end
+
 profile on
 neXtSIM(saved_simul_in,1)
 profile off
@@ -87,7 +128,7 @@ profsave(profile('info'),['test_',num2str(test_i),'_profile_results'])
 
 % --------------
 % 4. Plots of the scalar variables
-load(saved_simul_in)
+load(saved_simul_in);
 meshfile = getfield(simul_in,'meshfile');
 domain   = getfield(simul_in,'domain');
 
@@ -164,39 +205,4 @@ end
 %  plots_vel_map({defo_name},{simul_in_name},domain,masked);
 
 %%clean up directory
-outdir   = ['test_',num2str(test_i),'_outputs'];
-eval(['!mkdir -p ',outdir]);
-%%
-odir  = [outdir,'/simul_in'];
-eval(['!mkdir -p ',odir]);
-cmd   = ['!mv *','simul_in*.mat ',odir];
-eval(cmd);
-%%
-odir  = [outdir,'/simul_out_steps_mat'];
-eval(['!mkdir -p ',odir]);
-cmd   = ['!mv *','simul_out*step*.mat ',odir];
-eval(cmd);
-%%
-odir  = [outdir,'/diagnostics'];
-eval(['!mkdir -p ',odir]);
-cmd   = ['!mv diagnostics* ',odir];
-eval(cmd);
-%%
-odir  = [outdir,'/wim_log'];
-eval(['!mkdir -p ',odir]);
-cmd   = ['!mv test_outputs/out_2/log/* ',odir];
-eval(cmd);
-%%
-odir  = [outdir,'/figs'];
-eval(['!mkdir -p ',odir]);
-odir  = [odir,'/init_final'];
-eval(['!mkdir -p ',odir]);
-cmd   = ['!mv *','test',num2str(test_i),'*.png ',odir];
-eval(cmd);
-
-%!rm -f fort.6
-
-%cmd   = ['!mv *','test',num2str(test_i),'*.txt ',outdir];
-%eval(cmd);
-%cmd   = ['!mv *','test',num2str(test_i),'*.fig ',outdir];
-%eval(cmd);
+setup_outdir(test_i,'mv');
