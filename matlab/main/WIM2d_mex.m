@@ -200,10 +200,11 @@ elseif params_in.MEX_OPT==3
    in_arrays(:,:,3)  = ice_fields.Dmax;
 
    % defined in case only one period or dirn
-   T_init   = 1/max(wave_stuff.freq)
-   dir_init = max(wave_stuff.dirs)
+   T_init   = 1/max(wave_stuff.freq);
+   dir_init = max(wave_stuff.dirs);
 
-   if 1
+   TEST_MESH_INTERP  = 0;
+   if TEST_MESH_INTERP
       %%test mesh inputs:
       xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
       nmesh_e     = length(xm0);
@@ -224,7 +225,7 @@ elseif params_in.MEX_OPT==3
                         Nfloes,0*ice_fields.Dmax(:,nmy)};
       for j=1:4
          mesh_e(:,j+2)  = avg(PP{j});
-         if 1
+         if 0
             subplot(2,2,j);
             plot(xm0/1e3,mesh_e(:,j+2));
             hold on;
@@ -263,7 +264,7 @@ elseif params_in.MEX_OPT==3
    elseif 0
       %%look at difference between 1st 4 col's (should be ~0)
       mesh_out(:,1:4)-mesh_e(:,1:4)
-   elseif 1
+   elseif TEST_MESH_INTERP
       figure(101);
       Nfloes_mesh    = mesh_out(:,5);
       Dmax_mesh      = 0*mesh_out(:,5);

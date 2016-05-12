@@ -91,7 +91,7 @@ PLOT_OPT          = 2;%%plot option (only used if doing plotting)
 TEST_INC_SPEC     = 0;
 TEST_FINAL_SPEC   = 0;
 
-COMP_F   = 0
+COMP_F   = 0;
 compFdir = 'out_2/binaries/prog/';
 
 %% make a log file similar to fortran file
@@ -1701,9 +1701,8 @@ end
 %%display info again
 if params_in.DO_DISP; disp('##############################################################'); 
 t1 = now;
-disp([num2str(n),' time steps done, out of ',num2str(nt)]);
 disp(['Time taken (mins)      : ' ,num2str(t0_fac*(t1-t0))]);
-disp(['Model time passed (h)  : ' ,num2str(n*dt/3600.)]);
+disp(['Model time passed (h)  : ' ,num2str(nt*dt/3600.)]);
 disp('##############################################################');
 disp(' ');
 disp(strvcat(Info)); end
