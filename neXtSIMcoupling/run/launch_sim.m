@@ -69,9 +69,11 @@ if 1
       simul_in.wim.use_wim          = 1;
       simul_in.wim.MEX_OPT          = 1;
       simul_in.wim.DAMAGE_OPT       = 1;
-      simul_in.wim.wim_break_damage = .99;
-      simul_in.wim.coupling_option  = 1;
+      simul_in.wim.wim_break_damage = 1.0;
+      simul_in.wim.coupling_option  = 2;
       simul_in.wim.test_and_exit    = 0;
+      simul_in.wim.coupling_freq    = 20*simul_in.timestep;
+      %simul_in.wim.coupling_freq    = 500*simul_in.timestep; %%long enough to get breaking in 1 call
 
       if strfind(simul_in.domain,'wim_grid')
          simul_in.wim.init_waves = 1;
