@@ -20,7 +20,8 @@ fi
 # echo module load PrgEnv-gnu
 # module load PrgEnv-gnu
 
-echo module unload matlab && module load matlab/2012a
-module unload matlab && module load matlab/2012a
+echo "module unload matlab && module load matlab/2015a"
+module unload matlab
+module load matlab/2015b
 
 module list

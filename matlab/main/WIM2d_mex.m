@@ -200,7 +200,7 @@ elseif params_in.MEX_OPT==3
                         Nfloes,0*ice_fields.Dmax(:,nmy)};
       for j=1:4
          mesh_e(:,j+2)  = avg(PP{j});
-         if 1
+         if 0
             subplot(2,2,j);
             plot(xm0/1e3,mesh_e(:,j+2));
             hold on;
