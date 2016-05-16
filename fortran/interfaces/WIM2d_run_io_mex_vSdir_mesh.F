@@ -76,6 +76,8 @@ C-----OUTPUTS-----------------------------------------------------------
       real,dimension(ii*jj*ny3d)    :: y3d
       real,dimension(ii*jj*nxy4d)   :: y4d
       real,   allocatable           :: ymesh(:)
+      !real,   allocatable           :: tmp_mesh(:,:)
+      !integer                       :: j0,j1
 C-----------------------------------------------------------------------
 
 
@@ -249,6 +251,14 @@ C     Create matrices for the return arguments.
       allocate(ymesh(nmesh))
       ymesh = real(xmesh)!cast to real*4: this goes into the main function with intent(inout)
 
+      !allocate(tmp_mesh(int(nmesh_e),2))
+      !!j  = 5 ! Nfloes_e
+      !j  = 6 ! broken_e
+      !j0 = int(1+(j-1)*nmesh_e)
+      !j1 = int(j*nmesh_e)
+      !tmp_mesh(:,1)  = ymesh(j0:j1)
+
+
       if (PRINT_INFO) then
          k  = mexPrintf('Initialised output arrays...\n')
          k  = mexPrintf('Have pointers, about to do computations...\n')
@@ -272,10 +282,24 @@ C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(dble(ymesh),ymesh_pr,size_vec_out(3))
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      !tmp_mesh(:,2)  = ymesh(j0:j1)
       deallocate(xmesh)
       deallocate(ymesh)
 
+      !do j=1,int(nmesh_e)
+      !   write(msg,'(f8.2)') tmp_mesh(j,1)
+      !   write(msg,'(a,a,f8.2)') trim(msg),'   ',tmp_mesh(j,2)
+      !   k  = mexPrintf(trim(msg)//'\n')
+      !end do
+
+      !k  = mexPrintf('\nMax(broken):\n')
+      !write(msg,'(f8.2)') maxval(tmp_mesh(:,1))
+      !write(msg,'(a,a,f8.2)') trim(msg),'   ',maxval(tmp_mesh(:,2))
+      !k  = mexPrintf('\n'//trim(msg)//'\n')
+      !deallocate(tmp_mesh)
+
       return
+
       end subroutine mexFunction
 
 

@@ -584,7 +584,7 @@
          end where
 
          do i=1,nmesh_e
-            crit_e   = (conc_e(i).gt.0.)                       !ice present
+            crit_e   = (conc_e(i).gt.0.)                    !ice present
      &                 .and.(2*var_strain_e(i).gt.epsc**2)  !big enough waves
 
             if (crit_e) then
@@ -611,6 +611,7 @@
                   !breaking occurs
                   dmax_e(i)   = max(Dmin,lam_e/2.) !keep above Dmin
                   broken_e(i) = 1.                 !this records ice has been broken this time
+                  !print*,i,broken_e(i)
                end if
             end if
          end do
@@ -620,6 +621,7 @@
          end where
          mesh_e(:,5) = Nfloes_e
          mesh_e(:,6) = broken_e
+         !print*,maxval(broken_e)
 
       end if
          

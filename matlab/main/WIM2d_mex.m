@@ -214,7 +214,8 @@ elseif params_in.MEX_OPT==3
    nmesh_e     = length(mesh_e.xe);
    nmesh_vars  = length(fieldnames(mesh_e));
    mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.h,mesh_e.Nfloes,mesh_e.broken];
-   
+   %mesh0 = mesh_arr;
+
    %% make the call!
    tic;
    shp   = size(wave_stuff.dir_spec);
@@ -224,6 +225,7 @@ elseif params_in.MEX_OPT==3
          params_in.int_prams,params_in.real_prams,T_init,dir_init,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
+
 
    %% extract outputs
    fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
@@ -236,6 +238,8 @@ elseif params_in.MEX_OPT==3
    %nmesh_e,nmesh_vars
    %[length(mesh_arr),nmesh_e*nmesh_vars]
    mesh_arr = reshape(mesh_arr,[nmesh_e,nmesh_vars]);
+   %save mesh mesh_e mesh0 mesh_arr out_fields;
+
    if 0
       %look at Nfloes where ice is
       mesh_arr(mesh_out(:,5)>0,5)
