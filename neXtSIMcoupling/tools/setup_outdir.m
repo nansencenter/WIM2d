@@ -1,4 +1,4 @@
-function setup_outdir(test_i,op)
+function outdir=setup_outdir(test_i,op)
 
 if nargin<2
    error('Need 2 inputs to setup_outdir');

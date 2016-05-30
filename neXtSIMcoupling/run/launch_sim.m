@@ -1,5 +1,7 @@
 DO_COMPILE  = 0;
-USE_WIM     = 0;
+USE_WIM     = 1;%%use waves
+PLOT_STEPS  = 1;%%plot all steps after run
+DIAGNOSTICS = 0;%%diagnostics at end of run
 
 if 0
    %% idealised domain (simplesquare)
@@ -14,7 +16,6 @@ elseif 1
    %% - doesn't need forcing files on johansen
    %% - use WIM
    test_i   = 16;
-   USE_WIM  = 1;
 end
 
 
@@ -28,8 +29,7 @@ end
 % 2. create the standard simul_in
 [saved_simul_in,simul_in_name,domain,resol]=create_simul_in(test_i);
 
-WAVES = 1;
-if WAVES
+if USE_WIM
    create_simul_in_wim(saved_simul_in);
 end
 
@@ -50,7 +50,7 @@ if 1
    if 1
       %change length of simulation
       days_in_sec                = 24*3600;
-      simul_in.duration          = 1*days_in_sec;
+      simul_in.duration          = 2*days_in_sec;
    end
 
    if 0
@@ -64,12 +64,12 @@ if 1
       simul_in.init_concentration   = .7; %Initial ice 
    end
 
-   if WAVES==1
+   if USE_WIM==1
       %add waves
       simul_in.wim.use_wim          = 1;
       simul_in.wim.MEX_OPT          = 1;
       simul_in.wim.DAMAGE_OPT       = 1;
-      simul_in.wim.wim_break_damage = 1.0;
+      simul_in.wim.wim_break_damage = 0.999;
       simul_in.wim.coupling_option  = 2;
       simul_in.wim.test_and_exit    = 0;
       simul_in.wim.coupling_freq    = 20*simul_in.timestep;
@@ -148,43 +148,45 @@ plot_param_v2('log1md',saved_simul_out,domain,'jet',[-3.7 0],[],'png')
 
 % --------------
 % 5. Diagnostics
-filename=['diagnostics_' simul_in.meshfile(1:end-4) '_' simul_in.simul_in_name '.txt'];
-import_data=importdata(filename)
+if DIAGNOSTICS
+   filename=['diagnostics_' simul_in.meshfile(1:end-4) '_' simul_in.simul_in_name '.txt'];
+   import_data=importdata(filename)
 
-list_absciss_to_plot={'p','p','p'};
-list_ordinates_to_plot={{'NnR','NeR'},{'total_volume'},{'variation_total_volume','variation_total_volume_thermo','variation_total_volume_regrid','variation_total_volume_transport'}}
+   list_absciss_to_plot={'p','p','p'};
+   list_ordinates_to_plot={{'NnR','NeR'},{'total_volume'},{'variation_total_volume','variation_total_volume_thermo','variation_total_volume_regrid','variation_total_volume_transport'}}
 
-for k=1:length(list_absciss_to_plot)
-  absciss_to_plot=list_absciss_to_plot{k};
-  ordinates_to_plot=list_ordinates_to_plot{k}
-  figure
-  
-  j=find(strcmp(import_data.textdata,absciss_to_plot));
-  if(isempty(j))
-      error('no absciss to plot')
-  else
-      absciss=import_data.data(:,j);
-  end
-  
-  ColorOrder=get(gca,'ColorOrder');
-  
-  for i=1:length(ordinates_to_plot)
-      j=find(strcmp(import_data.textdata,ordinates_to_plot{i}));
-      if(~isempty(j))
-          ordinate=import_data.data(:,j);
-          plot(absciss,ordinate,'color',ColorOrder(i,:)); hold on;
-      end
-  end
-  
-  xbound=xlim;
-  ybound=ylim;
-  for i=1:length(ordinates_to_plot)
-      
-      x_fact=0.1;
-      y_fact=0.1+0.05*(i-1);
-      text(x_fact*xbound(2)+(1-x_fact)*xbound(1),y_fact*ybound(2)+(1-y_fact)*ybound(1),ordinates_to_plot{i},'color',ColorOrder(i,:),'fontsize',15)
-  end
-  saveas(gcf, [ filename(1:end-4) '_diag' num2str(k)], 'fig')
+   for k=1:length(list_absciss_to_plot)
+     absciss_to_plot=list_absciss_to_plot{k};
+     ordinates_to_plot=list_ordinates_to_plot{k}
+     figure
+     
+     j=find(strcmp(import_data.textdata,absciss_to_plot));
+     if(isempty(j))
+         error('no absciss to plot')
+     else
+         absciss=import_data.data(:,j);
+     end
+     
+     ColorOrder=get(gca,'ColorOrder');
+     
+     for i=1:length(ordinates_to_plot)
+         j=find(strcmp(import_data.textdata,ordinates_to_plot{i}));
+         if(~isempty(j))
+             ordinate=import_data.data(:,j);
+             plot(absciss,ordinate,'color',ColorOrder(i,:)); hold on;
+         end
+     end
+     
+     xbound=xlim;
+     ybound=ylim;
+     for i=1:length(ordinates_to_plot)
+         
+         x_fact=0.1;
+         y_fact=0.1+0.05*(i-1);
+         text(x_fact*xbound(2)+(1-x_fact)*xbound(1),y_fact*ybound(2)+(1-y_fact)*ybound(1),ordinates_to_plot{i},'color',ColorOrder(i,:),'fontsize',15)
+     end
+     saveas(gcf, [ filename(1:end-4) '_diag' num2str(k)], 'fig')
+   end
 end
 
 % --------------
@@ -207,4 +209,21 @@ end
 %  plots_vel_map({defo_name},{simul_in_name},domain,masked);
 
 %%clean up directory
-setup_outdir(test_i,'mv');
+outdir   = setup_outdir(test_i,'mv');
+
+if PLOT_STEPS
+   close all;
+   figure(101);
+   plot_steps_grid(outdir);
+   plot_steps_mesh(outdir);
+
+   %%gifs on grid
+   cmd   = ['!../tools/make_gifs.sh ',outdir,' 0'];
+   disp(cmd);
+   eval(cmd);
+
+   %%gifs on mesh
+   cmd   = ['!../tools/make_gifs.sh ',outdir,' 1'];
+   disp(cmd);
+   eval(cmd);
+end
