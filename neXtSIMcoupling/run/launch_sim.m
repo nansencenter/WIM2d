@@ -1,7 +1,8 @@
-DO_COMPILE  = 0;
-USE_WIM     = 1;%%use waves
-PLOT_STEPS  = 1;%%plot all steps after run
-DIAGNOSTICS = 0;%%diagnostics at end of run
+DO_COMPILE     = 0;
+USE_WIM        = 0;%%use waves
+PLOT_STEPS     = 1;%%plot all steps after run
+DIAGNOSTICS    = 1;%%diagnostics at end of run
+test_and_exit  = 0;%%if 1, exit after 1 call to WIM (if USE_WIM==1)
 
 if 0
    %% idealised domain (simplesquare)
@@ -71,7 +72,7 @@ if 1
       simul_in.wim.DAMAGE_OPT       = 1;
       simul_in.wim.wim_break_damage = 0.999;
       simul_in.wim.coupling_option  = 2;
-      simul_in.wim.test_and_exit    = 0;
+      simul_in.wim.test_and_exit    = test_and_exit;
       simul_in.wim.coupling_freq    = 20*simul_in.timestep;
       %simul_in.wim.coupling_freq    = 500*simul_in.timestep; %%long enough to get breaking in 1 call
 
@@ -110,7 +111,6 @@ if 1
       end
    end
    save(saved_simul_in,'simul_in');
-   test_and_exit  = simul_in.wim.test_and_exit;
    clear simul_in;
 end
 
@@ -150,43 +150,7 @@ plot_param_v2('log1md',saved_simul_out,domain,'jet',[-3.7 0],[],'png')
 % 5. Diagnostics
 if DIAGNOSTICS
    filename=['diagnostics_' simul_in.meshfile(1:end-4) '_' simul_in.simul_in_name '.txt'];
-   import_data=importdata(filename)
-
-   list_absciss_to_plot={'p','p','p'};
-   list_ordinates_to_plot={{'NnR','NeR'},{'total_volume'},{'variation_total_volume','variation_total_volume_thermo','variation_total_volume_regrid','variation_total_volume_transport'}}
-
-   for k=1:length(list_absciss_to_plot)
-     absciss_to_plot=list_absciss_to_plot{k};
-     ordinates_to_plot=list_ordinates_to_plot{k}
-     figure
-     
-     j=find(strcmp(import_data.textdata,absciss_to_plot));
-     if(isempty(j))
-         error('no absciss to plot')
-     else
-         absciss=import_data.data(:,j);
-     end
-     
-     ColorOrder=get(gca,'ColorOrder');
-     
-     for i=1:length(ordinates_to_plot)
-         j=find(strcmp(import_data.textdata,ordinates_to_plot{i}));
-         if(~isempty(j))
-             ordinate=import_data.data(:,j);
-             plot(absciss,ordinate,'color',ColorOrder(i,:)); hold on;
-         end
-     end
-     
-     xbound=xlim;
-     ybound=ylim;
-     for i=1:length(ordinates_to_plot)
-         
-         x_fact=0.1;
-         y_fact=0.1+0.05*(i-1);
-         text(x_fact*xbound(2)+(1-x_fact)*xbound(1),y_fact*ybound(2)+(1-y_fact)*ybound(1),ordinates_to_plot{i},'color',ColorOrder(i,:),'fontsize',15)
-     end
-     saveas(gcf, [ filename(1:end-4) '_diag' num2str(k)], 'fig')
-   end
+   plot_diagnostics(filename);
 end
 
 % --------------
@@ -211,7 +175,7 @@ end
 %%clean up directory
 outdir   = setup_outdir(test_i,'mv');
 
-if PLOT_STEPS
+if PLOT_STEPS & USE_WIM
    close all;
    figure(101);
    plot_steps_grid(outdir);
@@ -221,6 +185,15 @@ if PLOT_STEPS
    cmd   = ['!../tools/make_gifs.sh ',outdir,' 0'];
    disp(cmd);
    eval(cmd);
+
+   %%gifs on mesh
+   cmd   = ['!../tools/make_gifs.sh ',outdir,' 1'];
+   disp(cmd);
+   eval(cmd);
+elseif PLOT_STEPS
+   close all;
+   figure(101);
+   plot_steps_mesh(outdir);
 
    %%gifs on mesh
    cmd   = ['!../tools/make_gifs.sh ',outdir,' 1'];

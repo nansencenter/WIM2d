@@ -49,15 +49,19 @@ eval(cmd);
 shorten  = 1;
 jkeep    = 1:7;
 simul_in = load(saved_simul_in);
-if ~isfield(simul_in,'wim')
-   jkeep    = [1,4,5,6,7];
-   %jkeep    = [1,7];
-   shorten  = 0;
-else
+simul_in = simul_in.simul_in;
+if isfield(simul_in,'wim')
    if simul_in.wim.use_wim==0
       jkeep    = [4,5,6];
       shorten  = 0;
+   else
+      jkeep    = [1,4,5,6,7];
+      %jkeep    = [1,7];
+      shorten  = 0;
    end
+else
+   jkeep    = [4,5,6];
+   shorten  = 0;
 end
 clear simul_in;
 
