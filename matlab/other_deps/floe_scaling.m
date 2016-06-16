@@ -6,15 +6,20 @@ function Dave = floe_scaling(f,xi,Dmin,Dmax)
 % We suggest to use Dmin >= 20. Below that value, there is no scattering
 % by the floes for periods larger than 6 s (it's probably viscous however).
 
-M  = floor(log2(Dmax/Dmin));
+Dave     = Dmax;
+Dthresh  = 200;
 
-if isfinite(M) && M > 0
-    m    = 0:M;
-    N    = (1 - f).*(xi.^2.*f).^m;
-    ND   = N.*Dmax./(xi.^m);
-    Dave = sum(ND)./sum(N);
-else
-    Dave = Dmin;
+for j=1:length(Dmax(:));
+   dmax  = Dmax(j);
+   M     = floor(log2(dmax/Dmin));
+   if (isfinite(M) && M > 0)&(dmax<Dthresh) %>Dmin & <Dthresh
+       m       = 0:M;
+       N       = (1 - f).*(xi.^2.*f).^m;
+       ND      = N.*dmax./(xi.^m);
+       Dave(j) = sum(ND)./sum(N);
+   elseif (dmax<Dmin)
+       Dave(j) = Dmin;
+   end
 end
 
 Dave = max(Dave,Dmin);

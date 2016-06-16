@@ -35,29 +35,32 @@ n  = mom;%need to calc <D^n> or invert it to get Dmax
 b  = n-fsd_exp;
 
 
-out   = 0*Dmax;
+Dthresh  = 200;
 
 if inverse==0
    %%calculate <D^n> from Dmax
+   out      = Dmax.^n;
 
    %% small floes
    jm       = find(Dmax<=Dmin);
-   out(jm)  = Dmax(jm).^n;%%assume uniform for small Dmax
+   out(jm)  = Dmin.^n;%%assume uniform for small Dmax
 
    %% bigger floes
-   jp       = find(Dmax>Dmin);
+   jp       = find((Dmax>Dmin)&(Dmax<Dthresh));
    out(jp)  = do_int(Dmax(jp),Dmin,fsd_exp,n,0);
 else
    %%calculate Dmax from <D^n>
-   Dc    = Dmin^n;
-   Dave  = Dmax;
+   Dc       = Dmin^n;
+   Dave     = Dmax;
+   out      = Dave.^(1/n);
+   Dthresh  = do_int(Dthresh,Dmin,fsd_exp,n,0);
 
    %% small floes
    jm       = find(Dmax<=Dc);
-   out(jm)  = Dmax(jm).^(1/n);
+   out(jm)  = Dmin;
 
    %% bigger floes
-   jp = find(Dave>Dc);
+   jp = find((Dave>Dc)&(Dave<Dthresh));
    Dp = Dave(jp);
    for j=1:length(jp)
       target   = Dp(j);
