@@ -21,15 +21,9 @@
       integer :: nfreq,ndir
       real    :: Tmin,Tmax
 
-      if (testing.eq.1) then
-         !!for testing
-         outdir   = 'test/out'
-         outdir2  = 'test/out'
-      else
-         !!proper locations of outputs:
-         outdir   = '../run/inputs'    !.a,.b
-         outdir2  = '../header_files'  !.h
-      end if
+      !! locations of outputs:
+      outdir   = '.' ! wim_grid.[a,b]
+      outdir2  = '.' ! wave_info.h,grid_info.h
 
       !! main subroutine
       !! - define the grid

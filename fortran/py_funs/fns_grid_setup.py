@@ -122,23 +122,12 @@ def get_grid_arrays(x0=0.,y0=0.,nx=100,ny=4,dx=4.e3,dy=4.e3,LAND_OPT=0):
 ###########################################################
 
 ###########################################################
-def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
+def grid_setup(GRID_OPT=1,LAND_OPT=0):
 
-   if TEST==1:
-      # test
-      outdir   = 'test/out_py'
-      outdir2  = 'test/out_py'
-      nc       = len(outdir)
-      nc2      = len(outdir2)
-   else:
-      # proper places
-      outdir   = '../run/inputs'
-      outdir2  = '../header_files'
-      nc       = len(outdir)
-      nc2      = len(outdir2)
-
-   dd    = os.path.abspath(".")
-   dd2   = dd+'/'+outdir
+   outdir   = '.' # wim_grid.[a,b] saved here
+   outdir2  = '.' # wave_info.h,grid_info.h saved here
+   dd       = os.path.abspath(".")
+   dd2      = dd+'/'+outdir
    print('\n')
    print("Saving grid files to:")
    print(dd2)
@@ -272,11 +261,9 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
    if SV_FIG:
       from matplotlib import pyplot as plt
       # save test figure:
-      if not os.path.exists('test'):
-         os.mkdir('test')
-      if not os.path.exists('test/out_py'):
-         os.mkdir('test/out_py')
-      fig   = 'test/out_py/land.png'
+      if not os.path.exists('out_py'):
+         os.mkdir('out_py')
+      fig   = 'out_py/land.png'
       #
       gf = grid_fields
       nx = gf['nx']
@@ -305,8 +292,8 @@ def grid_setup(GRID_OPT=1,TEST=0,LAND_OPT=0):
    ###########################################################
    print(' ')
    print(60*'*')
-   print("Now compile WIM code in ../Build")
-   print("Run in                  ../run")
+   print("Now compile WIM code in .Build")
+   print("Run in                  ..")
    print(60*'*')
    print(' ')
    ###########################################################

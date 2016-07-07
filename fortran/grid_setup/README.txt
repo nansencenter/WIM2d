@@ -1,24 +1,23 @@
-To use normal executable:
-*edit p_save_grid.F
-*compile with "make"
-*run with "./grid_setup.sh"
+1. To use normal executable:
+   *compile with "make"
+   *cd to place where you want to run the model
+      mkdir Build; cd Build
+   *copy infile_grid.txt and infile_waves.txt
+   *edit infile_grid.txt and infile_waves.txt if necessary
+   *run "grid_setup.sh"
 
-To use with python
-- easier to define new grids
+2. To use with python
+   - easier to define new grids (eg different LANDMASKS)
 
-Compile f2py function:
-*if necessary, edit save_grid_f2py.F
-*compile with "make py"
- (don't usually need to recompile if changing grid)
+   Compile f2py function:
+   *if necessary, edit save_grid_f2py.F
+   *compile with "make py"
+    (don't usually need to recompile if changing grid)
 
-In python:
-*Type:
-import grid_setup as gst
-
-*Decide on integer GRID_OPT (which grid)
-*Decide on integer TEST
- 0: save to proper place where rest of WIM2d code can access it
- 1: save to test directory, where rest of WIM2d code cannot access it
-
-*Type:
-gst.grid_setup(GRID_OPT=GRID_OPT,TEST=TEST)
+   *cd to place where you want to run the model
+      mkdir Build; cd Build
+   *Type:
+   python $WIM2D_PATH/grid_setup/grid_setup.py (also uses the infile_grid.txt)
+   or
+   python $WIM2D_PATH/grid_setup/grid_setup.py --GRID_OPT=0
+   (also GRID_OPT=1,2 for different hard-coded versions of the LAND_MASK and size)
