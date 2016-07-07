@@ -1,5 +1,5 @@
 function [out_fields,diagnostics] = run_WIM2d(params_in,grid_prams,...
-                                ice_fields,wave_fields,wave_stuff)
+                                ice_fields,wave_fields,wave_stuff,verbosity)
 %% CALL: out_fields = run_WIM2d(params_in,grid_prams,...
 %%                              ice_fields,wave_fields,wave_stuff)
 %%
@@ -34,7 +34,10 @@ function [out_fields,diagnostics] = run_WIM2d(params_in,grid_prams,...
 %% *wave_stuff - like the input, but modified by WIM2d.m
 
 infile   = 'infile_matlab.txt';
-params   = read_infile_matlab(infile);
+if ~exist('verbosity','var')
+   verbosity   = 1;
+end
+params   = read_infile_matlab(infile,verbosity);
 
 %%Override parameters in infile with input ones
 if exist('params_in','var')
@@ -42,7 +45,7 @@ if exist('params_in','var')
       fnames   = fieldnames(params_in);
       for loop_i  = 1:length(fnames)
          vbl   = fnames{loop_i};
-         eval(['params.',vbl,' = ','params_in.',vbl]);
+         eval(['params.',vbl,' = ','params_in.',vbl,';']);
       end
    end
    clear params_in;
@@ -64,11 +67,17 @@ if params.MEX_OPT>0
 
    infile_dirs = 'infile_dirs.txt';
    if ~exist(infile_dirs)
-      error([infile_dirs,' not present (needed by mex functions)'])
+      if verbosity
+         disp([infile_dirs,' not present - using default directories...'])
+      end
+      indir          = 'Build';
+      params.outdir  = ['out_io_',num2str(params.MEX_OPT)];
    else
-      disp(' ');
-      disp('*******************************************************');
-      disp(['Reading ',infile_dirs,'...']);
+      if verbosity
+         disp(' ');
+         disp('*******************************************************');
+         disp(['Reading ',infile_dirs,'...']);
+      end
       fid            = fopen(infile_dirs);
       indir          = strtrim(fgets(fid));
       params.outdir  = strtrim(fgets(fid));
@@ -76,16 +85,20 @@ if params.MEX_OPT>0
    end
 
    %% get grid
-   disp(' ');
-   disp(['Getting grid from ',indir,'...']);
+   if verbosity
+      disp(' ');
+      disp(['Getting grid from ',indir,'...']);
+   end
    grid_prams     = fn_get_grid(indir);
    grid_prams.x0  = min(grid_prams.X(:));
    grid_prams.y0  = min(grid_prams.Y(:));
    HAVE_GRID      = 1;
 
-   disp('New grid info:')
-   disp(grid_prams)
-   disp('')
+   if verbosity
+      disp('New grid info:')
+      disp(grid_prams)
+      disp('')
+   end
 
    %% make "params" consistent with fortran
    fnames      = {'x0','y0','nx','ny','dx','dy'};
@@ -95,10 +108,11 @@ if params.MEX_OPT>0
    end
 
    %% get nw,ndir,Tmin,Tmax from wave_info.h
-   fdir  = '../../fortran';
-   hfil  = [fdir,'/header_files/wave_info.h'];
-   disp(' ');
-   disp(['Getting wave grid from ',hfil,'...']);
+   hfil  = [indir,'/wave_info.h'];
+   if verbosity
+      disp(' ');
+      disp(['Getting wave grid from ',hfil,'...']);
+   end
    fid         = fopen(hfil);
    lin         = strsplit(strtrim(fgets(fid)));
    params.ndir = find_num(lin{5});
@@ -111,10 +125,12 @@ if params.MEX_OPT>0
    params.Tmax = find_num(lin{5});
    fclose(fid);
 
-   disp(' ');
-   disp(['Will save results in ',params.outdir]);
-   disp('*******************************************************');
-   disp(' ');
+   if verbosity
+      disp(' ');
+      disp(['Will save results in ',params.outdir]);
+      disp('*******************************************************');
+      disp(' ');
+   end
 
    if 0
       %% get initial conditions from fortran run
@@ -236,13 +252,17 @@ end
 
 if ~exist('wave_stuff','var')
    wave_stuff  = set_incident_waves(grid_prams,wave_fields,params);
-   %% wave_stuff = structure eg
-   %%        nfreq: 1
-   %%         ndir: 16
-   %%         freq: 0.0833
-   %%         dirs: [16x1 double]
-   %%     dir_spec: [150x20x16 double]
+else
+   if isempty(wave_stuff)
+      wave_stuff  = set_incident_waves(grid_prams,wave_fields,params);
+   end
 end
+%% wave_stuff = structure eg
+%%        nfreq: 1
+%%         ndir: 16
+%%         freq: 0.0833
+%%         dirs: [16x1 double]
+%%     dir_spec: [150x20x16 double]
 
 if TEST_INC_SPEC==1
    nw       = wave_stuff.nfreq;     %% number of frequencies
