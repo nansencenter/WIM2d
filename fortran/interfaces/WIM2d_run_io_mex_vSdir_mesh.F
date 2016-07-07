@@ -3,9 +3,9 @@ C
 #if 0
 C
 C     CALL:
-C     [Sdir_io,out_arrays]=...
+C     [Sdir_io,out_arrays,mesh_e]=...
 C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,int_prams,...
-C                               real_prams,Tp_io,mwd_io);
+C                               real_prams,Tp_io,mwd_io,mesh_e);
 C
 #endif
 C
