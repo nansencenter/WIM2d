@@ -89,7 +89,7 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'inputs'
+         indir    = 'Build'
          outdir   = 'out'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -322,13 +322,15 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'inputs'
-         outdir   = 'out_io'
+         indir    = 'Build'
+         outdir   = 'out_io_1'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
+      !print*,this_subr
+      !print*,outdir
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -525,6 +527,7 @@
 
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
+      logical                       :: INTERP_MESH
 
       real              :: PI
       real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
@@ -569,6 +572,12 @@
       duration       = real_prams(3)      !!length of simulation [s]
       CFL            = real_prams(4)      !!cg*dt/dx
 
+      !!using mesh?
+      INTERP_MESH = .false.
+      if (present(mesh_e)) then
+         INTERP_MESH = .true.
+      end if
+
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
 
@@ -585,8 +594,12 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'inputs'
-         outdir   = 'out_2'
+         indir    = 'Build'
+         if (INTERP_MESH) then
+            outdir   = 'out_io_2'
+         else
+            outdir   = 'out_io_3'
+         end if
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
@@ -659,7 +672,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-      if (present(mesh_e)) then
+      if (INTERP_MESH) then
          ! run while doing interpolation onto the mesh points
          call wim2d_run_common(nmesh_e,mesh_e)   !wim2d_run_vSdir
       else
