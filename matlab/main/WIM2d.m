@@ -1365,15 +1365,18 @@ t1 = now;
 
 if (params_in.OPT==1)|(params_in.OPT==3)
    %%TODO make an explicit parameter to get diagnostics like Wmiz in this way
-   Dmax_j   = out_fields.Dmax(:,1);
+   Nchk     = ceil(gridprams.ny/2);%%=1 if ny=1
+   Dmax_j   = out_fields.Dmax(:,Nchk);
    jmiz     = find((Dmax_j>0)&(Dmax_j<250));
-   Wmiz     = gridprams.dx/1e3*length(jmiz);
+   Wmiz     = gridprams.dx*length(jmiz);
+   %%
+   diagnostics.MIZ_width   = Wmiz;
    %%
    Dmax_min = min(Dmax_j);
    Dmax_max = max(Dmax_j);
    %%
    if params_in.DO_DISP; disp(' ');
-   disp(['MIZ width = ',num2str(Wmiz),' km']); end
+   disp(['MIZ width = ',num2str(Wmiz/1e3),' km']); end
 end
 
 taux_min = min(out_fields.tau_x(:));
@@ -1383,6 +1386,10 @@ tauy_max = max(out_fields.tau_y(:));
 if params_in.DO_DISP; disp(['max tau_x = ',num2str(taux_max),' Pa']);
 disp(['max tau_y = ',num2str(tauy_max),' Pa']);
 disp(' '); end
+diagnostics.taux_min = taux_min;
+diagnostics.taux_max = taux_max;
+diagnostics.tauy_min = tauy_min;
+diagnostics.tauy_max = tauy_max;
 
 %%append to log file
 logid = fopen(log_file,'a');
