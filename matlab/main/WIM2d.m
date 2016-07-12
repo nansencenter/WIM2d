@@ -843,8 +843,9 @@ else
                %%  distance if travelling in a line;
                if out_fields.Dmax(i,j) < 200
                   %%power law distribution
-                  Dave  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
-                           ice_prams.Dmin,out_fields.Dmax(i,j));
+                  % Dave  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
+                  %          ice_prams.Dmin,out_fields.Dmax(i,j));
+                  Dave  = floe_scaling_smooth(out_fields.Dmax(i,j),ice_prams,1);
                else
                   %% uniform lengths
                   Dave  = out_fields.Dmax(i,j);

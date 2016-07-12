@@ -208,6 +208,12 @@ elseif params_in.MEX_OPT==3
          end
       end
       clear PP jp;
+      fnames   = {'xe','ye','c','h','Nfloes','broken'};
+      Mesh_e   = mesh_e;
+      for j=1:nmesh_vars
+         mesh_e.(fnames{j})   = Mesh_e(:,j);
+      end
+      clear fnames Mesh_e
    end
 
    %% get mesh variables
@@ -261,10 +267,12 @@ elseif params_in.MEX_OPT==3
       plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
       fn_fullscreen;
 
-      figure(102);
-      pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
-      colorbar;
-      caxis([0 300]);
+      if gridprams.ny>1
+         figure(102);
+         pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
+         colorbar;
+         caxis([0 300]);
+      end
 
       error('Finished test of mesh interpolation');
    end

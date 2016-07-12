@@ -189,7 +189,7 @@
       !!
       real,dimension(nw)   :: Sfreq(nw)
       real,dimension(ndir) :: theta_fac
-      real  :: PI,om,chi,adv_dir
+      real  :: PI,om,chi,adv_dir,dtheta
 
       PI       = 4.0*atan(1.0)
       sdf_inc  = 0.0
@@ -223,16 +223,23 @@
             theta_fac   = 1.0
          else
             !theta_fac   = 0.0
+            dtheta   = abs(wavdir(2)-wavdir(1)) !degrees
+            !print*,dtheta
             do wth=1,ndir
-               chi   = PI/180.0*(wavdir(wth)-mwd(i,j))
-               if (cos(chi).gt.0.0) then
-                  theta_fac(wth) = 2.0/PI*cos(chi)**2
-               else
-                  theta_fac(wth) = 0.0
-               end if
+               theta_fac(wth) = theta_dirfrac(                          &
+     &            wavdir(wth)-dtheta/2.,dtheta,mwd(i,j))                &
+     &               *180./(pi*dtheta)
+               !print*,theta_fac(wth)
+
+               !chi   = PI/180.0*(wavdir(wth)-mwd(i,j))
+               !if (cos(chi).gt.0.0) then
+               !   theta_fac(wth) = 2.0/PI*cos(chi)**2
+               !else
+               !   theta_fac(wth) = 0.0
+               !end if
             end do
-!           print*,'test dir spreading factor'
-!           print*,2*PI/(1.0*ndir)*sum(theta_fac),1
+            !print*,'test dir spreading factor'
+            !print*,2*PI/(1.0*ndir)*sum(theta_fac),1
          end if
 
          !!combine freq & dir
@@ -301,6 +308,74 @@
       S  = f1*f2*f3
 
       end subroutine SDF_Bretschneider
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      real function theta_dirfrac(th1_,dtheta_,mwd_)
+      !! chi=pi/180*(theta-mwd) 
+      !!  (convert to radians and centre about mwd, the mean wave direction)
+      !! chi1=pi/180*(th1-mwd)
+      !! chi2=pi/180*(th2-mwd)
+      !! D(chi)=2/pi*cos^2(chi) if chi\in[-pi/2,pi/2] 
+      !! D(chi)=0 if chi\in[-pi/2,pi/2] (no backwards waves)
+      !! theta_dirfrac  = \int_{chi1}^{chi2}D(chi)dchi
+      !!                = 1 if -chi1=chi2=pi/2
+      !!                = the fraction of the energy going in the directions in [chi1,chi2]
+
+      implicit none
+      
+      real, intent(in) :: th1_,dtheta_,mwd_
+      real             :: th1,th2,mwd
+      real             :: chi1,chi2
+      real, parameter  :: pi  = 3.1415927
+
+      mwd   = theta_in_range(mwd_,th1_)   !th1_<=mwd<th1_+360
+      th2   = th1_+dtheta_
+      if ((mwd.gt.th2).and.((mwd-th2).gt.abs(mwd-360-th1_))) then
+         mwd   = mwd-360.
+      end if
+      th1   = max(mwd-90.,th1_)
+      th2   = min(mwd+90.,th2)
+      th2   = max(th1,th2)!make th2>=th1
+
+      chi1  = pi*(th1-mwd)/180.
+      chi2  = pi*(th2-mwd)/180.
+
+      theta_dirfrac  = 2*(chi2-chi1)+sin(2*chi2)-sin(2*chi1)
+      theta_dirfrac  = theta_dirfrac/2/pi
+      end function
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      real function theta_in_range(th_,th1)
+      !! th = theta_in_range(th_)
+      !! where th1<th<=th1+360.
+
+      implicit none
+      
+      real, intent(in)  :: th_
+      real, parameter   :: pi  = 3.1415927
+      real              :: th,th1,th2,dth
+      integer           :: njump
+
+      th2   = th1+360.
+      if (th_.lt.th1) then
+         dth   = th1-th_
+         njump = ceiling(dth/360.)
+         th    = th_+njump*360.
+      elseif (th_.gt.th2) then
+         dth   = th_-th2
+         njump = ceiling(dth/360.)
+         th    = th_-njump*360.
+      elseif (th_.eq.th2) then
+         th = th1
+      else
+         th = th_
+      end if
+
+      theta_in_range = th
+      end function
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim_init

@@ -595,7 +595,7 @@
          call read_infile_dirs(indir,outdir)
       else
          indir    = 'Build'
-         if (INTERP_MESH) then
+         if (.not.INTERP_MESH) then
             outdir   = 'out_io_2'
          else
             outdir   = 'out_io_3'

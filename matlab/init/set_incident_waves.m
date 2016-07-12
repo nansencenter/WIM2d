@@ -84,9 +84,15 @@ for i=1:nx
 
             if DIRSPEC_INC_OPT==1
                %% cos^2 spreading fxn
-               dir_fac     = (1+cos(2*del))/2/(pi/2); 
-               j0          = find(abs(del)>pi/2);
-               dir_fac(j0) = 0;
+               %dir_fac     = (1+cos(2*del))/2/(pi/2);
+               %j0          = find(abs(del)>pi/2);
+               %dir_fac(j0) = 0
+               dir_fac  = 0*theta;
+               R2D      = 180/pi;%radians to degrees
+               for wth=1:ndir
+                  dir_fac(wth)   = theta_dirfrac(...
+                     R2D*(theta(wth)-dth/2),R2D*dth,R2D*mwd)/dth;
+               end
             else
                %% Delta function
                jmwd           = find(abs(del)==min(abs(del)));

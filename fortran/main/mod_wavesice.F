@@ -330,8 +330,9 @@
 
                !! get expected no of floes met per unit
                !!  distance if travelling in a line;
-               if (dfloe(i,j).lt.200.0) then
-                  call floe_scaling(Dave,dfloe(i,j))
+               if (dfloe(i,j).le.200.0) then
+                  !call floe_scaling(Dave,dfloe(i,j))
+                  call floe_scaling_smooth(Dave,dfloe(i,j),1)
                else
                   Dave  = dfloe(i,j)
                   !! uniform lengths
@@ -1006,9 +1007,65 @@
       else
          Dave = dmin
       end if
-      !print*,'dave (in f-s)',Dave
+
+!     !test subroutine (NB this will crash after 1st call, since status='new')
+!     print*,'in floe_scaling'
+!     open(unit=999,file='fsd_test_old.txt',                            &
+!    &     action='write',status='new')
+!     write(999,*) Dave
+!     write(999,*) Dmax
+!     write(999,*) fragility
+!     write(999,*) xi
+!     write(999,*) Dmin
+!     close(999)
 
       end subroutine floe_scaling
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine floe_scaling_smooth(Dave,dmax,mom)
+      use mod_wim_prams, only: fragility,xi,Dmin
+      implicit none
+
+      real,    intent(out) :: Dave
+      real,    intent(in)  :: dmax
+      integer, intent(in)  :: mom
+      integer              :: n
+      real                 :: b,Dthresh,fsd_exp,A
+
+      n        = mom
+      fsd_exp  = 2+log(fragility)/log(xi)!!power law exponent: P(d>D)=(D_min/D)^fsd_exp;
+      b        = n-fsd_exp
+      Dthresh  = 200.
+
+      !! calculate <D^n> from Dmax
+      !! - uniform dist for larger floes
+      Dave  = Dmax**n
+
+      !! small floes
+      if (Dmax.le.Dmin) then
+         Dave  = Dmin**n
+      elseif (Dmax.le.Dthresh) then
+         !! bigger floes
+         A     = (fsd_exp*exp(fsd_exp*(log(Dmin)+log(Dmax))))
+         A     = A/(exp(fsd_exp*log(Dmax))-exp(fsd_exp*log(Dmin)))
+         Dave  = -(A/b)*(exp(b*log(Dmin))-exp(b*log(Dmax)))
+      end if
+
+!!     !test subroutine (NB this will crash after 1st call, since status='new')
+!      print*,'in floe_scaling_smooth'
+!      open(unit=999,file='fsd_test_smooth.txt',                         &
+!     &     action='write',status='new')
+!      write(999,*) Dave
+!      write(999,*) Dmax
+!      write(999,*) mom
+!      write(999,*) fragility
+!      write(999,*) xi
+!      write(999,*) Dmin
+!      close(999)
+
+      end subroutine floe_scaling_smooth
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wavesice

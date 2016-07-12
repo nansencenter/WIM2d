@@ -25,7 +25,7 @@ if ~exist('inverse')
    inverse   = 0;
 end
 
-f        = prams.f;
+f        = prams.fragility;
 xi       = prams.xi;
 Dmin     = prams.Dmin;
 fsd_exp  = 2+log(f)/log(xi);%%power law exponent: P(d>D)=(D_min/D)^fsd_exp;
@@ -81,14 +81,27 @@ if DO_TEST
    end
 end
 
+%disp(out)
+%disp(Dmax)
+%disp(mom)
+%disp(f)
+%disp(xi)
+%disp(Dmin)
+%error('HEY!')
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function y=test_int(Dmax,Dmin,fsd_exp,n)
 b  = n-fsd_exp;
 f  = inline('d.^(-1-fsd_exp+n)');
 A  = 1/quad(@(d)f(d,fsd_exp,0),Dmin,Dmax);
 y  = A*quad(@(d)f(d,fsd_exp,n),Dmin,Dmax);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Dave = do_int(Dmax,Dmin,fsd_exp,n,target)
 A     = (fsd_exp*Dmin^fsd_exp*Dmax.^fsd_exp)./(Dmax.^fsd_exp-Dmin^(fsd_exp));%%
 b     = n-fsd_exp;
 Dave  = -(A/b).*(Dmin^b-Dmax.^b)-target;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

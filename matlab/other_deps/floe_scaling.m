@@ -23,3 +23,10 @@ for j=1:length(Dmax(:));
 end
 
 Dave = max(Dave,Dmin);
+
+%disp(Dave)
+%disp(Dmax)
+%disp(f)
+%disp(xi)
+%disp(Dmin)
+%error('HEY!')
