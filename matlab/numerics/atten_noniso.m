@@ -1,12 +1,13 @@
-%% adv_atten_timestep_simple.m
+%% atten_noniso.m
 %% Author: Timothy Williams
 %% Date: 20141018, 18:04:46 CEST
 
 function [S,S_freq,tau_x,tau_y] = ...
-   adv_atten_timestep_noniso(grid_prams,ice_prams,s1,dt,adv_options,SHPOPT)
+   atten_noniso(grid_prams,ice_prams,s1,dt,SHPOPT)
 
 nx = grid_prams.nx;
 ny = grid_prams.ny;
+clear grid_prams;
 
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
@@ -17,42 +18,7 @@ damp_dim    = s1.damp_dim;
 ICE_MASK    = s1.ICE_MASK;
 clear s1;
 
-% ADV_OPT  = 0;%%zeros outside real domain
-% ADV_OPT  = 1;%%periodic in x,y
-% ADV_OPT  = 2;%%periodic in y only
-
 theta = -pi/180*(90+wavdir);%%waves-to, anti-clockwise, radians
-% S0 = S;
-% {wavdir,theta}
-
-%%advection;
-if adv_options.ADV_DIM==2
-   %%2d advection
-   for jth  = 1:ndir
-      u           = ag_eff*cos(theta(jth));
-      v           = ag_eff*sin(theta(jth));
-      S(:,:,jth)  = waveadv_weno(S(:,:,jth),u,v,grid_prams,dt,adv_options);
-   end
-else
-   %%1d advection - 1 row at a time
-   for jy=1:ny
-      for jth  = 1:ndir
-         u           = ag_eff(:,jy)*cos(theta(jth));
-         S(:,jy,jth) = waveadv_weno_1d(S(:,jy,jth),u,grid_prams,dt,adv_options);
-      end
-   end
-end
-% S0-S
-% [min(S0(:)),max(S0(:))]
-% [min(S(:)),max(S(:))]
-% [min(u(:)),max(u(:))]
-% [min(v(:)),max(v(:))]
-% GEN_pause
-
-%%attenuation
-nx = grid_prams.nx;
-ny = grid_prams.ny;
-clear grid_prams;
 
 %% weights for integral over directions
 %% NB using radians for mwd;
@@ -66,8 +32,8 @@ S_freq   = zeros(nx,ny);
 tau_x    = zeros(nx,ny);
 tau_y    = zeros(nx,ny);
 %%
-oo                = ones(ndir,ndir);
-id                = eye(ndir);
+oo = ones(ndir,ndir);
+id = eye(ndir);
 
 %% method of solving \partial_t E=S (2nd part of split step)
 %% NB E is variance spectrum [m^2/s], S are sources [m^2]
@@ -95,11 +61,37 @@ for j = 1:ny
          %%fourier coeff's of Boltzmann kernel
          %K_fou = q_scat*eye(ndir,1);%%K(theta)=q_scat/2/pi: isotropic scattering
          if SHPOPT==1
-          K_fou = 2*(2^-2)*q_scat*[2;0;1;zeros(ndir-5,1);1;0];%%cos-squared shape
+            v1   = [2;0;1];
+            v2   = [1;0];
+            Nv   = length([v1;v2]);
+            if Nv>ndir
+               error(['>>>Not enough directions for SHPOPT==1 (need > ',num2str(Nv),')']);
+            else
+               Z = zeros(ndir-Nv,1); 
+            end
+            K_fou = 2*(2^-2)*q_scat*[v1;Z;v2];%%cos^2 shape
          elseif SHPOPT==2
-          K_fou = (8/3)*(2^-4)*q_scat*[6;0;4;0;1;zeros(ndir-9,1);1;0;4;0];%%cos-4 shape
+            v1   = [6;0;4;0;1];
+            v2   = [1;0;4;0];
+            Nv   = length([v1;v2]);
+            if Nv>ndir
+               error(['>>>Not enough directions for SHPOPT==2 (need > ',num2str(Nv),')']);
+            else
+               Z = zeros(ndir-Nv,1); 
+            end
+            K_fou = (8/3)*(2^-4)*q_scat*[v1;Z;v2];%%cos^4 shape
          elseif SHPOPT==3
-          K_fou = (128/35)*(2^-8)*q_scat*[70;0;56;0;28;0;8;0;1;zeros(ndir-17,1);1;0;8;0;28;0;56;0];%%cos-8 shape
+            v1   = [70;0;56;0;28;0;8;0;1];
+            v2   = [1;0;8;0;28;0;56;0];
+            Nv   = length([v1;v2]);
+            if Nv>ndir
+               error(['>>>Not enough directions for SHPOPT==3 (need > ',num2str(Nv),')']);
+            else
+               Z = zeros(ndir-Nv,1); 
+            end
+            K_fou = (128/35)*(2^-8)*q_scat*[v1;Z;v2];%%cos^8 shape
+         else
+            error(['>>>Unknown value of SHPOPT: ',num2str(SHPOPT)]);
          end
          %%fourier coeff's of directional spectrum
          S_th     = squeeze(S(i,j,:));

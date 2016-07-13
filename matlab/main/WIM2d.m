@@ -884,6 +884,38 @@ else
          s1.damp_dim    = damp_dim;
          s1.ICE_MASK    = ICE_MASK;
 
+         % ==============================================================
+         %%advection;
+         % ADV_OPT  = 0;%%zeros outside real domain
+         % ADV_OPT  = 1;%%periodic in x,y
+         % ADV_OPT  = 2;%%periodic in y only
+         theta = -pi/180*(90+wave_stuff.dirs);
+         if adv_options.ADV_DIM==2
+            %%2d advection
+            for jth  = 1:s1.ndir
+               %% set the velocities
+               u  = s1.ag_eff*cos(theta(jth));
+               v  = s1.ag_eff*sin(theta(jth));
+
+               %% call advection routine
+               s1.Sdir(:,:,jth)  = waveadv_weno(...
+                  s1.Sdir(:,:,jth),u,v,gridprams,dt,adv_options);
+            end
+         else
+            %%1d advection - 1 row at a time
+            for jy=1:gridprams.ny
+               for jth  = 1:s1.ndir
+                  %% set the velocity
+                  u  = s1.ag_eff(:,jy)*cos(theta(jth));
+
+                  %% call advection routine
+                  s1.Sdir(:,jy,jth) = waveadv_weno_1d(...
+                     s1.Sdir(:,jy,jth),u,grid_prams,dt,adv_options);
+               end
+            end
+         end
+         % ==============================================================
+
          if wave_stuff.ndir==1
             if params_in.SCATMOD~=0
                if params_in.DO_DISP; disp('warning: changing params_in.SCATMOD option as not enough directions');
@@ -895,24 +927,29 @@ else
          if params_in.SCATMOD==0
             %% Simple attenuation scheme - doesn't conserve scattered energy
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_simple(gridprams,ice_prams,s1,dt,adv_options);
+               atten_simple(gridprams,ice_prams,s1,dt);
             clear s1 S_out;
          elseif params_in.SCATMOD==1
             %% same as params_in.SCATMOD==0, but scattered energy
             %% is distributed isotropically
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_isotropic(gridprams,ice_prams,s1,dt,adv_options);
+               atten_isotropic(gridprams,ice_prams,s1,dt);
             clear s1 S_out;
          elseif floor(params_in.SCATMOD)==2
             %% same as params_in.SCATMOD==1, but scattered energy
             %% is distributed non-isotropically
+            %% pass in SHPOPT as decimal place eg 2.1 or 2.2 or 2.3
+            SHPOPT   = round(10*(params_in.SCATMOD-2));
+            %SHPOPT   = 1;%% cos^2
+            %SHPOPT   = 2;%% cos^4
+            %SHPOPT   = 3;%% cos^8
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_noniso(gridprams,ice_prams,s1,dt,adv_options,round(10*(params_in.SCATMOD-2)));
+               atten_noniso(gridprams,ice_prams,s1,dt,SHPOPT);
             clear s1 S_out;    
          elseif params_in.SCATMOD==-1
             %% Simple attenuation scheme - does conserve scattered energy
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_simple_cons(gridprams,ice_prams,s1,dt,adv_options);
+               atten_simple_conserve(gridprams,ice_prams,s1,dt);
             clear s1 S_out;  
          end
 
