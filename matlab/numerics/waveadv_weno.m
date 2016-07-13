@@ -44,8 +44,12 @@ LANDMASK = grid_prams.LANDMASK;
 
 idm   = ii;
 jdm   = jj;
-%%
-nbdy  = 3;              %%size of boundary - need 3 ghost cells since 3rd order in time
+
+%% size of boundary
+%% - need 2*3 ghost cells
+%%    - 3rd order in space
+%%    - 2nd order in time (prediction + correction steps)
+nbdy  = 6;              
 ireal = nbdy+(1:idm)';  %%non-ghost i indices
 jreal = nbdy+(1:jdm)';  %%non-ghost j indices  
 
@@ -71,27 +75,24 @@ h  = pad_var(h,ADV_OPT,nbdy);
 %pcolor(h),colorbar,GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%Comment in fortran - don't think valid anymore
-
 % --- Prediction step
 sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
-margin   = nbdy;
 %tst2d = sao(jtst,4),pause
 
-if 0
+if nbdy==6
    %% how it is in fortran code,
-   %% but sao is 0 on margins so errors/asymmetries can creep in from there 
-   %% - prob need to do xctilr at this point
+   %% - needs nbdy=6
    hp = 0*h;
-   for i_ = 1-margin:ii+margin
-   for j_ = 1-margin:jj+margin
+   for i_ = 1-nbdy:ii+nbdy
+   for j_ = 1-nbdy:jj+nbdy
       i  = i_+nbdy;%%1-nbdy->1
       j  = j_+nbdy;%%1-nbdy->1
 
       hp(i,j)  = h(i,j)+dt*sao(i,j);
    end%j
    end%i
-else
+elseif nbdy==3
+   %% if nbdy=3,
    %% enforce periodicity between prediction and correction steps
    hp = zeros(ii,jj);
    for i_ = 1:ii
@@ -102,6 +103,8 @@ else
    end%j
    end%i
    hp = pad_var(hp,ADV_OPT,nbdy);
+else
+   error('nbdy should be 3 or 6');
 end
 
 if 0%max(sao(:))>0
@@ -128,8 +131,8 @@ end
 sao   = weno3pd_v2(hp,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
 %tst2d = sao(jtst,4),pause
 
-for i_ = 1-margin:ii+margin
-for j_ = 1-margin:jj+margin
+for i_ = 1-nbdy:ii+nbdy
+for j_ = 1-nbdy:jj+nbdy
    i  = i_+nbdy;%%1-nbdy->1
    j  = j_+nbdy;%%1-nbdy->1
 

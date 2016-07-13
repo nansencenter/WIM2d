@@ -51,8 +51,13 @@ scp2     = grid_prams.scp2(:,1);
 LANDMASK = grid_prams.LANDMASK(:,1);
 clear grid_prams;
 
+%% size of boundary
+%% - need 2*3 ghost cells
+%%    - 3rd order in space
+%%    - 2nd order in time (prediction + correction steps)
+%% - if use 3 ghost cells, need to apply boundary conditions between the prediction and correction steps
+nbdy  = 6;
 idm   = ii;
-nbdy  = 3;              %%size of boundary - need 3 ghost cells since 3rd order in time
 ireal = nbdy+(1:idm)';  %%non-ghost i indices
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,7 +91,7 @@ margin   = nbdy;
 %tst1d = sao(jtst)
 
 hp = 0*h;
-if 0
+if nbdy==6
    %% original version
    %% -> errors at boundaries
    %% hycom code prob needed xctilr at this point
@@ -94,13 +99,15 @@ if 0
       i     = i_+nbdy;%%1-nbdy->1
       hp(i) = h(i)+dt*sao(i);
    end%i
-else
+elseif nbdy==3
    %% enforce periodicity between prediction and correction steps
    for i_ = 1:ii
       i     = i_+nbdy;%%1-nbdy->1
       hp(i) = h(i)+dt*sao(i);
    end%i
    hp = pad_var_1d(hp(ireal),ADV_OPT,nbdy);
+else
+   error('nbdy should be 3 or 6');
 end
 %tst1d = hp(jtst)
 
