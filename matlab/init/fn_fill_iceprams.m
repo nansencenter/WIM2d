@@ -50,16 +50,24 @@ end
 s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
 
 %%Breaking criterion option
-if ~isfield(s1,'break_opt');
-   s1.break_opt = 0;
+if ~isfield(s1,'BRK_OPT');
+   s1.BRK_OPT = 0;
 end
-if s1.break_opt==0%%beam test
+if s1.BRK_OPT==0|s1.BRK_OPT==1%%beam test
+   %%not used if BRK_OPT==0
    s1.strain_c = s1.sigma_c/s1.young;
-else%% Marchenko's stress criterion
+   s1.stress_c = s1.young/(1-s1.poisson^2)*s1.strain_c; %%convert to plate breaking stress
+elseif s1.BRK_OPT==2%% Marchenko's stress criterion
     %% - convert to strain criterion
-   stress_c    = 2.6*s1.sigma_c;
+   s1.stress_c = 2.6*s1.sigma_c;
       %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
-   s1.strain_c = (1-s1.poisson^2)*stress_c/s1.young;
+   s1.strain_c = (1-s1.poisson^2)*s1.stress_c/s1.young;
+elseif s1.BRK_OPT==3%% Marchenko's stress criterion
+   %% - convert to strain criterion
+   cohesion    = 40e3;%Pa
+   s1.stress_c = cohesion;
+      %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+   s1.strain_c = (1-s1.poisson^2)*s1.stress_c/s1.young;
 end
 
 %% flex rigidity = s1.flex_rig_coeff*h^3
