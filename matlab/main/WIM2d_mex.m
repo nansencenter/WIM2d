@@ -68,6 +68,7 @@ function [out_fields,wave_stuff,mesh_e] =...
 
 % %%check params_in has the needed fields
 % check_params_in_mex(params_in);
+RMFORT6  = 1;
 
 %% check if we want to do breaking on the mesh also
 if ~exist('mesh_e','var')
@@ -115,7 +116,9 @@ if params_in.MEX_OPT==1
    end
 
    % delete annoying file
-   !rm -f fort.6
+   if RMFORT6
+      !rm -f fort.6
+   end
    return%%MEX_OPT==1
 
 elseif params_in.MEX_OPT==2
@@ -156,7 +159,9 @@ elseif params_in.MEX_OPT==2
    end
   
    % delete annoying file
-   !rm -f fort.6
+   if RMFORT6
+      !rm -f fort.6
+   end
    return%%MEX_OPT==2
 
 elseif params_in.MEX_OPT==3
@@ -285,7 +290,9 @@ elseif params_in.MEX_OPT==3
    end
 
    % delete annoying file
-   !rm -f fort.6
+   if RMFORT6
+      !rm -f fort.6
+   end
 
    return;%%MEX_OPT==3
 end%%choose mex function

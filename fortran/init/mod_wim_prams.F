@@ -7,6 +7,7 @@
       real,parameter :: rhoice   = 922.5  ! Ice density      [kg/m^3]
       real,parameter :: gravity  = 9.81   ! Gravity          [m/s^2]
       real,parameter :: poisson  = .3     ! Poisson's ratio
+      real,parameter :: cohesion = 40.e3  ! Cohesion         [Pa]
 
       ! Parameters for the floe size distribution
       real,parameter :: Dmin        = 20   ! min floe size [m]
@@ -15,23 +16,26 @@
 
       !! parameters that still need to be set
       !! in set_wim_prams
-      real  :: visc_rp     !!Robinson-Palmer viscosity coefficient [Pa/(m/s)] (~13)
-      real  :: young,epsc  !!young's modulus [Pa], breaking strain [-]
-      real  :: sigma_c,vbf !!flex strength [Pa], brine volume fraction [-]
+      real  :: visc_rp  !! Robinson-Palmer viscosity coefficient [Pa/(m/s)] (~13)
+      real  :: young    !! young's modulus  [Pa]
+      real  :: epsc     !! breaking strain [-]
+      real  :: stress_c !! breaking stress [Pa]
+      real  :: vbf      !! brine volume fraction [-]
+      real  :: sigma_c  !! flexural strength [Pa]
 
       contains
 
-      subroutine set_wim_prams(wim_prams_in)
+      subroutine set_wim_prams(BRK_OPT,wim_prams_in)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
 
+      integer,intent(in)         :: BRK_OPT
       real,optional,intent(in)   :: wim_prams_in(2)
 
-      integer,parameter :: BRK_OPT     = 1
-      integer,parameter :: YOUNG_OPT   = 1
+      integer,parameter    :: YOUNG_OPT   = 1
 
-      real  :: stress_c,flex_rig_coeff
+      real  :: flex_rig_coeff
          !! flex strength
          !! critical stress (for Marcheko criterion)
       real  :: vb,salt,temp
@@ -77,12 +81,21 @@
       sigma_c  = 1.76d6*exp(-5.88*sqrt(vbf)) ! [Pa]
 
       !!Breaking criterion option
-      if (BRK_OPT.eq.1) then !!beam test
-         epsc  = sigma_c/young
-      else!!Marchenko's stress criterion
+      if ((BRK_OPT.eq.0).or.(BRK_OPT.eq.1)) then !!beam test
+         !! not used if BRK_OPT==0 (no breaking)
+         epsc     = sigma_c/young
+         stress_c = young*epsc/(1-poisson**2)
+      elseif (BRK_OPT.eq.2) then!!Marchenko's stress criterion (plate)
           !! - convert to strain criterion
          stress_c = 2.6*sigma_c!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
          epsc     = (1-poisson**2)*stress_c/young
+      elseif (BRK_OPT.eq.3) then!!Mohr-Coulomb criterion (plate)
+          !! - convert to strain criterion
+         stress_c = cohesion!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+         epsc     = (1-poisson**2)*stress_c/young
+      else
+         print*,'Unknown value for BRK_OPT: ',BRK_OPT
+         stop
       end if
 
       !! flex rigidity = flex_rig_coeff*h^3
@@ -92,7 +105,9 @@
       print*,'in set_wim_prams()...'
       print*,'Brine volume fraction:      ',vbf
       print*,'Youngs modulus (Pa):        ',young
+      print*,'BRK_OPT:                    ',BRK_OPT
       print*,'Flexural strength (Pa):     ',sigma_c
+      print*,'Breaking stress (Pa):       ',stress_c
       print*,'Breaking strain:            ',epsc
       print*,'Damping (Pa.s/m):           ',visc_rp
       print*,'********************************************'
