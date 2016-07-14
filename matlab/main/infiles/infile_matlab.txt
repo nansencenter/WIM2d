@@ -1,4 +1,4 @@
-7     # infile_version_ : infile version number
+8     # infile_version_ : infile version number
 
 # keep version number on 1st line
 # change this if there are significant changes to structure of infile and/or code
@@ -11,7 +11,7 @@
 # only numerical values accepted currently
 
 # mex function to use
-0     # MEX_OPT   : 0 = pure matlab; 1 = mex: pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes
+0     # MEX_OPT   : 0 = pure matlab; 1 = mex: pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes;
                   # 2 = mex: pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
 
 # numerical parameters
@@ -51,13 +51,16 @@
 1     # SCATMOD         : Scattering model: 0 = old way; 1 = scatter E isotropically
 2     # ADV_DIM         : Dimension of advection (1/2)
 2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
+
 1     # DO_CHECK_FINAL  : 1/0: do/don't dump binary files for final conditions
 1     # DO_CHECK_PROG   : 1/0: do/don't dump binary files at regular time intervals
 1     # DO_CHECK_INIT   : 1/0: do/don't dump binary files for initial conditions
+
 1     # STEADY          : 1 = Steady-state solution, top-up waves inside wave mask;
                         # 0 = wave packet that just travels through
-1     # DO_BREAKING     : 1 = include ice breakage; 0 = turn off breaking for testing
+1     # BRK_OPT         : 1,2,3 ice breakage model; 0 = turn off breaking for testing
 1     # DO_ATTEN        : 0 = just advect waves without attenuation
+0     # FSD_OPT         : 0: RG; 1: smooth power law
 
 # correspond to "real_prams" in fortran code 
 5.49e9   # young           : Young's modulus
