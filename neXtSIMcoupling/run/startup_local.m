@@ -13,7 +13,7 @@ data_locs   = {'/Volumes/sim',...
                [cwd,'/../local_data']};
 
 for loop_i=1:length(data_locs)
-   dloc     = data_locs{loop_i+1};
+   dloc     = data_locs{loop_i};
    %%
    disp(['Checking for ',dloc]);
    if exist(dloc)
