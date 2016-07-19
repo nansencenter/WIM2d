@@ -62,10 +62,14 @@ elseif s1.BRK_OPT==2%% Marchenko's stress criterion
    s1.stress_c = 2.6*s1.sigma_c;
       %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
    s1.strain_c = (1-s1.poisson^2)*s1.stress_c/s1.young;
-elseif s1.BRK_OPT==3%% Marchenko's stress criterion
+elseif s1.BRK_OPT==3%% Mohr-Coulomb stress criterion
    %% - convert to strain criterion
-   cohesion    = 40e3;%Pa
-   s1.stress_c = cohesion;
+   cohesion    = 1e6;%Pa - lab scale cohesion (single piece of ice = 1MPa, Schulson, 2009)
+   friction    = 0.7;
+   alpha       = (1+s1.poisson)/(1-s1.poisson);
+   sig_N       = cohesion/(alpha+friction);
+      %compressive stress  = .5*(sig_11+sig_22) = .5*(1-poisson)*sig11 at breaking point
+   s1.stress_c = 2*sig_N/(1-s1.poisson);
       %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
    s1.strain_c = (1-s1.poisson^2)*s1.stress_c/s1.young;
 end

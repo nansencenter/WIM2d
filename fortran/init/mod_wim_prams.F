@@ -7,7 +7,8 @@
       real,parameter :: rhoice   = 922.5  ! Ice density      [kg/m^3]
       real,parameter :: gravity  = 9.81   ! Gravity          [m/s^2]
       real,parameter :: poisson  = .3     ! Poisson's ratio
-      real,parameter :: cohesion = 40.e3  ! Cohesion         [Pa]
+      real,parameter :: cohesion = 1.e6   ! Cohesion         [Pa]
+      real,parameter :: friction = .7     ! Tangent of friction angle
 
       ! Parameters for the floe size distribution
       real,parameter :: Dmin        = 20   ! min floe size [m]
@@ -36,8 +37,9 @@
       integer,parameter    :: YOUNG_OPT   = 1
 
       real  :: flex_rig_coeff
-         !! flex strength
+         !! flex strength = flex_rig_coeff*h^3
          !! critical stress (for Marcheko criterion)
+      real :: alpha,sig_N
       real  :: vb,salt,temp
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -86,12 +88,15 @@
          epsc     = sigma_c/young
          stress_c = young*epsc/(1-poisson**2)
       elseif (BRK_OPT.eq.2) then!!Marchenko's stress criterion (plate)
-          !! - convert to strain criterion
+         !! - convert to strain criterion
          stress_c = 2.6*sigma_c!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
          epsc     = (1-poisson**2)*stress_c/young
       elseif (BRK_OPT.eq.3) then!!Mohr-Coulomb criterion (plate)
-          !! - convert to strain criterion
-         stress_c = cohesion!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+         !! - convert to strain criterion
+         alpha    = (1+poisson)/(1-poisson)
+         sig_N    = cohesion/(alpha+friction)
+            !compressive stress  = .5*(sig_11+sig_22) = .5*(1-poisson)*sig11 at breaking point
+         stress_c = 2*sig_N/(1-poisson)!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
          epsc     = (1-poisson**2)*stress_c/young
       else
          print*,'Unknown value for BRK_OPT: ',BRK_OPT
