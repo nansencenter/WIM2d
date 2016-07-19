@@ -22,11 +22,11 @@ void WimDiscr<T>::gridProssessing()
     SCP2I_array.resize(boost::extents[nx][ny]);
     LANDMASK_array.resize(boost::extents[nx][ny]);
 
-    dx = vm["dx"].template as<double>();
-    dy = vm["dy"].template as<double>();
+    dx = vm["wim.dx"].template as<double>();
+    dy = vm["wim.dy"].template as<double>();
 
-    x0 = vm["xmin"].template as<double>();
-    y0 = vm["ymin"].template as<double>();
+    x0 = vm["wim.xmin"].template as<double>();
+    y0 = vm["wim.ymin"].template as<double>();
 
     // int thread_id;
     // int total_threads;
@@ -61,9 +61,9 @@ void WimDiscr<T>::gridProssessing()
         }
     }
 
-    if (vm["exportresults"].template as<bool>())
+    if (vm["wim.exportresults"].template as<bool>())
     {
-        std::string str = vm["outparentdir"].template as<std::string>();
+        std::string str = vm["wim.outparentdir"].template as<std::string>();
 
         char * senv = ::getenv( "WIM2D_PATH" );
         if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
@@ -173,8 +173,8 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     SCP2I_array.resize(boost::extents[nx][ny]);
     LANDMASK_array.resize(boost::extents[nx][ny]);
 
-    dx = vm["dx"].template as<double>();
-    dy = vm["dy"].template as<double>();
+    dx = vm["wim.dx"].template as<double>();
+    dy = vm["wim.dy"].template as<double>();
 
 
     std::fstream in(filein, std::ios::binary | std::ios::in);
@@ -232,30 +232,30 @@ void WimDiscr<T>::init()
     //this->readGridFromFile("wim_grid.a");
 
     // parameters
-	nwavedirn = vm["nwavedirn"].template as<int>();
-    nwavefreq = vm["nwavefreq"].template as<int>();
-    advdim = vm["advdim"].template as<int>();
-    ref_Hs_ice = vm["refhsice"].template as<bool>();
-    atten = vm["atten"].template as<bool>();
-    icevel = vm["icevel"].template as<bool>();
-    steady = vm["steady"].template as<bool>();
-    breaking = vm["breaking"].template as<bool>();
-    scatmod = vm["scatmod"].template as<std::string>();
-    advopt = vm["advopt"].template as<std::string>();
-    cfl = vm["cfl"].template as<double>();
-    Hs_inc = vm["hsinc"].template as<double>(); /* 2.0 */
-    Tp_inc = vm["tpinc"].template as<double>(); /* 12.0 */
-    mwd_inc = vm["mwdinc"].template as<double>(); /* -90. */ //-135.;//-90.;
-    Tmin = vm["tmin"].template as<double>(); /* 2.5 */
-    Tmax = vm["tmax"].template as<double>(); /* 25. */
-    unifc = vm["unifc"].template as<double>(); /* 0.7 */
-    unifh = vm["unifh"].template as<double>(); /* 2.0 */
-    dfloe_pack_init = vm["dfloepackinit"].template as<double>(); /* 300.0 */
-    dfloe_pack_thresh = vm["dfloepackthresh"].template as<double>(); /* 400.0 */
-    young = vm["young"].template as<double>();
-    visc_rp = vm["viscrp"].template as<double>();
-    nbdx = vm["nbdx"].template as<int>();
-    nbdy = vm["nbdy"].template as<int>();
+	nwavedirn = vm["wim.nwavedirn"].template as<int>();
+    nwavefreq = vm["wim.nwavefreq"].template as<int>();
+    advdim = vm["wim.advdim"].template as<int>();
+    ref_Hs_ice = vm["wim.refhsice"].template as<bool>();
+    atten = vm["wim.atten"].template as<bool>();
+    icevel = vm["wim.icevel"].template as<bool>();
+    steady = vm["wim.steady"].template as<bool>();
+    breaking = vm["wim.breaking"].template as<bool>();
+    scatmod = vm["wim.scatmod"].template as<std::string>();
+    advopt = vm["wim.advopt"].template as<std::string>();
+    cfl = vm["wim.cfl"].template as<double>();
+    Hs_inc = vm["wim.hsinc"].template as<double>(); /* 2.0 */
+    Tp_inc = vm["wim.tpinc"].template as<double>(); /* 12.0 */
+    mwd_inc = vm["wim.mwdinc"].template as<double>(); /* -90. */ //-135.;//-90.;
+    Tmin = vm["wim.tmin"].template as<double>(); /* 2.5 */
+    Tmax = vm["wim.tmax"].template as<double>(); /* 25. */
+    unifc = vm["wim.unifc"].template as<double>(); /* 0.7 */
+    unifh = vm["wim.unifh"].template as<double>(); /* 2.0 */
+    dfloe_pack_init = vm["wim.dfloepackinit"].template as<double>(); /* 300.0 */
+    dfloe_pack_thresh = vm["wim.dfloepackthresh"].template as<double>(); /* 400.0 */
+    young = vm["wim.young"].template as<double>();
+    visc_rp = vm["wim.viscrp"].template as<double>();
+    nbdx = vm["wim.nbdx"].template as<int>();
+    nbdy = vm["wim.nbdy"].template as<int>();
 
     if (advdim == 1)
         nbdy = 0;
@@ -533,7 +533,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 
                 dfloe[ny*i+j] = 0.;
 
-                if (icec[i][j] < vm["cicemin"].template as<double>())
+                if (icec[i][j] < vm["wim.cicemin"].template as<double>())
                 {
                     ice_mask[i][j] = 0.;
                     icec[i][j] = 0.;
@@ -725,7 +725,7 @@ void WimDiscr<T>::timeStep(bool step)
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
-    if (vm["steady"].template as<bool>())
+    if (vm["wim.steady"].template as<bool>())
     {
         for (int i = 0; i < nwavefreq; i++)
         {
@@ -1048,9 +1048,9 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     chrono.restart();
 
     //duration = 1.0e3*x_ext/u_ref;
-    duration = vm["duration"].template as<double>();
+    duration = vm["wim.duration"].template as<double>();
 
-    //duration = (vm["simul.timestep"].as<double>())*(vm["couplingfreq"].as<int>());
+    //duration = (vm["wim.simul.timestep"].as<double>())*(vm["wim.couplingfreq"].as<int>());
 
     nt = std::floor(duration/dt);
     //nt = std::round(duration/dt);
@@ -1071,10 +1071,10 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
         value_type t_out = dt*fcpt;
 
-        //critter = !(cpt % vm["reps"].template as<int>()) && (vm["checkprog"].template as<bool>());
-        critter = !(fcpt % 50) && (vm["checkprog"].template as<bool>());
+        //critter = !(cpt % vm["wim.reps"].template as<int>()) && (vm["wim.checkprog"].template as<bool>());
+        critter = !(fcpt % 50) && (vm["wim.checkprog"].template as<bool>());
 
-        if ((vm["exportresults"].template as<bool>()) && (critter))
+        if ((vm["wim.exportresults"].template as<bool>()) && (critter))
             exportResults(fcpt,t_out);
 
         // if (cpt == 30)
@@ -1939,7 +1939,7 @@ template<typename T>
 void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_out) const
 {
 
-    std::string str = vm["outparentdir"].template as<std::string>();
+    std::string str = vm["wim.outparentdir"].template as<std::string>();
 
     char * senv = ::getenv( "WIM2D_PATH" );
     if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
