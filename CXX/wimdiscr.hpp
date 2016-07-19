@@ -63,8 +63,8 @@ public:
     WimDiscr(po::variables_map const& vmin)
         :
         vm(vmin),
-        nx(vm["wim.nx"].template as<int>()),
-        ny(vm["wim.ny"].template as<int>())
+        nx(vm["nx"].template as<int>()),
+        ny(vm["ny"].template as<int>())
     {}
 
     void gridProssessing();
