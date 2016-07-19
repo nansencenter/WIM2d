@@ -193,7 +193,8 @@
          u_ref    = amin+.7*(amax-amin)
          duration = 1.0e3*x_ext/u_ref
       end if
-      nt       = nint( duration/dt )
+      nt = ceiling(duration/dt)
+      dt = duration/nt
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
@@ -1152,6 +1153,15 @@
       write(fid,'(a,i2.2)'),'ADV_DIM:                          ',ADV_DIM
       write(fid,'(a,i2.2)'),'ADV_OPT:                          ',ADV_OPT
       write(fid,'(a,i2.2)'),'BRK_OPT:                          ',BRK_OPT
+      if (BRK_OPT.eq.0) then
+         write(fid,'(a)'),'(No breaking)'
+      elseif (BRK_OPT.eq.1) then
+         write(fid,'(a)'),'(Williams et al, 2013, Oc Mod)'
+      elseif (BRK_OPT.eq.2) then
+         write(fid,'(a)'),'(Marchenko)'
+      elseif (BRK_OPT.eq.3) then
+         write(fid,'(a)'),'(Mohr-Coulomb)'
+      end if
       write(fid,'(a,i2.2)'),'STEADY:                           ',STEADY
       write(fid,'(a,i2.2)'),'DO_ATTEN:                         '        &
      &   ,DO_ATTEN
@@ -1210,7 +1220,7 @@
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'Diagnostics:'
-      write(fid,'(a,f6.1)'),'MIZ width (km): ',W_MIZ
+      write(fid,'(a,f6.1)'),'MIZ width (km): ',W_MIZ/1.e3
       write(fid,'(a,f6.1,a,f6.1)'),'Dmax range in MIZ (m): '            &
      &                          ,Dmax_min,' ',Dmax_max
       write(fid,'(a,e10.3,a,e10.3)'),'tau_x range (Pa): '               &

@@ -373,23 +373,13 @@ end
 
 amax     = max(ag_eff(:));
 dt       = params_in.CFL*gridprams.dx/max(ag_eff(:)); 
+duration = params_in.duration_hours*3600;%%duration in seconds;
+nt       = ceil(duration/dt);
+dt       = duration/nt;%%reduce dt so it divides duration perfectly
 
-if 0
-   nt    = 50;
-   L     = nt*dt*amax
-elseif 0
-   L     = max(gridprams.X(:))-min(gridprams.X(:));
-   amin  = min(ag_eff(:));
-   uc    = amin+.7*(amax-amin);
-   nt    = round( L/uc/dt );
-else
-   L     = max(gridprams.X(:))-min(gridprams.X(:));
-   amin  = min(ag_eff(:));
-   uc    = amin+.7*(amax-amin);
-   %%
-   nt = floor(params_in.duration_hours*3600/dt);
-end
-duration = nt*dt;%%duration in seconds;
+% L     = max(gridprams.X(:))-min(gridprams.X(:));
+% amin  = min(ag_eff(:));
+% uc    = amin+.7*(amax-amin);
 
 diagnostics.wave_travel_dist = duration*ag;
 
