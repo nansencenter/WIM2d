@@ -65,14 +65,14 @@ void WimDiscr<T>::gridProssessing()
     {
         std::string str = vm["wim.outparentdir"].template as<std::string>();
 
-        char * senv = ::getenv( "WIM2D_PATH" );
-        if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
-        {
-            str = std::string( senv ) + "/CXX";
-        }
+        //char * senv = ::getenv( "WIM2D_PATH" );
+        //if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
+        //{
+        //    str = std::string( senv ) + "/CXX";
+        //}
 
         fs::path path(str);
-        path /= "outputs/binaries";
+        path /= "cpp_out/binaries";
 
         if ( !fs::exists(path) )
             fs::create_directories(path);
@@ -1941,14 +1941,14 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
 
     std::string str = vm["wim.outparentdir"].template as<std::string>();
 
-    char * senv = ::getenv( "WIM2D_PATH" );
-    if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
-    {
-        str = std::string( senv ) + "/CXX";
-    }
+    //char * senv = ::getenv( "WIM2D_PATH" );
+    //if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
+    //{
+    //    str = std::string( senv ) + "/CXX";
+    //}
 
     fs::path path(str);
-    path /= "outputs/binaries/prog";
+    path /= "cpp_out/binaries/prog";
 
     if ( !fs::exists(path) )
         fs::create_directories(path);
