@@ -20,7 +20,7 @@ int main(int argc, char** argv )
 {
 
     using namespace WIMOPT;
-    using namespace WIM2D;
+    using namespace Wim;
 
     po::options_description desc = descrOptions();
     po::variables_map vm;
@@ -61,13 +61,13 @@ int main(int argc, char** argv )
     }
 
     // instantiation of wim2d
-    WimDiscr<float> wim2d(vm);
+    WimDiscr<double> wim(vm);
 
     // initialization of wim2d
-    wim2d.wimInit();
+    wim.init();
 
     // run the simulation
-    wim2d.wimRun();
+    wim.run();
 
 #if 0
     //std::vector<float> vec1 = {1.,2.,3.,4.,5.};
