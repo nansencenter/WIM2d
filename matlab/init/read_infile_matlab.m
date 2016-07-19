@@ -1,19 +1,24 @@
-function params   = read_infile_matlab(infile)
+function params   = read_infile_matlab(infile,verbosity)
 
 if ~exist('infile','var')
    infile   = 'infile_matlab.txt';
 end
-infile_version = 7;%%latest infile version
+if ~exist('verbosity','var')
+   verbosity   = 1;
+end
+infile_version = 8;%%latest infile version
 
 if ~exist(infile)
    %% now need infile to run code
    error([infile,' not present - get example from "matlab/main/infiles" directory'])
 else
-   disp('********************************************************')
-   disp('reading options from infile:')
-   disp(infile)
-   disp('********************************************************')
-   disp(' ')
+   if verbosity
+      disp('********************************************************')
+      disp('reading options from infile:')
+      disp(infile)
+      disp('********************************************************')
+      disp(' ')
+   end
    fid   = fopen(infile);
 
    %%check infile version:
@@ -24,10 +29,12 @@ else
 
    %%read in rest of variables:
    while ~feof(fid)
-      [x,name] = read_next(fid);
+      [x,name] = read_next(fid,verbosity);
       if ~isempty(x)
          cmd   = ['params.',name,' = ',num2str(x),';'];
-         disp(cmd);
+         if verbosity
+            disp(cmd);
+         end
          eval(cmd);
       end
    end
@@ -36,7 +43,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x,name]  = read_next(fid)
+function [x,name]  = read_next(fid,verbosity)
 %% read next line in text file
 
 lin   = strtrim(fgets(fid));  %% trim leading white space
@@ -45,12 +52,16 @@ x     = lin2{1};              %%get 1st thing in line
 
 if strcmp(x,'')
    % blank line
-   disp(' ');
+   if verbosity
+      disp(' ');
+   end
    x     = [];
    name  = [];
 elseif strcmp(x,'#')
    % comment
-   disp(lin);
+   if verbosity
+      disp(lin);
+   end
    x     = [];
    name  = [];
 else

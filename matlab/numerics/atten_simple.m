@@ -1,12 +1,13 @@
-%% adv_atten_timestep_simple.m
+%% atten_simple.m
 %% Author: Timothy Williams
 %% Date: 20141018, 18:04:46 CEST
 
 function [S,S_freq,tau_x,tau_y] = ...
-   adv_atten_timestep_simple(grid_prams,ice_prams,s1,dt,adv_options)
+   atten_simple(grid_prams,ice_prams,s1,dt)
 
 nx = grid_prams.nx;
 ny = grid_prams.ny;
+clear grid_prams;
 
 ndir        = s1.ndir;
 wavdir      = s1.wavdir;
@@ -16,42 +17,7 @@ atten_dim   = s1.atten_dim + s1.damp_dim;%%treat scattered E and damped E in sam
 ICE_MASK    = s1.ICE_MASK;
 clear s1;
 
-% ADV_OPT  = 0;%%zeros outside real domain
-% ADV_OPT  = 1;%%periodic in x,y
-% ADV_OPT  = 2;%%periodic in y only
-
 theta = -pi/180*(90+wavdir);%%waves-to, anti-clockwise, radians
-% S0 = S;
-% {wavdir,theta}
-
-%%advection;
-if adv_options.ADV_DIM==2
-   %%2d advection
-   for jth  = 1:ndir
-      u           = ag_eff*cos(theta(jth));
-      v           = ag_eff*sin(theta(jth));
-      S(:,:,jth)  = waveadv_weno(S(:,:,jth),u,v,grid_prams,dt,adv_options);
-   end
-else
-   %%1d advection - 1 row at a time
-   for jy=1:ny
-      for jth  = 1:ndir
-         u           = ag_eff*cos(theta(jth));
-         S(:,jy,jth) = waveadv_weno_1d(S(:,jy,jth),u,grid_prams,dt,adv_options);
-      end
-   end
-end
-% S0-S
-% [min(S0(:)),max(S0(:))]
-% [min(S(:)),max(S(:))]
-% [min(u(:)),max(u(:))]
-% [min(v(:)),max(v(:))]
-% GEN_pause
-
-%%attenuation
-nx = grid_prams.nx;
-ny = grid_prams.ny;
-clear grid_prams;
 
 %% weights for integral over directions
 %% NB using radians for mwd;
@@ -100,4 +66,3 @@ for j = 1:ny
    S_freq(i,j) = wt_theta'*squeeze(S(i,j,:));
 end
 end
-

@@ -1,26 +1,27 @@
-bin="../bin"
-mkdir -p ../run/inputs
+bin="$WIM2D_PATH/fortran/bin"
+GS="$WIM2D_PATH/fortran/grid_setup"
+# mkdir -p ../run/inputs
 
 echo " " 
-echo ${bin}/grid_setup.exe
+echo ${bin}/grid_setup.exec
 echo " " 
 ${bin}/grid_setup.exec
 
 echo " " 
-echo "Now compile in :  ../Build"
-echo "Run in         :  ../run"
+echo "Now compile in :  ."
+echo "Run with '.' in path"
 echo " " 
 
 kernel=(uname -s)
 
 if [ 1 -eq 1 ]
 then
-   python grid_plot.py
+   python $GS/grid_plot.py
 
    if [ $kernel == "Darwin" ]
    then
-      open test/out/land_mask.png
+      open out/land_mask.png
    else
-      display test/out/land_mask.png &
+      display out/land_mask.png &
    fi
 fi

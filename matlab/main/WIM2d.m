@@ -11,7 +11,7 @@ function [out_fields,wave_stuff,diagnostics,mesh_e] =...
 %%     DO_CHECK_INIT: 1
 %%     DO_CHECK_PROG: 1
 %%    DO_CHECK_FINAL: 1
-%%       DO_BREAKING: 0
+%%       BRK_OPT: 0
 %%            STEADY: 1
 %%          DO_ATTEN: 1
 %%             young: 5.4900e+09
@@ -115,7 +115,7 @@ fprintf(logid,'%s\n','Main parameters:');
 fprintf(logid,'%s%2.2d\n','SCATMOD:                          ',params_in.SCATMOD);
 fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',params_in.ADV_DIM);
 fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',params_in.ADV_OPT);
-fprintf(logid,'%s%2.2d\n','DO_BREAKING:                      ',params_in.DO_BREAKING);
+fprintf(logid,'%s%2.2d\n','BRK_OPT:                          ',params_in.BRK_OPT);
 fprintf(logid,'%s%2.2d\n','STEADY:                           ',params_in.STEADY);
 fprintf(logid,'%s%2.2d\n','DO_ATTEN:                         ',params_in.DO_ATTEN);
 fprintf(logid,'%s\n','***********************************************');
@@ -147,7 +147,7 @@ if params_in.DO_DISP;
    clear Dice
 end
 %% add max distance at which waves could have broken the ice
-if ~params_in.DO_BREAKING
+if ~params_in.BRK_OPT
  diagnostics.break_max = nan;%%TW move scalar outputs to new structure "diagnostics"
 end
 
@@ -168,8 +168,8 @@ end
 if ~isnan(params_in.visc_rp)
    ice_prams.visc_rp = params_in.visc_rp;
 end
-ice_prams.break_opt  = 0;%%TODO put this into params_in/infile
-ice_prams   = fn_fill_iceprams(ice_prams);
+ice_prams.BRK_OPT = params_in.BRK_OPT;
+ice_prams         = fn_fill_iceprams(ice_prams);
 %% ice_prams = structure eg:
 %%               c: 0.750000000000000
 %%               h: 2
@@ -190,8 +190,6 @@ ice_prams   = fn_fill_iceprams(ice_prams);
 %%              xi: 2                           % no of pieces floes break into
 %%       fragility: 0.900000000000000           % probability that floes break
 
-P_crit   = (1-params_in.DO_BREAKING)+exp(-1);%%this is critical breaking prob if monochromatic wave
-
 if 0
    figure,fn_fullscreen;
    fn_plot_ice(gridprams,ice_fields);
@@ -208,6 +206,7 @@ fprintf(logid,'%s\n','WIM parameters:');
 fprintf(logid,'%s%4.2f\n','Brine volume fraction:       ' ,ice_prams.vbf);
 fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
 fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
+fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
 fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
 fprintf(logid,'%s%5.2f\n','Damping (Pa.s/m):           '  ,ice_prams.visc_rp);
 fprintf(logid,'%s\n','***********************************************');
@@ -374,23 +373,13 @@ end
 
 amax     = max(ag_eff(:));
 dt       = params_in.CFL*gridprams.dx/max(ag_eff(:)); 
+duration = params_in.duration_hours*3600;%%duration in seconds;
+nt       = ceil(duration/dt);
+dt       = duration/nt;%%reduce dt so it divides duration perfectly
 
-if 0
-   nt    = 50;
-   L     = nt*dt*amax
-elseif 0
-   L     = max(gridprams.X(:))-min(gridprams.X(:));
-   amin  = min(ag_eff(:));
-   uc    = amin+.7*(amax-amin);
-   nt    = round( L/uc/dt );
-else
-   L     = max(gridprams.X(:))-min(gridprams.X(:));
-   amin  = min(ag_eff(:));
-   uc    = amin+.7*(amax-amin);
-   %%
-   nt = floor(params_in.duration_hours*3600/dt);
-end
-duration = nt*dt;%%duration in seconds;
+% L     = max(gridprams.X(:))-min(gridprams.X(:));
+% amin  = min(ag_eff(:));
+% uc    = amin+.7*(amax-amin);
 
 diagnostics.wave_travel_dist = duration*ag;
 
@@ -410,6 +399,9 @@ Info  = { '------------------------------------';
          ['nfreq              = '  num2str(wave_stuff.nfreq)];
          ['ndir               = '  num2str(wave_stuff.ndir)];
          ['SCATMOD            = '  num2str(params_in.SCATMOD)];
+         [' '];
+         ['FSD_OPT            = '  num2str(params_in.FSD_OPT)];
+         ['BRK_OPT            = '  num2str(params_in.BRK_OPT)];
          [' '];
          ['CFL                = '  num2str(params_in.CFL)];
          ['dt                 = '  num2str(dt,'%1.1f') ' s'];
@@ -842,9 +834,13 @@ else
                %% get expected no of floes met per unit
                %%  distance if travelling in a line;
                if out_fields.Dmax(i,j) < 200
+                  if params_in.FSD_OPT==0
                   %%power law distribution
-                  Dave  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
-                           ice_prams.Dmin,out_fields.Dmax(i,j));
+                     Dave  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
+                                ice_prams.Dmin,out_fields.Dmax(i,j));
+                  else
+                     Dave  = floe_scaling_smooth(out_fields.Dmax(i,j),ice_prams,1);
+                  end
                else
                   %% uniform lengths
                   Dave  = out_fields.Dmax(i,j);
@@ -883,6 +879,38 @@ else
          s1.damp_dim    = damp_dim;
          s1.ICE_MASK    = ICE_MASK;
 
+         % ==============================================================
+         %%advection;
+         % ADV_OPT  = 0;%%zeros outside real domain
+         % ADV_OPT  = 1;%%periodic in x,y
+         % ADV_OPT  = 2;%%periodic in y only
+         theta = -pi/180*(90+wave_stuff.dirs);
+         if adv_options.ADV_DIM==2
+            %%2d advection
+            for jth  = 1:s1.ndir
+               %% set the velocities
+               u  = s1.ag_eff*cos(theta(jth));
+               v  = s1.ag_eff*sin(theta(jth));
+
+               %% call advection routine
+               s1.Sdir(:,:,jth)  = waveadv_weno(...
+                  s1.Sdir(:,:,jth),u,v,gridprams,dt,adv_options);
+            end
+         else
+            %%1d advection - 1 row at a time
+            for jy=1:gridprams.ny
+               for jth  = 1:s1.ndir
+                  %% set the velocity
+                  u  = s1.ag_eff(:,jy)*cos(theta(jth));
+
+                  %% call advection routine
+                  s1.Sdir(:,jy,jth) = waveadv_weno_1d(...
+                     s1.Sdir(:,jy,jth),u,gridprams,dt,adv_options);
+               end
+            end
+         end
+         % ==============================================================
+
          if wave_stuff.ndir==1
             if params_in.SCATMOD~=0
                if params_in.DO_DISP; disp('warning: changing params_in.SCATMOD option as not enough directions');
@@ -894,24 +922,29 @@ else
          if params_in.SCATMOD==0
             %% Simple attenuation scheme - doesn't conserve scattered energy
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_simple(gridprams,ice_prams,s1,dt,adv_options);
+               atten_simple(gridprams,ice_prams,s1,dt);
             clear s1 S_out;
          elseif params_in.SCATMOD==1
             %% same as params_in.SCATMOD==0, but scattered energy
             %% is distributed isotropically
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_isotropic(gridprams,ice_prams,s1,dt,adv_options);
+               atten_isotropic(gridprams,ice_prams,s1,dt);
             clear s1 S_out;
          elseif floor(params_in.SCATMOD)==2
             %% same as params_in.SCATMOD==1, but scattered energy
             %% is distributed non-isotropically
+            %% pass in SHPOPT as decimal place eg 2.1 or 2.2 or 2.3
+            SHPOPT   = round(10*(params_in.SCATMOD-2));
+            %SHPOPT   = 1;%% cos^2
+            %SHPOPT   = 2;%% cos^4
+            %SHPOPT   = 3;%% cos^8
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_noniso(gridprams,ice_prams,s1,dt,adv_options,round(10*(params_in.SCATMOD-2)));
+               atten_noniso(gridprams,ice_prams,s1,dt,SHPOPT);
             clear s1 S_out;    
          elseif params_in.SCATMOD==-1
             %% Simple attenuation scheme - does conserve scattered energy
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
-               adv_atten_simple_cons(gridprams,ice_prams,s1,dt,adv_options);
+               atten_simple_conserve(gridprams,ice_prams,s1,dt);
             clear s1 S_out;  
          end
 
@@ -978,6 +1011,11 @@ else
 
       %% FINALLY DO FLOE BREAKING;
       %% - ON GRID
+      P_crit0  = 0;
+      if params_in.BRK_OPT==0
+         P_crit0  = 1;
+      end
+
       for i=1:gridprams.nx
       for j=1:gridprams.ny
          if ICE_MASK(i,j)==1 & mom0(i,j)>0
@@ -990,7 +1028,7 @@ else
             %%  probability of critical strain
             %%  being exceeded from Rayleigh distribution;
             Pstrain  = exp( -ice_prams.strain_c^2/(2*var_strain(i,j)) );
-            P_crit   = (1-params_in.DO_BREAKING)+exp(-1);%%this is critical prob if monochromatic wave
+            P_crit   = P_crit0+exp(-1);%%this is critical prob if monochromatic wave
 
             %% FLOE BREAKING:
             BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
@@ -1039,7 +1077,7 @@ else
                out_fields.Dmax(i,j)
             end
             
-            if ~params_in.DO_BREAKING
+            if params_in.BRK_OPT==0
              P_crit_        = exp(-1);
              BREAK_CRIT     = ( Pstrain>=P_crit_ );
              brkcrt(i,j,n)  = BREAK_CRIT;
@@ -1327,7 +1365,7 @@ else
          pairs{end+1}   = {'tau_y',out_fields.tau_y};
          pairs{end+1}   = {'Hs'   ,out_fields.Hs};
          pairs{end+1}   = {'Tp'   ,out_fields.Tp};
-         %if ~params_in.DO_BREAKING
+         %if ~params_in.BRK_OPT
          % TW: keep out_fields and binary files for arrays
          % pairs{end+1}   = {'break_max',out_fields.break_max};
          %end
@@ -1354,7 +1392,7 @@ if (params_in.SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs'   ,out_fields.Hs};
    pairs{end+1}   = {'Tp'   ,out_fields.Tp};
-   %if ~params_in.DO_BREAKING
+   %if ~params_in.BRK_OPT
    % pairs{end+1}   = {'break_max',out_fields.break_max}; 
    %end
    %%
@@ -1365,15 +1403,18 @@ t1 = now;
 
 if (params_in.OPT==1)|(params_in.OPT==3)
    %%TODO make an explicit parameter to get diagnostics like Wmiz in this way
-   Dmax_j   = out_fields.Dmax(:,1);
+   Nchk     = ceil(gridprams.ny/2);%%=1 if ny=1
+   Dmax_j   = out_fields.Dmax(:,Nchk);
    jmiz     = find((Dmax_j>0)&(Dmax_j<250));
-   Wmiz     = gridprams.dx/1e3*length(jmiz);
+   Wmiz     = gridprams.dx*length(jmiz);
+   %%
+   diagnostics.MIZ_width   = Wmiz;
    %%
    Dmax_min = min(Dmax_j);
    Dmax_max = max(Dmax_j);
    %%
    if params_in.DO_DISP; disp(' ');
-   disp(['MIZ width = ',num2str(Wmiz),' km']); end
+   disp(['MIZ width = ',num2str(Wmiz/1e3),' km']); end
 end
 
 taux_min = min(out_fields.tau_x(:));
@@ -1383,6 +1424,10 @@ tauy_max = max(out_fields.tau_y(:));
 if params_in.DO_DISP; disp(['max tau_x = ',num2str(taux_max),' Pa']);
 disp(['max tau_y = ',num2str(tauy_max),' Pa']);
 disp(' '); end
+diagnostics.taux_min = taux_min;
+diagnostics.taux_max = taux_max;
+diagnostics.tauy_min = tauy_min;
+diagnostics.tauy_max = tauy_max;
 
 %%append to log file
 logid = fopen(log_file,'a');
@@ -1778,7 +1823,7 @@ function params_mex  = get_params_mex(params,duration,ice_prams)
 %%     DO_CHECK_INIT: 1
 %%     DO_CHECK_PROG: 1
 %%    DO_CHECK_FINAL: 1
-%%       DO_BREAKING: 0
+%%           BRK_OPT: 0
 %%            STEADY: 1
 %%          DO_ATTEN: 1
 %%               CFL: 0.7000
@@ -1795,8 +1840,8 @@ fields   = {...
             'DO_CHECK_INIT',...
             'DO_CHECK_PROG',...
             'DO_CHECK_FINAL',...
-            'DO_BREAKING',...
             'STEADY',...
+            'BRK_OPT',...
             'DO_ATTEN',...
             };
             
@@ -1828,5 +1873,13 @@ fields   = {...
 for j=1:length(fields)
    fld   = fields{j};
    params_mex.(fld)  = params.(fld);
+end
+
+if params.DO_DISP
+   ice_prams
+   params_mex
+   params_mex.int_prams
+   params_mex.real_prams
+   %pause;
 end
 %% ===============================================

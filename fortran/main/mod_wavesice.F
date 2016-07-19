@@ -196,8 +196,7 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
-     &                     ,DO_BREAKING,STEADY,DO_ATTEN,nmesh_e,mesh_e)
+      subroutine wim_step(wim_step_prams,nmesh_e,mesh_e)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -209,14 +208,18 @@
 
       implicit none
 
-      integer,intent(in)   :: SCATMOD,ADV_DIM,ADV_OPT                   &
-     &                        ,DO_BREAKING,STEADY,DO_ATTEN
-     &                        ,nmesh_e
+      integer,parameter :: n_wim_step_prams  = 7
+      integer,dimension(n_wim_step_prams),intent(in) :: wim_step_prams  &
+         !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
+      integer,intent(in)   :: nmesh_e
 
       real,dimension(nmesh_e,nmesh_vars),intent(inout),optional         &
      &   :: mesh_e
          ! this is [x_e,y_e,conc_e,thick_e,Nfloes_e,broken_e]
          ! -1st 4 are unchanged; last 2 get updated
+
+      integer  :: SCATMOD,ADV_DIM,ADV_OPT                               &
+     &            ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
@@ -233,7 +236,7 @@
       real  :: E_tot
 
       !!for breaking
-      real     :: sig_strain,Pstrain,P_crit,wlng_crest,Dc
+      real     :: sig_strain,Pstrain,P_crit0,P_crit,wlng_crest,Dc
       real     :: om,ommin,ommax,om1,lam1,lam2,dom
       real     :: F,Dave,c1d,kice,tmp
       integer  :: jcrest
@@ -252,6 +255,17 @@
          ! check if there is any ice
          INTERP_MESH = maxval(mesh_e).gt.0.
       end if
+
+      !wim_step_prams   = (/
+      !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
+      !/)
+      SCATMOD  = wim_step_prams(1)
+      ADV_DIM  = wim_step_prams(2)
+      ADV_OPT  = wim_step_prams(3)
+      BRK_OPT  = wim_step_prams(4)
+      STEADY   = wim_step_prams(5)
+      DO_ATTEN = wim_step_prams(6)
+      FSD_OPT  = wim_step_prams(7)
 
       PI    = 4*atan(1.0)
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
@@ -330,8 +344,14 @@
 
                !! get expected no of floes met per unit
                !!  distance if travelling in a line;
-               if (dfloe(i,j).lt.200.0) then
-                  call floe_scaling(Dave,dfloe(i,j))
+               if (dfloe(i,j).le.200.0) then
+                  if (FSD_OPT.eq.0) then
+                     !! renormalisation group method (Dumont et al, 2011)
+                     call floe_scaling(Dave,dfloe(i,j))
+                  elseif (FSD_OPT.eq.1) then
+                     !! smoothed power law method (Montiel et al, 2015)
+                     call floe_scaling_smooth(Dave,dfloe(i,j),1)
+                  end if
                else
                   Dave  = dfloe(i,j)
                   !! uniform lengths
@@ -492,7 +512,7 @@
          print*,'********************************************'
       end if
 
-      if ((STEADY.eq.0).and.(DO_BREAKING.eq.0)) then
+      if ((STEADY.eq.0).and.(BRK_OPT.eq.0)) then
          !! STEADY==0: not steady-state so E should be conserved until
          !! it starts to exit the domain?
          !! TODO Try with periodicity?
@@ -507,7 +527,12 @@
       end if
 
 
-      !! FINALLY DO FLOE BREAKING;
+      !! FINALLY DO FLOE BREAKING (BRK_OPT>0);
+      P_crit0  = 0.
+      if (BRK_OPT.eq.0) then
+         P_crit0  = 1.!!added to P_crit: Pstrain<=1 so now ice will never break
+      end if
+
       do j=1,jj
       do i=1,ii
          if ((ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
@@ -520,14 +545,14 @@
             !! probability of critical strain
             !! being exceeded from Rayleigh distribution;
             Pstrain  = exp( -epsc**2/(2*var_strain(i,j)) )
-            P_crit   = (1-DO_BREAKING)+exp(-1.0)
+            P_crit   = P_crit0+exp(-1.0)
                !!this is critical prob if monochromatic wave
    
             !! FLOE BREAKING:
             BREAK_CRIT  = ( Pstrain.ge.P_crit ) !! breaks if larger than this
 
-            !! Leave FSD alone if DO_BREAKING==0
-            BREAK_CRIT  = BREAK_CRIT.and.(DO_BREAKING.eq.1)
+            !! Leave FSD alone if BRK_OPT==0
+            BREAK_CRIT  = BREAK_CRIT.and.(BRK_OPT.gt.0)
    
             if (BREAK_CRIT) then
                !! use crest period to work out wavelength
@@ -1006,9 +1031,65 @@
       else
          Dave = dmin
       end if
-      !print*,'dave (in f-s)',Dave
+
+!     !test subroutine (NB this will crash after 1st call, since status='new')
+!     print*,'in floe_scaling'
+!     open(unit=999,file='fsd_test_old.txt',                            &
+!    &     action='write',status='new')
+!     write(999,*) Dave
+!     write(999,*) Dmax
+!     write(999,*) fragility
+!     write(999,*) xi
+!     write(999,*) Dmin
+!     close(999)
 
       end subroutine floe_scaling
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine floe_scaling_smooth(Dave,dmax,mom)
+      use mod_wim_prams, only: fragility,xi,Dmin
+      implicit none
+
+      real,    intent(out) :: Dave
+      real,    intent(in)  :: dmax
+      integer, intent(in)  :: mom
+      integer              :: n
+      real                 :: b,Dthresh,fsd_exp,A
+
+      n        = mom
+      fsd_exp  = 2+log(fragility)/log(xi)!!power law exponent: P(d>D)=(D_min/D)^fsd_exp;
+      b        = n-fsd_exp
+      Dthresh  = 200.
+
+      !! calculate <D^n> from Dmax
+      !! - uniform dist for larger floes
+      Dave  = Dmax**n
+
+      !! small floes
+      if (Dmax.le.Dmin) then
+         Dave  = Dmin**n
+      elseif (Dmax.le.Dthresh) then
+         !! bigger floes
+         A     = (fsd_exp*exp(fsd_exp*(log(Dmin)+log(Dmax))))
+         A     = A/(exp(fsd_exp*log(Dmax))-exp(fsd_exp*log(Dmin)))
+         Dave  = -(A/b)*(exp(b*log(Dmin))-exp(b*log(Dmax)))
+      end if
+
+!!     !test subroutine (NB this will crash after 1st call, since status='new')
+!      print*,'in floe_scaling_smooth'
+!      open(unit=999,file='fsd_test_smooth.txt',                         &
+!     &     action='write',status='new')
+!      write(999,*) Dave
+!      write(999,*) Dmax
+!      write(999,*) mom
+!      write(999,*) fragility
+!      write(999,*) xi
+!      write(999,*) Dmin
+!      close(999)
+
+      end subroutine floe_scaling_smooth
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wavesice

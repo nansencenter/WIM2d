@@ -1,5 +1,5 @@
-DO_COMPILE     = 0;
-USE_WIM        = 0;%%use waves
+DO_COMPILE     = 1;
+USE_WIM        = 1;%%use waves
 PLOT_STEPS     = 1;%%plot all steps after run
 DIAGNOSTICS    = 1;%%diagnostics at end of run
 test_and_exit  = 0;%%if 1, exit after 1 call to WIM (if USE_WIM==1)

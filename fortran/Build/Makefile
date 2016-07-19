@@ -6,26 +6,40 @@ MXC	:=	mex
 
 # root directory for source code
 # (relative to this one)
-src	:=	..
+P       :=  $(shell pwd)
+# @$(shell echo) $(P)
+src	:=  $(WIM2D_PATH)/fortran
+# @echo $(src)
 
 # keep binaries here
-bin	:=	$(src)/bin
+# bin	:=	$(src)/bin
+# bin	:=	$(P)
+bin	:=	.
 
 # set path for compiler
 # NB relative to this directory
-VPATH 	:=	$(src)/main:$(src)/misc:$(src)/init:$(src)/numerics
-VPATH 	:=	$(VPATH):$(src)/attenuation_youngs:$(src)/header_files
-VPATH 	:=	$(VPATH):$(src)/interfaces:$(src)/extern
+VPATH 	:=  $(src)/main
+VPATH   +=  $(src)/misc
+VPATH   +=  $(src)/init
+VPATH   +=  $(src)/numerics
+VPATH 	+=  $(src)/attenuation_youngs
+# VPATH   +=  $(src)/header_files
+VPATH 	+=  $(src)/interfaces
+VPATH 	+=  $(src)/extern
 
 # directory where objects are kept
-ODIR	:=	objs
+# ODIR	:=	$(P)/objs
+ODIR	:=	./objs
 
 # directory where modules are put into
-MDIR	:=	mods
+# MDIR	:=	$(P)/mods
+MDIR	:=	./mods
 
 # header files for "include" statements
 # NB needs to be in VPATH and in -I$(HDIR) in calls to compiler
-HDIR	:=	$(src)/header_files
+# HDIR	:=	$(src)/header_files
+# HDIR	:=	$(P)
+HDIR	:=	.
 
 # # optimise code
 # FCFLAGS=-O
@@ -99,55 +113,58 @@ OBJS		:=      \
 # Create objects by compiling their respective .F files
 # (add dependency on header files also, so we recompile if headers change)
 $(ODIR)/%.o:	%.f90
-	mkdir -p $(ODIR) $(MDIR)
+	@mkdir -p $(ODIR) $(MDIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 $(ODIR)/%.o:	%.F
-	mkdir -p $(ODIR) $(MDIR)
+	@mkdir -p $(ODIR) $(MDIR)
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
 # (default)
 exec: $(PROG_F) $(OBJ_MAIN) $(OBJS)
-	mkdir -p $(bin)
+	@mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
-	mv $(TARGET_F) $(bin)
+	# mv $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
-	mkdir -p $(bin)
+	@mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
-	mv $(TARGET_PY).so $(bin)
+	# mv $(TARGET_PY).so $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
-	mkdir -p $(bin)
+	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX2)* $(bin)
+	# mv $(TARGET_MEX2)* $(bin)
 
 mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
-	mkdir -p $(bin)
+	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX3)* $(bin)
+	# mv $(TARGET_MEX3)* $(bin)
 
 mex4:	$(MEX4) $(OBJ_MAIN) $(OBJS)
-	mkdir -p $(bin)
+	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	mv $(TARGET_MEX4)* $(bin)
+	# mv $(TARGET_MEX4)* $(bin)
 
 all:	py exec mex2 mex3 mex4
 
 All:	py exec
 
 # DEPENDENCIES
-$(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	grid_info.h
-$(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
-$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o		wave_info.h
-$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o
+$(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	$(HDIR)/grid_info.h
+$(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
+	                        $(HDIR)/grid_info.h
+$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o		$(HDIR)/wave_info.h \
+	                        $(HDIR)/grid_info.h
+$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
+	                        $(HDIR)/grid_info.h
 $(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o
+				$(ODIR)/mod_advect.o            $(HDIR)/grid_info.h
 $(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o		$(ODIR)/mod_common_wim.o \
 				$(ODIR)/mod_advect.o 		$(ODIR)/mod_adv_atten.o	 \
-				$(ODIR)/mod_interp.o
+				$(ODIR)/mod_interp.o            $(HDIR)/grid_info.h
 # $(ODIR)/interp.o:		$(ODIR)/r8lib.o
 #
 $(ODIR)/RTparam_outer.o:        $(ODIR)/RTparam_fast.o
@@ -156,13 +173,12 @@ $(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
 #
 $(OBJ_MAIN):			$(OBJS)
 
-$(PROG_F): 		$(OBJ_MAIN) 	$(ODIR)/mod_gridinfo.o
-$(PROG_PY): 		grid_info.h	wave_info.h		$(OBJS)
-
-$(MEX1):		grid_info.h $(OBJ_MAIN)
-$(MEX2):		grid_info.h $(OBJ_MAIN)
-$(MEX3):		grid_info.h wave_info.h	$(OBJ_MAIN)
-$(MEX4):		grid_info.h wave_info.h	$(OBJ_MAIN)
+$(PROG_F):      $(OBJ_MAIN)             $(ODIR)/mod_gridinfo.o
+$(PROG_PY): 	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJS)
+$(MEX1):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h     $(OBJ_MAIN)
+$(MEX2):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h     $(OBJ_MAIN)
+$(MEX3):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
+$(MEX4):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
 
 .PHONY: clean vclean mex2 mex3 mex4
 

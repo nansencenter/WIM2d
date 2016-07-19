@@ -13,8 +13,12 @@
       !! variables common to subroutines here
       integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
       integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
-      integer  :: DO_BREAKING !can turn off breaking for testing of waves
-      integer  :: DO_ATTEN    !can turn off attenuation to test advection
+      integer  :: BRK_OPT  !breaking criterion to use
+                           ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb
+      integer  :: DO_ATTEN !can turn off attenuation to test advection
+      !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
+                           ! 0: RG (Dumont et al, 2011);1: smooth FSD
+      integer,parameter  :: FSD_OPT=1 !TODO make this an input
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
@@ -89,7 +93,7 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'inputs'
+         indir    = 'Build'
          outdir   = 'out'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -108,13 +112,13 @@
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
-         call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
+         call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
       else
          SCATMOD     = 1
          ADV_DIM     = 2
          ADV_OPT     = 2
             !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-         DO_BREAKING = 1
+         BRK_OPT     = 1
          STEADY      = 1
          DO_ATTEN    = 1
 
@@ -124,7 +128,7 @@
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
-         call set_wim_prams() ! - ice properties like Young's modulus
+         call set_wim_prams(BRK_OPT) ! - ice properties like Young's modulus
 
       end if
 
@@ -189,7 +193,8 @@
          u_ref    = amin+.7*(amax-amin)
          duration = 1.0e3*x_ext/u_ref
       end if
-      nt       = nint( duration/dt )
+      nt = ceiling(duration/dt)
+      dt = duration/nt
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
@@ -256,7 +261,7 @@
       integer,dimension(9),intent(in)     :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! DO_BREAKING,STEADY
+      ! STEADY,BRK_OPT,DO_ATTEN
 
       real,dimension(4),intent(in)        :: real_prams  !! young,visc_rp,duration
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
@@ -298,7 +303,7 @@
       DO_CHECK_PROG  = int_prams(5)
       DO_CHECK_INIT  = int_prams(6)
       STEADY         = int_prams(7)
-      DO_BREAKING    = int_prams(8)
+      BRK_OPT        = int_prams(8)
       DO_ATTEN       = int_prams(9)
 
       !!real inputs
@@ -322,13 +327,15 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'inputs'
-         outdir   = 'out_io'
+         indir    = 'Build'
+         outdir   = 'out_io_1'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
+      !print*,this_subr
+      !print*,outdir
 
       print*,'****************************************'
       print*,'Initialising...'
@@ -337,7 +344,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
+      call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
@@ -477,6 +484,9 @@
       out_arrays(:,:,4) = Hs        ! significant wave height
       out_arrays(:,:,5) = Tp        ! mean wave period
 
+      !!print  some outputs to log file
+      call print_log_info()
+
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -518,13 +528,14 @@
       integer,dimension(9),intent(in)  :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! DO_BREAKING,STEADY
+      ! BRK_OPT,STEADY
 
       real,dimension(ii,jj,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
       real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
 
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
+      logical                       :: INTERP_MESH
 
       real              :: PI
       real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
@@ -561,13 +572,19 @@
       DO_CHECK_PROG  = int_prams(5)
       DO_CHECK_INIT  = int_prams(6)
       STEADY         = int_prams(7)
-      DO_BREAKING    = int_prams(8)
+      BRK_OPT        = int_prams(8)
       DO_ATTEN       = int_prams(9)
 
       !!real inputs
       wim_prams_in   = real_prams(1:2)    !!young,visc_rp
       duration       = real_prams(3)      !!length of simulation [s]
       CFL            = real_prams(4)      !!cg*dt/dx
+
+      !!using mesh?
+      INTERP_MESH = .false.
+      if (present(mesh_e)) then
+         INTERP_MESH = .true.
+      end if
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -585,8 +602,12 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'inputs'
-         outdir   = 'out_2'
+         indir    = 'Build'
+         if (.not.INTERP_MESH) then
+            outdir   = 'out_io_2'
+         else
+            outdir   = 'out_io_3'
+         end if
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
@@ -601,7 +622,7 @@
       !print*,freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(wim_prams_in) ! - ice properties like Young's modulus
+      call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
@@ -659,7 +680,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       print*,'Beginning main integration...'
-      if (present(mesh_e)) then
+      if (INTERP_MESH) then
          ! run while doing interpolation onto the mesh points
          call wim2d_run_common(nmesh_e,mesh_e)   !wim2d_run_vSdir
       else
@@ -692,6 +713,9 @@
       out_arrays(:,:,5) = Tp        ! mean wave period
       !out_arrays(:,:,6) = mwd       ! mean wave direction
 
+      !!print  some outputs to log file
+      call print_log_info()
+
       end subroutine wim2d_run_vSdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -710,6 +734,8 @@
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
       integer  :: nMIZ
+      integer,parameter                   :: n_wim_step_prams  = 7
+      integer,dimension(n_wim_step_prams) :: wim_step_prams
 
       !!TODO remove from wim2d_run_io between **
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
@@ -734,12 +760,12 @@
          end if
 
          print*,'n/nt',n,nt
+         wim_step_prams = (/SCATMOD,ADV_DIM,ADV_OPT                     &
+     &                     ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT/)
          if (.not.present(mesh_e)) then
-            call wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
-     &                     ,DO_BREAKING,STEADY,DO_ATTEN,nmesh_e)
+            call wim_step(wim_step_prams,nmesh_e)
          else
-            call wim_step(SCATMOD,ADV_DIM,ADV_OPT                       &
-     &                     ,DO_BREAKING,STEADY,DO_ATTEN,nmesh_e,mesh_e)
+            call wim_step(wim_step_prams,nmesh_e,mesh_e)
          end if
 
       end do!! n - finish time stepping
@@ -1126,8 +1152,16 @@
       write(fid,'(a,i2.2)'),'SCATMOD:                          ',SCATMOD
       write(fid,'(a,i2.2)'),'ADV_DIM:                          ',ADV_DIM
       write(fid,'(a,i2.2)'),'ADV_OPT:                          ',ADV_OPT
-      write(fid,'(a,i2.2)'),'DO_BREAKING:                      '        &
-     &   ,DO_BREAKING
+      write(fid,'(a,i2.2)'),'BRK_OPT:                          ',BRK_OPT
+      if (BRK_OPT.eq.0) then
+         write(fid,'(a)'),'(No breaking)'
+      elseif (BRK_OPT.eq.1) then
+         write(fid,'(a)'),'(Williams et al, 2013, Oc Mod)'
+      elseif (BRK_OPT.eq.2) then
+         write(fid,'(a)'),'(Marchenko)'
+      elseif (BRK_OPT.eq.3) then
+         write(fid,'(a)'),'(Mohr-Coulomb)'
+      end if
       write(fid,'(a,i2.2)'),'STEADY:                           ',STEADY
       write(fid,'(a,i2.2)'),'DO_ATTEN:                         '        &
      &   ,DO_ATTEN
@@ -1135,12 +1169,20 @@
 
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'Other integer parameters:'
+      write(fid,'(a,i2.2)'),'FSD_OPT:                          '        &
+     &   ,FSD_OPT
+      write(fid,'(a)'),'***********************************************'
+
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'WIM parameters:'
-      write(fid,'(a,f4.2)'),'Brine volume fraction:      '  ,vbf
+      write(fid,'(a,f4.2)'), 'Brine volume fraction:      '  ,vbf
       write(fid,'(a,e10.3)'),'Youngs modulus (Pa):        ' ,young
       write(fid,'(a,e10.3)'),'Flexural strength (Pa):     ' ,sigma_c
+      write(fid,'(a,e10.3)'),'Breaking stress (Pa):       ' ,stress_c
       write(fid,'(a,e10.3)'),'Breaking strain:            ' ,epsc
-      write(fid,'(a,f5.2)'),'Damping (Pa.s/m):           '  ,visc_rp
+      write(fid,'(a,f5.2)'), 'Damping (Pa.s/m):           '  ,visc_rp
       write(fid,'(a)'),'***********************************************'
 
       write(fid,'(a)'),' '
@@ -1178,7 +1220,7 @@
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'Diagnostics:'
-      write(fid,'(a,f6.1)'),'MIZ width (km): ',W_MIZ
+      write(fid,'(a,f6.1)'),'MIZ width (km): ',W_MIZ/1.e3
       write(fid,'(a,f6.1,a,f6.1)'),'Dmax range in MIZ (m): '            &
      &                          ,Dmax_min,' ',Dmax_max
       write(fid,'(a,e10.3,a,e10.3)'),'tau_x range (Pa): '               &
@@ -1242,8 +1284,8 @@
       print*,'ADV_DIM: ',ADV_DIM
       read(fid,'(i2.2,a)'), ADV_OPT     ,ctmp
       print*,'ADV_OPT: ',ADV_OPT
-      read(fid,'(i2.2,a)'), DO_BREAKING ,ctmp
-      print*,'DO_BREAKING: ',DO_BREAKING
+      read(fid,'(i2.2,a)'), BRK_OPT ,ctmp
+      print*,'BRK_OPT: ',BRK_OPT
       read(fid,'(i2.2,a)'), STEADY      ,ctmp
       print*,'STEADY: ',STEADY
       read(fid,'(i2.2,a)'), DO_ATTEN ,ctmp

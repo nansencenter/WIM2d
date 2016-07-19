@@ -68,6 +68,7 @@ function [out_fields,wave_stuff,mesh_e] =...
 
 % %%check params_in has the needed fields
 % check_params_in_mex(params_in);
+RMFORT6  = 1;
 
 %% check if we want to do breaking on the mesh also
 if ~exist('mesh_e','var')
@@ -115,7 +116,9 @@ if params_in.MEX_OPT==1
    end
 
    % delete annoying file
-   !rm -f fort.6
+   if RMFORT6
+      !rm -f fort.6
+   end
    return%%MEX_OPT==1
 
 elseif params_in.MEX_OPT==2
@@ -156,7 +159,9 @@ elseif params_in.MEX_OPT==2
    end
   
    % delete annoying file
-   !rm -f fort.6
+   if RMFORT6
+      !rm -f fort.6
+   end
    return%%MEX_OPT==2
 
 elseif params_in.MEX_OPT==3
@@ -208,6 +213,12 @@ elseif params_in.MEX_OPT==3
          end
       end
       clear PP jp;
+      fnames   = {'xe','ye','c','h','Nfloes','broken'};
+      Mesh_e   = mesh_e;
+      for j=1:nmesh_vars
+         mesh_e.(fnames{j})   = Mesh_e(:,j);
+      end
+      clear fnames Mesh_e
    end
 
    %% get mesh variables
@@ -261,10 +272,12 @@ elseif params_in.MEX_OPT==3
       plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
       fn_fullscreen;
 
-      figure(102);
-      pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
-      colorbar;
-      caxis([0 300]);
+      if gridprams.ny>1
+         figure(102);
+         pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
+         colorbar;
+         caxis([0 300]);
+      end
 
       error('Finished test of mesh interpolation');
    end
@@ -277,7 +290,9 @@ elseif params_in.MEX_OPT==3
    end
 
    % delete annoying file
-   !rm -f fort.6
+   if RMFORT6
+      !rm -f fort.6
+   end
 
    return;%%MEX_OPT==3
 end%%choose mex function
