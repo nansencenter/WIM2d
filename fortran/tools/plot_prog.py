@@ -34,33 +34,41 @@ PLOT_PROG   = 1
 
 ##########################################################################
 if PLOT_INIT:
-   # Look at initial fields:
-   print("Plotting initial conditions...")
-   figdir1  = figdir+'/init/'
-   if not os.path.exists(figdir1):
-      os.mkdir(figdir1)
+   if not os.path.exists(bindir+'/wim_init.a'):
+      print('Initial conditions not outputted: wim_init.[a,b]')
+      print('- not plotting')
+   else:
+      # Look at initial fields:
+      print("Plotting initial conditions...")
+      figdir1  = figdir+'/init/'
+      if not os.path.exists(figdir1):
+         os.mkdir(figdir1)
 
-   # new way (more general)
-   fields,info = Fdat.fn_read_general_binary(bindir+'/wim_init.a')
-   Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot initial conditions
+      # new way (more general)
+      fields,info = Fdat.fn_read_general_binary(bindir+'/wim_init.a')
+      Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot initial conditions
 
-   print("Plots in "+figdir1)
-   print(" ")
+      print("Plots in "+figdir1)
+      print(" ")
 ##########################################################################
 
 ################################################################
 if PLOT_FINAL:
-   # Look at end results:
-   print("Plotting final results...")
-   figdir2     = figdir+'/final/'
-   if not os.path.exists(figdir2):
-      os.mkdir(figdir2)
+   if not os.path.exists(bindir+'/wim_init.a'):
+      print('Final conditions not outputted: wim_out.[a,b]')
+      print('- not plotting')
+   else:
+      # Look at end results:
+      print("Plotting final results...")
+      figdir2     = figdir+'/final/'
+      if not os.path.exists(figdir2):
+         os.mkdir(figdir2)
 
-   fields,info = Fdat.fn_read_general_binary(bindir+'/wim_out.a')
-   Fplt.fn_plot_gen(grid_prams,fields,figdir2)    # plot final results
+      fields,info = Fdat.fn_read_general_binary(bindir+'/wim_out.a')
+      Fplt.fn_plot_gen(grid_prams,fields,figdir2)    # plot final results
 
-   print("Plots in "+figdir2+'\n')
-   print(" ")
+      print("Plots in "+figdir2+'\n')
+      print(" ")
 ################################################################
 
 if PLOT_PROG:

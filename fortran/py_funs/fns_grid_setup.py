@@ -290,12 +290,12 @@ def grid_setup(GRID_OPT=1,LAND_OPT=0):
    ###########################################################
 
    ###########################################################
-   print(' ')
-   print(60*'*')
-   print("Now compile WIM code in .Build")
-   print("Run in                  ..")
-   print(60*'*')
-   print(' ')
+   # print(' ')
+   # print(60*'*')
+   # print("Now compile WIM code in .Build")
+   # print("Run in                  ..")
+   # print(60*'*')
+   # print(' ')
    ###########################################################
 
    return grid_fields,grid_arrays
