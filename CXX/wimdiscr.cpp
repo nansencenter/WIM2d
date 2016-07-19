@@ -1050,7 +1050,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     //duration = 1.0e3*x_ext/u_ref;
     duration = vm["duration"].template as<double>();
 
-    duration = (vm["simul.timestep"].as<double>())*(vm["couplingfreq"].as<int>());
+    //duration = (vm["simul.timestep"].as<double>())*(vm["couplingfreq"].as<int>());
 
     nt = std::floor(duration/dt);
     //nt = std::round(duration/dt);
