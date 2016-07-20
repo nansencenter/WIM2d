@@ -48,7 +48,7 @@
                         # 0 = give Hs for displacement of the surrounding water
 
 # correspond to "int_prams" in fortran code 
-1     # SCATMOD         : Scattering model: 0 = old way; 1 = scatter E isotropically
+0     # SCATMOD         : Scattering model: 0 = old way; 1 = scatter E isotropically
 2     # ADV_DIM         : Dimension of advection (1/2)
 2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
 

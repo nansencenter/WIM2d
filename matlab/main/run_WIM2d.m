@@ -70,7 +70,7 @@ if params.MEX_OPT>0
       if verbosity
          disp([infile_dirs,' not present - using default directories...'])
       end
-      indir          = 'Build';
+      indir          = 'grid';
       params.outdir  = ['out_io_',num2str(params.MEX_OPT)];
    else
       if verbosity

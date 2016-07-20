@@ -8,13 +8,11 @@ MXC	:=	mex
 # (relative to this one)
 P       :=  $(shell pwd)
 # @$(shell echo) $(P)
-src	:=  $(WIM2D_PATH)/fortran
+src	:=  $(WIM2D_PATH)/fortran/src
 # @echo $(src)
 
 # keep binaries here
-# bin	:=	$(src)/bin
-# bin	:=	$(P)
-bin	:=	.
+bin	:=	../bin
 
 # set path for compiler
 # NB relative to this directory
@@ -37,9 +35,8 @@ MDIR	:=	./mods
 
 # header files for "include" statements
 # NB needs to be in VPATH and in -I$(HDIR) in calls to compiler
-# HDIR	:=	$(src)/header_files
-# HDIR	:=	$(P)
 HDIR	:=	.
+VPATH 	+= 	$(HDIR)
 
 # # optimise code
 # FCFLAGS=-O
@@ -73,23 +70,23 @@ TARGET_PY	:=	WIM2d_f2py
 
 # mex function to run interactive WIM in matlab
 MX_EXT		:=	mex
-MX2		:=	WIM2d_run_io_mex_v2
-MEX2		:=	$(src)/interfaces/$(MX2).F
-TARGET_MEX2	:=	$(MX2).$(MX_EXT)
+MX1		:=	WIM2d_run_io_mex_v2
+MEX1		:=	$(src)/interfaces/$(MX1).F
+TARGET_MEX1	:=	$(MX1).$(MX_EXT)
 # mex function is $(TARGET_MEX2)maci64  for mac OSX
 # mex function is $(TARGET_MEX2)a64 	for linux
 
 # mex function to run interactive WIM in matlab
-MX3		:=	WIM2d_run_io_mex_vSdir
-MEX3		:=	$(src)/interfaces/$(MX3).F
-TARGET_MEX3	:=	$(MX3).$(MX_EXT)
+MX2		:=	WIM2d_run_io_mex_vSdir
+MEX2		:=	$(src)/interfaces/$(MX2).F
+TARGET_MEX2	:=	$(MX2).$(MX_EXT)
 # mex function is $(TARGET_MEX3)maci64  for mac OSX
 # mex function is $(TARGET_MEX3)a64 	for linux
 
 # mex function to run interactive WIM in matlab
-MX4		:=	WIM2d_run_io_mex_vSdir_mesh
-MEX4		:=	$(src)/interfaces/$(MX4).F
-TARGET_MEX4	:=	$(MX4).$(MX_EXT)
+MX3		:=	WIM2d_run_io_mex_vSdir_mesh
+MEX3		:=	$(src)/interfaces/$(MX3).F
+TARGET_MEX3	:=	$(MX3).$(MX_EXT)
 # mex function is $(TARGET_MEX4)maci64  for mac OSX
 # mex function is $(TARGET_MEX4)a64 	for linux
 
@@ -124,31 +121,31 @@ $(ODIR)/%.o:	%.F
 exec: $(PROG_F) $(OBJ_MAIN) $(OBJS)
 	@mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
-	# mv $(TARGET_F) $(bin)
+	mv $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
 	@mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
-	# mv $(TARGET_PY).so $(bin)
+	mv $(TARGET_PY).so $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
+mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
+	@mkdir -p $(bin)
+	$(MXC) $(MEX_FLAGS) $^
+	mv $(TARGET_MEX1)* $(bin)
+
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
 	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	# mv $(TARGET_MEX2)* $(bin)
+	mv $(TARGET_MEX2)* $(bin)
 
 mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
 	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
-	# mv $(TARGET_MEX3)* $(bin)
+	mv $(TARGET_MEX3)* $(bin)
 
-mex4:	$(MEX4) $(OBJ_MAIN) $(OBJS)
-	@mkdir -p $(bin)
-	$(MXC) $(MEX_FLAGS) $^
-	# mv $(TARGET_MEX4)* $(bin)
-
-all:	py exec mex2 mex3 mex4
+all:	py exec mex1 mex2 mex3
 
 All:	py exec
 
@@ -176,11 +173,10 @@ $(OBJ_MAIN):			$(OBJS)
 $(PROG_F):      $(OBJ_MAIN)             $(ODIR)/mod_gridinfo.o
 $(PROG_PY): 	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJS)
 $(MEX1):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h     $(OBJ_MAIN)
-$(MEX2):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h     $(OBJ_MAIN)
+$(MEX2):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
 $(MEX3):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
-$(MEX4):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
 
-.PHONY: clean vclean mex2 mex3 mex4
+.PHONY: clean vclean mex1 mex2 mex3
 
 # clean: keep executable, but delete modules and objects
 clean:
@@ -191,9 +187,9 @@ vclean:
 	rm -f	$(ODIR)/*.o $(MDIR)/*.mod \
 	   	$(bin)/$(TARGET_F) \
 	   	$(bin)/$(TARGET_PY).so \
+	   	$(bin)/$(TARGET_MEX1)* \
 	   	$(bin)/$(TARGET_MEX2)* \
-	   	$(bin)/$(TARGET_MEX3)* \
-	   	$(bin)/$(TARGET_MEX4)*
+	   	$(bin)/$(TARGET_MEX3)*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

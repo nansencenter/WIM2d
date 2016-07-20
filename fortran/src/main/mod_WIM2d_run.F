@@ -93,7 +93,7 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'Build'
+         indir    = 'grid'
          outdir   = 'out'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -327,7 +327,7 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'Build'
+         indir    = 'grid'
          outdir   = 'out_io_1'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -602,7 +602,7 @@
       if (fex) then
          call read_infile_dirs(indir,outdir)
       else
-         indir    = 'Build'
+         indir    = 'grid'
          if (.not.INTERP_MESH) then
             outdir   = 'out_io_2'
          else
