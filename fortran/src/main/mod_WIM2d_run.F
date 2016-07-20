@@ -114,7 +114,7 @@
          !!initialisation of grid, ice con's
          call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
       else
-         SCATMOD     = 1
+         SCATMOD     = 0
          ADV_DIM     = 2
          ADV_OPT     = 2
             !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;

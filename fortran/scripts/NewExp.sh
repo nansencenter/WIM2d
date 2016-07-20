@@ -21,13 +21,20 @@ $GS/scripts/grid_setup.sh
 
 # get Makefile
 ln -s $BUILD/Makefile .
+cd ..
+echo "Compile in Build_F"
+echo "Run here with code from $WIM2D_PATH/fortran/scripts"
+
+# for pure fortran
+cp $WIM2D_PATH/fortran/scripts/infile_nonIO.txt .
+echo "For pure fortran,"
+echo "edit options in infile_nonIO.txt"
+echo "and run with"
+echo "$WIM2D_PATH/fortran/scripts/run_WIM2D.sh"
 
 # to enable matlab (mex functions)
-cd ..
 cp $WIM2D_PATH/fortran/scripts/startup_local.m .
 cp $WIM2D_PATH/matlab/main/infiles/infile_matlab.txt .
 
-echo "Compile in Build_F"
-echo "Run here with code from $WIM2D_PATH/fortran/scripts"
 echo "To use mex functions, edit infile_matlab.txt"
 echo "and type run('$WIM2D_PATH/matlab/run_WIM2d.m');"

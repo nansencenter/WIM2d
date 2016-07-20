@@ -1,37 +1,58 @@
 # place to put results
+w2d=$WIM2D_PATH
 
+
+# ==================================================================
+# input/output dirs; check inputs
 if [ ! -f infile_dirs.txt ]
 then
-   echo "infile_dirs.txt not present, copy template from infiles"
-   exit
+   echo "infile_dirs.txt not present"
+   echo "using defaults:"
+   indir=grid
+   outdir=out
+   echo "grid in $indir"
+   echo "outputs to $outdir"
 else
    lst=(`cat infile_dirs.txt`)
    indir=${lst[0]}
    outdir=${lst[1]}
-   if [ ! -f $indir/wim_grid.a ];
-   then
-      echo "$indir/wim_grid.a missing";
-      echo "Please go to ../grid_setup to set up grid"
-      exit
-   fi
-   if [ ! -f $indir/wim_grid.b ];
-   then
-      echo "$indir/wim_grid.b missing";
-      echo "Please go to ../grid_setup to set up grid"
-      exit
-   fi
 fi
 
+if [ ! -f $indir/wim_grid.a ];
+then
+   echo "$indir/wim_grid.a missing";
+   echo "Please run grid_setup.sh or grid_setup.py"
+   echo "($w2d/fortran/grid_setup/scripts)"
+   echo "to set up grid"
+   exit
+fi
+if [ ! -f $indir/wim_grid.b ];
+then
+   echo "$indir/wim_grid.b missing";
+   echo "Please run grid_setup.sh or grid_setup.py"
+   echo "($w2d/fortran/grid_setup/scripts)"
+   echo "to set up grid"
+   exit
+fi
+# ==================================================================
+
+
+# ==================================================================
+# set up output dirs
 mkdir -p $outdir
 mkdir -p $outdir/log
 mkdir -p $outdir/binaries
 mkdir -p $outdir/binaries/prog
 rm -f $outdir/binaries/prog/*
 rm -rf $outdir/figs/prog/*
+# ==================================================================
 
+
+# ==================================================================
 # run model
-w2d=$WIM2D_PATH
-$w2d/fortran/bin/WIM2d.exec
+bin/WIM2d.exec
+# ==================================================================
+
 
 if [ $# -eq 0 ]
 then
