@@ -5,15 +5,14 @@ F2PY	:=	f2py
 
 # root directory for source code
 # (relative to this one)
-src	:=	..
+src	:=	../../src
 
 # keep binaries here
-bin	:=	$(src)/bin
-# bin	:=	test
+bin	:=	../bin
 
 # set path for compiler
 # NB relative to this directory
-VPATH 	:=	.:$(src)/misc
+VPATH 	:=	.:../src:$(src)/misc
 
 # directory where objects are kept
 ODIR	:=	objs
@@ -21,17 +20,13 @@ ODIR	:=	objs
 # directory where modules are put into
 MDIR	:=	mods
 
-# header files for "include" statements
-# NB relative to $(ODIR)
-HDIR	:=	$(src)/header_files
-
 # # optimise code
 # FCFLAGS=-O
 # check for errors; fPIC is to compile in linux (no effect in mac osx)
 FCFLAGS=-g -fPIC
 
-# include modules/headers from $(MDIR) or $(HDIR)
-IFLAGS=-I$(MDIR) -I$(HDIR)
+# include modules from $(MDIR)
+IFLAGS=-I$(MDIR)
 
 # Put modules in $(MDIR) when they are created
 OFLAGS=-J$(MDIR)
@@ -49,8 +44,6 @@ TARGET_F	:=	grid_setup.exec
 # - NB f2py needs the full path
 PROG_PY		:=	save_grid_f2py.F
 TARGET_PY	:=	save_grid_f2py
-
-# OBJ_MAIN	:=	$(ODIR)/WIM2d_run.o
 
 OBJS		:=      \
 			$(ODIR)/mod_file_utils.o	\
