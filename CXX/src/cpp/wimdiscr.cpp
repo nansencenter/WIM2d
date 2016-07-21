@@ -47,17 +47,21 @@ void WimDiscr<T>::gridProssessing()
             SCVX_array[i][j] = dx;
             SCP2_array[i][j] = dx*dy;
             SCP2I_array[i][j] = 1./(dx*dy);
-#if 1
-            if (i==nx-1)
+
+            //add land on 3 edges (upper,lower,RH)
+            if (vm["wim.landon3edges"].template as<bool>())
             {
-                LANDMASK_array[i][j] = 1.;
+               if (i==nx-1)
+               {
+                   LANDMASK_array[i][j] = 1.;
+               }
+
+               if ((j==0) || (j==ny-1))
+               {
+                   LANDMASK_array[i][j] = 1.;
+               }
             }
 
-            if ((j==0) || (j==ny-1))
-            {
-                LANDMASK_array[i][j] = 1.;
-            }
-#endif
         }
     }
 
@@ -72,7 +76,7 @@ void WimDiscr<T>::gridProssessing()
         //}
 
         fs::path path(str);
-        path /= "cpp_out/binaries";
+        path /= "out_cpp/binaries";
 
         if ( !fs::exists(path) )
             fs::create_directories(path);
@@ -1071,8 +1075,8 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
         value_type t_out = dt*fcpt;
 
-        //critter = !(cpt % vm["wim.reps"].template as<int>()) && (vm["wim.checkprog"].template as<bool>());
-        critter = !(fcpt % 50) && (vm["wim.checkprog"].template as<bool>());
+        critter = !(cpt % vm["wim.dumpfreq"].template as<int>()) && (vm["wim.checkprog"].template as<bool>());
+        //critter = !(fcpt % 50) && (vm["wim.checkprog"].template as<bool>());
 
         if ((vm["wim.exportresults"].template as<bool>()) && (critter))
             exportResults(fcpt,t_out);
@@ -1948,7 +1952,7 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     //}
 
     fs::path path(str);
-    path /= "cpp_out/binaries/prog";
+    path /= "out_cpp/binaries/prog";
 
     if ( !fs::exists(path) )
         fs::create_directories(path);
