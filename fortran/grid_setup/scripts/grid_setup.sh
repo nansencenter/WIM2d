@@ -1,5 +1,6 @@
 GS="$WIM2D_PATH/fortran/grid_setup"
 bin="$GS/bin"
+P=`pwd`
 
 echo " " 
 echo ${bin}/grid_setup.exec
@@ -7,8 +8,8 @@ echo " "
 ${bin}/grid_setup.exec
 
 echo " " 
-echo "Now compile in :  ."
-echo "Run with '.' in path"
+echo "Now compile in :  $P"
+echo "Run with $bin in path"
 echo " " 
 
 kernel=(uname -s)

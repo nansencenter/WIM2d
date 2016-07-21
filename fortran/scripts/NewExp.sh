@@ -26,7 +26,7 @@ echo "Compile in Build_F"
 echo "Run here with code from $WIM2D_PATH/fortran/scripts"
 
 # for pure fortran
-cp $WIM2D_PATH/fortran/scripts/infile_nonIO.txt .
+cp $WIM2D_PATH/fortran/scripts/infiles/infile_nonIO.txt .
 echo "For pure fortran,"
 echo "edit options in infile_nonIO.txt"
 echo "and run with"
