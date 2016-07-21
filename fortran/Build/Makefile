@@ -69,26 +69,25 @@ PROG_PY		:=	$(src)/interfaces/WIM2d_f2py.F
 TARGET_PY	:=	WIM2d_f2py
 
 # mex function to run interactive WIM in matlab
-MX_EXT		:=	mex
 MX1		:=	WIM2d_run_io_mex_v2
 MEX1		:=	$(src)/interfaces/$(MX1).F
-TARGET_MEX1	:=	$(MX1).$(MX_EXT)
-# mex function is $(TARGET_MEX2)maci64  for mac OSX
-# mex function is $(TARGET_MEX2)a64 	for linux
+TARGET_MEX1	:=	$(MX1).mex
+# mex function is $(TARGET_MEX1)maci64  for mac OSX
+# mex function is $(TARGET_MEX1)a64 	for linux
 
 # mex function to run interactive WIM in matlab
 MX2		:=	WIM2d_run_io_mex_vSdir
 MEX2		:=	$(src)/interfaces/$(MX2).F
-TARGET_MEX2	:=	$(MX2).$(MX_EXT)
-# mex function is $(TARGET_MEX3)maci64  for mac OSX
-# mex function is $(TARGET_MEX3)a64 	for linux
+TARGET_MEX2	:=	$(MX2).mex
+# mex function is $(TARGET_MEX2)maci64  for mac OSX
+# mex function is $(TARGET_MEX2)a64 	for linux
 
 # mex function to run interactive WIM in matlab
 MX3		:=	WIM2d_run_io_mex_vSdir_mesh
 MEX3		:=	$(src)/interfaces/$(MX3).F
-TARGET_MEX3	:=	$(MX3).$(MX_EXT)
-# mex function is $(TARGET_MEX4)maci64  for mac OSX
-# mex function is $(TARGET_MEX4)a64 	for linux
+TARGET_MEX3	:=	$(MX3).mex
+# mex function is $(TARGET_MEX3)maci64  for mac OSX
+# mex function is $(TARGET_MEX3)a64 	for linux
 
 OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
