@@ -20,8 +20,8 @@
       !integer,parameter :: ADV_OPT     = 0
          !!0, not periodic; 2, periodic in y only; 1, periodic in both x,y;
 
-      integer,parameter :: REF_Hs_ICE  = 0
-      integer,parameter :: USE_ICE_VEL = 0
+      integer :: REF_HS_ICE  = 0 !1 = in ice, give Hs for displacement of the ice
+      integer :: USE_ICE_VEL = 0 !0 = approx ice group vel by water group vel
       !!
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
@@ -40,6 +40,7 @@
       public   :: wim_init,wim_step,do_wim_integrals
      &            ,check_grid,check_init,check_prog
      &            ,amin,amax,dt,WAVE_MASK2
+     &            ,USE_ICE_VEL,REF_HS_ICE
       !,calc_mwd
 
       contains
@@ -487,7 +488,7 @@
 
       end do!! w, end spectral loop;
 
-      if (REF_Hs_ICE.eq.1) then
+      if (REF_HS_ICE.eq.1) then
          Hs = 4*sqrt(mom0)
          Tp = 0.0
          where (mom2.gt.0.0)
@@ -502,7 +503,7 @@
             !mwd   = -90. -180./PI*(mom_dir_w/mom0w)!mwd (waves-from in degrees)
          end where
       end if
-      call calc_mwd(REF_Hs_ICE)
+      call calc_mwd(REF_HS_ICE)
 
       if (.false.) then
          !!test: print atten coeff

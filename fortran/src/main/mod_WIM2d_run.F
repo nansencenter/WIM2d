@@ -18,14 +18,13 @@
       integer  :: DO_ATTEN !can turn off attenuation to test advection
       !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
-      integer,parameter  :: FSD_OPT=1 !TODO make this an input
+      integer  :: FSD_OPT=1 !TODO make this an input
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
 
       character(len=80) :: log_file,this_subr,outdir,indir
       character(len=*),parameter :: infile_dirs = 'infile_dirs.txt'
-      character(len=*),parameter :: infile      = 'infile_nonIO.txt'
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
      &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
@@ -75,10 +74,11 @@
 
       !! function to print time
       real     :: etime
-      real     :: wim_prams_in(2)
+      real     :: wim_prams_in(2),init_cons(6)
 
       !! does infile* exist?
       logical  :: fex,fex2
+      character(len=*),parameter :: infile = 'infile_nonIO.txt'
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -107,8 +107,9 @@
       print*,' '
 
       inquire(file=infile,exist=fex2)
+      print*,fex2
       if (fex2) then
-         call read_infile(wim_prams_in)
+         call read_infile(wim_prams_in,init_cons,infile)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
@@ -142,10 +143,10 @@
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! set idealised incident ice parameters
-      call icecons_ideal()      ! - initial icec,iceh,dfloe
+      call icecons_ideal(init_cons(4:6))      ! - initial icec,iceh,dfloe
 
       !! set idealised incident wave parameters
-      call wavecons_ideal()
+      call wavecons_ideal(init_cons(1:3))
 
       !! set wave grid
       call waves_init_freq()
@@ -1260,13 +1261,17 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine read_infile(wim_prams_in)
+      subroutine read_infile(wim_prams_in,init_cons,infile)
       !!determines where to read inputs/outputs from
+      use mod_wavesice, only: REF_HS_ICE,USE_ICE_VEL
       
       implicit none
       
       real,intent(out)  :: wim_prams_in(2)
+      real,intent(out)  :: init_cons(6)
+      character(len=*),intent(in)   :: infile
       integer,parameter :: fid=99
+      integer           :: inf_version
       character(len=80) :: ctmp
 
       wim_prams_in   = 0.0
@@ -1276,14 +1281,31 @@
 
       open(unit=fid,file=infile,action='read')
 
+      ! ===================================================
+      ! check infile version
+      read(fid,'(i2.2,a)'), inf_version     ,ctmp
+
+      ! set correct infile version number here
+      ! - check if its correct
+      if (inf_version.ne.1) then
+         print*,'Wrong infile version'
+         print*,'- get template and edit'
+         stop
+      end if
+      ! ===================================================
+
+
+      ! ===================================================
       !! int_prams
-      read(fid,'(a)'), ctmp
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
       read(fid,'(i2.2,a)'), SCATMOD     ,ctmp
       print*,'SCATMOD: ',SCATMOD
       read(fid,'(i2.2,a)'), ADV_DIM     ,ctmp
       print*,'ADV_DIM: ',ADV_DIM
       read(fid,'(i2.2,a)'), ADV_OPT     ,ctmp
       print*,'ADV_OPT: ',ADV_OPT
+      !!
       read(fid,'(i2.2,a)'), BRK_OPT ,ctmp
       print*,'BRK_OPT: ',BRK_OPT
       read(fid,'(i2.2,a)'), STEADY      ,ctmp
@@ -1297,10 +1319,12 @@
       print*,'DO_CHECK_PROG: ',DO_CHECK_PROG
       read(fid,'(i2.2,a)'), DO_CHECK_INIT ,ctmp
       print*,'DO_CHECK_INIT: ',DO_CHECK_INIT
+      ! ===================================================
 
+      ! ===================================================
       !! real_prams
-      read(fid,'(a)'), ctmp
-      read(fid,'(a)'), ctmp
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
       read(fid,'(e10.3,a)'),  wim_prams_in(1) ,ctmp
       print*,"Young's modulus: ",wim_prams_in(1)
       read(fid,'(f5.2,a)'),   wim_prams_in(2) ,ctmp
@@ -1311,8 +1335,46 @@
       print*,"Duration (s): ",CFL
       print*,'******************************************************'
       print*,' '
-      !!
+      ! ===================================================
+
+      ! ===================================================
+      !! other integer parameters
+      print*,' '
+      print*,'******************************************************'
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
+      read(fid,'(i2.2,a)'), FSD_OPT ,ctmp
+      print*,'FSD_OPT: ',FSD_OPT
+      read(fid,'(i2.2,a)'), REF_HS_ICE ,ctmp
+      print*,'REF_HS_ICE: ',REF_HS_ICE
+      read(fid,'(i2.2,a)'), USE_ICE_VEL ,ctmp
+      print*,'USE_ICE_VEL: ',USE_ICE_VEL
+      print*,'******************************************************'
+      ! ===================================================
+
+      ! ===================================================
+      ! initial conditions
+      print*,' '
+      print*,'******************************************************'
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
+      read(fid,'(f5.2,a)'), init_cons(1),ctmp !Hs_init   
+      print*,"Hs_init (m): ",init_cons(1)
+      read(fid,'(f5.2,a)'), init_cons(2),ctmp !T_init    
+      print*,"T_init (s): ",init_cons(2)
+      read(fid,'(f5.2,a)'), init_cons(3),ctmp !dir_init  
+      print*,"mwd_init (deg): ",init_cons(3)
+      read(fid,'(f5.2,a)'), init_cons(4),ctmp !conc_init 
+      print*,"conc_init: ",init_cons(4)
+      read(fid,'(f5.2,a)'), init_cons(5),ctmp !h_init    
+      print*,"h_init: ",init_cons(5)
+      read(fid,'(f5.2,a)'), init_cons(6),ctmp !Dmax_init 
+      print*,"Dmax_init: ",init_cons(6)
+      print*,'******************************************************'
+      ! ===================================================
+
       close(fid)
+      !stop
 
       end subroutine read_infile
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

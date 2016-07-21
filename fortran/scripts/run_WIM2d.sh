@@ -54,6 +54,8 @@ bin/WIM2d.exec
 # ==================================================================
 
 
+# ==================================================================
+# post-processing
 if [ $# -eq 0 ]
 then
    echo To make plots of progress:
@@ -62,14 +64,16 @@ then
    echo $w2d/fortran/tools/plot_prog.sh 1 $outdir
    echo
    echo Else, enter an argument 0 or 1 with this script ie
-   echo "./run_WIM2d.sh 0 (plots, no movie)"
-   echo "./run_WIM2d.sh 1 (plots, movie)"
+   echo "$w2d/fortran/scripts/run_WIM2d.sh 0 (plots, no movie)"
+   echo "$w2d/fortran/scripts/run_WIM2d.sh 1 (plots, movie)"
    echo
    exit
 else
    MK_MOV=$1
 fi
 
+
 # make plots + movie
 echo $w2d/fortran/tools/plot_prog.sh $MK_MOV $outdir
 $w2d/fortran/tools/plot_prog.sh $MK_MOV $outdir
+# ==================================================================

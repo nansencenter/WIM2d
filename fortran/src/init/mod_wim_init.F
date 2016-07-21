@@ -8,25 +8,31 @@
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wavecons_ideal()
+      subroutine wavecons_ideal(init_cons)
 
       !use mod_common_wim
 
       implicit none
+      real,intent(in)   :: init_cons(3)
 
       integer  :: i,j
       real     :: xm,x0,x_edge
       logical  :: critter
 
       !! wave parameters for ideal cases
-      real,parameter :: Hs_inc   = 2.0    !! significant wave height
-      real,parameter :: Tp_inc   = 12.0   !! mean period
-      real           :: mwd_inc  = -90.   !! waves-from direction
+      real :: Hs_inc,Tp_inc,mwd_inc
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! Set WAVEMASK & wave info
       !! TODO: enable reading this in from file?
 
+      !! wave parameters for ideal cases
+      Hs_inc   = init_cons(1)    !! significant wave heig
+      Tp_inc   = init_cons(2)    !! mean period
+      mwd_inc  = init_cons(3)   !! waves-from direction )
+      print*,'Initial Hs_inc,Tp_inc,mwd_inc'
+      print*,Hs_inc,Tp_inc,mwd_inc
+      print*,' '
 
       !! non-IO version of code
       !! - setting wave mask, Hs, Tp, mwd here
@@ -261,13 +267,21 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine icecons_ideal()
+      subroutine icecons_ideal(init_cons)
 
       implicit none
 
+      real,intent(in)   :: init_cons(3)
       real           :: x0,xm,x_edge
-      real,parameter :: unif_c   = .7
-      real,parameter :: unif_h   = 2.0
+      real  :: unif_c,unif_h,Dmax_init
+
+      unif_c      = init_cons(1) !initial const conc
+      unif_h      = init_cons(2) !initial const thickness
+      Dmax_init   = init_cons(3) !initial floe size
+      print*,'Initial c,h,Dmax'
+      print*,unif_c,unif_h,Dmax_init
+      print*,' '
+
       
       WTR_MASK = 0.0
       !! strip of water on left
@@ -283,7 +297,7 @@
       ICE_MASK = (1-WTR_MASK)*(1-LANDMASK)!!0 on land & water
       icec     = unif_c*ICE_MASK
       iceh     = unif_h*ICE_MASK
-      dfloe    = dfloe_pack_init*ICE_MASK
+      dfloe    = Dmax_init*ICE_MASK
 
       end subroutine icecons_ideal
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

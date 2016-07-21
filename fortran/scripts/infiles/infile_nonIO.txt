@@ -1,3 +1,5 @@
+01  # infile version
+
 # int_prams - all fortran format '(i2.2)'
 00  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
 02  # ADV_DIM        : dimension of advection scheme (1/2)
@@ -11,6 +13,19 @@
 
 # real_prams:
 0.549E+10   # Young's modulus (Pa)                             - fortran format '(e10.3)'
-13.00       # Robinson-Palmer viscosity parameter (Pa/(m/s))   - fortran format '(f5.2)'
-21600.00    # duration of simulation (seconds)                 - fortran format '(f7.2)'
-0.7         # CFL number                                       - fortran format '(f7.2)'
+00.00       # Robinson-Palmer viscosity parameter (Pa/(m/s))   - fortran format '(f5.2)'
+21600.00    # duration of simulation (seconds)                 - fortran format '(f9.2)'
+0.70        # CFL                                              - fortran format '(f4.2)'
+
+# other integer parameters - all fortran format '(i2.2)'
+01 # FSD_OPT
+00 # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice;
+00 # USE_ICE_VEL     : 0 = approx ice group vel by water group vel;
+
+# initial conditions
+3.0   # Hs_init         : initial Hs (constant over wave mask unless waves are read in)
+12.0  # T_init          : if only 1 frequency, use this value for the period
+-90.0 # dir_init        : if only 1 direction, use this value for the wave direction
+0.7   # conc_init       : initial constant value of concentration (used only if no conc field read in)
+2.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
+300.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
