@@ -43,7 +43,7 @@ namespace WIMOPT
             ("wim.cfl", po::value<double>()->default_value( 0.7 ), "CFL number")
 
             //initial conditions in idealised simulation
-            ("wim.hsinc", po::value<double>()->default_value( 3. ), "Incident wave height [m]")
+            ("wim.hsinc", po::value<double>()->default_value( 3. ), "Incident significant wave height [m]")
             ("wim.tpinc", po::value<double>()->default_value( 12. ), "Incident peak period [s]")
             ("wim.mwdinc", po::value<double>()->default_value( -90. ), "Incident mean wave-from direction [deg]")
             ("wim.unifc", po::value<double>()->default_value( 0.7 ), "Initial const conc")
@@ -66,7 +66,7 @@ namespace WIMOPT
 
             //coupling to nextsim
             ("wim.exportresults", po::value<bool>()->default_value( true ), "Export results in coupled mode")
-            ("wim.nfloesgridtomesh", po::value<bool>()->default_value( true ), "during neXtSIM regridding interpolate from grid-to-mesh or mesh-to-mesh")
+            ("wim.nfloesgridtomesh", po::value<bool>()->default_value( true ), "During neXtSIM regridding interpolate from grid-to-mesh or mesh-to-mesh")
             ("wim.couplingfreq", po::value<int>()->default_value( 20 ), "Coupling frequency between neXtSIM and WIM (# neXtSIM time-steps)")
             ;
         return desc;
