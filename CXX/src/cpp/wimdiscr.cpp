@@ -496,13 +496,21 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
             }
             else
             {
+                value_type dtheta = std::abs(wavedir[1]-wavedir[0]);
+
                 for (int dn = 0; dn < nwavedirn; dn++)
                 {
+#if 0
                     chi = PI*(wavedir[dn]-mwd[i][j])/180.0;
                     if (std::cos(chi) > 0.)
                         theta_fac[dn] = 2.0*std::pow(std::cos(chi),2.)/PI;
                     else
                         theta_fac[dn] = 0.;
+#endif
+
+                    theta_fac[dn] = thetaDirFrac(wavedir[dn]-dtheta/2.,dtheta,mwd[i][j]);
+                    theta_fac[dn] = theta_fac[dn]*180./(PI*dtheta);
+
                 }
             }
 
@@ -1903,6 +1911,63 @@ void WimDiscr<T>::calcMWD()
         }
     }
 
+}
+
+template<typename T>
+typename WimDiscr<T>::value_type
+WimDiscr<T>::thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_)
+{
+    value_type mwd = thetaInRange(mwd_,th1_);   // th1_<=mwd<th1_+360
+    value_type th2   = th1_ + dtheta_;
+
+    if ((mwd > th2) && ((mwd - th2) > std::abs(mwd-360-th1_)))
+    {
+        mwd   = mwd - 360.;
+    }
+
+    value_type th1 = std::max<value_type>(mwd-90.,th1_);
+    th2 = std::min<value_type>(mwd+90.,th2);
+    th2 = std::max<value_type>(th1,th2); //!make th2>=th1
+
+    value_type chi1 = PI*(th1-mwd)/180.;
+    value_type chi2 = PI*(th2-mwd)/180.;
+
+    value_type theta_dirfrac  = 2*(chi2-chi1)+std::sin(2*chi2)-std::sin(2*chi1);
+    theta_dirfrac  = theta_dirfrac/(2*PI);
+
+    return theta_dirfrac;
+}
+
+template<typename T>
+typename WimDiscr<T>::value_type
+WimDiscr<T>::thetaInRange(value_type const& th_, value_type const& th1)
+{
+    value_type th2, dth, th;
+    int njump;
+
+    th2   = th1 + 360.;
+    if (th_ < th1)
+    {
+        dth   = th1 - th_;
+        njump = std::ceil(dth/360.);
+        th    = th_ + njump*360.;
+    }
+    else if (th_ > th2)
+    {
+        dth   = th_ - th2;
+        njump = std::ceil(dth/360.);
+        th = th_ - njump*360.;
+    }
+    else if (th_ == th2)
+    {
+        th = th1;
+    }
+    else
+    {
+        th = th_;
+    }
+
+    return th;
 }
 
 template<typename T>

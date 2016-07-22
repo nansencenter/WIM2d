@@ -95,6 +95,9 @@ public:
     void padVar(array2_type const& u, array2_type& upad);
     void calcMWD();
 
+    value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
+    value_type thetaInRange(value_type const& th_, value_type const& th1);
+
     array2_type getX() const { return X_array; }
     array2_type getY() const { return Y_array; }
     array2_type getSCUY() const { return SCUY_array; }
