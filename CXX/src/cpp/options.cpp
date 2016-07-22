@@ -23,10 +23,6 @@ namespace WIMOPT
             ("wim.nwavefreq", po::value<int>()->default_value( 1 ), "Number of wave frequencies")
             ("wim.nwavedirn", po::value<int>()->default_value( 16 ), "Number of wave directions")
 
-            //other bool param's
-            ("wim.refhsice", po::value<bool>()->default_value( false ), "Inside ice, Hs corresponds to water (=false) or ice (=true) displacement")
-            ("wim.icevel", po::value<bool>()->default_value( false ), "Inside ice, use correct group velocity (=true), or water group velocity (=false)")
-
             //'int_prams' in fortran
             ("wim.scatmod", po::value<std::string>()->default_value( "dissipated" ), "Scattered energy is dissipated (=dissipated), distributed isotropically (=isotropic)")
             ("wim.advopt", po::value<std::string>()->default_value( "y-periodic" ), "Not periodic (=notperiodic), periodic in y only (=y-periodic), periodic in both x,y (=xy-periodic)")
@@ -35,6 +31,10 @@ namespace WIMOPT
             ("wim.breaking", po::value<bool>()->default_value( true ), "Do breaking (=true), or turn off breaking (=false)")
             ("wim.atten", po::value<bool>()->default_value( true ), "Do attenuation")
             ("wim.checkprog", po::value<bool>()->default_value( true ), "Do dump intermediate states to binary files (=true), or don't' (=false)")
+
+            //other bool param's
+            ("wim.refhsice", po::value<bool>()->default_value( false ), "Inside ice, Hs corresponds to water (=false) or ice (=true) displacement")
+            ("wim.useicevel", po::value<bool>()->default_value( false ), "Inside ice, use correct group velocity (=true), or water group velocity (=false)")
 
             // 'real_prams' in fortran code
             ("wim.young", po::value<double>()->default_value( 5.49e+9 ), "Young's modulus [Pa]")

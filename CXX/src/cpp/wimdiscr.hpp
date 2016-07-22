@@ -119,7 +119,7 @@ private:
     value_type fmin, fmax, df, epsc, sigma_c, vbf, vb, flex_rig_coeff;
 
     int nwavedirn, nwavefreq, advdim, ncs;
-    bool ref_Hs_ice, atten, icevel, steady, breaking;
+    bool ref_Hs_ice, atten, useicevel, steady, breaking;
     std::string scatmod, advopt;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
 

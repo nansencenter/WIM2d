@@ -241,7 +241,7 @@ void WimDiscr<T>::init()
     advdim = vm["wim.advdim"].template as<int>();
     ref_Hs_ice = vm["wim.refhsice"].template as<bool>();
     atten = vm["wim.atten"].template as<bool>();
-    icevel = vm["wim.icevel"].template as<bool>();
+    useicevel = vm["wim.useicevel"].template as<bool>();
     steady = vm["wim.steady"].template as<bool>();
     breaking = vm["wim.breaking"].template as<bool>();
     scatmod = vm["wim.scatmod"].template as<std::string>();
@@ -638,7 +638,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
                     ag_eff[i][j][fq] = ag[fq];
                     ap_eff[i][j][fq] = ap[fq];
 
-                    if (icevel)
+                    if (useicevel)
                     {
                         wlng_ice[i][j][fq] = wlng[fq];
                     }
