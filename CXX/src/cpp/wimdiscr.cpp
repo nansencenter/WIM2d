@@ -261,6 +261,14 @@ void WimDiscr<T>::init()
     nbdx = vm["wim.nbdx"].template as<int>();
     nbdy = vm["wim.nbdy"].template as<int>();
 
+    if (useicevel)
+    {
+      std::cout << std::endl
+      << "useicevel=true not implemented"
+      << std::endl;
+      exit(1);
+    }
+
     if (advdim == 1)
         nbdy = 0;
 
@@ -633,15 +641,27 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
                     argT = outputs[7];
 
                     disp_ratio[i][j][fq] = (kice*modT)/kwtr;
-                    wlng_ice[i][j][fq] = 2*PI/kice;
-
-                    ag_eff[i][j][fq] = ag[fq];
-                    ap_eff[i][j][fq] = ap[fq];
-
-                    if (useicevel)
+                    //wavelength to use in ice
+                    if (1)
                     {
-                        wlng_ice[i][j][fq] = wlng[fq];
+                       //use ice wavelength TODO make an option?
+                       wlng_ice[i][j][fq] = 2*PI/kice;
                     }
+                    else
+                    {
+                       //use water wavelength instead of ice wavelength
+                       wlng_ice[i][j][fq] = wlng[fq];
+                    }
+
+                    //group and phase velocities to use in ice
+                    if (!useicevel)
+                    {
+                       //water group and phase velocities
+                       //(ice ones not implemented)
+                       ag_eff[i][j][fq] = ag[fq];
+                       ap_eff[i][j][fq] = ap[fq];
+                    }
+
                 }
                 else
                 {
@@ -1056,9 +1076,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
     //duration = (vm["wim.simul.timestep"].as<double>())*(vm["wim.couplingfreq"].as<int>());
 
-    nt = std::floor(duration/dt);
-    //nt = std::round(duration/dt);
-    //nt = std::ceil(duration/dt);
+    nt = std::ceil(duration/dt);
     dt = duration/nt;//reduce time step slightly to make duration an integer multiple of dt
 
     std::cout<<"duration= "<< duration <<"\n";
