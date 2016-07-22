@@ -15,13 +15,13 @@ namespace WIMOPT
             ("help", "Print help messages")
             ("config-file", po::value<std::string>(), "specify .cfg file")
             ("wim.nx", po::value<int>()->default_value( 150 ), "Record length in x direction")
-            ("wim.ny", po::value<int>()->default_value( 4 ), "Record length in y direction")
-            ("wim.dx", po::value<double>()->default_value( 4e+3 ), "Resolution in x direction")
-            ("wim.dy", po::value<double>()->default_value( 4e+3 ), "Resolution in y direction")
-            ("wim.xmin", po::value<double>()->default_value( -298.e+3 ), "xmin")
-            ("wim.ymin", po::value<double>()->default_value( -60e+3 ), "ymin")
-            ("wim.nwavefreq", po::value<int>()->default_value( 1 ), "Number of wave frequency")
-            ("wim.nwavedirn", po::value<int>()->default_value( 16 ), "Number of wave direction")
+            ("wim.ny", po::value<int>()->default_value( 10 ), "Record length in y direction")
+            ("wim.dx", po::value<double>()->default_value( 4e+3 ), "Resolution in x direction [m]")
+            ("wim.dy", po::value<double>()->default_value( 4e+3 ), "Resolution in y direction [m]")
+            ("wim.xmin", po::value<double>()->default_value( -298.e+3 ), "xmin [m]")
+            ("wim.ymin", po::value<double>()->default_value( -60e+3 ), "ymin [m]")
+            ("wim.nwavefreq", po::value<int>()->default_value( 1 ), "Number of wave frequencies")
+            ("wim.nwavedirn", po::value<int>()->default_value( 16 ), "Number of wave directions")
 
             //other bool param's
             ("wim.refhsice", po::value<bool>()->default_value( false ), "Inside ice, Hs corresponds to water (=false) or ice (=true) displacement")
@@ -37,24 +37,23 @@ namespace WIMOPT
             ("wim.checkprog", po::value<bool>()->default_value( true ), "Do dump intermediate states to binary files (=true), or don't' (=false)")
 
             // 'real_prams' in fortran code
-            ("wim.young", po::value<double>()->default_value( 5.49e+9 ), "Young's modulus")
-            ("wim.viscrp", po::value<double>()->default_value( 13. ), "Robinson-Palmer viscosity")
+            ("wim.young", po::value<double>()->default_value( 5.49e+9 ), "Young's modulus [Pa]")
+            ("wim.viscrp", po::value<double>()->default_value( 13. ), "Robinson-Palmer viscosity [Pa.s/m]")
             ("wim.duration", po::value<double>()->default_value( 43200.0 ), "length of simulation [s]")
             ("wim.cfl", po::value<double>()->default_value( 0.7 ), "CFL number")
 
-            //init cons
-            ("wim.hsinc", po::value<double>()->default_value( 2. ), "")
-            ("wim.tpinc", po::value<double>()->default_value( 12. ), "")
-            ("wim.mwdinc", po::value<double>()->default_value( -90. ), "")
-            ("wim.unifc", po::value<double>()->default_value( 0.7 ), "")
-            ("wim.unifh", po::value<double>()->default_value( 2. ), "")
-            ("wim.dfloepackinit", po::value<double>()->default_value( 300. ), "")
+            //initial conditions in idealised simulation
+            ("wim.hsinc", po::value<double>()->default_value( 3. ), "Incident wave height [m]")
+            ("wim.tpinc", po::value<double>()->default_value( 12. ), "Incident peak period [s]")
+            ("wim.mwdinc", po::value<double>()->default_value( -90. ), "Incident mean wave-from direction [deg]")
+            ("wim.unifc", po::value<double>()->default_value( 0.7 ), "Initial const conc")
+            ("wim.unifh", po::value<double>()->default_value( 1. ), "Initial const thickness [m]")
+            ("wim.dfloepackinit", po::value<double>()->default_value( 300. ), "Initial value in pack (unbroken) ice [m]")
             ("wim.landon3edges", po::value<bool>()->default_value( false ), "Add land on upper,lower and RH edges")
 
             //outputs of WIM
             ("wim.dumpfreq", po::value<int>()->default_value( 10 ), "frequency of dumping (# WIM timesteps)")
             ("wim.outparentdir", po::value<std::string>()->default_value( "out_cpp" ), "Parent directory for the output files")
-
 
             //numerical parameters
             ("wim.tmin", po::value<double>()->default_value( 2.5 ), "Minimum wave period in a spectrum [s]")
@@ -66,9 +65,9 @@ namespace WIMOPT
             ("wim.nbdx", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
 
             //coupling to nextsim
-            ("wim.exportresults", po::value<bool>()->default_value( true ), "export results")
-            ("wim.nfloesgridtomesh", po::value<bool>()->default_value( true ), "")
-            ("wim.couplingfreq", po::value<int>()->default_value( 20 ), "")
+            ("wim.exportresults", po::value<bool>()->default_value( true ), "Export results in coupled mode")
+            ("wim.nfloesgridtomesh", po::value<bool>()->default_value( true ), "during neXtSIM regridding interpolate from grid-to-mesh or mesh-to-mesh")
+            ("wim.couplingfreq", po::value<int>()->default_value( 20 ), "Coupling frequency between neXtSIM and WIM (# neXtSIM time-steps)")
             ;
         return desc;
     }
