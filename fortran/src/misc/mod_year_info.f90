@@ -1,5 +1,8 @@
 module mod_year_info
 implicit none
+
+   private
+
    type year_info
       integer iyear           ! year         in YYYYMMDD format
       integer imonth          ! month        in YYYYMMDD format
@@ -10,7 +13,6 @@ implicit none
 
       real*8  dsecond         ! seconds in day (exact)
       integer model_day       ! julian day since refyear/refmonth/refday
-      real*8  model_time      ! seconds    since refyear/refmonth/refday
 
       !characters
       character(len=4) cyear        ! year   in YYYYMMDD format
@@ -40,33 +42,37 @@ implicit none
    integer,parameter :: refyear  = 1900
    integer,parameter :: refmonth = 1
    integer,parameter :: refday   = 1
+   type(year_info)   :: model_year_info
+   real*8            :: model_seconds,model_seconds_start
+   integer           :: model_day,model_day_start
 
-   public :: year_info,model_time_to_year_info  &
-               ,make_year_info                  &
+   public :: year_info,model_time_to_year_info     &
+               ,make_year_info                     &
+               ,model_year_info                    &
+               ,model_day_start,model_day          &
+               ,model_seconds_start,model_seconds  &
                ,refyear,refmonth,refday
 
 contains
 
 
-subroutine model_time_to_year_info(tt,model_time)
+subroutine model_time_to_year_info(tt,model_day_,model_seconds_)
    ! output type(year_info)   :: tt
-   ! input double             :: model_time    - time in seconds since reftime
+   ! input double             :: model_time_   - time in days since reftime
    implicit none
 
 
    type(year_info), intent(out)  :: tt
-   real*8, intent(in)            :: model_time
+   integer, intent(in)           :: model_day_
+   real*8, intent(in)            :: model_seconds_
 
-   integer  :: julian_day,iyear,imonth,iday
-   real*8   :: dtime_seconds
+   integer  :: iyear,imonth,iday
 
-   julian_day     = floor(model_time/(24.*3600.))     !julian day since reftime
-   dtime_seconds  = model_time-julian_day*(24.*3600.) !seconds in the day
-   
+   ! convert model day to date
    call juliantodate(iyear,imonth,iday                      &
-                     ,julian_day,refyear,refmonth,refday)
+                     ,model_day_,refyear,refmonth,refday)
 
-   call make_year_info(tt,iyear,imonth,iday,dtime_seconds)
+   call make_year_info(tt,iyear,imonth,iday,model_seconds_)
 
 end subroutine model_time_to_year_info
 
@@ -78,7 +84,8 @@ subroutine make_year_info(tt,iyear,imonth,iday,dtime_seconds)
    real*8,intent(in)    :: dtime_seconds
    type(year_info), intent(out)  :: tt
 
-   real*8   :: dsecs
+   real*8      :: dsecs
+   integer*8   :: itmp
 
 
    ! ================================================
@@ -98,17 +105,16 @@ subroutine make_year_info(tt,iyear,imonth,iday,dtime_seconds)
    tt%model_day   = datetojulian(iyear,imonth,iday,refyear,refmonth,refday)
 
    ! also store model time (seconds relative to refyear/refmonth/refday)
-   tt%model_time  = 3600*24*tt%model_day+tt%dsecond
+   tt%dsecond     = dtime_seconds
    ! ================================================
 
 
    ! ================================================
    !time
-   tt%dsecond  = dtime_seconds
    tt%ihour    = floor( dtime_seconds/3600.                           )
    tt%iminute  = floor( (dtime_seconds-3600.*tt%ihour)/60.            )
    dsecs       = floor( (dtime_seconds-3600.*tt%ihour-60.*tt%iminute) )
-   tt%isecond  = floor( dsecs )
+   tt%isecond  = nint( dsecs )
    write(tt%chour  ,'(i2.2)') tt%ihour
    write(tt%cminute,'(i2.2)') tt%iminute
    write(tt%csecond,'(i2.2)') tt%isecond
@@ -188,7 +194,7 @@ integer function datetojulian(year,month,day,ryear,rmonth,rday)
 end  function datetojulian
 
 
-subroutine juliantodate(jday,year,month,day,ryear,rmonth,rday)
+subroutine juliantodate(year,month,day,jday,ryear,rmonth,rday)
    implicit none
    integer, intent(in) :: jday,ryear,rmonth,rday
    integer, intent(out):: year,month,day
