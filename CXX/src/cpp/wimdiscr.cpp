@@ -76,7 +76,7 @@ void WimDiscr<T>::gridProssessing()
         //}
 
         fs::path path(str);
-        path /= "out_cpp/binaries";
+        path /= "binaries";
 
         if ( !fs::exists(path) )
             fs::create_directories(path);
@@ -441,6 +441,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 
     x_edge = 0.5*(x0+xmax)-0.8*(0.5*(xmax-x0));
 
+    //std::cout<<Hs_inc<<" "<<Tp_inc<<" "<<mwd_inc<<std::endl;
+    //std::exit(1);
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 #pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
@@ -453,6 +455,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
                 Hs[i][j] = Hs_inc;
                 Tp[i][j] = Tp_inc;
                 mwd[i][j] = mwd_inc;
+                //std::cout<<Hs[i][j]<<" "<<Tp[i][j]<<" "<<mwd[i][j];
             }
         }
     }
@@ -498,19 +501,27 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
             {
                 value_type dtheta = std::abs(wavedir[1]-wavedir[0]);
 
+                if (mwd[i][j]!=0.)
+                   std::cout<<"dir-frac ("<<i<<","<<j<<")"<<std::endl;
                 for (int dn = 0; dn < nwavedirn; dn++)
                 {
 #if 0
+                    //less accurate way of calculating spreading
+                    //(sample cos^2 at mid-point of interval)
                     chi = PI*(wavedir[dn]-mwd[i][j])/180.0;
                     if (std::cos(chi) > 0.)
                         theta_fac[dn] = 2.0*std::pow(std::cos(chi),2.)/PI;
                     else
                         theta_fac[dn] = 0.;
-#endif
-
+#else
+                    //more accurate way of calculating spreading
+                    //(integrate cos^2 over interval)
                     theta_fac[dn] = thetaDirFrac(wavedir[dn]-dtheta/2.,dtheta,mwd[i][j]);
                     theta_fac[dn] = theta_fac[dn]*180./(PI*dtheta);
+#endif
 
+                    if (Hs[i][j]!=0.)
+                       std::cout<<wavedir[dn]<<" "<<mwd[i][j]<<" "<<theta_fac[dn]<<std::endl;
                 }
             }
 
@@ -2035,7 +2046,7 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     //}
 
     fs::path path(str);
-    path /= "out_cpp/binaries/prog";
+    path /= "binaries/prog";
 
     if ( !fs::exists(path) )
         fs::create_directories(path);
