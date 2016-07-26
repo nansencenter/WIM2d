@@ -232,17 +232,21 @@
             dtheta   = abs(wavdir(2)-wavdir(1)) !degrees
             !print*,dtheta
             do wth=1,ndir
+#if 1
                theta_fac(wth) = theta_dirfrac(                          &
      &            wavdir(wth)-dtheta/2.,dtheta,mwd(i,j))                &
      &               *180./(pi*dtheta)
-               !print*,theta_fac(wth)
+#else
+               chi   = PI/180.0*(wavdir(wth)-mwd(i,j))
+               if (cos(chi).gt.0.0) then
+                  theta_fac(wth) = 2.0/PI*cos(chi)**2
+               else
+                  theta_fac(wth) = 0.0
+               end if
 
-               !chi   = PI/180.0*(wavdir(wth)-mwd(i,j))
-               !if (cos(chi).gt.0.0) then
-               !   theta_fac(wth) = 2.0/PI*cos(chi)**2
-               !else
-               !   theta_fac(wth) = 0.0
-               !end if
+#endif
+               print*,wavdir(wth),mwd(i,j),theta_fac(wth)
+
             end do
             !print*,'test dir spreading factor'
             !print*,2*PI/(1.0*ndir)*sum(theta_fac),1
