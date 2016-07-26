@@ -1,4 +1,4 @@
-01  # infile version
+02  # infile version
 
 # int_prams - all fortran format '(i2.2)'
 00  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
@@ -18,7 +18,7 @@
 0.70        # CFL                                              - fortran format '(f4.2)'
 
 # other integer parameters - all fortran format '(i2.2)'
-01 # FSD_OPT
+00 # FSD_OPT
 00 # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice;
 00 # USE_ICE_VEL     : 0 = approx ice group vel by water group vel;
 
@@ -29,3 +29,11 @@
 0.7   # conc_init       : initial constant value of concentration (used only if no conc field read in)
 1.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
 300.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
+
+# start date/time
+20150101T000000Z  # YYYYMMDDTHHMMSSZ format
+
+# diagnostics (used if both itest,jtest>0)
+-1      # itest (i6.6)
+-1      # jtest (i6.6)
+10      # dumpfreq (i6.6)

@@ -5,6 +5,9 @@
 
       module mod_wim2d_run
 
+      use mod_year_info
+      use mod_common_wim
+
       implicit none
 
       private
@@ -22,8 +25,9 @@
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
+      integer  :: dumpfreq = 10!frequency of dumping (every 10 time steps dump binary file)
 
-      character(len=80) :: log_file,this_subr,outdir,indir
+      character(len=80) :: log_file,this_subr,indir
       character(len=*),parameter :: infile_dirs = 'infile_dirs.txt'
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
@@ -45,7 +49,6 @@
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
       use mod_wim_init     !! initial wave fields
-      use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -91,14 +94,14 @@
       !!locations of inputs/outputs
       inquire(file=infile_dirs,exist=fex)
       if (fex) then
-         call read_infile_dirs(indir,outdir)
+         call read_infile_dirs(indir)
       else
          indir    = 'grid'
          outdir   = 'out'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
-      log_file    = trim(outdir)//"/log/wim2d.log"
+      !log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run'
 
       print*,'****************************************'
@@ -164,8 +167,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
-         call check_grid(outdir)
-         call check_init(outdir)
+         call check_grid()
+         call check_init()
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -221,7 +224,7 @@
       call print_screen_info()
 
       !!print  some outputs to log file
-      call print_log_info()
+      !call print_log_info()
 
       end subroutine wim2d_run
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -233,7 +236,6 @@
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
       use mod_wim_init     !! initial wave fields
-      use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
 
 !     !! main code for WIM
@@ -326,14 +328,13 @@
       !!locations of inputs/outputs
       inquire(file=infile_dirs,exist=fex)
       if (fex) then
-         call read_infile_dirs(indir,outdir)
+         call read_infile_dirs(indir)
       else
          indir    = 'grid'
          outdir   = 'out_io_1'
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
-      log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
       !print*,this_subr
       !print*,outdir
@@ -425,8 +426,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
-         call check_grid(outdir)
-         call check_init(outdir)
+         call check_grid()
+         call check_init()
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -476,7 +477,7 @@
       call print_screen_info()
 
       !!print  some outputs to log file
-      call print_log_info()
+      !call print_log_info()
 
       !! put in same order as binary outputs:
       out_arrays(:,:,1) = dfloe     ! maximum floe size
@@ -486,7 +487,7 @@
       out_arrays(:,:,5) = Tp        ! mean wave period
 
       !!print  some outputs to log file
-      call print_log_info()
+      !call print_log_info()
 
       end subroutine wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -498,7 +499,6 @@
       use mod_gridinfo     !! grid info
       use mod_wim_prams    !! ice parameters
       use mod_wim_init     !! initial wave fields
-      use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
 
 !     !! main code for WIM
@@ -601,7 +601,7 @@
       !!locations of inputs/outputs
       inquire(file=infile_dirs,exist=fex)
       if (fex) then
-         call read_infile_dirs(indir,outdir)
+         call read_infile_dirs(indir)
       else
          indir    = 'grid'
          if (.not.INTERP_MESH) then
@@ -612,7 +612,6 @@
       end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
-      log_file    = trim(outdir)//"/log/wim2d.log"
       this_subr   = 'wim2d_run_io'
 
       print*,'****************************************'
@@ -664,8 +663,8 @@
          print*,'Saving initial conditions to '//                       &
      &            trim(outdir)//'/binaries'
          print*,' '
-         call check_grid(outdir)
-         call check_init(outdir)
+         call check_grid()
+         call check_init()
       end if
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -703,9 +702,6 @@
       !!print info to screen again
       call print_screen_info()
 
-      !!print  some outputs to log file
-      call print_log_info()
-
       !! put in same order as binary outputs:
       out_arrays(:,:,1) = dfloe     ! maximum floe size
       out_arrays(:,:,2) = tau_x     ! wave stress (x dirn)
@@ -715,7 +711,7 @@
       !out_arrays(:,:,6) = mwd       ! mean wave direction
 
       !!print  some outputs to log file
-      call print_log_info()
+      !call print_log_info()
 
       end subroutine wim2d_run_vSdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -726,39 +722,43 @@
 
       use mod_gridinfo
       use mod_wim_prams
-      use mod_common_wim
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
-      use mod_wavesice, only: check_prog,wim_step
+      use mod_wavesice, only: check_prog,wim_step,dt,DUMP_DIAG
 
       implicit none
 
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
-      integer  :: nMIZ
+      integer  :: nMIZ,ndays_fwd
       integer,parameter                   :: n_wim_step_prams  = 7
       integer,dimension(n_wim_step_prams) :: wim_step_prams
 
       !!TODO remove from wim2d_run_io between **
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
 
-      logical :: critter
-      integer  :: n,reps
+      logical :: critter,WANT_DIAG
+      integer :: n
 
       !! MAIN INTEGRATION
       !! - Common to WIM2d_run & WIM2d_run_io subroutines
 
       !nt = 13!stop at a certain point for testing
       !nt = 10*nt!extend to see true steady state
-      reps  = 10!frequency of dumping (every 10 time steps dump binary file)
+      WANT_DIAG   = (itest.gt.0).and.(jtest.gt.0)
+      DUMP_DIAG   = WANT_DIAG
 
       do n=1,nt
 
-         critter  = (DO_CHECK_PROG.eq.1).and.(mod(n-1,reps).eq.0)
+
+         critter  = (DO_CHECK_PROG.eq.1).and.(mod(n-1,dumpfreq).eq.0)
 
          if (critter) then
             !!dump fields to binary
-            call check_prog((/n-1,nt/),0,outdir)
+            call check_prog((/n-1,nt/),0)
          end if
+
+         !!test if want to dump diagnostic text file at (itest,jtest)
+         DUMP_DIAG   = (WANT_DIAG).and.(mod(n-1,dumpfreq).eq.0)
 
          print*,'n/nt',n,nt
          wim_step_prams = (/SCATMOD,ADV_DIM,ADV_OPT                     &
@@ -769,11 +769,31 @@
             call wim_step(wim_step_prams,nmesh_e,mesh_e)
          end if
 
+         if (.true.) then
+            taux_max = maxval(tau_x)
+            taux_min = minval(tau_x)
+            tauy_max = maxval(tau_y)
+            tauy_min = minval(tau_y)
+            print*,' '
+            print*,'time step no:',n,nt
+            print*,'tau_x range (Pa)',taux_min,taux_max
+            print*,'tau_y range (Pa)',tauy_min,tauy_max
+            print*,' '
+         end if
+
+         !update global variables model_time,model_time_year_info
+         model_seconds  = model_seconds+dt
+         ndays_fwd      = floor(model_seconds/(24.*3600.))
+         model_day      = model_day+ndays_fwd
+         model_seconds  = model_seconds-ndays_fwd*(24.*3600.)
+         call model_time_to_year_info(model_year_info
+     &            ,model_day,model_seconds)
+
       end do!! n - finish time stepping
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
-         call check_prog((/n-1,nt/),1,outdir)
+         call check_prog((/n-1,nt/),1)
       end if
 
       MIZ_MASK = 0.0
@@ -807,6 +827,15 @@
       print*,'tau_x range (Pa)',taux_min,taux_max
       print*,'tau_y range (Pa)',tauy_min,tauy_max
       print*,' '
+
+      log_file = trim(outdir)
+     &   //'/diagnostics/global/WIM_diagnostics'
+     &   //model_year_info%cdate//'T'
+     &   //model_year_info%chour
+     &   //model_year_info%cminute
+     &   //model_year_info%csecond//'Z.txt'
+
+      call print_log_info()
 
       end subroutine wim2d_run_common
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -905,9 +934,6 @@
       !! and wim2d_run_io subroutine in this file
       !! - 3d arrays hard to do in mex/fortran
 
-      use mod_common_wim, only: freq_vec,wavdir                         &
-     &                          ,sdf_dir,sdf_inc                        &
-     &                          ,icec,iceh,dfloe
       use mod_wavesice, only: WAVE_MASK2
 
       implicit none
@@ -997,9 +1023,6 @@
       !! and wim2d_run_io subroutine in this file
       !! - 3d arrays hard to do in mex/fortran
 
-      use mod_common_wim, only: freq_vec,wavdir                         &
-     &                          ,sdf_dir,sdf_inc                        &
-     &                          ,icec,iceh,dfloe
       use mod_wavesice, only: WAVE_MASK2
 
       implicit none
@@ -1091,7 +1114,6 @@
       subroutine print_screen_info()
 
       use mod_gridinfo
-      use mod_common_wim
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
       use mod_wavesice, only: amax,amin,dt
 
@@ -1129,7 +1151,6 @@
 
       use mod_gridinfo
       use mod_wim_prams
-      use mod_common_wim
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
       use mod_wavesice, only: amax,amin,dt
 
@@ -1230,11 +1251,11 @@
      &                          ,tauy_min,' ',tauy_max
       write(fid,'(a)'),'***********************************************'
 
-      write(fid,'(a,f6.1)'),' '
-      write(fid,'(a)'),'***********************************************'
-      write(fid,'(a,f7.1)'),'Elapsed time (min):',et/60.0
-      write(fid,'(a)'),'***********************************************'
-      write(fid,'(a)'),' '
+!     write(fid,'(a,f6.1)'),' '
+!     write(fid,'(a)'),'***********************************************'
+!     write(fid,'(a,f7.1)'),'Elapsed time (min):',et/60.0
+!     write(fid,'(a)'),'***********************************************'
+!     write(fid,'(a)'),' '
 
       !!close file
       close(fid)
@@ -1243,12 +1264,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine read_infile_dirs(indir,outdir)
+      subroutine read_infile_dirs(indir)
       !!determines where to read inputs/outputs from
       
       implicit none
       
-      character(len=80),intent(out) :: indir,outdir
+      character(len=80),intent(out) :: indir
       !character(len=80),intent(in)  :: infile
       integer,parameter :: fid=99
 
@@ -1263,7 +1284,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine read_infile(wim_prams_in,init_cons,infile)
       !!determines where to read inputs/outputs from
-      use mod_wavesice, only: REF_HS_ICE,USE_ICE_VEL
+      use mod_wavesice,    only: REF_HS_ICE,USE_ICE_VEL
       
       implicit none
       
@@ -1273,6 +1294,13 @@
       integer,parameter :: fid=99
       integer           :: inf_version
       character(len=80) :: ctmp
+      integer  :: m_year
+      integer  :: m_month
+      integer  :: m_day
+      integer  :: m_hour
+      integer  :: m_minute
+      integer  :: m_second
+      real*8   :: d_second
 
       wim_prams_in   = 0.0
       print*,' '
@@ -1287,7 +1315,7 @@
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.1) then
+      if (inf_version.ne.2) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1373,7 +1401,61 @@
       print*,'******************************************************'
       ! ===================================================
 
+      ! ===================================================
+      ! time info
+      print*,' '
+      print*,'******************************************************'
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
+      read(fid,'(a)'), ctmp !start-date YYYYMMDDTHHMMSSZ + comments
+      
+      !!parse date
+      read(ctmp(1:4)  ,'(i4.4)'), m_year  
+      read(ctmp(5:6)  ,'(i2.2)'), m_month 
+      read(ctmp(7:8)  ,'(i2.2)'), m_day   
+      read(ctmp(10:11),'(i2.2)'), m_hour  
+      read(ctmp(12:13),'(i2.2)'), m_minute
+      read(ctmp(14:15),'(i2.2)'), m_second
+
+      !!calc model start time etc
+      d_second = m_second+60.*m_minute+3600.*m_hour
+      call make_year_info(model_year_info,                              &
+     &      m_year,m_month,m_day,d_second)
+      model_day_start      = model_year_info%model_day
+      model_day            = model_day_start
+      model_seconds_start  = model_year_info%dsecond
+      model_seconds        = model_seconds_start
+
+      print*,'Start date & time: '//                                    &
+     &   model_year_info%cyear //'/'//                                  &
+     &   model_year_info%cmonth//'/'//                                  &
+     &   model_year_info%cday//' '//
+     &   model_year_info%chour  //':'//                                 &
+     &   model_year_info%cminute//':'//                                 &
+     &   model_year_info%csecond
+      print*,'Starting model day: '                                     &
+     &   ,model_year_info%model_day
+      print*,'Seconds in starting model day: '                          &
+     &   ,model_year_info%dsecond
+      print*,'******************************************************'
+      ! ===================================================
+
+
+      !! diagnostic grid cell
+      print*,' '
+      print*,'******************************************************'
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
+      read(fid,'(i6.6,a)'),itest,ctmp
+      read(fid,'(i6.6,a)'),jtest,ctmp
+      print*,'Diagnostics requested at (i,j):',itest,jtest
+      read(fid,'(i6.6,a)'),dumpfreq,ctmp
+      print*,'Diagnostic output freq:',dumpfreq
+      print*,'******************************************************'
+
       close(fid)
+
+      print*,' '
       !stop
 
       end subroutine read_infile

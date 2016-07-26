@@ -7,6 +7,7 @@
 !     use mod_wim_prams    !! ice parameters
 !     use mod_wim_init     !! initial wave fields
       use mod_common_wim   !! initial ice fields
+      use mod_year_info
 !     use mod_adv_atten    !! advection routine
 
       implicit none
@@ -35,12 +36,16 @@
 
       !!needed by outer routine
       real     :: amin,amax,dt
+      
+      logical  :: DUMP_DIAG
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
       public   :: wim_init,wim_step,do_wim_integrals
      &            ,check_grid,check_init,check_prog
      &            ,amin,amax,dt,WAVE_MASK2
      &            ,USE_ICE_VEL,REF_HS_ICE
+     &            ,DUMP_DIAG
       !,calc_mwd
 
       contains
@@ -237,25 +242,46 @@
       real  :: E_tot
 
       !!for breaking
+      real,dimension(ii,jj)   :: Dave
       real     :: sig_strain,Pstrain,P_crit0,P_crit,wlng_crest,Dc
       real     :: om,ommin,ommax,om1,lam1,lam2,dom
-      real     :: F,Dave,c1d,kice,tmp
-      integer  :: jcrest
+      real     :: F,c1d,kice,tmp
+      integer  :: jcrest,fid_diag
       logical  :: BREAK_CRIT
 
-      logical              :: INTERP_MESH,crit_e
-      real                 :: wim_break_damage,Tp_e,lam_e
-      real,dimension(nmesh_e)  :: x_e,y_e                    !centres of elements
-      real,dimension(nmesh_e)  :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
-      real,dimension(nmesh_e)  :: conc_e,thick_e,Nfloes_e
+      logical                 :: INTERP_MESH,crit_e,test_ij
+      real                    :: wim_break_damage,Tp_e,lam_e
+      real,dimension(nmesh_e) :: x_e,y_e                    !centres of elements
+      real,dimension(nmesh_e) :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
+      real,dimension(nmesh_e) :: conc_e,thick_e,Nfloes_e
      &                              ,broken_e,dmax_e
       real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(4)
+      character(len=800) :: diag_filename
       !
       INTERP_MESH = .false.
       if (present(mesh_e)) then
          ! check if there is any ice
          INTERP_MESH = maxval(mesh_e).gt.0.
       end if
+
+      
+      if (DUMP_DIAG) then
+         diag_filename  = trim(outdir)//'/diagnostics/local/'//
+     &      'WIMdiagnostics_local'//model_year_info%cdate//
+     &      'T'//model_year_info%chour//model_year_info%cminute//
+     &      model_year_info%csecond//'Z.txt'
+         fid_diag = 91
+         open(unit=fid_diag,file=trim(diag_filename),status = 'replace')
+         write(fid_diag,'(a,a)'),model_year_info%cdate,' # date'
+         write(fid_diag,'(a,a)'),model_year_info%ctime,' # time'
+         write(fid_diag,'(i6.6,a)'),model_day,' # model day'
+         write(fid_diag,'(f13.5,a)'),model_seconds,' # model second'
+         write(fid_diag,'(i6.6,a)'),itest,' # itest'
+         write(fid_diag,'(i6.6,a)'),jtest,' # jtest'
+         write(fid_diag,'(f3.1,a)'),ICE_MASK(itest,jtest),' # ICE_MASK'
+         write(fid_diag,'(a)'),' '
+      end if
+
 
       !wim_step_prams   = (/
       !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
@@ -333,6 +359,48 @@
 !     Hs_test2 = 4*sqrt(Hs_test2)
 !     print*,'Hs_test inc',Hs_test1,Hs_test2
 
+      !!get <D>
+      Dave  = 0.
+      do j = 1,jj
+      do i = 1,ii
+
+         if ((ICE_MASK(i,j).eq.1.0).and.(DO_ATTEN.eq.1)) then
+
+            !! get expected no of floes met per unit
+            !!  distance if travelling in a line;
+            if (dfloe(i,j).le.200.0) then
+               if (FSD_OPT.eq.0) then
+                  !! renormalisation group method (Dumont et al, 2011)
+                  call floe_scaling(Dave(i,j),dfloe(i,j))
+               elseif (FSD_OPT.eq.1) then
+                  !! smoothed power law method (Montiel et al, 2015)
+                  call floe_scaling_smooth(Dave(i,j),dfloe(i,j),1)
+               end if
+            else
+               Dave(i,j)   = dfloe(i,j)
+               !! uniform lengths
+            end if
+
+            test_ij  = (i.eq.itest).and.(j.eq.jtest) 
+            if (DUMP_DIAG.and.test_ij) then
+               write(fid_diag,'(a)'),'Ice info: pre-breaking'
+               write(fid_diag,'(f8.4,a)'),icec(i,j)
+     &         ,' # conc'
+               write(fid_diag,'(f8.4,a)'),iceh(i,j)
+     &         ,' # h,m'
+               write(fid_diag,'(f8.4,a)'),Dave(i,j)
+     &         ,' # D_av,m'
+               write(fid_diag,'(f9.5,a)'),dfloe(i,j)
+     &         ,' # D_max,m'
+            end if
+         end if
+      end do
+      end do
+
+      if (DUMP_DIAG.and.ICE_MASK(itest,jtest).eq.1.) then
+         write(fid_diag,'(a)'),' '
+         write(fid_diag,'(a)'),'# period | atten_dim | damp_dim'
+      end if
       do w=1,nw
 
          !! CALC DIMENSIONAL ATTEN COEFF;
@@ -345,23 +413,19 @@
 
                !! get expected no of floes met per unit
                !!  distance if travelling in a line;
-               if (dfloe(i,j).le.200.0) then
-                  if (FSD_OPT.eq.0) then
-                     !! renormalisation group method (Dumont et al, 2011)
-                     call floe_scaling(Dave,dfloe(i,j))
-                  elseif (FSD_OPT.eq.1) then
-                     !! smoothed power law method (Montiel et al, 2015)
-                     call floe_scaling_smooth(Dave,dfloe(i,j),1)
-                  end if
-               else
-                  Dave  = dfloe(i,j)
-                  !! uniform lengths
-               end if
-               c1d = icec(i,j)/Dave!! floes per unit length;
+               c1d = icec(i,j)/Dave(i,j)!! floes per unit length;
 
                !! ENERGY attenuation coeff;
                atten_dim(i,j) = atten_nond(i,j,w)*c1d      !!scattering
                damp_dim(i,j)  = 2*damping(i,j,w)*icec(i,j) !!damping
+
+               test_ij  = (i.eq.itest).and.(j.eq.jtest) 
+               if (DUMP_DIAG.and.test_ij) then
+                  write(fid_diag,'(f8.4,a,e13.6,a,e13.6)')
+     &                  ,1./freq_vec(w),' | '
+     &                  ,atten_dim(i,j),' | '
+     &                  ,damp_dim(i,j)
+               end if
 
 !                if ((i.eq.itest).and.(j.eq.jtest)) then
 !                   print*,' '
@@ -391,8 +455,9 @@
             end if
          end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         if (.true.) then!!new way (split advection from attenuation)
 
+
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !! advect 1 frequency
          call advect_1freq(sdf_dir(:,:,:,w),S_freq                      &
      &      ,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
@@ -427,37 +492,7 @@
             tau_y = tau_y+wt_om(w)*tmp1                   !![Pa]
 
          end if!!DO_ATTEN
-         else!!old way
 
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !! Transport waves and attenuate them
-         if (SCATMOD.eq.0) then
-            !! Simple attenuation scheme - doesn't conserve scattered energy
-            print*,'Simple atten 0'
-            call adv_atten_simple(sdf_dir(:,:,:,w)                      &
-     &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
-            !print*,'Spectrum at',itest,jtest
-            !print*,S_freq(itest,jtest)
-            !print*,sdf_dir(itest,jtest,:,w)
-         elseif (SCATMOD.eq.1) then
-            !! same as SCATMOD==0, but scattered energy
-            !! is distributed isotropically
-            print*,'Isotropic atten 0'
-            call adv_atten_isotropic(sdf_dir(:,:,:,w)                   &
-     &         ,S_freq,taux_om,tauy_om                                  &
-     &         ,atten_dim,damp_dim,ag_eff(:,:,w),dt,ADV_DIM,ADV_OPT)
-         end if
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-         !! integrate stress densities over frequency
-         !! TODO: check if this is correct for ice-covered water
-         tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)   !![Pa*s]
-         tau_x = tau_x+wt_om(w)*tmp1                     !![Pa]
-         tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
-         tau_y = tau_y+wt_om(w)*tmp1                     !![Pa]
-
-         end if!!old way (end)
 
          !! INTEGRALS FOR BREAKING PROB:
          do j=1,jj
@@ -505,13 +540,29 @@
       end if
       call calc_mwd(REF_HS_ICE)
 
-      if (.false.) then
-         !!test: print atten coeff
-         print*,'********************************************'
-         print*,'Max atten coeff (per metre):'
-         print*,maxval(atten_dim)
-         print*,'********************************************'
+      if (DUMP_DIAG) then
+         write(fid_diag,'(a)'),' '
+         write(fid_diag,'(e13.6,a)')
+     &   ,mom0w(itest,jtest),' # mom0w, m^2'
+         write(fid_diag,'(e13.6,a)')
+     &   ,mom2w(itest,jtest),' # mom2w, m^2/s^2'
+         write(fid_diag,'(e13.6,a)')
+     &   ,mom0(itest,jtest),' # mom0, m^2'
+         write(fid_diag,'(e13.6,a)')
+     &   ,mom2(itest,jtest),' # mom2, m^2/s^2'
+         write(fid_diag,'(f8.4,a)')
+     &   ,Hs(itest,jtest),' # Hs, m'
+         write(fid_diag,'(f8.4,a)')
+     &   ,Tp(itest,jtest),' # Tp, s'
+         write(fid_diag,'(f10.4,a)')
+     &   ,mwd(itest,jtest),' # mwd, deg'
+         write(fid_diag,'(e13.6,a)')
+     &   ,tau_x(itest,jtest),' # tau_x,Pa'
+         write(fid_diag,'(e13.6,a)')
+     &   ,tau_y(itest,jtest),' # tau_y,Pa'
+         write(fid_diag,'(a)'),' '
       end if
+
 
       if ((STEADY.eq.0).and.(BRK_OPT.eq.0)) then
          !! STEADY==0: not steady-state so E should be conserved until
@@ -586,8 +637,23 @@
             dfloe(i,j)  = 0.0
          end if
          
+
+         test_ij  = (i.eq.itest).and.(j.eq.jtest) 
+         if (DUMP_DIAG.and.test_ij) then
+            write(fid_diag,'(a)'),'Ice info: post-breaking'
+            write(fid_diag,'(e13.6,a)'),Pstrain
+     &      ,' # P_strain'
+            write(fid_diag,'(e13.6,a)'),P_crit
+     &      ,' # P_crit'
+            write(fid_diag,'(f10.5,a)'),wlng_crest
+     &      ,' # peak wavelength,m'
+            write(fid_diag,'(f9.5,a)'),dfloe(i,j)
+     &      ,' # D_max,m'
+         end if
+
       end do!! end spatial loop j in y;
       end do!!end spatial loop i in x;
+      close(fid_diag)
 
       if (INTERP_MESH) then
          x_e      = mesh_e(:,1)
@@ -787,13 +853,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_grid(outdir)
+      subroutine check_grid()
 
       use mod_gridinfo
       use mod_file_utils
 
       implicit none
-      character(len=*),intent(in)   :: outdir
       character(len=80)             :: afile,bfile
       integer,parameter             :: Nrecs = 7
 
@@ -833,14 +898,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_init(outdir)
+      subroutine check_init()
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      character(len=*),intent(in)   :: outdir
       character(len=80)             :: afile,bfile
       integer,parameter             :: Nrecs = 6
 
@@ -877,8 +941,9 @@
       end subroutine check_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(nn,OPT,outdir)
+      subroutine check_prog(nn,OPT)
 
       use mod_gridinfo
       use mod_common_wim
@@ -886,7 +951,6 @@
 
       implicit none
       integer,intent(in)            :: nn(2),OPT
-      character(len=80),intent(in)  :: outdir
       character(len=80)             :: afile,bfile
       character(len=4)              :: cts
       integer,parameter             :: Nrecs = 5
