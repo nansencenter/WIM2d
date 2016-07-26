@@ -5,8 +5,7 @@
 
       implicit none
 
-      integer,parameter :: itest       = 24
-      integer,parameter :: jtest       = 1
+      integer           :: itest,jtest
       integer,parameter :: nmesh_vars  = 6 !no of fields taken in with info about mesh
 
       real,dimension(ii,jj)   :: icec,iceh,dfloe,ICE_MASK
@@ -26,5 +25,7 @@
       !!directional spectra (incident,spectrum that is propagated)
       real,dimension(ii,jj,n_wavdir,n_wave_freq)   :: sdf_inc  !set in waves_init
       real,dimension(ii,jj,n_wavdir,n_wave_freq)   :: sdf_dir  !propagated in p_WIM2d
+
+      character(len=80) :: outdir
 
       end module mod_common_wim
