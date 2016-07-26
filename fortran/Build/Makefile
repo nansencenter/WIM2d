@@ -93,6 +93,7 @@ OBJ_MAIN	:=	$(ODIR)/mod_WIM2d_run.o
 
 OBJS		:=      \
 			$(ODIR)/mod_interp.o \
+			$(ODIR)/mod_year_info.o \
 			$(ODIR)/mod_file_utils.o \
                         $(ODIR)/mod_gridinfo.o \
 			$(ODIR)/mod_common_wim.o \
