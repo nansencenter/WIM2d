@@ -39,12 +39,15 @@ fi
 
 # ==================================================================
 # set up output dirs
-mkdir -p $outdir
-mkdir -p $outdir/log
-mkdir -p $outdir/binaries
-mkdir -p $outdir/binaries/prog
-rm -f $outdir/binaries/prog/*
-rm -rf $outdir/figs/prog/*
+mkdir -p "$outdir"
+mkdir -p "$outdir/diagnostics"
+mkdir -p "$outdir/diagnostics/global"
+mkdir -p "$outdir/diagnostics/local"
+mkdir -p "$outdir/binaries"
+mkdir -p "$outdir/binaries/prog"
+rm -f    "$outdir/binaries/prog/*"
+rm -f    "$outdir/figs/diagnostics/*/*"
+rm -rf   "$outdir/figs/prog/*"
 # ==================================================================
 
 
