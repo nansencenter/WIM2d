@@ -21,7 +21,7 @@ then
 fi
    
 gdir=../grid
-mkdir $gdir
+mkdir -p $gdir
 mv wim_grid.a wim_grid.b $gdir
 cp *.h $gdir
 
