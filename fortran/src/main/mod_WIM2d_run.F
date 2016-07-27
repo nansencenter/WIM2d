@@ -1210,10 +1210,9 @@
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'Other Parameters:'
-      write(fid,'(a,f6.1)'),'Time step (s):                    ' ,dt
+      write(fid,'(a,f9.4)'),'Time step (s):                    ' ,dt
       write(fid,'(a,f4.3)'),'CFL number:                       ' ,CFL
-      write(fid,'(a,f5.2)'),'Maximum wave group velocity (m/s):' ,amax
-      write(fid,'(a,f6.1)'),'Time step (s):                    ' ,dt
+      write(fid,'(a,f9.4)'),'Maximum wave group velocity (m/s):' ,amax
       write(fid,'(a,i4.4)'),'Number of time steps:             ' ,nt
       write(fid,'(a,f5.2)'),'Time interval (h):                '        &
      &    ,duration/60.0/60.0
@@ -1229,13 +1228,13 @@
      &                        ,x_ext,' ',y_ext
 
       write(fid,'(a)'),' '
-      write(fid,'(a,f5.2)'),'Minimum period (s):               '        &
+      write(fid,'(a,f6.3)'),'Minimum period (s):               '        &
      &                   ,1.0/freq_vec(nw)
-      write(fid,'(a,f5.2)'),'Maximum period (s):               '        &
+      write(fid,'(a,f6.3)'),'Maximum period (s):               '        &
      &                   ,1.0/freq_vec(1)
       write(fid,'(a,i2.2)'),'Number of wave frequencies:       ' , nw
       write(fid,'(a,i3.3)'),'Number of wave directions:        ' , ndir
-      write(fid,'(a,f5.2)'),'Directional resolution (degrees): '
+      write(fid,'(a,f6.3)'),'Directional resolution (degrees): '
      &                   ,360.0/(1.0*ndir)
       write(fid,'(a)'),'***********************************************'
 
@@ -1243,11 +1242,11 @@
       write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'Diagnostics:'
       write(fid,'(a,f6.1)'),'MIZ width (km): ',W_MIZ/1.e3
-      write(fid,'(a,f6.1,a,f6.1)'),'Dmax range in MIZ (m): '            &
+      write(fid,'(a,f9.4,a,f9.4)'),'Dmax range in MIZ (m): '            &
      &                          ,Dmax_min,' ',Dmax_max
-      write(fid,'(a,e10.3,a,e10.3)'),'tau_x range (Pa): '               &
+      write(fid,'(a,e13.6,a,e13.6)'),'tau_x range (Pa): '               &
      &                          ,taux_min,' ',taux_max
-      write(fid,'(a,e10.3,a,e10.3)'),'tau_y range (Pa): '               &
+      write(fid,'(a,e13.6,a,e13.6)'),'tau_y range (Pa): '               &
      &                          ,tauy_min,' ',tauy_max
       write(fid,'(a)'),'***********************************************'
 
