@@ -49,6 +49,8 @@ jdm   = jj;
 %% - need 2*3 ghost cells
 %%    - 3rd order in space
 %%    - 2nd order in time (prediction + correction steps)
+%% - if we use 3, we need to apply the boundary conditions between
+%%    the prediction & correction steps
 nbdy  = 6;              
 ireal = nbdy+(1:idm)';  %%non-ghost i indices
 jreal = nbdy+(1:jdm)';  %%non-ghost j indices  
