@@ -4,9 +4,11 @@
 
       private
 
-      integer, parameter   :: n_bdy = 6!3
+      integer, parameter   :: n_bdy = 3
          !n_bdy=6: don't need to apply boundary condition between
-         !prediction/correction steps
+         ! prediction/correction steps (WENO advection)
+         !n_bdy=3: do need to apply boundary condition between
+         ! prediction/correction steps (WENO advection)
 
       !!public subroutines:
       public   :: waveadv_weno,waveadv_weno_1d,waveadv_lax_1d
