@@ -84,7 +84,6 @@ subroutine make_year_info(tt,iyear,imonth,iday,dtime_seconds)
    real*8,intent(in)    :: dtime_seconds
    type(year_info), intent(out)  :: tt
 
-   real*8      :: dsecs
    integer*8   :: itmp
 
 
@@ -111,10 +110,9 @@ subroutine make_year_info(tt,iyear,imonth,iday,dtime_seconds)
 
    ! ================================================
    !time
-   tt%ihour    = floor( dtime_seconds/3600.                           )
-   tt%iminute  = floor( (dtime_seconds-3600.*tt%ihour)/60.            )
-   dsecs       = floor( (dtime_seconds-3600.*tt%ihour-60.*tt%iminute) )
-   tt%isecond  = nint( dsecs )
+   tt%ihour    = floor( dtime_seconds/3600.                        )
+   tt%iminute  = floor( (dtime_seconds-3600.*tt%ihour)/60.         )
+   tt%isecond  = nint( dtime_seconds-3600.*tt%ihour-60.*tt%iminute )
    write(tt%chour  ,'(i2.2)') tt%ihour
    write(tt%cminute,'(i2.2)') tt%iminute
    write(tt%csecond,'(i2.2)') tt%isecond

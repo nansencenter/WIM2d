@@ -74,6 +74,19 @@ else
    mesh_e  = [];
 end
 
+
+%% get date & time;
+date_vector    = [params_in.start_year,...
+                  params_in.start_month,...
+                  params_in.start_day,...
+                  params_in.start_hour,...
+                  params_in.start_minute,...
+                  params_in.start_second];
+year_info      = datevec2year_info(date_vector)
+model_day      = year_info.model_day;
+model_seconds  = year_info.model_seconds;
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if (params_in.ADV_DIM==2)&(gridprams.ny<4)
    error({'incompatible values of params_in.ADV_DIM and gridprams.ny:';
@@ -605,7 +618,7 @@ if (params_in.SV_BIN==1) & (params_in.MEX_OPT==0) & (CSUM>0)
    %% save some fields as binaries to [params_in.outdir]/binaries
    Bdims = [gridprams.nx,gridprams.ny,wave_stuff.nfreq,wave_stuff.ndir];
 
-   reps_ab  = 10;%%save every 10 time-steps if params_in.DO_CHECK_PROG==1
+   reps_ab  = params_in.dumpfreq;%%save every 10 time-steps if params_in.DO_CHECK_PROG==1
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -769,8 +782,7 @@ else
    end
 
    %% also give progress report every 'reps' time steps;
-   %reps  = nt+1;%%go straight through without reporting back or plotting
-   reps     = 5;%50;
+   reps     = params_in.dumpfreq;
    GET_OUT  = 1;
    if GET_OUT
       Dmax_all         = zeros(gridprams.nx,gridprams.ny,1+floor(nt/reps));
@@ -1375,6 +1387,13 @@ else
 
 %% end of time step
 %% ==================================================================================
+
+      %% update time
+      model_seconds  = model_seconds+dt;
+      ndays_jump     = floor(model_seconds/24/3600);
+      model_seconds  = model_seconds-ndays_jump*24*3600;
+      model_day      = model_day+ndays_jump;
+      year_info      = model_time_to_year_info(model_day,model_seconds);
 
    end%% end time loop
 end%%params_in.MEX_OPT==0 option
