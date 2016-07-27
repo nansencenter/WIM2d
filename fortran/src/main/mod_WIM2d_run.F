@@ -747,6 +747,15 @@
       WANT_DIAG   = (itest.gt.0).and.(jtest.gt.0)
       DUMP_DIAG   = WANT_DIAG
 
+      call model_time_to_year_info(model_year_info
+     &         ,model_day,model_seconds)
+      log_file = trim(outdir)
+     &   //'/diagnostics/global/WIM_diagnostics'
+     &   //model_year_info%cdate//'T'
+     &   //model_year_info%chour
+     &   //model_year_info%cminute
+     &   //model_year_info%csecond//'Z.txt'
+
       do n=1,nt
 
 
@@ -827,13 +836,6 @@
       print*,'tau_x range (Pa)',taux_min,taux_max
       print*,'tau_y range (Pa)',tauy_min,tauy_max
       print*,' '
-
-      log_file = trim(outdir)
-     &   //'/diagnostics/global/WIM_diagnostics'
-     &   //model_year_info%cdate//'T'
-     &   //model_year_info%chour
-     &   //model_year_info%cminute
-     &   //model_year_info%csecond//'Z.txt'
 
       call print_log_info()
 
