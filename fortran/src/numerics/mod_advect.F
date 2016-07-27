@@ -4,8 +4,9 @@
 
       private
 
-      integer, parameter   :: n_bdy     = 3
-      integer, parameter   :: margin   = n_bdy
+      integer, parameter   :: n_bdy = 6!3
+         !n_bdy=6: don't need to apply boundary condition between
+         !prediction/correction steps
 
       !!public subroutines:
       public   :: waveadv_weno,waveadv_weno_1d,waveadv_lax_1d
@@ -53,12 +54,11 @@
 !
       implicit none
 !
-      integer, parameter   :: n_bdy  = 3
       real,intent(in),dimension(idm,jdm) :: u,v
       !,scuy,scvx,scp2i,scp2,LANDMASK
-      real,intent(inout),dimension(idm,jdm)   :: h
-      real,intent(in)                         :: dt
-      integer,intent(in)                        :: ADV_OPT
+      real,intent(inout),dimension(idm,jdm)  :: h
+      real,intent(in)                        :: dt
+      integer,intent(in)                     :: ADV_OPT
 !
       real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: sao,hp    &
      &   ,u_pad,v_pad,scp2_pad,scp2i_pad,scuy_pad,scvx_pad,h_pad
@@ -133,17 +133,18 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
 ! --- Prediction step
+      !print*,'prediction'
       call weno3pd_v2(h_pad,sao,u_pad,v_pad,                            &
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
 
-      if (.false.) then
+      if (n_bdy.eq.6) then
          !! original version
-         do j=1-margin,jj+margin
-         do i=1-margin,ii+margin!![TW 28.1.2014]
+         do j=1-n_bdy,jj+n_bdy
+         do i=1-n_bdy,ii+n_bdy!![TW 28.1.2014]
              hp(i,j) = h_pad(i,j)+dt*sao(i,j)
          enddo
          enddo
-      else
+      elseif (n_bdy.eq.3) then
          !! apply boundary condition between prediction and correction step
          do j=1,jj
          do i=1,ii!![TW 28.1.2014]
@@ -151,9 +152,13 @@
          enddo
          enddo
          call pad_var(hp,hp(1:ii,1:jj),ADV_OPT)
+      else
+         print*,'Choose n_bdy = 3,6'
+         stop
       end if
 
 ! --- Correction step
+      !print*,'correction'
       call weno3pd_v2(hp,sao,u_pad,v_pad,                               &
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
 
@@ -208,7 +213,6 @@
 !
       implicit none
 !
-      integer, parameter   :: n_bdy  = 3
       real,intent(in),dimension(idm,jdm)     :: u
       real,intent(inout),dimension(idm,jdm)  :: h
       real,intent(in)                        :: dt
@@ -290,14 +294,14 @@
       call weno3pd_v2_1d(h_pad,sao,u_pad,                               &
      &   scuy_pad,scp2i_pad,scp2_pad,dt)
 
-      if (.false.) then
+      if (n_bdy.eq.6) then
          !! original version - but I think this needed xctilr also
          do j=1,jj
-         do i=1-margin,ii+margin
+         do i=1-n_bdy,ii+n_bdy
              hp(i,j) = h_pad(i,j)+dt*sao(i,j)
          enddo
          enddo
-      else
+      elseif (n_bdy.eq.3) then
          !! apply boundary condition between prediction and correction step
          do j=1,jj
          do i=1,ii
@@ -305,6 +309,9 @@
          enddo
          enddo
          call pad_var_1d(hp,hp(1:ii,1:jj),ADV_OPT)
+      else
+         print*,'choose n_bdy = 3,6'
+         stop
       end if
 
 ! --- Correction step
@@ -361,12 +368,11 @@
 !
       implicit none
 !
-      integer, parameter   :: n_bdy  = 3
       real,intent(in),dimension(idm,jdm) :: u
       !,scuy,scvx,scp2i,scp2,LANDMASK
-      real,intent(inout),dimension(idm,jdm)   :: h
-      real,intent(in)                         :: dt
-      integer,intent(in)                        :: ADV_OPT
+      real,intent(inout),dimension(idm,jdm)  :: h
+      real,intent(in)                        :: dt
+      integer,intent(in)                     :: ADV_OPT
 !
       real, dimension(1-n_bdy:idm+n_bdy,1:jdm) :: sao,hp                &
      &   ,u_pad,scp2_pad,scp2i_pad,scuy_pad,h_pad

@@ -1,5 +1,5 @@
 1          # infile version number(i1.1)
-0060       # nx - number of grid cells in x dirn (i4.4 format)
+0150       # nx - number of grid cells in x dirn (i4.4 format)
 0010       # ny - number of grid cells in y dirn (i4.4)
 4000.      # dx - x resolution (f9.2)
 4000.      # dy - y resolution (f9.2)

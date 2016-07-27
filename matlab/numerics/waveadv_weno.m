@@ -51,7 +51,7 @@ jdm   = jj;
 %%    - 2nd order in time (prediction + correction steps)
 %% - if we use 3, we need to apply the boundary conditions between
 %%    the prediction & correction steps
-nbdy  = 6;              
+nbdy  = 3;
 ireal = nbdy+(1:idm)';  %%non-ghost i indices
 jreal = nbdy+(1:jdm)';  %%non-ghost j indices  
 
@@ -82,8 +82,8 @@ sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
 %tst2d = sao(jtst,4),pause
 
 if nbdy==6
-   %% how it is in fortran code,
-   %% - needs nbdy=6
+   %% no need to enforce periodicity between prediction and correction steps
+   %% - loop over all cells (including ghost cells)
    hp = 0*h;
    for i_ = 1-nbdy:ii+nbdy
    for j_ = 1-nbdy:jj+nbdy
@@ -94,8 +94,8 @@ if nbdy==6
    end%j
    end%i
 elseif nbdy==3
-   %% if nbdy=3,
    %% enforce periodicity between prediction and correction steps
+   %% - only loop over non-ghost cells
    hp = zeros(ii,jj);
    for i_ = 1:ii
    for j_ = 1:jj
