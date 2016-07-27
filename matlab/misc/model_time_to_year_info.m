@@ -78,6 +78,9 @@ tt.chour    = datestr(date_vector,'hh');
 tt.cminute  = datestr(date_vector,'MM');
 tt.csecond  = datestr(date_vector,'SS');
 tt.ctime    = [tt.chour,':',tt.cminute,':',tt.csecond];
+
+% full datetime string
+tt.date_string = [tt.cdate,'T',tt.chour,tt.cminute,tt.csecond,'Z'];
 % ================================================ 
 
 

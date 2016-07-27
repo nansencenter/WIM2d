@@ -162,7 +162,7 @@ end
 
 
 if params.MEX_OPT==0
-   params.outdir  = 'm_out';
+   params.outdir  = 'out_m';
 end
 
 %%create output dirs
@@ -303,9 +303,9 @@ eval(['!mkdir ',outdir]);
 
 odirs = {[outdir,'/binaries'],...
          [outdir,'/binaries/prog'],...
-         [outdir,'/log'],...
-         [outdir,'/figs'],...
-         [outdir,'/figs/prog']};
+         [outdir,'/diagnostics'],...
+         [outdir,'/diagnostics/local'],...
+         [outdir,'/diagnostics/global']};
 
 for j=1:length(odirs)
    eval(['!mkdir ',odirs{j}]);

@@ -108,11 +108,15 @@ COMP_F   = 0;
 compFdir = 'out_2/binaries/prog/';
 
 %% make a log file similar to fortran file
-log_dir  = 'log';
-if ~exist('log','dir')
+log_dir  = [params_in.outdir,'/diagnostics/global'];
+if ~exist(log_dir,'dir')
    eval(['!mkdir ',log_dir]);
 end
-log_file    = [log_dir,'/WIM2d_matlab.log'];
+log_dir2 = [params_in.outdir,'/diagnostics/local'];
+if ~exist(log_dir2,'dir')
+   eval(['!mkdir ',log_dir]);
+end
+log_file    = [log_dir,'/WIM2d_diagnostics',year_info.date_string,'.txt'];
 this_subr   = mfilename();
 
 %%open log file for writing (clear contents)
@@ -461,7 +465,7 @@ fprintf(logid,'%s%4.1f%s%4.1f\n','Extent of domain   (km):          ' ,...
 
 fprintf(logid,'%s\n',' ');
 fprintf(logid,'%s%5.2f\n','Minimum period (s):               ',1/max(wave_stuff.freq) );
-fprintf(logid,'%s%5.2f\n','Maximum period (s):               ',1/max(wave_stuff.freq) );
+fprintf(logid,'%s%5.2f\n','Maximum period (s):               ',1/min(wave_stuff.freq) );
 fprintf(logid,'%s%4.4d\n','Number of wave frequencies:       ',wave_stuff.nfreq);
 fprintf(logid,'%s%4.4d\n','Number of wave directions:        ',wave_stuff.ndir);
 fprintf(logid,'%s%5.2f\n','Directional resolution (degrees): ',360.0/(1.0*wave_stuff.ndir) );
@@ -791,6 +795,22 @@ else
 
    %nt = 13%%stop straight away for testing
    for n = 1:nt
+
+      %%determine if we need to dump local diagnostics
+      DUMP_DIAG   = (mod(n-1,reps)==0)&(params_in.itest>0)&(params_in.jtest>0);
+      if DUMP_DIAG
+         logfile2 = [log_dir2,'/WIMdiagnostics_local',year_info.date_string,'.txt'];
+         logid2   = fopen(logfile2,'w');
+         fprintf(logid2,'%s\n',[year_info.cdate,' # date']);
+         fprintf(logid2,'%s\n',[year_info.ctime,' # date']);
+         fprintf(logid2,'%d%s\n',model_day,' # model day');
+         fprintf(logid2,'%13.5f%s\n',model_seconds,' # model seconds');
+         fprintf(logid2,'%d%s\n',itest,' # itest');
+         fprintf(logid2,'%d%s\n',jtest,' # jtest');
+         fprintf(logid2,'%d%s\n',ICE_MASK(itest,jtest),' # ICE_MASK');
+         fprintf(logid2,'%s\n',' ');
+      end
+
       if params_in.DO_DISP
          disp([n nt]);
          disp(' ');
@@ -831,6 +851,36 @@ else
          end
          end
       end
+
+      % Dmean
+      Dave  = 0*ICE_MASK;
+      for i = 1:gridprams.nx
+      for j = 1:gridprams.ny
+         if out_fields.Dmax(i,j) < 200
+            if params_in.FSD_OPT==0
+            %%power law distribution
+               Dave(i,j)  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
+                          ice_prams.Dmin,out_fields.Dmax(i,j));
+            else
+               Dave(i,j)  = floe_scaling_smooth(out_fields.Dmax(i,j),ice_prams,1);
+            end
+         else
+            %% uniform lengths
+            Dave(i,j)  = out_fields.Dmax(i,j);
+         end
+
+         test_ij  = (i==itest)&(j==jtest);
+         if DUMP_DIAG&test_ij&(ICE_MASK(i,j)>0)
+            fprintf(logid2,'%s\n','Ice info: pre-breaking');
+            fprintf(logid2,'%8.4f%s\n',ice_fields.cice(i,j),' # conc');
+            fprintf(logid2,'%8.4f%s\n',ice_fields.hice(i,j),' # h,m');
+            fprintf(logid2,'%8.4f%s\n',Dave(i,j),' # D_av,m');
+            fprintf(logid2,'%8.4f%s\n',out_fields.Dmax(i,j),' # D_max,m');
+            fprintf(logid2,'%s\n',' ');
+            fprintf(logid2,'%s\n','# period | atten_dim | damp_dim');
+         end
+      end
+      end
          
       for jw   = 1:wave_stuff.nfreq
 
@@ -845,19 +895,7 @@ else
 
                %% get expected no of floes met per unit
                %%  distance if travelling in a line;
-               if out_fields.Dmax(i,j) < 200
-                  if params_in.FSD_OPT==0
-                  %%power law distribution
-                     Dave  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
-                                ice_prams.Dmin,out_fields.Dmax(i,j));
-                  else
-                     Dave  = floe_scaling_smooth(out_fields.Dmax(i,j),ice_prams,1);
-                  end
-               else
-                  %% uniform lengths
-                  Dave  = out_fields.Dmax(i,j);
-               end
-               c1d = ice_fields.cice(i,j)/Dave;%% floes per unit length;
+               c1d = ice_fields.cice(i,j)/Dave(i,j);%% floes per unit length;
 
                %% ENERGY attenuation coeff;
                atten_dim(i,j) = atten_nond(i,j,jw)*c1d;%%scattering
@@ -872,6 +910,13 @@ else
    %              disp(['q_scat     = ',num2str(atten_dim(i,j),'%7.7e'),' /m']);
    %              disp(['q_abs      = ',num2str(damp_dim(i,j),'%7.7e'),' /m']);
    %           end
+               test_ij  = (i==itest)&(j==jtest);
+               if DUMP_DIAG&test_ij
+                  fprintf(logid2,'%8.4f%s%13.6e%s%13.6e\n',...
+                     1/wave_stuff.freq(jw),' | ',...
+                     atten_dim(i,j),' | ',...
+                     damp_dim(i,j));
+               end
 
             end
          end% j
@@ -1021,6 +1066,21 @@ else
       out_fields.tau_x  = tau_x;
       out_fields.tau_y  = tau_y;
 
+      if DUMP_DIAG
+         fprintf(logid2,'%s\n',' ');
+         fprintf(logid2,'%13.6e,%s\n',mom0w(itest,jtest),' # mom0w, m^2');
+         fprintf(logid2,'%13.6e,%s\n',mom2w(itest,jtest),' # mom2w, m^2/s^2');
+         fprintf(logid2,'%13.6e,%s\n',mom0(itest,jtest),' # mom0, m^2');
+         fprintf(logid2,'%13.6e,%s\n',mom2(itest,jtest),' # mom2, m^2/s^2');
+         fprintf(logid2,'%8.4f%s\n',out_fields.Hs(itest,jtest),' # Hs, m')
+         fprintf(logid2,'%10.4f%s\n',out_fields.Tp(itest,jtest),' # Tp, s')
+         %fprintf(logid2,'%10.4f%s\n',mwd(itest,jtest),' # mwd, deg');
+         fprintf(logid2,'%13.6e%s\n',tau_x(itest,jtest),' # tau_x,Pa');
+         fprintf(logid2,'%13.6e%s\n',tau_y(itest,jtest),' # tau_y,Pa');
+         fprintf(logid2,'%s\n',' ');
+      end
+
+
       %% FINALLY DO FLOE BREAKING;
       %% - ON GRID
       P_crit0  = 0;
@@ -1103,6 +1163,16 @@ else
               end
              end
             end
+
+            test_ij  = (i==itest)&(j==jtest);
+            if DUMP_DIAG&test_ij
+               fprintf(logid2,'%s\n',' ');
+               fprintf(logid2,'%s\n','Ice info: post-breaking');
+               fprintf(logid2,'13.6%e%s\n',Pstrain,' # P_strain');
+               fprintf(logid2,'13.6%e%s\n',P_crit,' # P_crit');
+               fprintf(logid2,'%10.5f%s\n',wlng_crest,' # peak wavelength,m');
+               fprintf(logid2,'%9.5f%s\n',out_fields.Dmax(i,j),' # D_max,m');
+            end
             
          elseif WTR_MASK(i,j)==1%% only water present
             out_fields.Dmax(i,j)   = 0;
@@ -1110,6 +1180,10 @@ else
 
       end%% end spatial loop j in y;
       end%% end spatial loop i in x;
+
+      if DUMP_DIAG
+         fclose(logid2);
+      end
 
 %% end of time stepping in matlab
 %% =========================================================================

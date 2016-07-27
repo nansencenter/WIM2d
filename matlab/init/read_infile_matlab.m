@@ -6,7 +6,7 @@ end
 if ~exist('verbosity','var')
    verbosity   = 1;
 end
-infile_version = 8;%%latest infile version
+infile_version = 9;%%latest infile version
 
 if ~exist(infile)
    %% now need infile to run code
