@@ -60,15 +60,15 @@ public:
         ny()
     {}
 
-    WimDiscr(po::variables_map const& vmin)
+    WimDiscr(po::variables_map const& vmIn)
         :
-        vm(vmin),
+        vm(vmIn),
         nx(vm["wim.nx"].template as<int>()),
         ny(vm["wim.ny"].template as<int>())
     {}
 
     void gridProssessing();
-	void readGridFromFile(std::string const& filein);
+    void readGridFromFile(std::string const& filein);
     void readDataFromFile(std::string const& filein);
     void exportResults(size_type const& timestp, value_type const& t_out) const;
     void init();
@@ -113,15 +113,16 @@ public:
 private:
 
     po::variables_map vm;
-    int nx, ny, nxext, nyext, nbdy, nbdx;
+    int nx, ny, nxext, nyext, nbdy, nbdx, nghost;
     array2_type X_array, Y_array, SCUY_array, SCVX_array, SCP2_array, SCP2I_array, LANDMASK_array;
 
     value_type cfl, dom, guess, Hs_inc, Tp_inc, mwd_inc, Tmin, Tmax, gravity, om;
-    value_type xmax, ym, x0, y0, dx, dy, x_edge, unifc, unifh, dfloe_pack_init, dfloe_pack_thresh, amin, amax, dt;
+    value_type xmax, ym, x0, y0, dx, dy, x_edge, unifc, unifh, dfloe_pack_init, dfloe_pack_thresh, amin, amax;
     value_type rhowtr, rhoice, poisson, dmin, xi, fragility, young, visc_rp, kice, kwtr, int_adm, modT, argR, argT, rhoi, rho, rhow;
     value_type fmin, fmax, df, epsc, sigma_c, vbf, vb, flex_rig_coeff;
+    value_type dt,duration;
 
-    int nwavedirn, nwavefreq, advdim, ncs;
+    int nwavedirn, nwavefreq, advdim, ncs ,nt;
     bool ref_Hs_ice, atten, useicevel, steady, breaking;
     std::string scatmod, advopt;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;

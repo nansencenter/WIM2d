@@ -236,7 +236,7 @@ void WimDiscr<T>::init()
     //this->readGridFromFile("wim_grid.a");
 
     // parameters
-	nwavedirn = vm["wim.nwavedirn"].template as<int>();
+    nwavedirn = vm["wim.nwavedirn"].template as<int>();
     nwavefreq = vm["wim.nwavefreq"].template as<int>();
     advdim = vm["wim.advdim"].template as<int>();
     ref_Hs_ice = vm["wim.refhsice"].template as<bool>();
@@ -258,22 +258,27 @@ void WimDiscr<T>::init()
     dfloe_pack_thresh = vm["wim.dfloepackthresh"].template as<double>(); /* 400.0 */
     young = vm["wim.young"].template as<double>();
     visc_rp = vm["wim.viscrp"].template as<double>();
-    nbdx = vm["wim.nbdx"].template as<int>();
-    nbdy = vm["wim.nbdy"].template as<int>();
+
+    //nghost==3 needs padVar (boundary conditions) between prediction/advection step
+    //nghost>3 doesn't
+    //nghost<3 is not possible
+    nghost  = 4;
+    nbdx    = nghost;
+    nbdy    = nghost;
 
     if (useicevel)
     {
-      std::cout << std::endl
+      std::cerr << std::endl
       << "useicevel=true not implemented"
       << std::endl;
-      exit(1);
+      std::abort();
     }
 
     if (advdim == 1)
         nbdy = 0;
 
     nxext = nx+2*nbdx;
-    nyext = ny+2*nbdy;
+    nyext = ny+2*nbdy;//ny if advdim==1
 
     gravity = 9.81;
     rhowtr = 1025.;
@@ -390,7 +395,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     }
 
 
-    // wt_simp
+    // wt_simp (weights for Simpson's rule)
     if (nwavefreq >1)
     {
         std::fill(wt_simp.begin(), wt_simp.end(), 2.);
@@ -432,6 +437,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     std::for_each(ag.begin(), ag.end(), [&](value_type& f){ f = f/2. ; });
 
 
+    //====================================================
+    //ideal ice/waves TODO sep function
     x0 = X_array[0][0];
     xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
 
@@ -459,7 +466,12 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
             }
         }
     }
+    //end: ideal ice/waves TODO sep function
+    //====================================================
 
+
+    //====================================================
+    //set incident wave spec TODO sep function
     om = 2*PI*freq_vec[0];
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
@@ -538,7 +550,12 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
             }
         }
     }
+    //end: set incident wave spec TODO sep function
+    //====================================================
 
+
+    //====================================================
+    //ideal ice conditions TODO sep function
     x_edge = 0.5*(x0+xmax)-0.7*(0.5*(xmax-x0));
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
@@ -593,6 +610,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
                 ice_mask[i][j] = 0.;
         }
     }
+    //end: ideal ice conditions TODO sep function
+    //====================================================
 
 #if 0
     std::cout<<"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
@@ -619,7 +638,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     std::cout<<"nfloes_acc= "<< std::accumulate(n_floes.begin(), n_floes.end(),0.) <<"\n";
 #endif
 
-    //std::cout<<"big loop starts\n";
+    //std::cout<<"attenuation loop starts (big loop)\n";
     for (int fq = 0; fq < nwavefreq; fq++)
     {
 #pragma omp parallel for num_threads(max_threads) collapse(2)
@@ -711,7 +730,11 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 
     //int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
-    if (!step)
+
+    // ========================================================================
+    // initialise sdf_dir from sdf_inc
+    // - only do this if step==0
+    if (!step) 
     {
         std::fill( sdf_dir.data(), sdf_dir.data() + sdf_dir.num_elements(), 0. );
 
@@ -734,6 +757,9 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
             }
         }
     }
+    // end: initialise sdf_dir from sdf_inc
+    // ========================================================================
+
 
     //dt = cfl*std::min(dx,dy)/amax;
     amax = *std::max_element(ag_eff.data(),ag_eff.data() + ag_eff.num_elements());
@@ -741,9 +767,17 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     std::cout<<"amax= "<< amax <<"\n";
     std::cout<<"cfl= "<< cfl <<"\n";
     dt = cfl*dx/amax;
+
+    //reduce time step slightly to make duration an integer multiple of dt
+    duration = vm["wim.duration"].template as<double>();
+    nt = std::ceil(duration/dt);
+    dt = duration/nt;
+
+
     //ncs = std::ceil(nwavedirn/2);
     ncs = std::round(nwavedirn/2);
-}
+}//end: init()
+
 
 template<typename T>
 void WimDiscr<T>::timeStep(bool step)
@@ -1070,8 +1104,12 @@ void WimDiscr<T>::timeStep(bool step)
     // std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
     // std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
 
-    std::cout<<"taux_min= "<< *std::min_element(tau_x.begin(), tau_x.end()) <<"\n";
-    std::cout<<"taux_max= "<< *std::max_element(tau_x.begin(), tau_x.end()) <<"\n";
+    double taux_min  = *std::min_element(tau_x.begin(), tau_x.end());
+    std::cout<<"taux_min= "
+             <<std::setprecision(10)<< taux_min <<"\n";
+    double taux_max  = *std::max_element(tau_x.begin(), tau_x.end());
+    std::cout<<"taux_max= "
+             <<std::setprecision(10)<< taux_max <<"\n";
 
     // std::cout<<"------------------------------------------------------\n";
     // std::cout<<"dfloe_max= "<< *std::max_element(dfloe.data(), dfloe.data()+dfloe.num_elements()) <<"\n";
@@ -1083,20 +1121,10 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 {
     this->assign(ice_c,ice_h,n_floes,step);
 
-    value_type duration;
-    int nt;
     bool critter;
 
     std::cout<<"Running starts\n";
     chrono.restart();
-
-    //duration = 1.0e3*x_ext/u_ref;
-    duration = vm["wim.duration"].template as<double>();
-
-    //duration = (vm["wim.simul.timestep"].as<double>())*(vm["wim.couplingfreq"].as<int>());
-
-    nt = std::ceil(duration/dt);
-    dt = duration/nt;//reduce time step slightly to make duration an integer multiple of dt
 
     std::cout<<"duration= "<< duration <<"\n";
     std::cout<<"amax= "<< amax <<"\n";
@@ -1520,78 +1548,77 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
     array2_type hp_temp;
     hp_temp.resize(boost::extents[nx][ny]);
 
-	padVar(u, u_pad);
-	padVar(v, v_pad);
-	padVar(SCP2_array, scp2_pad);
+    padVar(u, u_pad);
+    padVar(v, v_pad);
+    padVar(SCP2_array, scp2_pad);
     padVar(SCP2I_array, scp2i_pad);
     padVar(SCUY_array, scuy_pad);
     padVar(SCVX_array, scvx_pad);
     padVar(h, h_pad);
+      // TODO in fortran/matlab code,
+      // h is treated differently from u,v etc
+      // - they are always doubly periodic BC's
+      // - may need to check with other BS's
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
     // prediction step
     weno3pdV2(h_pad, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad, sao);
 
-#pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = 0; i < nx; i++)
+    if (nghost==3)
     {
-        for (int j = 0; j < ny; j++)
-        {
-            hp[i+nbdx][j+nbdy] = h_pad[i+nbdx][j+nbdy]+dt*sao[i+nbdx][j+nbdy];
-        }
-    }
-
+       // if only using nghost==3, need to apply boundary conditions
+       // before correction step
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            hp_temp[i][j] = hp[i+nbdx][j+nbdy];
-        }
-    }
+       for (int i = 0; i < nx; i++)
+       {
+           for (int j = 0; j < ny; j++)
+           {
+               hp[i+nbdx][j+nbdy] = h_pad[i+nbdx][j+nbdy]+dt*sao[i+nbdx][j+nbdy];
+               hp_temp[i][j]      = hp[i+nbdx][j+nbdy];
+           }
+       }
 
-    padVar(hp_temp,hp);
+       padVar(hp_temp,hp);//apply boundary conditions
+    }
+    else if (nghost>3)
+    {
+       // if using nghost>3, don't need to apply boundary conditions
+       //  before correction step,
+       // but need to loop over full padded domain
+
+       //std::cout<<"not using padVar\n";
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+       for (int i = 0; i < nxext; i++)
+       {
+           for (int j = 0; j < nyext; j++)
+           {
+               hp[i][j] = h_pad[i][j]+dt*sao[i][j];
+           }
+       }
+    }
+    else
+    {
+       std::cerr<<std::endl
+                <<"Advection (WENO): 'nghost' should be >=3"
+                <<std::endl;
+       std::abort();
+    }
 
     // correction step
     weno3pdV2(hp, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad, sao);
 
-#if 0
-    for (int i = 0; i < nxext; i++)
-    {
-        for (int j = 0; j < nyext; j++)
-        {
-            h_pad[i][j] = 0.5*(h_pad[i][j]+hp[i][j]+dt*sao[i][j]);
-        }
-    }
 
-    for (int i = nbdx; i < nx+nbdx; i++)
-    {
-        for (int j = nbdy; j < ny+nbdy; j++)
-        {
-            h[i-nbdx][j-nbdy] = h_pad[i][j];
-
-            // mask land (no waves on land)
-            h[i-nbdx][j-nbdy] = h[i-nbdx][j-nbdy]*(1-LANDMASK_array[i-nbdx][j-nbdy]);
-        }
-    }
-#endif
-
+    //final output
 #pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
         {
             h[i][j] = 0.5*(h_pad[i+nbdx][j+nbdy]+hp[i+nbdx][j+nbdy]+dt*sao[i+nbdx][j+nbdy]);
-        }
-    }
 
-#pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            h[i][j] = h[i][j]*(1-LANDMASK_array[i][j]);
+            //mask land cells
+            h[i][j] *= 1-LANDMASK_array[i][j];
         }
     }
 }
@@ -1619,11 +1646,11 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
-    // fluxes in x directional
+    // fluxes in x direction
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = nbdx-1; i < nx+nbdx+2; i++)
+    for (int i = 2; i < nxext-1; i++)
     {
-        for (int j = nbdy-ymargin; j < ny+nbdy+ymargin; j++)
+        for (int j = 0; j < nyext; j++)
         {
             value_type q0, q1, a0, a1, q;
             int im1, im2, ip1, jm1, jm2, jp1, ymargin;
@@ -1665,9 +1692,9 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     if (advdim == 2)
     {
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-        for (int i = nbdx-1; i < nx+nbdx+1; i++)
+        for (int i = 0; i < nxext; i++)
         {
-            for (int j = nbdy-1; j < ny+nbdy+2; j++)
+            for (int j = 2; j < nyext-1; j++)
             {
                 value_type q0, q1, a0, a1, q;
                 int im1, im2, ip1, jm1, jm2, jp1, ymargin;
@@ -1700,9 +1727,9 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
 
     // update field with low order fluxes
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = nbdx-1; i < nx+nbdx+1; i++)
+    for (int i = 0; i < nxext-1; i++)
     {
-        for (int j = nbdy-ymargin; j < ny+nbdy+ymargin; j++)
+        for (int j = 0; j < nyext-ymargin; j++)//nyext-1 if 2d advection; else nyext
         {
             if (advdim == 2)
             {
@@ -1719,11 +1746,13 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
 
     // // obtain fluxes with limited high order correction fluxes
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = nbdx; i < nx+nbdx+1; i++)
+    for (int i = 1; i < nxext; i++)
     {
-        for (int j = nbdy; j < ny+nbdy; j++)
+        for (int j = 0; j < nyext; j++)
         {
-            fuh[i][j] = ful[i][j]+std::max(-q*gt[i][j]*scp2[i][j],std::min(q*gt[i-1][j]*scp2[i-1][j],fuh[i][j]));
+            fuh[i][j] = ful[i][j]+
+               std::max(-q*gt[i][j]*scp2[i][j],
+                        std::min(q*gt[i-1][j]*scp2[i-1][j],fuh[i][j]));
         }
     }
 
@@ -1731,11 +1760,13 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
     if (advdim == 2)
     {
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-        for (int i = nbdx; i < nx+nbdx; i++)
+        for (int i = 0; i < nxext; i++)
         {
-            for (int j = nbdy; j < ny+nbdy+1; j++)
+            for (int j = 1; j < nyext; j++)
             {
-                fvh[i][j]=fvl[i][j]+std::max(-q*gt[i][j]*scp2[i][j],std::min(q*gt[i][j-1]*scp2[i][j-1],fvh[i][j]));
+                fvh[i][j]=fvl[i][j]+
+                   std::max(-q*gt[i][j]*scp2[i][j],
+                            std::min(q*gt[i][j-1]*scp2[i][j-1],fvh[i][j]));
             }
         }
     }
@@ -1743,9 +1774,9 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
 #if 1
     // compute the spatial advective operator
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = nbdx; i < nx+nbdx; i++)
+    for (int i = 0; i < nxext-1; i++)
     {
-        for (int j = nbdy; j < ny+nbdy; j++)
+        for (int j = 0; j < nyext-ymargin; j++)
         {
             if (advdim == 2)
             {
@@ -1781,15 +1812,18 @@ void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
 
             if (advdim == 1)
             {
-                // make periodic in i
-                if ((i < nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
+                if (advopt != "notperiodic")
                 {
-                    upad[i][j] = u[nx-nbdx+i][j-nbdy];
-                }
+                   // make periodic in i
+                   if ((i < nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
+                   {
+                       upad[i][j] = u[nx-nbdx+i][j-nbdy];
+                   }
 
-                if ((nx+nbdx-1 < i) && (nbdy-1 < j) && (j < ny+nbdy))
-                {
-                    upad[i][j] = u[i-nx-nbdx][j-nbdy];
+                   if ((nx+nbdx-1 < i) && (nbdy-1 < j) && (j < ny+nbdy))
+                   {
+                       upad[i][j] = u[i-nx-nbdx][j-nbdy];
+                   }
                 }
             }
             else if (advdim == 2)

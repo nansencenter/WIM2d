@@ -61,8 +61,8 @@ namespace WIMOPT
             ("wim.dfloemin", po::value<double>()->default_value( 20. ), "Minimum floe size [m]")
             ("wim.cicemin", po::value<double>()->default_value( 0.05 ), "Minimum ice conc considered by WIM")
             ("wim.dfloepackthresh", po::value<double>()->default_value( 400. ), "Don't let Dmax grow above this value [m]")
-            ("wim.nbdy", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
-            ("wim.nbdx", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
+            //("wim.nbdy", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
+            //("wim.nbdx", po::value<int>()->default_value( 3 ), "Size of the overlap for periodic boundary conditions")
 
             //coupling to nextsim
             ("wim.exportresults", po::value<bool>()->default_value( true ), "Export results in coupled mode")

@@ -46,7 +46,7 @@ int main(int argc, char** argv )
             }
             else
             {
-                std::cout << "Cannot found " << "config-file" << "\n";
+                std::cout << "Cannot find " << "config-file" << "\n";
             }
         }
 
