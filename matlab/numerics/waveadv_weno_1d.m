@@ -38,6 +38,12 @@ function h  = waveadv_weno_1d(h,u,grid_prams,dt,adv_options)
 %%              LANDMASK: [49x1 double]   - 1 on land, 0 on water
 %%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+if sum(abs(h(:)))==0
+   %% h=0 everywhere
+   %% - nothing to do
+   return;
+end
+
 ADV_OPT   = adv_options.ADV_OPT;
 if ADV_OPT==2
    ADV_OPT   = 0;%1d, so periodicity in y is N/A
@@ -52,13 +58,14 @@ LANDMASK = grid_prams.LANDMASK(:,1);
 clear grid_prams;
 
 %% size of boundary
-%% - need 2*3 ghost cells
+%% - need >=4 ghost cells
 %%    - 3rd order in space
 %%    - 2nd order in time (prediction + correction steps)
 %% - if use 3 ghost cells, need to apply boundary conditions between the prediction and correction steps
-nbdy  = 6;
-idm   = ii;
-ireal = nbdy+(1:idm)';  %%non-ghost i indices
+nbdy        = 4;
+idm         = ii;
+ireal       = nbdy+(1:idm)';  %%non-ghost i indices
+TEST_PLOT   = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%assign values in ghost cells
@@ -80,22 +87,16 @@ end
 %% 1: periodic in i,j
 %% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
 h     = pad_var_1d(h,ADV_OPT,nbdy);
-jtst  = (ii+2*nbdy)+(-12:0);
-%tst1d = h(jtst)
-%plot(h),GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Prediction step
 sao      = weno3pd_v2_1d(h,u,scuy,scp2i,scp2,dt,nbdy);
-margin   = nbdy;
-%tst1d = sao(jtst)
 
 hp = 0*h;
-if nbdy==6
-   %% original version
-   %% -> errors at boundaries
-   %% hycom code prob needed xctilr at this point
-   for i_ = 1-margin:ii+margin
+if nbdy>=4
+   %% loop over all cells
+   %% - no need to enforce periodicity between prediction and correction steps
+   for i_ = 1-nbdy:ii+nbdy
       i     = i_+nbdy;%%1-nbdy->1
       hp(i) = h(i)+dt*sao(i);
    end%i
@@ -107,17 +108,30 @@ elseif nbdy==3
    end%i
    hp = pad_var_1d(hp(ireal),ADV_OPT,nbdy);
 else
-   error('nbdy should be 3 or 6');
+   error('nbdy should be >=3');
 end
-%tst1d = hp(jtst)
+
+if TEST_PLOT
+   test_plot(h,nbdy,'h (initial,padded)'); pause;
+   test_plot(sao,nbdy,'sao'); pause;
+   test_plot(hp,nbdy,'h (predicted)'); pause;
+end
 
 % --- Correction step
 sao   = weno3pd_v2_1d(hp,u,scuy,scp2i,scp2,dt,nbdy);
-%tst1d = sao(jtst)
-for i_ = 1-margin:ii+margin
-   i     = i_+nbdy;%%1-nbdy->1
-   h(i)  = .5*(h(i)+hp(i)+dt*sao(i));
-end%i
+if TEST_PLOT
+   %% large loop for demo
+   for i_ = 1-nbdy:ii+nbdy
+      i     = i_+nbdy;
+      h(i)  = .5*(h(i)+hp(i)+dt*sao(i));
+   end%i
+   test_plot(h,nbdy,'h (corrected)'); pause;
+else
+   for i_ = 1:ii
+      i     = i_+nbdy;
+      h(i)  = .5*(h(i)+hp(i)+dt*sao(i));
+   end%i
+end
 
 %%set waves on land to 0
 h  = h(ireal).*(1-LANDMASK);
@@ -172,13 +186,12 @@ eps   = 1.e-12;
 ful   = zeros(idm+2*nbdy,1);
 fuh   = zeros(idm+2*nbdy,1);
 gt    = zeros(idm+2*nbdy,1);
-jtst  = idm+2*nbdy+(-12:0)';
 
 %
 % --- Compute grid cell boundary fluxes. Split in a low order flux
 % --- (donor cell) and a high order correction flux.
 %
-for i_ = 0:ii+2
+for i_ = 1-nbdy+2:ii+nbdy-1
    i     = i_+nbdy;%%1-nbdy->1
    im1   = i-1;
  
@@ -208,19 +221,17 @@ for i_ = 0:ii+2
     fuh(i)   = u(i)*(a0*q0+a1*q1)/(a0+a1)*scuy(i)-ful(i);
 
 end%i
-%tst1d = [ful(jtst),fuh(jtst)]
 
 % --- Update field with low order fluxes.
-for i_ = 0:ii+1
+for i_ = 1-nbdy:ii+nbdy-1
    i     = i_+nbdy;%%1-nbdy->1
    %%
    gt(i) = g(i)-dt*(ful(i+1)-ful(i))*scp2i(i);%scuy is already inside ful
 end%i
-%tst1d = gt(jtst)
 
 % --- Obtain fluxes with limited high order correction fluxes.
 q  = .25/dt;
-for i_ = 0:ii+1
+for i_ = 1-nbdy+1:ii+nbdy
    i     = i_+nbdy;%%1-nbdy->1
 
    fuh(i) = ful(i)+max( -q*gt(i)*scp2(i),...
@@ -229,10 +240,36 @@ for i_ = 0:ii+1
 end%i
 
 % --- Compute the spatial advective operator.
-for i_ = 0:ii
+for i_ = 1-nbdy:ii+nbdy-1
    i        = i_+nbdy;%%1-nbdy->1
    sao(i)   = -(fuh(i+1)-fuh(i))*scp2i(i);
 end%i
-%tst1d = sao(jtst)
 
 return
+
+function test_plot(h,nbdy,ttl)
+nx    = length(h);
+xvec  = (0:nx)'-nbdy;%corners
+
+%%plot steps
+X           = xvec(1)+zeros(2*nx,1);%[0 1 1 2 2 ... nx+1]
+X(2:2:end)  = xvec(2:end);
+X(3:2:end)  = xvec(2:end-1);
+
+H           = zeros(2*nx,1);%[0 1 1 2 2 ... nx+1]
+H(1:2:end)  = h;
+H(2:2:end)  = h;
+plot(X,H,'k');
+xlim(X([1,end]));
+Y     = get(gca,'ylim');
+yav   = mean(Y);
+dy    = Y(2)-yav;
+Y     = yav+1.25*dy*[-1,1];
+set(gca,'ylim',Y);
+
+hold on;
+plot(0*Y,Y,':r');
+x1 = nx-2*nbdy;
+plot(x1+0*Y,Y,':r');
+title(ttl);
+hold off;

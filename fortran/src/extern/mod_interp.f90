@@ -14,8 +14,10 @@
       subroutine pwl_interp_2d_real( nxd, nyd, xd, yd, zd, ni, xi, yi, zi )
       
       integer,intent(in)         :: nxd,nyd,ni
-      real(kind=4),intent(in)    :: xd(nxd),yd(nyd),zd(nxd,nyd),xi(ni),yi(ni)
-      real(kind=4),intent(out)   :: zi(ni)
+      !real(kind=4),intent(in)    :: xd(nxd),yd(nyd),zd(nxd,nyd),xi(ni),yi(ni)
+      !real(kind=4),intent(out)   :: zi(ni)
+      real,intent(in)    :: xd(nxd),yd(nyd),zd(nxd,nyd),xi(ni),yi(ni)
+      real,intent(out)   :: zi(ni)
       real(kind=8)   :: zi8(ni)
       real(kind=8)   :: xi8(ni),yi8(ni),xd8(nxd),yd8(nyd),zd8(nxd,nyd)
       

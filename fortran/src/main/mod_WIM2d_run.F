@@ -33,7 +33,7 @@
       real  :: W_MIZ,taux_max,tauy_max                                  &
      &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
 
-      real :: et,tictoc(2) !!print time
+      real*4 :: et,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!only subroutines are public
