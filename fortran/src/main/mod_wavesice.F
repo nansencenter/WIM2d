@@ -387,11 +387,11 @@
                write(fid_diag,'(f8.4,a)'),icec(i,j)
      &         ,' # conc'
                write(fid_diag,'(f8.4,a)'),iceh(i,j)
-     &         ,' # h,m'
+     &         ,' # h, m'
                write(fid_diag,'(f8.4,a)'),Dave(i,j)
-     &         ,' # D_av,m'
+     &         ,' # D_av, m'
                write(fid_diag,'(f9.5,a)'),dfloe(i,j)
-     &         ,' # D_max,m'
+     &         ,' # D_max, m'
             end if
          end if
       end do
@@ -399,7 +399,8 @@
 
       if (DUMP_DIAG.and.ICE_MASK(itest,jtest).eq.1.) then
          write(fid_diag,'(a)'),' '
-         write(fid_diag,'(a)'),'# period | atten_dim | damp_dim'
+         write(fid_diag,'(a)'),'# period, s | atten_dim, m^{-1}'//
+     &                         '| damp_dim, m^{-1}'
       end if
       do w=1,nw
 
@@ -557,9 +558,9 @@
          write(fid_diag,'(f10.4,a)')
      &   ,mwd(itest,jtest),' # mwd, deg'
          write(fid_diag,'(e13.6,a)')
-     &   ,tau_x(itest,jtest),' # tau_x,Pa'
+     &   ,tau_x(itest,jtest),' # tau_x, Pa'
          write(fid_diag,'(e13.6,a)')
-     &   ,tau_y(itest,jtest),' # tau_y,Pa'
+     &   ,tau_y(itest,jtest),' # tau_y, Pa'
          write(fid_diag,'(a)'),' '
       end if
 
@@ -646,9 +647,9 @@
             write(fid_diag,'(e13.6,a)'),P_crit
      &      ,' # P_crit'
             write(fid_diag,'(f10.5,a)'),wlng_crest
-     &      ,' # peak wavelength,m'
+     &      ,' # peak wavelength, m'
             write(fid_diag,'(f9.5,a)'),dfloe(i,j)
-     &      ,' # D_max,m'
+     &      ,' # D_max, m'
          end if
 
       end do!! end spatial loop j in y;

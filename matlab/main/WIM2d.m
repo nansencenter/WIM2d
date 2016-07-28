@@ -802,7 +802,7 @@ else
          logfile2 = [log_dir2,'/WIMdiagnostics_local',year_info.date_string,'.txt'];
          logid2   = fopen(logfile2,'w');
          fprintf(logid2,'%s\n',[year_info.cdate,' # date']);
-         fprintf(logid2,'%s\n',[year_info.ctime,' # date']);
+         fprintf(logid2,'%s\n',[year_info.ctime,' # time']);
          fprintf(logid2,'%d%s\n',model_day,' # model day');
          fprintf(logid2,'%13.5f%s\n',model_seconds,' # model seconds');
          fprintf(logid2,'%d%s\n',itest,' # itest');
@@ -873,11 +873,11 @@ else
          if DUMP_DIAG&test_ij&(ICE_MASK(i,j)>0)
             fprintf(logid2,'%s\n','Ice info: pre-breaking');
             fprintf(logid2,'%8.4f%s\n',ice_fields.cice(i,j),' # conc');
-            fprintf(logid2,'%8.4f%s\n',ice_fields.hice(i,j),' # h,m');
-            fprintf(logid2,'%8.4f%s\n',Dave(i,j),' # D_av,m');
-            fprintf(logid2,'%8.4f%s\n',out_fields.Dmax(i,j),' # D_max,m');
+            fprintf(logid2,'%8.4f%s\n',ice_fields.hice(i,j),' # h, m');
+            fprintf(logid2,'%8.4f%s\n',Dave(i,j),' # D_av, m');
+            fprintf(logid2,'%8.4f%s\n',out_fields.Dmax(i,j),' # D_max, m');
             fprintf(logid2,'%s\n',' ');
-            fprintf(logid2,'%s\n','# period,s | atten_dim,m^{-1} | damp_dim,m^{-1}');
+            fprintf(logid2,'%s\n','# period, s | atten_dim, m^{-1} | damp_dim, m^{-1}');
          end
       end
       end
