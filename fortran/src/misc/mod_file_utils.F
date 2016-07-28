@@ -119,6 +119,7 @@
 
       character(len=200)   :: bfile,ctmp
       integer              :: fid,rec_len,filesize,filename_len,nrecs
+     &                        ,entrysize
       logical              :: fex
 
       filename_len   = len(trim(infile))
@@ -138,10 +139,18 @@
          read(fid,'(i2.2,a)') nrecs,ctmp
          close(fid)
 
-         print*,recno,rec_len,nrecs
-         print*,filesize
+         entrysize   = int(filesize/real(nrecs*nx*ny))
+         if (.false.) then
+            !print file info
+            print*,'want record number:',recno
+            print*,'of file:    ',trim(infile)
+            print*,'size of file:',filesize
+            print*,'number of records:',nrecs
+            print*,'bytes per element:',entrysize
+            print*,' '
+         end if
 
-         if (filesize.eq.rec_len*nrecs) then
+         if (entrysize.eq.4) then
             !file is in single precision
             open(unit=fid,file=trim(infile),status = 'old',             &
      &         form='unformatted', access='direct',recl=rec_len)

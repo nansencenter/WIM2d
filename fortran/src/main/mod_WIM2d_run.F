@@ -110,7 +110,6 @@
       print*,' '
 
       inquire(file=infile,exist=fex2)
-      print*,fex2
       if (fex2) then
          call read_infile(wim_prams_in,init_cons,infile)
 

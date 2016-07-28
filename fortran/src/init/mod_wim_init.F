@@ -245,7 +245,7 @@
                end if
 
 #endif
-               print*,wavdir(wth),mwd(i,j),theta_fac(wth)
+               !print*,wavdir(wth),mwd(i,j),theta_fac(wth)
 
             end do
             !print*,'test dir spreading factor'

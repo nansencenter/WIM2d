@@ -4,14 +4,21 @@ w2d=$WIM2D_PATH
 
 # ==================================================================
 # input/output dirs; check inputs
-if [ ! -f infile_dirs.txt ]
+notpres=0
+ifd="infile_dirs.txt"
+if [ ! -f $ifd ]
 then
-   echo "infile_dirs.txt not present"
+   notpres=1
+   echo " "
+   echo "$ifd not present"
    echo "using defaults:"
    indir=grid
    outdir=out
    echo "grid in $indir"
    echo "outputs to $outdir"
+   echo " "
+   echo $indir>$ifd
+   echo $outdir>>$ifd
 else
    lst=(`cat infile_dirs.txt`)
    indir=${lst[0]}
@@ -52,6 +59,10 @@ mkdir -p "$outdir/diagnostics/local"
 # ==================================================================
 # run model
 bin/WIM2d.exec
+if [ $notpres -eq 1 ]
+then
+   rm $ifd
+fi
 # ==================================================================
 
 
