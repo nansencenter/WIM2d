@@ -877,7 +877,7 @@ else
             fprintf(logid2,'%8.4f%s\n',Dave(i,j),' # D_av,m');
             fprintf(logid2,'%8.4f%s\n',out_fields.Dmax(i,j),' # D_max,m');
             fprintf(logid2,'%s\n',' ');
-            fprintf(logid2,'%s\n','# period | atten_dim | damp_dim');
+            fprintf(logid2,'%s\n','# period,s | atten_dim,m^{-1} | damp_dim,m^{-1}');
          end
       end
       end
@@ -1075,8 +1075,8 @@ else
          fprintf(logid2,'%8.4f%s\n',out_fields.Hs(itest,jtest),' # Hs, m')
          fprintf(logid2,'%10.4f%s\n',out_fields.Tp(itest,jtest),' # Tp, s')
          %fprintf(logid2,'%10.4f%s\n',mwd(itest,jtest),' # mwd, deg');
-         fprintf(logid2,'%13.6e%s\n',tau_x(itest,jtest),' # tau_x,Pa');
-         fprintf(logid2,'%13.6e%s\n',tau_y(itest,jtest),' # tau_y,Pa');
+         fprintf(logid2,'%13.6e%s\n',tau_x(itest,jtest),' # tau_x, Pa');
+         fprintf(logid2,'%13.6e%s\n',tau_y(itest,jtest),' # tau_y, Pa');
          fprintf(logid2,'%s\n',' ');
       end
 
@@ -1170,8 +1170,8 @@ else
                fprintf(logid2,'%s\n','Ice info: post-breaking');
                fprintf(logid2,'13.6%e%s\n',Pstrain,' # P_strain');
                fprintf(logid2,'13.6%e%s\n',P_crit,' # P_crit');
-               fprintf(logid2,'%10.5f%s\n',wlng_crest,' # peak wavelength,m');
-               fprintf(logid2,'%9.5f%s\n',out_fields.Dmax(i,j),' # D_max,m');
+               fprintf(logid2,'%10.5f%s\n',wlng_crest,' # peak wavelength, m');
+               fprintf(logid2,'%9.5f%s\n',out_fields.Dmax(i,j),' # D_max, m');
             end
             
          elseif WTR_MASK(i,j)==1%% only water present
