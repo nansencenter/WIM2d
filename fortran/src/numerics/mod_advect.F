@@ -4,7 +4,7 @@
 
       private
 
-      integer, parameter   :: n_bdy = 3
+      integer, parameter   :: n_bdy = 4
          !n_bdy=6: don't need to apply boundary condition between
          ! prediction/correction steps (WENO advection)
          !n_bdy=3: do need to apply boundary condition between
@@ -139,7 +139,7 @@
       call weno3pd_v2(h_pad,sao,u_pad,v_pad,                            &
      &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
 
-      if (n_bdy.eq.6) then
+      if (n_bdy.gt.3) then
          !! original version
          do j=1-n_bdy,jj+n_bdy
          do i=1-n_bdy,ii+n_bdy!![TW 28.1.2014]
@@ -155,7 +155,7 @@
          enddo
          call pad_var(hp,hp(1:ii,1:jj),ADV_OPT)
       else
-         print*,'Choose n_bdy = 3,6'
+         print*,'Choose n_bdy>=3'
          stop
       end if
 
@@ -296,7 +296,7 @@
       call weno3pd_v2_1d(h_pad,sao,u_pad,                               &
      &   scuy_pad,scp2i_pad,scp2_pad,dt)
 
-      if (n_bdy.eq.6) then
+      if (n_bdy.gt.3) then
          !! original version - but I think this needed xctilr also
          do j=1,jj
          do i=1-n_bdy,ii+n_bdy
@@ -312,7 +312,7 @@
          enddo
          call pad_var_1d(hp,hp(1:ii,1:jj),ADV_OPT)
       else
-         print*,'choose n_bdy = 3,6'
+         print*,'choose n_bdy>=3'
          stop
       end if
 
@@ -592,8 +592,8 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!fluxes in x dirn:
-      do j=0,jj+1
-        do i=0,ii+2!![TW 28.1.2014]
+      do j=1-n_bdy,jj+n_bdy
+      do i=1-n_bdy+2,ii+n_bdy-1
           im1=i-1
 !
           if (u(i,j).gt.0.) then
@@ -625,16 +625,16 @@
 !
           fuh(i,j)=u(i,j)*(a0*q0+a1*q1)/(a0+a1)*scuy(i,j)-ful(i,j)
 !
-        enddo
+      enddo
       enddo
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!fluxes in y dirn:
-      do j=0,jj+2
-        jm1=j-1
-        do i=0,ii+1!![TW 28.1.2014]
-!
+      do j=1-n_bdy+2,jj+n_bdy-1
+      do i=1-n_bdy,ii+n_bdy
+
+          jm1=j-1
           if (v(i,j).gt.0.) then
             jm2=jm1-1
 !
@@ -663,13 +663,13 @@
 !
           fvh(i,j)=v(i,j)*(a0*q0+a1*q1)/(a0+a1)*scvx(i,j)-fvl(i,j)
 !        
-        enddo
+      enddo
       enddo
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! --- Update field with low order fluxes.
-      do j=0,jj+1
-      do i=0,ii+1!![TW 28.1.2014]
+      do j = 1-n_bdy,jj+n_bdy-1
+      do i = 1-n_bdy,ii+n_bdy-1
           gt(i,j)=g(i,j)-dt*(ful(i+1,j)-ful(i,j)                        &
      &                      +fvl(i,j+1)-fvl(i,j))*scp2i(i,j)
       enddo
@@ -677,23 +677,23 @@
 
 ! --- Obtain fluxes with limited high order correction fluxes.
       q=.25/dt
-      do j=1,jj
-      do i=1,ii+1!![TW 28.1.2014]
+      do j = 1-n_bdy,jj+n_bdy
+      do i = 1-n_bdy+1,ii+n_bdy
           fuh(i,j)=ful(i,j)+max(-q*gt(i  ,j)*scp2(i  ,j),               &
      &                      min( q*gt(i-1,j)*scp2(i-1,j),fuh(i,j)))
       enddo
       enddo
 
-      do j=1,jj+1
-      do i=1,ii!![TW 28.1.2014]
+      do j = 1-n_bdy+1,jj+n_bdy
+      do i = 1-n_bdy,ii+n_bdy
           fvh(i,j)=fvl(i,j)+max(-q*gt(i,j  )*scp2(i,j  ),               &
      &                      min( q*gt(i,j-1)*scp2(i,j-1),fvh(i,j)))
       enddo
       enddo
 
 ! --- Compute the spatial advective operator.
-      do j=1,jj
-      do i=1,ii!![TW 28.1.2014]
+      do j = 1-n_bdy,jj+n_bdy-1
+      do i = 1-n_bdy,ii+n_bdy-1
           sao(i,j)=-(fuh(i+1,j)-fuh(i,j)+fvh(i,j+1)-fvh(i,j))*scp2i(i,j)
       enddo
       enddo
@@ -739,16 +739,12 @@
 ! --- Compute grid cell boundary fluxes. Split in a low order flux
 ! --- (donor cell) and a high order correction flux.
 !
-      do j=1,jj
-        do i=0,ii+2
-          ful(i,j)=0.
-          fuh(i,j)=0.
-        enddo
-      enddo
+      ful  = 0.
+      fuh  = 0.
 
       !!fluxes in x dirn:
       do j=1,jj
-      do i=0,ii+2!![TW 28.1.2014]
+      do i=1-n_bdy+2,ii+n_bdy-1
          im1=i-1
 !
          if (u(i,j).gt.0.) then
@@ -784,7 +780,7 @@
 
 ! --- Update field with low order fluxes.
       do j=1,jj
-      do i=0,ii+1!![TW 28.1.2014]
+      do i = 1-n_bdy,ii+n_bdy-1
          gt(i,j)  = g(i,j)-dt*(ful(i+1,j)-ful(i,j))*scp2i(i,j)
       enddo
       enddo
@@ -792,20 +788,19 @@
 ! --- Obtain fluxes with limited high order correction fluxes.
       q=.25/dt
       do j=1,jj
-        do i=1,ii+1!![TW 28.1.2014]
+      do i = 1-n_bdy+1,ii+n_bdy
           fuh(i,j)=ful(i,j)+max(-q*gt(i  ,j)*scp2(i  ,j),               &
      &                      min( q*gt(i-1,j)*scp2(i-1,j),fuh(i,j)))
-        enddo
+      enddo
       enddo
 
 ! --- Compute the spatial advective operator.
       do j=1,jj
-        do i=1,ii!![TW 28.1.2014]
+      do i = 1-n_bdy,ii+n_bdy-1
           sao(i,j)=-(fuh(i+1,j)-fuh(i,j))*scp2i(i,j)
-        enddo
+      enddo
       enddo
 
-      return
       end subroutine weno3pd_v2_1d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

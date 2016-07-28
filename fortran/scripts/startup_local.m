@@ -1,3 +1,4 @@
+format long;
 rmpaths;
 addpath bin
 
