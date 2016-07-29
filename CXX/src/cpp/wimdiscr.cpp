@@ -12,7 +12,7 @@ namespace Wim
 {
 
 template<typename T>
-void WimDiscr<T>::gridProssessing()
+void WimDiscr<T>::gridProcessing()
 {
     X_array.resize(boost::extents[nx][ny]);
     Y_array.resize(boost::extents[nx][ny]);
@@ -65,8 +65,11 @@ void WimDiscr<T>::gridProssessing()
         }
     }
 
-    if (vm["wim.exportresults"].template as<bool>())
+    bool critter = (vm["wim.checkprog"].template as<bool>())
+               || (vm["nextwim.exportresults"].template as<bool>());
+    if (critter)
     {
+       //save grid to binary
         std::string str = vm["wim.outparentdir"].template as<std::string>();
 
         //char * senv = ::getenv( "WIM2D_PATH" );
@@ -231,8 +234,9 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
 template<typename T>
 void WimDiscr<T>::init()
 {
-	// wim grid generation
-	this->gridProssessing();
+    // wim grid generation
+    this->gridProcessing();
+    //std::cout<<"\nHI\n";
     //this->readGridFromFile("wim_grid.a");
 
     // parameters
@@ -259,6 +263,9 @@ void WimDiscr<T>::init()
     dfloe_pack_thresh = vm["wim.dfloepackthresh"].template as<double>(); /* 400.0 */
     young = vm["wim.young"].template as<double>();
     visc_rp = vm["wim.viscrp"].template as<double>();
+    wim_itest = vm["wim.itest"].template as<int>();
+    wim_jtest = vm["wim.jtest"].template as<int>();
+    std::cout<<"\nitest,jtest: "<<wim_itest<<","<<wim_jtest<<"\n";
 
     //nghost==3 needs padVar (boundary conditions) between prediction/advection step
     //nghost>3 doesn't
@@ -514,8 +521,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
             {
                 value_type dtheta = std::abs(wavedir[1]-wavedir[0]);
 
-                if (mwd[i][j]!=0.)
-                   std::cout<<"dir-frac ("<<i<<","<<j<<")"<<std::endl;
+                //if (mwd[i][j]!=0.)
+                //   std::cout<<"dir-frac ("<<i<<","<<j<<")"<<std::endl;
                 for (int dn = 0; dn < nwavedirn; dn++)
                 {
 #if 0
@@ -533,8 +540,9 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
                     theta_fac[dn] = theta_fac[dn]*180./(PI*dtheta);
 #endif
 
-                    if (Hs[i][j]!=0.)
-                       std::cout<<wavedir[dn]<<" "<<mwd[i][j]<<" "<<theta_fac[dn]<<std::endl;
+                    //if (Hs[i][j]!=0.)
+                    //   std::cout<<wavedir[dn]<<" "<<mwd[i][j]<<" "
+                    //            <<theta_fac[dn]<<std::endl;
                 }
             }
 
@@ -1157,11 +1165,16 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
         value_type t_out = dt*fcpt;
 
-        critter = !(cpt % vm["wim.dumpfreq"].template as<int>()) && (vm["wim.checkprog"].template as<bool>());
-        //critter = !(fcpt % 50) && (vm["wim.checkprog"].template as<bool>());
+        critter = !(cpt % vm["wim.dumpfreq"].template as<int>())
+           && (vm["wim.checkprog"].template as<bool>());
 
-        if ((vm["wim.exportresults"].template as<bool>()) && (critter))
-            exportResults(fcpt,t_out);
+        if ( critter )
+        {
+           if (vm["nextwim.exportresults"].template as <bool>())
+              exportResults(fcpt,t_out);//global counter from nextsim
+           else
+              exportResults(cpt,t_out);//local counter from wim
+        }
 
         // if (cpt == 30)
         // {
@@ -1173,8 +1186,8 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
         timeStep(step);
 
-        ++cpt;
-        ++fcpt;
+        ++cpt;//local counter incremented in wim.run()
+        ++fcpt;//global counter incremented in nextsim
     }
 
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";

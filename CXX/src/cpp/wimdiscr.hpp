@@ -67,7 +67,7 @@ public:
         ny(vm["wim.ny"].template as<int>())
     {}
 
-    void gridProssessing();
+    void gridProcessing();
     void readGridFromFile(std::string const& filein);
     void readDataFromFile(std::string const& filein);
     void exportResults(size_type const& timestp, value_type const& t_out) const;
@@ -134,11 +134,15 @@ private:
 
     po::variables_map vm;
     int nx, ny, nxext, nyext, nbdy, nbdx, nghost;
-    array2_type X_array, Y_array, SCUY_array, SCVX_array, SCP2_array, SCP2I_array, LANDMASK_array;
+    int wim_itest, wim_jtest;
+    array2_type X_array, Y_array, SCUY_array, SCVX_array,
+                SCP2_array, SCP2I_array, LANDMASK_array;
 
     value_type cfl, dom, guess, Hs_inc, Tp_inc, mwd_inc, Tmin, Tmax, gravity, om;
-    value_type xmax, ym, x0, y0, dx, dy, x_edge, unifc, unifh, dfloe_pack_init, dfloe_pack_thresh, amin, amax;
-    value_type rhowtr, rhoice, poisson, dmin, xi, fragility, young, visc_rp, kice, kwtr, int_adm, modT, argR, argT, rhoi, rho, rhow;
+    value_type xmax, ym, x0, y0, dx, dy, x_edge, unifc, unifh,
+               dfloe_pack_init, dfloe_pack_thresh, amin, amax;
+    value_type rhowtr, rhoice, poisson, dmin, xi, fragility,
+               young, visc_rp, kice, kwtr, int_adm, modT, argR, argT, rhoi, rho, rhow;
     value_type fmin, fmax, df, epsc, sigma_c, vbf, vb, flex_rig_coeff;
     value_type dt,duration;
 
