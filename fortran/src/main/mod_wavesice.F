@@ -371,7 +371,7 @@
             if (dfloe(i,j).le.200.0) then
                if (FSD_OPT.eq.0) then
                   !! renormalisation group method (Dumont et al, 2011)
-                  call floe_scaling(Dave(i,j),dfloe(i,j))
+                  call floe_scaling(Dave(i,j),dfloe(i,j),1)
                elseif (FSD_OPT.eq.1) then
                   !! smoothed power law method (Montiel et al, 2015)
                   call floe_scaling_smooth(Dave(i,j),dfloe(i,j),1)
@@ -1053,49 +1053,51 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine floe_scaling(Dave,dmax)
+      subroutine floe_scaling(Dave,dmax,moment)
 
       use mod_wim_prams, only: fragility,xi,Dmin
       implicit none
 
       real,    intent(out) :: Dave
       real,    intent(in)  :: dmax
+      integer, intent(in)  :: moment
       integer              :: m,mm 
-      real                 :: n,nsum,nd,ndsum,r,dfac
+      real                 :: nm,nm1,dm,nsum,ndsum,r,ffac
 
-      mm    = 0  
+      Dave  = max(dmax**moment,dmin**moment)
+      ffac  = fragility*xi**2
+
+      !! determine no of breaks
       r     = dmax/dmin
-
-      !print*,' '
-      !print*,'dmax,dmin',dmax,dmin
-      !print*,'r,mm',r,mm
-
-      do while ( r .gt. xi ) 
+      mm    = 0  
+      do while ( r .ge. xi ) 
+         !! if r<xi,no more breaking
+         !! - don't change Dave
          r  = r/xi 
          mm = mm+1 
-         !print*,'r,mm',r,mm
-         !print*,' '
       end do
 
       if ( mm .gt. 0 ) then 
-         n     = 0.0
-         nsum  = 0.0
-         nd    = 0.0
-         ndsum = 0.0
+         nm1   = 1.
+         dm    = dmax   !floe length
+         nsum  = 0      !eventually \sum_m=0^mm.n_m
+         ndsum = 0      !eventually \sum_m=0^mm.n_m.d_m^moment
 
-         do m = 0,mm
-            n     = (1.0-fragility)*(fragility*xi**2)**m
-            nd    = n/(xi**m)
-            nsum  = nsum +n
-            ndsum = ndsum+nd
-            dfac  = ndsum/nsum
-            !print*,'n,nd,dfac',n,nd,dfac
+         do m = 0,mm-1
+            nm    = (1.-fragility)*nm1     !no of floes at dm
+            nsum  = nsum +nm
+            ndsum = ndsum+nm*dm**moment
+            !!
+            nm1   = nm1*ffac
+            dm    = dm/xi
          end do
 
-         Dave  = dfac*dmax
+         !m=M
+         nsum  = nsum+nm1
+         ndsum = ndsum+nm1*dm**moment
+         
 
-      else
-         Dave = dmin
+         Dave  = ndsum/nsum
       end if
 
 !     !test subroutine (NB this will crash after 1st call, since status='new')
