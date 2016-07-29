@@ -31,6 +31,7 @@ namespace WIMOPT
             ("wim.breaking", po::value<bool>()->default_value( true ), "Do breaking (=true), or turn off breaking (=false)")
             ("wim.atten", po::value<bool>()->default_value( true ), "Do attenuation")
             ("wim.checkprog", po::value<bool>()->default_value( true ), "Do dump intermediate states to binary files (=true), or don't' (=false)")
+            ("wim.fsdopt", po::value<std::string>()->default_value( "PowerLawSmooth" ), "FSD parameterisation: 'PowerLawSmooth' or 'RG'")
 
             //other bool param's
             ("wim.refhsice", po::value<bool>()->default_value( false ), "Inside ice, Hs corresponds to water (=false) or ice (=true) displacement")

@@ -85,14 +85,34 @@ public:
              std::vector<value_type> const& n_floes = std::vector<value_type>(),
              bool step = false);
 
-    void floeScaling(value_type const& dmax, value_type& dave);
-    void advAttenSimple(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_omega,array2_type& tauy_omega, array2_type const& ag2d_eff);
-    void advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq,array2_type& taux_omega,array2_type& tauy_omega, array2_type const& ag2d_eff);
-    void waveAdvWeno(array2_type& h, array2_type const& u, array2_type const& v);
-    void weno3pdV2(array2_type const& gin, array2_type const& u, array2_type const& v, array2_type const& scuy,
-                   array2_type const& scvx, array2_type const& scp2i, array2_type const& scp2, array2_type& saoout);
+    //===========================================================================
+    //FSD: Dmax -> <D^moment> conversion
+    void floeScaling(
+          value_type const& dmax, int const& moment, value_type& dave);
+    void floeScalingSmooth(
+          value_type const& dmax, int const& moment, value_type& dave);
+    //===========================================================================
 
+    //===========================================================================
+    //advection/attenuation
+    void advAttenSimple(
+          array3_type& Sdir, array2_type& Sfreq,
+          array2_type& taux_omega,array2_type& tauy_omega,
+          array2_type const& ag2d_eff);
+    void advAttenIsotropic(array3_type& Sdir, array2_type& Sfreq,
+          array2_type& taux_omega,array2_type& tauy_omega,
+          array2_type const& ag2d_eff);
+    void waveAdvWeno(
+          array2_type& h, array2_type const& u, array2_type const& v);
+    void weno3pdV2(
+          array2_type const& gin, array2_type const& u, array2_type const& v,
+          array2_type const& scuy, array2_type const& scvx,
+          array2_type const& scp2i, array2_type const& scp2,
+          array2_type& saoout);
     void padVar(array2_type const& u, array2_type& upad);
+    //===========================================================================
+
+
     void calcMWD();
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
@@ -124,7 +144,7 @@ private:
 
     int nwavedirn, nwavefreq, advdim, ncs ,nt;
     bool ref_Hs_ice, atten, useicevel, steady, breaking;
-    std::string scatmod, advopt;
+    std::string scatmod, advopt, fsdopt;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
 
     array2_type steady_mask, wave_mask, ice_mask, wtr_mask, icec, iceh, atten_dim, damp_dim, ag2d_eff_temp, mwd, Hs, Tp;

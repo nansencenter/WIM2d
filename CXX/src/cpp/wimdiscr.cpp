@@ -246,6 +246,7 @@ void WimDiscr<T>::init()
     breaking = vm["wim.breaking"].template as<bool>();
     scatmod = vm["wim.scatmod"].template as<std::string>();
     advopt = vm["wim.advopt"].template as<std::string>();
+    fsdopt = vm["wim.fsdopt"].template as<std::string>();
     cfl = vm["wim.cfl"].template as<double>();
     Hs_inc = vm["wim.hsinc"].template as<double>(); /* 2.0 */
     Tp_inc = vm["wim.tpinc"].template as<double>(); /* 12.0 */
@@ -845,10 +846,22 @@ void WimDiscr<T>::timeStep(bool step)
                 value_type dave, c1d;
                 if ((ice_mask[i][j] == 1.) && (atten))
                 {
-                    if (dfloe[ny*i+j] <200.)
-                        floeScaling(dfloe[ny*i+j],dave);
+                    if (dfloe[ny*i+j] >200.)
+                    {
+                       if ( fsdopt == "RG" )
+                       {
+                           floeScaling(dfloe[ny*i+j],1,dave);
+                       }
+                       else if ( fsdopt == "PowerLawSmooth" )
+                       {
+                           floeScalingSmooth(dfloe[ny*i+j],1,dave);
+                       }
+                    }
                     else
-                        dave = dfloe[ny*i+j];
+                    {
+                       //just use uniform dist
+                       dave = dfloe[ny*i+j];
+                    }
 
                     // floes per unit length
                     c1d = icec[i][j]/dave;
@@ -1164,36 +1177,80 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 }
 
 template<typename T>
-void WimDiscr<T>::floeScaling(value_type const& dmax, value_type& dave)
+void WimDiscr<T>::floeScaling(
+      value_type const& dmax, int const& moment, value_type& dave)
 {
-    int mm = 0;
-    value_type n, nsum, nd, ndsum, r, dfac;
+    value_type nm,nm1,dm,nsum,ndsum,r;
+    
+    int mm;
+    value_type ffac     = fragility*std::pow(xi,2);
 
-    r = dmax/dmin;
-    n = nsum = nd = ndsum = dfac = 0;
-
-    while (r > xi)
+    dave = std::max(std::pow(dmin,moment),std::pow(dmax,moment));
+    if (dmax>=xi*dmin)
     {
-        r  = r/xi;
-        ++mm;
+       //determine number of breaks
+       r    = dmax/dmin;
+       mm   = 0;
+       while (r >= xi)
+       {
+          //r<2,mm=0 => doesn't break in 2
+          //dave stays at dmax^moment;
+          r  = r/xi;
+          ++mm;
+       }
+
+       if (mm > 0)
+       {
+          nm1   = 1.;
+          dm    = dmax; //floe length
+          nsum  = 0.;   //eventually \sum_m=0^mm.n_m
+          ndsum = 0.;   //eventually \sum_m=0^mm.n_m.d_m^moment
+
+          for (int m=0; m<mm; ++m)
+          {
+              //no of floes of length dm; 
+              nm     = nm1*(1-fragility);
+              nsum  += nm;                       
+              ndsum += nm*std::pow(dm,moment);   
+              //std::cout<<"nsum,dm: "<<nsum<<" , "<<dm<<"\n";
+
+              nm1   *= ffac;
+              dm    /= xi;
+          }
+
+          //m=mm:
+          nsum   += nm1;
+          ndsum  += nm1*std::pow(dm,moment);
+          dave    = ndsum/nsum;
+          //std::cout<<"nsum,dm: "<<nsum<<" , "<<dm<<"\n";
+       }
     }
+}
 
-    if (mm > 0)
+template<typename T>
+void WimDiscr<T>::floeScalingSmooth(
+      value_type const& dmax,int const& moment, value_type& dave)
+{     
+    value_type fsd_exp,b,A;
+
+    fsd_exp = 2+log(fragility)/log(xi);//power law exponent: P(d>D)=(D_min/D)^fsd_exp;
+    b       = moment-fsd_exp;
+
+    // calculate <D^moment> from Dmax
+    // - uniform dist for larger floes
+    dave  = std::pow(dmax,moment);
+
+    if (dmax<=dmin)
     {
-        for (int m=0; m<mm+1; ++m)
-        {
-            n = (1.0-fragility)*std::pow((fragility*std::pow(xi,2.)),m);
-            nd = n/(std::pow(xi,double(m)));
-            nsum += n;
-            ndsum += nd;
-            dfac = ndsum/nsum;
-        }
-
-        dave = dfac*dmax;
+       // small floes
+       dave  = std::pow(dmin,moment);
     }
     else
     {
-        dave = dmin;
+       // bigger floes
+       A     = (fsd_exp*std::exp(fsd_exp*(std::log(dmin)+std::log(dmax))));
+       A     = A/(std::exp(fsd_exp*std::log(dmax))-std::exp(fsd_exp*std::log(dmin)));
+       dave  = -(A/b)*(std::exp(b*std::log(dmin))-exp(b*std::log(dmax)));
     }
 }
 

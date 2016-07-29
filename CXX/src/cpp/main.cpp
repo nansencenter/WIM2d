@@ -1,6 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
 
 #include <wimdiscr.hpp>
+#include <iomanip>
 
 namespace
 {
@@ -66,6 +67,24 @@ int main(int argc, char** argv )
 
     // initialization of wim2d
     wim.init();
+
+#if 0
+    //test fsd:
+    double dave,dmax;
+    std::vector<double> dmaxvec={15,20,30,40,80,160,200,220};
+    int mom=2;
+   
+    for (int j=0; j<dmaxvec.size(); ++j)
+    {
+       dmax = dmaxvec[j];
+       wim.floeScalingSmooth(dmax,mom,dave);
+       //wim.floeScaling(dmax,2,dave);
+       std::cout<<std::endl
+                <<"<D> (m): "<<std::setprecision(10)<<dave
+                <<std::endl;
+    }
+    std::abort();
+#endif
 
     // run the simulation
     wim.run();

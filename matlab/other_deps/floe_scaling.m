@@ -39,6 +39,7 @@ for j=1:length(Dmax(:));
          Ndsum = sum(Nvec.*Dvec.^moment);
          
          %% FSD output
+         FSD(j).N             = Nvec;
          FSD(j).probability   = Nvec/Nsum;
          FSD(j).floe_sizes    = Dvec;
          FSD(j).type          = 'RG';
