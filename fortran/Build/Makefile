@@ -41,8 +41,8 @@ VPATH 	+= 	$(HDIR)
 # # optimise code
 # FCFLAGS=-O
 # check for errors
-# FCFLAGS=-g -fPIC -fdefault-real-8 -fdefault-double-8
-FCFLAGS=-g -fPIC
+FCFLAGS=-g -fPIC -fdefault-real-8 -fdefault-double-8
+# FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
 IFLAGS=-I$(MDIR) -I$(HDIR)
