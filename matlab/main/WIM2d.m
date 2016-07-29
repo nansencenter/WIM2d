@@ -62,6 +62,8 @@ function [out_fields,wave_stuff,diagnostics,mesh_e] =...
 %% DAMAGE_OPT: 1
 %% ============================================================
 
+format long;
+
 %%check params_in has the needed fields
 check_params_in(params_in);
 
@@ -139,11 +141,6 @@ fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n',' ');
 fclose(logid);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%important settings
-itest = 24;
-jtest = 1;
-format long
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if params_in.DO_DISP; disp('Initialization'); end
@@ -805,9 +802,9 @@ else
          fprintf(logid2,'%s\n',[year_info.ctime,' # time']);
          fprintf(logid2,'%d%s\n',model_day,' # model day');
          fprintf(logid2,'%13.5f%s\n',model_seconds,' # model seconds');
-         fprintf(logid2,'%d%s\n',itest,' # itest');
-         fprintf(logid2,'%d%s\n',jtest,' # jtest');
-         fprintf(logid2,'%d%s\n',ICE_MASK(itest,jtest),' # ICE_MASK');
+         fprintf(logid2,'%d%s\n',params_in.itest,' # itest');
+         fprintf(logid2,'%d%s\n',params_in.jtest,' # jtest');
+         fprintf(logid2,'%d%s\n',ICE_MASK(params_in.itest,params_in.jtest),' # ICE_MASK');
          fprintf(logid2,'%s\n',' ');
       end
 
@@ -869,7 +866,7 @@ else
             Dave(i,j)  = out_fields.Dmax(i,j);
          end
 
-         test_ij  = (i==itest)&(j==jtest);
+         test_ij  = (i==params_in.itest)&(j==params_in.jtest);
          if DUMP_DIAG&test_ij&(ICE_MASK(i,j)>0)
             fprintf(logid2,'%s\n','Ice info: pre-breaking');
             fprintf(logid2,'%8.4f%s\n',ice_fields.cice(i,j),' # conc');
@@ -910,7 +907,7 @@ else
    %              disp(['q_scat     = ',num2str(atten_dim(i,j),'%7.7e'),' /m']);
    %              disp(['q_abs      = ',num2str(damp_dim(i,j),'%7.7e'),' /m']);
    %           end
-               test_ij  = (i==itest)&(j==jtest);
+               test_ij  = (i==params_in.itest)&(j==params_in.jtest);
                if DUMP_DIAG&test_ij
                   fprintf(logid2,'%8.4f%s%13.6e%s%13.6e\n',...
                      1/wave_stuff.freq(jw),' | ',...
@@ -1068,15 +1065,15 @@ else
 
       if DUMP_DIAG
          fprintf(logid2,'%s\n',' ');
-         fprintf(logid2,'%13.6e,%s\n',mom0w(itest,jtest),' # mom0w, m^2');
-         fprintf(logid2,'%13.6e,%s\n',mom2w(itest,jtest),' # mom2w, m^2/s^2');
-         fprintf(logid2,'%13.6e,%s\n',mom0(itest,jtest),' # mom0, m^2');
-         fprintf(logid2,'%13.6e,%s\n',mom2(itest,jtest),' # mom2, m^2/s^2');
-         fprintf(logid2,'%8.4f%s\n',out_fields.Hs(itest,jtest),' # Hs, m')
-         fprintf(logid2,'%10.4f%s\n',out_fields.Tp(itest,jtest),' # Tp, s')
-         %fprintf(logid2,'%10.4f%s\n',mwd(itest,jtest),' # mwd, deg');
-         fprintf(logid2,'%13.6e%s\n',tau_x(itest,jtest),' # tau_x, Pa');
-         fprintf(logid2,'%13.6e%s\n',tau_y(itest,jtest),' # tau_y, Pa');
+         fprintf(logid2,'%13.6e,%s\n',mom0w(params_in.itest,params_in.jtest),' # mom0w, m^2');
+         fprintf(logid2,'%13.6e,%s\n',mom2w(params_in.itest,params_in.jtest),' # mom2w, m^2/s^2');
+         fprintf(logid2,'%13.6e,%s\n',mom0(params_in.itest,params_in.jtest),' # mom0, m^2');
+         fprintf(logid2,'%13.6e,%s\n',mom2(params_in.itest,params_in.jtest),' # mom2, m^2/s^2');
+         fprintf(logid2,'%8.4f%s\n',out_fields.Hs(params_in.itest,params_in.jtest),' # Hs, m')
+         fprintf(logid2,'%10.4f%s\n',out_fields.Tp(params_in.itest,params_in.jtest),' # Tp, s')
+         %fprintf(logid2,'%10.4f%s\n',mwd(params_in.itest,params_in.jtest),' # mwd, deg');
+         fprintf(logid2,'%13.6e%s\n',tau_x(params_in.itest,params_in.jtest),' # tau_x, Pa');
+         fprintf(logid2,'%13.6e%s\n',tau_y(params_in.itest,params_in.jtest),' # tau_y, Pa');
          fprintf(logid2,'%s\n',' ');
       end
 
@@ -1164,7 +1161,7 @@ else
              end
             end
 
-            test_ij  = (i==itest)&(j==jtest);
+            test_ij  = (i==params_in.itest)&(j==params_in.jtest);
             if DUMP_DIAG&test_ij
                fprintf(logid2,'%s\n',' ');
                fprintf(logid2,'%s\n','Ice info: post-breaking');
@@ -1514,8 +1511,8 @@ taux_min = min(out_fields.tau_x(:));
 taux_max = max(out_fields.tau_x(:));
 tauy_min = min(out_fields.tau_x(:));
 tauy_max = max(out_fields.tau_y(:));
-if params_in.DO_DISP; disp(['max tau_x = ',num2str(taux_max),' Pa']);
-disp(['max tau_y = ',num2str(tauy_max),' Pa']);
+if params_in.DO_DISP; disp(['max tau_x = ',num2str(taux_max,'%0.10e'),' Pa']);
+disp(['max tau_y = ',num2str(tauy_max,'%0.10e'),' Pa']);
 disp(' '); end
 diagnostics.taux_min = taux_min;
 diagnostics.taux_max = taux_max;

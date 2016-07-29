@@ -9,12 +9,12 @@ function [Dave,FSD] = floe_scaling(Dmax,prams,moment)
 if ~exist('moment','var')
    moment   = 1;
 end
-f        = prams.f;
+f        = prams.fragility;
 xi       = prams.xi;
 Dmin     = prams.Dmin;
 Dave     = max(Dmax.^moment,Dmin^moment);
 Dthresh  = 200;
-F        = f*xi^2
+F        = f*xi^2;
 
 want_fsd = 0;
 if nargout==2
@@ -46,9 +46,9 @@ for j=1:length(Dmax(:));
          %% loop, don't store FSD
          %% - how it is in fortran and C++
          Nm1   = 1;
+         Dm    = dmax;
          Nsum  = 0;
          Ndsum = 0;
-         Dm    = dmax;
 
          for m=0:M-1
             Nm    = (1-f)*Nm1;%(1-f)*F^m
