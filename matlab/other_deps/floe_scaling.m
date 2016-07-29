@@ -26,7 +26,15 @@ for j=1:length(Dmax(:));
    unifdist = (dmax<xi*Dmin)|(dmax>=Dthresh);
 
    if ~unifdist
-      M  = floor(log2(dmax/Dmin));%should be >=1
+      r  = dmax/Dmin;
+      M  = 0;
+      while ( r >= xi ) 
+         %% if r<xi,no more breaking
+         %% - don't change Dave
+         r  = r/xi;
+         M  = M +1;
+      end
+      
       if want_fsd
          %%store FSD
          Nvec  = zeros(M+1,1);
