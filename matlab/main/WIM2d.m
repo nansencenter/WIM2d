@@ -858,10 +858,10 @@ else
       for j = 1:gridprams.ny
          if out_fields.Dmax(i,j) < 200
             if params_in.FSD_OPT==0
-            %%power law distribution
-               Dave(i,j)  = floe_scaling(ice_prams.fragility,ice_prams.xi,...
-                          ice_prams.Dmin,out_fields.Dmax(i,j));
+               %%renormalisation group method
+               Dave(i,j)  = floe_scaling(out_fields.Dmax(i,j),ice_prams,1);
             else
+               %%power law distribution
                Dave(i,j)  = floe_scaling_smooth(out_fields.Dmax(i,j),ice_prams,1);
             end
          else
