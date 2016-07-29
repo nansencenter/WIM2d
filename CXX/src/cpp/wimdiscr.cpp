@@ -289,10 +289,10 @@ void WimDiscr<T>::init()
     xi = 2.;
     fragility = 0.9;
 
-    vbf = 0.1;
+    vbf = 0.1;//brine volume fraction
     vb = vbf;
-    sigma_c  = (1.76e+6)*std::exp(-5.88*std::sqrt(vbf));
-    epsc = sigma_c/young;
+    sigma_c  = (1.76e+6)*std::exp(-5.88*std::sqrt(vbf));//flexural strength (Pa)
+    epsc = sigma_c/young;//breaking strain
     flex_rig_coeff = young/(12.0*(1-std::pow(poisson,2.)));
 }
 
@@ -846,7 +846,7 @@ void WimDiscr<T>::timeStep(bool step)
                 value_type dave, c1d;
                 if ((ice_mask[i][j] == 1.) && (atten))
                 {
-                    if (dfloe[ny*i+j] >200.)
+                    if (dfloe[ny*i+j] <200.)
                     {
                        if ( fsdopt == "RG" )
                        {
@@ -1030,9 +1030,13 @@ void WimDiscr<T>::timeStep(bool step)
 
     if (!(steady) && !(breaking))
     {
-        auto temparray = Hs;
-        std::for_each(temparray.data(), temparray.data()+temparray.num_elements(), [&](value_type& f){ f *= f; });
-        E_tot = std::accumulate(temparray.data(), temparray.data()+temparray.num_elements(),0.);
+       //check energy conservation
+       auto temparray = Hs;
+       std::for_each(
+             temparray.data(), temparray.data()+temparray.num_elements(),
+             [&](value_type& f){ f *= f; });
+       E_tot = std::accumulate(
+             temparray.data(), temparray.data()+temparray.num_elements(),0.);
 
         // std::fill( var_strain.data(), var_strain.data()+var_strain.num_elements(), 1. );
         // E_tot = std::accumulate(var_strain.data(), var_strain.data()+var_strain.num_elements(),0.);
