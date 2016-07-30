@@ -4,6 +4,7 @@ UBUNTU: (TODO check pakage names)
 sudo apt-get install libboost-dev
 sudo apt-get install libboost-programoptions-dev
 sudo apt-get install libboost-filesystem-dev
+sudo apt-get install libboost-date-time-dev
 
 OSX:
 0. in ~/.bash_profile add
