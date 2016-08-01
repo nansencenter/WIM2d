@@ -860,8 +860,8 @@
       use mod_file_utils
 
       implicit none
-      character(len=80)             :: afile,bfile
-      integer,parameter             :: Nrecs = 7
+      character(len=80) :: afile,bfile
+      integer,parameter :: Nrecs = 7
 
       afile = trim(outdir)//'/binaries/wim_grid.a'
       bfile = trim(outdir)//'/binaries/wim_grid.b'
@@ -906,16 +906,20 @@
       use mod_file_utils
 
       implicit none
-      character(len=80)             :: afile,bfile
-      integer,parameter             :: Nrecs = 6
+      character(len=80) :: afile,bfile
+      integer,parameter :: Nrecs = 6
+      character(len=16) :: cts
 
-      afile = trim(outdir)//'/binaries/wim_init.a'
-      bfile = trim(outdir)//'/binaries/wim_init.b'
+      cts   = model_year_info%cdatetime
+      afile = trim(outdir)//'/binaries/wim_init'
+     &         //cts//'.a'
+      bfile = trim(outdir)//'/binaries/wim_init'
+     &         //cts//'.b'
 
       !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)
-      call wrt_bfile_header(bfile,Nrecs)
+      call wrt_bfile_header(bfile,Nrecs,.true.)
       open(unit=2,file=trim(bfile),position = 'append')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -944,53 +948,43 @@
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(nn,OPT)
+      subroutine check_prog(OPT)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)            :: nn(2),OPT
-      character(len=80)             :: afile,bfile
-      character(len=4)              :: cts
-      integer,parameter             :: Nrecs = 5
-      !!
-      integer           :: n_step,n_total
-      character(len=6)  :: frmt
-      real              :: t_out
-
-      n_step   = nn(1)
-      n_total  = nn(2)
-      if (n_total.le.10) then
-         frmt  = '(i1.1)'
-      elseif (n_total.le.100) then
-         frmt  = '(i2.2)'
-      elseif (n_total.le.1000) then
-         frmt  = '(i3.3)'
-      else
-         frmt  = '(i4.4)'
-      end if
+      integer,intent(in)   :: OPT
+      character(len=80)    :: afile,bfile
+      character(len=16)    :: cts
+      integer,parameter    :: Nrecs = 6
 
       if (OPT.eq.0) then
          !!dump only for progress report
-         write(cts,frmt) n_step
+         cts   = model_year_info%cdatetime
          afile = trim(outdir)//'/binaries/prog/wim_prog'                &
-     &               //trim(cts)//'.a'
+     &               //cts//'.a'
          bfile = trim(outdir)//'/binaries/prog/wim_prog'                &
-     &               //trim(cts)//'.b'
-         t_out = n_step*dt
+     &               //cts//'.b'
       else
-         !!final output
-         afile = trim(outdir)//'/binaries/wim_out.a'
-         bfile = trim(outdir)//'/binaries/wim_out.b'
-         t_out = n_total*dt
+#if 1
+         !!final output - use start time as output time in filename
+         cts   = model_year_info_start%cdatetime
+#else
+         !!final output - use end time as output time in filename
+         cts   = model_year_info%cdatetime
+#endif
+         afile = trim(outdir)//'/binaries/wim_out'
+     &               //cts//'.a'
+         bfile = trim(outdir)//'/binaries/wim_out'
+     &               //cts//'.b'
       end if
 
       !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)  
-      call wrt_bfile_header(bfile,Nrecs,t_out)
+      call wrt_bfile_header(bfile,Nrecs,.true.)
       open(unit=2,file=trim(bfile),position = 'append')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1000,7 +994,7 @@
       write(2,112)    3,    "       tau_y"
       write(2,112)    4,    "       Hs"
       write(2,112)    5,    "       Tp"
-!     write(2,112)    6,    "       mwd"
+      write(2,112)    6,    "       mwd"
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       close(2)
@@ -1012,16 +1006,16 @@
       call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,'old'    ,3)
       call wrt_afile_2d(afile ,Hs      ,ii,jj  ,'old'    ,4)
       call wrt_afile_2d(afile ,Tp      ,ii,jj  ,'old'    ,5)
-!     call wrt_afile_2d(afile ,mwd     ,ii,jj  ,'old'    ,6)
+      call wrt_afile_2d(afile ,mwd     ,ii,jj  ,'old'    ,6)
 
       end subroutine check_prog
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wrt_bfile_header(bfile,Nrecs,t_out)
+      subroutine wrt_bfile_header(bfile,Nrecs,add_time)
       character(len=*),intent(in)   :: bfile
       integer,intent(in)            :: Nrecs
-      real,optional,intent(in)      :: t_out
+      logical,optional,intent(in)   :: add_time
 
  111  format(a)
  112  format(i2.2,a)  
@@ -1039,14 +1033,19 @@
      &               "# Record length in x direction (elements)"
       write(2,114) jj,     "       ny       "//                         &
      &               "# Record length in y direction (elements)"
+      write(2,111) ""
 
-      !! if t_out is given add a line with the model time at time of dump
-      if (present(t_out)) then
-         write(2,211) t_out,   "  t_out    "//                          &
-     &               "# Model time of output (s)"
+      !! if cts is given add a line with the model time at time of dump
+      if (present(add_time)) then
+         if (add_time) then
+            write(2,'(a)') , model_year_info_start%cdatetime//
+     &          "  t_start    # Model time of WIM call"
+            write(2,'(a)') , model_year_info%cdatetime//
+     &          "  t_out      # Model time of output"
+         end if
+         write(2,111) ""
       end if
 
-      write(2,111) ""
       close(2)
 
       end subroutine wrt_bfile_header
