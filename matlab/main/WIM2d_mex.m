@@ -151,7 +151,7 @@ elseif params_in.MEX_OPT==2
    toc;
 
    %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
    for j=1:Nout
@@ -239,7 +239,7 @@ elseif params_in.MEX_OPT==3
 
 
    %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
    for j=1:Nout

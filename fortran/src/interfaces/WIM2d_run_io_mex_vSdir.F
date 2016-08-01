@@ -59,14 +59,19 @@ C-----OUTPUTS-----------------------------------------------------------
       mwpointer y3d_pr!collect all 2d output arrays into 1 3d array (output as vector)
       mwpointer y4d_pr!pointer to output of Sdir
 
-      integer,parameter       :: ny3d  = 5   ! size(y3d) = ii*jj*ny3d
+      integer,parameter       :: ny3d  = 6   ! size(y3d) = ii*jj*ny3d
       mwsize,dimension(Nout)  :: mvec_out,nvec_out,size_vec_out
 
+#if !defined (REAL2DOUBLE)
       !! outputs from main subroutine (float)
       !! - need to be converted to double before passing to matlab (plhs)
       !! - use dble
       real,dimension(ii*jj*ny3d)    :: y3d
       real,dimension(ii*jj*nxy4d)   :: y4d
+#else
+      real*8,dimension(ii*jj*ny3d)  :: y3d
+      real*8,dimension(ii*jj*nxy4d) :: y4d
+#endif
 C-----------------------------------------------------------------------
 
 
@@ -180,11 +185,10 @@ C     Create matrices for the return arguments.
          k  = mexPrintf('Entering mex_io_gate_vSdir...\n')
       end if
 
+#if !defined (REAL2DOUBLE)
       call mex_io_gate_vSdir(y4d,y3d,real(x3d),nint(ip),real(rp)        &
      &                    ,real(Tp_io),real(mwd_io)                     &
      &                    ,ni,nr,nx3d,ny3d,nxy4d)
-c     subroutine mex_io_gate_vSdir(xy4d,y3d,x3d,int_prams,real_prams    &
-c    &                  ,Tp_io,mwd_io,ni,nr,nx3d,ny3d,nxy4d)
 
       if (PRINT_INFO) then
          k  = mexPrintf('Finished computations...\n')
@@ -193,6 +197,20 @@ c    &                  ,Tp_io,mwd_io,ni,nr,nx3d,ny3d,nxy4d)
 C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(dble(y4d),y4d_pr,size_vec_out(1))
       call mxCopyReal8ToPtr(dble(y3d),y3d_pr,size_vec_out(2))
+#else
+      call mex_io_gate_vSdir(y4d,y3d,x3d,nint(ip),rp
+     &                    ,Tp_io,mwd_io
+     &                    ,ni,nr,nx3d,ny3d,nxy4d)
+
+      if (PRINT_INFO) then
+         k  = mexPrintf('Finished computations...\n')
+      endif
+
+C     Load the data into pointers, which are the outputs to MATLAB
+      call mxCopyReal8ToPtr(y4d,y4d_pr,size_vec_out(1))
+      call mxCopyReal8ToPtr(y3d,y3d_pr,size_vec_out(2))
+#endif
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !call write_status()
