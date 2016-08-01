@@ -26,11 +26,12 @@ function [out_fields,diagnostics] = run_WIM2d(params_in,grid_prams,...
 %%
 %% OUTPUTS:
 %% *out_fields = structure eg
-%%  tau_x: [150x20 double]
-%%  tau_y: [150x20 double]
-%%   Dmax: [150x20 double]
-%%     Hs: [150x20 double]
-%%     Tp: [150x20 double]
+%%  tau_x: [150x10 double]
+%%  tau_y: [150x10 double]
+%%   Dmax: [150x10 double]
+%%     Hs: [150x10 double]
+%%     Tp: [150x10 double]
+%%    mwd: [150x10 double]
 %% *wave_stuff - like the input, but modified by WIM2d.m
 
 infile   = 'infile_matlab.txt';

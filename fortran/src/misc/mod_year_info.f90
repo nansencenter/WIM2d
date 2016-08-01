@@ -23,8 +23,9 @@ implicit none
       character(len=2) csecond      ! second in HH:MM:SS time format
       character(len=3) month_name   ! 'JAN' etc
 
-      character(len=8) cdate        ! current date (YYYYMMDD format)
-      character(len=8) ctime        ! current time (HH:MM:SS format)
+      character(len=8)  cdate       ! current date (YYYYMMDD format)
+      character(len=8)  ctime       ! current time (HH:MM:SS format)
+      character(len=16) cdatetime   ! current date/time (YYYYMMDDTHHMMSSZ format)
       integer days_in_months(12)    ! total Days In Months 
       integer days_in_year          ! total Days In year
    end type year_info
@@ -43,14 +44,15 @@ implicit none
    integer,parameter :: refmonth = 1
    integer,parameter :: refday   = 1
    type(year_info)   :: model_year_info
-   real*8            :: model_seconds,model_seconds_start
-   integer           :: model_day,model_day_start
+   type(year_info)   :: model_year_info_start
+   real*8            :: model_seconds
+   integer           :: model_day
 
    public :: year_info,model_time_to_year_info     &
                ,make_year_info                     &
                ,model_year_info                    &
-               ,model_day_start,model_day          &
-               ,model_seconds_start,model_seconds  &
+               ,model_year_info_start              &
+               ,model_day,model_seconds            &
                ,refyear,refmonth,refday
 
 contains
@@ -117,6 +119,7 @@ subroutine make_year_info(tt,iyear,imonth,iday,dtime_seconds)
    write(tt%cminute,'(i2.2)') tt%iminute
    write(tt%csecond,'(i2.2)') tt%isecond
    tt%ctime = tt%chour//':'//tt%cminute//':'//tt%csecond
+   tt%cdatetime = tt%cdate//'T'//tt%chour//tt%cminute//tt%csecond//'Z'
    ! ================================================ 
 
 

@@ -657,7 +657,7 @@ if (params_in.SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
    pairs{end+1}   = {'Tp'  ,wave_fields.Tp};
    pairs{end+1}   = {'mwd' ,wave_fields.mwd};
    %%
-   fn_save_binary(Froot,Bdims,[],pairs);
+   fn_save_binary(Froot,Bdims,year_info,pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
@@ -666,9 +666,7 @@ if (params_in.SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% 1st prog file
    Fdir  = [params_in.outdir,'/binaries/prog'];
-   cn    = num2str(nt);
-   cn(:) = '0';
-   Froot = [Fdir,'/wim_prog',cn];
+   Froot = [Fdir,'/wim_prog'];
    %%
    pairs = {};
    pairs{end+1}   = {'Dmax',out_fields.Dmax};
@@ -676,8 +674,9 @@ if (params_in.SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
    pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs',wave_fields.Hs};
    pairs{end+1}   = {'Tp',wave_fields.Tp};
+   pairs{end+1}   = {'mwd',wave_fields.mwd};
    %%
-   fn_save_binary(Froot,Bdims,0,pairs);
+   fn_save_binary(Froot,Bdims,year_info,pairs);
    %eval(['!cat ',Froot,'.b'])
    %pause;
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -825,6 +824,9 @@ else
       %% wave stresses;
       tau_x = zeros(gridprams.nx,gridprams.ny);
       tau_y = zeros(gridprams.nx,gridprams.ny);
+
+      %% mwd
+      mwd   = zeros(gridprams.nx,gridprams.ny);
 
       %% variances of stress and strain;
       var_stress  = zeros(gridprams.nx,gridprams.ny);
@@ -1008,7 +1010,10 @@ else
          tau_x = tau_x+wt_om(jw)*tmp;                 %%[Pa]
          tmp   = ice_prams.rhowtr*ice_prams.g*tau_y_om./ap_eff(:,:,jw);  %%[Pa*s]
          tau_y = tau_y+wt_om(jw)*tmp;                 %%[Pa]
-         clear tmp;
+
+         %% mwd integrals
+         mwd_om   = calc_mwd_1freq(wave_stuff.dirs,wave_stuff.dir_spec(:,:,:,jw));
+         mwd      = mwd+wt_om(jw)*mwd_om;
          %GEN_pause
 
          %% INTEGRALS FOR BREAKING PROB:
@@ -1063,6 +1068,9 @@ else
       out_fields.tau_x  = tau_x;
       out_fields.tau_y  = tau_y;
 
+      %% mwd
+      out_fields.mwd    = mwd;
+
       if DUMP_DIAG
          fprintf(logid2,'%s\n',' ');
          fprintf(logid2,'%13.6e,%s\n',mom0w(params_in.itest,params_in.jtest),' # mom0w, m^2');
@@ -1071,7 +1079,7 @@ else
          fprintf(logid2,'%13.6e,%s\n',mom2(params_in.itest,params_in.jtest),' # mom2, m^2/s^2');
          fprintf(logid2,'%8.4f%s\n',out_fields.Hs(params_in.itest,params_in.jtest),' # Hs, m')
          fprintf(logid2,'%10.4f%s\n',out_fields.Tp(params_in.itest,params_in.jtest),' # Tp, s')
-         %fprintf(logid2,'%10.4f%s\n',mwd(params_in.itest,params_in.jtest),' # mwd, deg');
+         fprintf(logid2,'%10.4f%s\n',mwd(params_in.itest,params_in.jtest),' # mwd, deg');
          fprintf(logid2,'%13.6e%s\n',tau_x(params_in.itest,params_in.jtest),' # tau_x, Pa');
          fprintf(logid2,'%13.6e%s\n',tau_y(params_in.itest,params_in.jtest),' # tau_y, Pa');
          fprintf(logid2,'%s\n',' ');
@@ -1434,13 +1442,8 @@ else
       if (params_in.SV_BIN==1)&(mod(n,reps_ab)==0)&(params_in.DO_CHECK_PROG==1)
          %% save matlab files as binaries
          %% to matlab results
-         Fdir              = [params_in.outdir,'/binaries/prog'];
-         cnt               = num2str(nt);
-         cnt(:)            = '0';
-         cn                = num2str(n);
-         lc                = length(cn);
-         cnt(end+1-lc:end) = cn;
-         Froot = [Fdir,'/wim_prog',cnt];
+         Fdir  = [params_in.outdir,'/binaries/prog'];
+         Froot = [Fdir,'/wim_prog'];
          %%
          pairs = {};
          pairs{end+1}   = {'Dmax' ,out_fields.Dmax};
@@ -1448,12 +1451,9 @@ else
          pairs{end+1}   = {'tau_y',out_fields.tau_y};
          pairs{end+1}   = {'Hs'   ,out_fields.Hs};
          pairs{end+1}   = {'Tp'   ,out_fields.Tp};
-         %if ~params_in.BRK_OPT
-         % TW: keep out_fields and binary files for arrays
-         % pairs{end+1}   = {'break_max',out_fields.break_max};
-         %end
+         pairs{end+1}   = {'mwd'  ,out_fields.mwd};
          %%
-         fn_save_binary(Froot,Bdims,n*dt,pairs);
+         fn_save_binary(Froot,Bdims,year_info,pairs);
       end
 
 %% end of time step
@@ -1482,11 +1482,9 @@ if (params_in.SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    pairs{end+1}   = {'tau_y',out_fields.tau_y};
    pairs{end+1}   = {'Hs'   ,out_fields.Hs};
    pairs{end+1}   = {'Tp'   ,out_fields.Tp};
-   %if ~params_in.BRK_OPT
-   % pairs{end+1}   = {'break_max',out_fields.break_max}; 
-   %end
+   pairs{end+1}   = {'mwd'  ,out_fields.mwd};
    %%
-   fn_save_binary(Froot,Bdims,duration,pairs);
+   fn_save_binary(Froot,Bdims,year_info,pairs);
 end
 
 t1 = now;

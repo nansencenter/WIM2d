@@ -762,7 +762,7 @@
 
          if (critter) then
             !!dump fields to binary
-            call check_prog((/n-1,nt/),0)
+            call check_prog(0)
          end if
 
          !!test if want to dump diagnostic text file at (itest,jtest)
@@ -801,7 +801,7 @@
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
-         call check_prog((/n-1,nt/),1)
+         call check_prog(1)
       end if
 
       MIZ_MASK = 0.0
@@ -1421,10 +1421,9 @@
       d_second = m_second+60.*m_minute+3600.*m_hour
       call make_year_info(model_year_info,                              &
      &      m_year,m_month,m_day,d_second)
-      model_day_start      = model_year_info%model_day
-      model_day            = model_day_start
-      model_seconds_start  = model_year_info%dsecond
-      model_seconds        = model_seconds_start
+      model_day               = model_year_info%model_day
+      model_seconds           = model_year_info%dsecond
+      model_year_info_start   = model_year_info
 
       print*,'Start date & time: '//                                    &
      &   model_year_info%cyear //'/'//                                  &
