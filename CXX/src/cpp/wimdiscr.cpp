@@ -743,7 +743,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     // ========================================================================
     // initialise sdf_dir from sdf_inc
     // - only do this if step==0
-    if (!step) 
+    if (!step)
     {
         std::fill( sdf_dir.data(), sdf_dir.data() + sdf_dir.num_elements(), 0. );
 
@@ -1144,6 +1144,12 @@ void WimDiscr<T>::timeStep(bool step)
 template<typename T>
 void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes, bool step)
 {
+    std::cout << "-----------------------Simulation started on "<< current_time_local() <<"\n";
+
+    init_time_str = vm["wim.initialtime"].as<std::string>();
+    std::string init_time = ptime(init_time_str);
+    std::cout<<"---------------INITIAL TIME= "<< init_time <<"\n";
+
     this->assign(ice_c,ice_h,n_floes,step);
 
     bool critter;
@@ -1156,24 +1162,23 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     std::cout<<"dt= "<< dt <<"\n";
     std::cout<<"nt= "<< nt <<"\n";
 
-    int cpt = 0;
-    if (!step)
-        fcpt = 0;
+    if ((!vm["nextwim.docoupling"].template as<bool>()) || (!step))
+        cpt = 0;
 
     while (cpt < nt)
     {
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
-        value_type t_out = dt*fcpt;
+        value_type t_out = dt*cpt;
 
         critter = !(cpt % vm["wim.dumpfreq"].template as<int>())
            && (vm["wim.checkprog"].template as<bool>());
 
         if ( critter )
         {
-           if (vm["nextwim.exportresults"].template as <bool>())
-              exportResults(fcpt,t_out);//global counter from nextsim
-           else
-              exportResults(cpt,t_out);//local counter from wim
+            if (vm["nextwim.exportresults"].template as <bool>())
+                exportResults(cpt,t_out);//global counter from nextsim
+           //else
+           //exportResults(cpt,t_out);//local counter from wim
         }
 
         // if (cpt == 30)
@@ -1187,10 +1192,11 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         timeStep(step);
 
         ++cpt;//local counter incremented in wim.run()
-        ++fcpt;//global counter incremented in nextsim
     }
 
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
+
+    std::cout << "-----------------------Simulation completed on "<< current_time_local() <<"\n";
 }
 
 template<typename T>
@@ -1198,7 +1204,7 @@ void WimDiscr<T>::floeScaling(
       value_type const& dmax, int const& moment, value_type& dave)
 {
     value_type nm,nm1,dm,nsum,ndsum,r;
-    
+
     int mm;
     value_type ffac     = fragility*std::pow(xi,2);
 
@@ -1225,10 +1231,10 @@ void WimDiscr<T>::floeScaling(
 
           for (int m=0; m<mm; ++m)
           {
-              //no of floes of length dm; 
+              //no of floes of length dm;
               nm     = nm1*(1-fragility);
-              nsum  += nm;                       
-              ndsum += nm*std::pow(dm,moment);   
+              nsum  += nm;
+              ndsum += nm*std::pow(dm,moment);
               //std::cout<<"nsum,dm: "<<nsum<<" , "<<dm<<"\n";
 
               nm1   *= ffac;
@@ -1247,7 +1253,7 @@ void WimDiscr<T>::floeScaling(
 template<typename T>
 void WimDiscr<T>::floeScalingSmooth(
       value_type const& dmax,int const& moment, value_type& dave)
-{     
+{
     value_type fsd_exp,b,A;
 
     fsd_exp = 2+log(fragility)/log(xi);//power law exponent: P(d>D)=(D_min/D)^fsd_exp;
@@ -2159,7 +2165,8 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     if ( !fs::exists(path) )
         fs::create_directories(path);
 
-    std::string timestpstr = std::string(4-std::to_string(timestp).length(),'0') + std::to_string(timestp);
+    //std::string timestpstr = std::string(4-std::to_string(timestp).length(),'0') + std::to_string(timestp);
+    std::string timestpstr = ptime(init_time_str, t_out);
 
     std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestpstr).str();
     std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);

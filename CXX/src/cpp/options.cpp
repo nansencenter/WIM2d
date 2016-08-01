@@ -81,6 +81,8 @@ namespace WIMOPT
                   "Initial value in pack (unbroken) ice [m]")
             ("wim.landon3edges", po::value<bool>()->default_value( false ),
                   "Add land on upper,lower and RH edges")
+            ("wim.initialtime", po::value<std::string>()->default_value( "2015-01-01 00:00:00" ),
+                  "Initial time")
 
             //outputs of WIM
             ("wim.dumpfreq", po::value<int>()->default_value( 10 ),
@@ -105,6 +107,8 @@ namespace WIMOPT
                   "Don't let Dmax grow above this value [m]")
 
             //coupling to nextsim
+            ("nextwim.docoupling", po::value<bool>()->default_value( false ),
+                  "Enable/Disable coupling with nextsim")
             ("nextwim.exportresults", po::value<bool>()->default_value( true ),
                   "Export results in coupled mode")
             ("nextwim.nfloesgridtomesh", po::value<bool>()->default_value( true ),

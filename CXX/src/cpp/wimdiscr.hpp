@@ -22,6 +22,7 @@
 #include <boost/any.hpp>
 #include <boost/format.hpp>
 #include <boost/mpi/timer.hpp>
+#include <date.hpp>
 #include <iomanip>
 #include <omp.h>
 
@@ -163,7 +164,8 @@ private:
     std::vector<value_type> dfloe, nfloes, tau_x, tau_y;
 
     boost::mpi::timer chrono;
-    int fcpt;
+    std::string init_time_str;
+    int cpt;
 
 };
 
