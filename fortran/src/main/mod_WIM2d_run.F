@@ -22,6 +22,7 @@
       !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
       integer  :: FSD_OPT=1 !TODO make this an input
+      integer  :: YOUNG_OPT=1
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
@@ -47,7 +48,6 @@
       subroutine wim2d_run
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams    !! ice parameters
       use mod_wim_init     !! initial wave fields
       use mod_adv_atten    !! advection routine
 
@@ -111,11 +111,11 @@
 
       inquire(file=infile,exist=fex2)
       if (fex2) then
-         call read_infile(wim_prams_in,init_cons,infile)
+         call read_infile(init_cons,infile)
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
-         call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
+         call set_wim_prams(BRK_OPT) ! - ice properties like breaking strain
       else
          SCATMOD     = 0
          ADV_DIM     = 2
@@ -131,7 +131,7 @@
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
-         call set_wim_prams(BRK_OPT) ! - ice properties like Young's modulus
+         call set_wim_prams(BRK_OPT,YOUNG_OPT) ! - ice properties like Young's modulus
 
       end if
 
@@ -233,7 +233,6 @@
      &                       ,int_prams,real_prams,nx,ny)
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams    !! ice parameters
       use mod_wim_init     !! initial wave fields
       use mod_adv_atten    !! advection routine
 
@@ -309,9 +308,10 @@
       DO_ATTEN       = int_prams(9)
 
       !!real inputs
-      wim_prams_in   = real_prams(1:2)    !!young,visc_rp
-      duration       = real_prams(3)      !!length of sim [s]
-      CFL            = real_prams(4)      !!cg*dt/dx
+      wim_info%young    = real_prams(1)   !!young,visc_rp
+      wim_info%viscrp   = real_prams(2)   !!young,visc_rp
+      duration          = real_prams(3)   !!length of sim [s]
+      CFL               = real_prams(4)   !!cg*dt/dx
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -345,8 +345,8 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
-      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
+      call set_wim_prams(BRK_OPT)   ! - ice properties like Young's modulus
+      call get_grid_file(indir)     ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
       icec     = in_arrays(:,:,1)
@@ -373,44 +373,6 @@
       ! set waves grid
       call waves_init_freq()
       call waves_init_dir()
-!     if (nw.eq.1) then
-!        !!single frequency:
-!        !!-set it to mean over the wave mask
-!        Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
-!        freq_vec(1) = 1.0/Tmean
-!        !!
-!        Tvar     = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
-!        Tstdev   = sqrt(Tvar)
-!        print*,'std dev of peak periods : ',Tstdev
-!        !!
-!        if (abs(Tstdev).gt.1.0e-2) then
-!           print*,'***********************************************'
-!           print*,'warning: trying to run multiple frequencies'
-!           print*,'  with n_wave_freq = 1'
-!           print*,'***********************************************'
-!           print*,' '
-!           STOP
-!        end if
-!     end if
-
-!     if (ndir.eq.1) then
-!        !!single direction:
-!        !!-set it to mean over the wave mask
-!        wavdir(1)   = sum(WAVE_MASK*mwd)/sum(WAVE_MASK)!mean direction over wave mask
-!        !!
-!        Tvar     = sum(WAVE_MASK*(mwd-wavdir(1))**2)/sum(WAVE_MASK)!variance of the directions
-!        Tstdev   = sqrt(Tvar)
-!        print*,'std dev of wave directions : ',Tstdev
-!        !!
-!        if (abs(Tstdev).gt.1.0e-2) then
-!           print*,'***********************************************'
-!           print*,'warning: trying to run multiple directions'
-!           print*,'  with n_wavdir = 1'
-!           print*,'***********************************************'
-!           print*,' '
-!           STOP
-!        end if
-!     end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !! create full incident wave spectrum
@@ -496,15 +458,8 @@
      &   ,nmesh_e,mesh_e)
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams    !! ice parameters
       use mod_wim_init     !! initial wave fields
       use mod_adv_atten    !! advection routine
-
-!     !! main code for WIM
-!     use mod_wavesice, only:
-!    &    amax,amin,CFL,dt    !need these to determine number of time steps
-!    &   ,wim_init,wim_step   !main subroutines
-!    &   ,check_grid,check_init,check_prog   !subroutines for dumping fields
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! import main code for WIM
@@ -528,9 +483,9 @@
       integer,dimension(9),intent(in)  :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! BRK_OPT,STEADY
+      ! BRK_OPT,STEADY,DO_ATTEN
 
-      real,dimension(ii,jj,5),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
+      real,dimension(ii,jj,6),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
       real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
 
       integer,intent(in)            :: nmesh_e
@@ -538,7 +493,6 @@
       logical                       :: INTERP_MESH
 
       real              :: PI
-      real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
 
       logical,parameter :: SET_WAVES   = .false.
       integer           :: w,wth
@@ -576,9 +530,10 @@
       DO_ATTEN       = int_prams(9)
 
       !!real inputs
-      wim_prams_in   = real_prams(1:2)    !!young,visc_rp
-      duration       = real_prams(3)      !!length of simulation [s]
-      CFL            = real_prams(4)      !!cg*dt/dx
+      wim_info%young    = real_prams(1)   !!young,visc_rp
+      wim_info%viscrp   = real_prams(2)   !!young,visc_rp
+      duration          = real_prams(3)   !!length of simulation [s]
+      CFL               = real_prams(4)   !!cg*dt/dx
 
       !!using mesh?
       INTERP_MESH = .false.
@@ -621,7 +576,7 @@
       !print*,freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(BRK_OPT,wim_prams_in) ! - ice properties like Young's modulus
+      call set_wim_prams(BRK_OPT) ! - ice properties like breaking strain
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
@@ -707,7 +662,7 @@
       out_arrays(:,:,3) = tau_y     ! wave stress (y dirn)
       out_arrays(:,:,4) = Hs        ! significant wave height
       out_arrays(:,:,5) = Tp        ! mean wave period
-      !out_arrays(:,:,6) = mwd       ! mean wave direction
+      out_arrays(:,:,6) = mwd       ! mean wave direction
 
       !!print  some outputs to log file
       !call print_log_info()
@@ -720,7 +675,6 @@
       subroutine wim2d_run_common(nmesh_e,mesh_e)
 
       use mod_gridinfo
-      use mod_wim_prams
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
       use mod_wavesice, only: check_prog,wim_step,dt,DUMP_DIAG
 
@@ -819,10 +773,10 @@
          !! NB this definition won't always work
          !! for all configurations
          nMIZ  = sum(MIZ_MASK(:,1))
-         W_MIZ = nMIZ*dx/1.0e3
+         W_MIZ = nMIZ*dx
          !!
          print*,' '
-         print*,'MIZ width (km)',W_MIZ
+         print*,'MIZ width (km)',W_MIZ/1.0e3
       endif
       !!
       print*,'Dmax range in MIZ (m): ',Dmax_min,Dmax_max
@@ -842,7 +796,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine mex_io_gate(y1,y2,y3,y4,y5                             &
+      subroutine mex_io_gate(
+     &                   y1,y2,y3,y4,y5,y6                              &
      &                  ,x1,x2,x3,x4,x5,x6                              &
      &                  ,int_prams,real_prams                           &
      &                  ,nx,ny,ni,nr)
@@ -858,11 +813,11 @@
       integer,dimension(ni)               :: int_prams
       real,dimension(nr)                  :: real_prams
       real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
-      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5
+      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5,y6
 
       integer                 :: i,j,s
       real,dimension(nx,ny,6) :: in_arrays
-      real,dimension(nx,ny,5) :: out_arrays
+      real,dimension(nx,ny,6) :: out_arrays
 
       do j=1,ny
       do i=1,nx
@@ -887,6 +842,7 @@
          y3(s) = out_arrays(i,j,3)
          y4(s) = out_arrays(i,j,4)
          y5(s) = out_arrays(i,j,5)
+         y6(s) = out_arrays(i,j,6)
       end do
       end do
 
@@ -1151,7 +1107,6 @@
       !!print text to log file during run
 
       use mod_gridinfo
-      use mod_wim_prams
       use mod_wim_init, only: freq_vec,n_wavdir,n_wave_freq
       use mod_wavesice, only: amax,amin,dt
 
@@ -1200,12 +1155,18 @@
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'WIM parameters:'
-      write(fid,'(a,f4.2)'), 'Brine volume fraction:      '  ,vbf
-      write(fid,'(a,e10.3)'),'Youngs modulus (Pa):        ' ,young
-      write(fid,'(a,e10.3)'),'Flexural strength (Pa):     ' ,sigma_c
-      write(fid,'(a,e10.3)'),'Breaking stress (Pa):       ' ,stress_c
-      write(fid,'(a,e10.3)'),'Breaking strain:            ' ,epsc
-      write(fid,'(a,f5.2)'), 'Damping (Pa.s/m):           '  ,visc_rp
+      write(fid,'(a,f4.2)'), 'Brine volume fraction:      '
+     &                           ,wim_info%vbf
+      write(fid,'(a,e10.3)'),'Youngs modulus (Pa):        '
+     &                           ,wim_info%young
+      write(fid,'(a,e10.3)'),'Flexural strength (Pa):     '
+     &                           ,wim_info%sigma_c
+      write(fid,'(a,e10.3)'),'Breaking stress (Pa):       '
+     &                           ,wim_info%stress_c
+      write(fid,'(a,e10.3)'),'Breaking strain:            '
+     &                           ,wim_info%epsc
+      write(fid,'(a,f5.2)'), 'Damping (Pa.s/m):           '
+     &                           ,wim_info%viscrp
       write(fid,'(a)'),'***********************************************'
 
       write(fid,'(a)'),' '
@@ -1282,13 +1243,12 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine read_infile(wim_prams_in,init_cons,infile)
+      subroutine read_infile(init_cons,infile)
       !!determines where to read inputs/outputs from
       use mod_wavesice,    only: REF_HS_ICE,USE_ICE_VEL
       
       implicit none
       
-      real,intent(out)  :: wim_prams_in(2)
       real,intent(out)  :: init_cons(6)
       character(len=*),intent(in)   :: infile
       integer,parameter :: fid=99
@@ -1302,7 +1262,6 @@
       integer  :: m_second
       real*8   :: d_second
 
-      wim_prams_in   = 0.0
       print*,' '
       print*,'******************************************************'
       print*,'Opening infile: ',infile
@@ -1353,10 +1312,10 @@
       !! real_prams
       read(fid,'(a)'), ctmp !blank
       read(fid,'(a)'), ctmp !comment
-      read(fid,'(e10.3,a)'),  wim_prams_in(1) ,ctmp
-      print*,"Young's modulus: ",wim_prams_in(1)
-      read(fid,'(f5.2,a)'),   wim_prams_in(2) ,ctmp
-      print*,"RP damping: ",wim_prams_in(2)
+      read(fid,'(e10.3,a)'),  wim_info%young ,ctmp
+      print*,"Young's modulus: ",wim_info%young
+      read(fid,'(f5.2,a)'),   wim_info%viscrp ,ctmp
+      print*,"RP damping: ",wim_info%viscrp
       read(fid,'(f7.2,a)'),   duration        ,ctmp
       print*,"Duration (s): ",duration
       read(fid,'(f7.2,a)'),   CFL            ,ctmp

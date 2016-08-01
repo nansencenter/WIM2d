@@ -21,7 +21,6 @@ VPATH   +=  $(src)/misc
 VPATH   +=  $(src)/init
 VPATH   +=  $(src)/numerics
 VPATH 	+=  $(src)/attenuation_youngs
-# VPATH   +=  $(src)/header_files
 VPATH 	+=  $(src)/interfaces
 VPATH 	+=  $(src)/extern
 
@@ -41,8 +40,7 @@ VPATH 	+= 	$(HDIR)
 # # optimise code
 # FCFLAGS=-O
 # check for errors
-FCFLAGS=-g -fPIC -fdefault-real-8 -fdefault-double-8
-# FCFLAGS=-g -fPIC
+FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
 IFLAGS=-I$(MDIR) -I$(HDIR)
@@ -55,6 +53,12 @@ F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 
 # Flags for mex
 MEX_FLAGS=-largeArrayDims -g $(IFLAGS)
+
+# ============================================================================
+# run in double precision (mex files need to be rewritten to allow for both)
+MEX_FLAGS	+=  	-DREAL2DOUBLE
+FCFLAGS		+=	-fdefault-real-8 -fdefault-double-8
+# ============================================================================
 
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh
@@ -99,7 +103,6 @@ OBJS		:=      \
                         $(ODIR)/mod_gridinfo.o \
 			$(ODIR)/mod_common_wim.o \
 			$(ODIR)/mod_wim_init.o \
-			$(ODIR)/mod_wim_prams.o \
 			$(ODIR)/RTparam_outer.o \
 			$(ODIR)/RTparam_fast.o \
 			$(ODIR)/RTparam_hardcoded_v2.o \

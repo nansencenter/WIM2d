@@ -7,6 +7,101 @@
 
       contains
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine set_wim_prams(BRK_OPT,YOUNG_OPT)
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      implicit none
+
+      integer,intent(in)   :: BRK_OPT
+      !real,optional,intent(in)   :: wim_prams_in(2)
+
+      integer,optional,intent(in)   :: YOUNG_OPT
+
+      real :: alpha,sig_N
+      real  :: vb,salt,temp
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!Brine vol fraction -> Young's modulus and flexural strength
+      if (.true.) then
+         !!just set
+         wim_info%vbf   = .1        !! brine volume fraction 
+         vb    = wim_info%vbf*1.0   !! brine volume [ppt]
+      else
+         !!F&G (1967)
+         if (.true.) then !!Dany's estimate
+            salt  = 5.0   ! Ice salinity    [psu]
+            temp  = -10.0 ! Ice temperature [oC]
+         else!!vbf=.1
+            temp  = -10.0               ![oC]
+            salt  = 18.346940647647006  ![psu]
+         end if
+         ! Brine volume (Frankenstein and Gardner 1967)
+         vb    = salt*(49.185/abs(temp) + 0.532)  ! [ppt]
+         wim_info%vbf   = vb/1.0d3                         ! brine volume fraction 
+      end if
+
+      if (present(YOUNG_OPT)) then
+         !!Robinson-Palmer viscosity parameter
+         wim_info%viscrp  = 13.
+
+         !!Young's modulus
+         if (YOUNG_OPT.eq.1) then
+            !!just set Young's modulus
+            wim_info%young = 2.0e9     !!lower ~ Marchenko
+            !wim_info%young = 5.49e9    !!higher ~ Vernon
+         else
+            wim_info%young = 10.0e9*(1-3.51*wim_info%vbf)-1.0e9   ! Young's modulus [Pa]
+         end if
+      end if
+
+      !!Flexural strength (Timco and O'Brien 1994)
+      wim_info%sigma_c  = 1.76d6*exp(-5.88*sqrt(wim_info%vbf)) ! [Pa]
+
+      !!Breaking criterion option
+      if ((BRK_OPT.eq.0).or.(BRK_OPT.eq.1)) then !!beam test
+         !! not used if BRK_OPT==0 (no breaking)
+         wim_info%epsc     = wim_info%sigma_c/wim_info%young
+         wim_info%stress_c = wim_info%young
+     &                        *wim_info%epsc/(1-wim_info%poisson**2)
+      elseif (BRK_OPT.eq.2) then!!Marchenko's stress criterion (plate)
+         !! - convert to strain criterion
+         wim_info%stress_c = 2.6*wim_info%sigma_c!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+         wim_info%epsc     = (1-wim_info%poisson**2)
+     &                           *wim_info%stress_c/wim_info%young
+      elseif (BRK_OPT.eq.3) then!!Mohr-Coulomb criterion (plate)
+         !! - convert to strain criterion
+         alpha    = (1+wim_info%poisson)/(1-wim_info%poisson)
+         sig_N    = wim_info%cohesion/(alpha+wim_info%friction)
+            !compressive stress  = .5*(sig_11+sig_22) = .5*(1-poisson)*sig11 at breaking point
+         wim_info%stress_c = 2*sig_N/(1-wim_info%poisson)!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+         wim_info%epsc     = (1-wim_info%poisson**2)
+     &               *wim_info%stress_c/wim_info%young
+      else
+         print*,'Unknown value for BRK_OPT: ',BRK_OPT
+         stop
+      end if
+
+      !! flex rigidity = flex_rig_coeff*h^3
+      wim_info%flex_rig_coeff = wim_info%young
+     &                           /12.0/(1-wim_info%poisson**2)
+
+      print*,'********************************************'
+      print*,'in set_wim_prams()...'
+      print*,'Brine volume fraction:      ',wim_info%vbf
+      print*,'Youngs modulus (Pa):        ',wim_info%young
+      print*,'BRK_OPT:                    ',BRK_OPT
+      print*,'Flexural strength (Pa):     ',wim_info%sigma_c
+      print*,'Breaking stress (Pa):       ',wim_info%stress_c
+      print*,'Breaking strain:            ',wim_info%epsc
+      print*,'Damping (Pa.s/m):           ',wim_info%viscrp
+      print*,'********************************************'
+      print*,' '
+
+      end subroutine set_wim_prams
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wavecons_ideal(init_cons)
 

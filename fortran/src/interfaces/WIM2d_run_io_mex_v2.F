@@ -33,7 +33,7 @@ C
       !!pointers to outputs
       mwpointer y3d_pr!collect all 2d output arrays into 1 3d array (input as vector)
       integer,parameter :: Nout  = 1   ! no of outputs
-      integer,parameter :: ny3d  = 5   ! size(y3d) = ii*jj*ny3d
+      integer,parameter :: ny3d  = 6   ! size(y3d) = ii*jj*ny3d
 
 C-----------------------------------------------------------------------
 C
@@ -58,7 +58,11 @@ C
       !! outputs from main subroutine (float)
       !! - need to be converted to double before passing to matlab (plhs)
       !! - use dble
+#if !defined (REAL2DOUBLE)
       real,dimension(ii*jj*ny3d) :: y3d
+#else
+      real*8,dimension(ii*jj*ny3d) :: y3d
+#endif
       character(len=12)          :: cii,cjj,cj,cm,cn,cdum
       character(len=80)          :: msg
 
@@ -184,16 +188,27 @@ C     Create matrix for the return arguments.
       k  = mexPrintf('Have pointers, about to do computations...\n')
       k  = mexPrintf('Entering mex_io_gate_v2...\n')
 
+#if !defined (REAL2DOUBLE)
       call mex_io_gate_v2(y3d,real(x3d),nint(ip),real(rp)               &
      &                    ,ii,jj,ni,nr,nx3d,ny3d)
 
       k  = mexPrintf('Finished computations...\n')
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(dble(y3d),y3d_pr,size4)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#else
+      call mex_io_gate_v2(y3d,x3d,nint(ip),rp
+     &                    ,ii,jj,ni,nr,nx3d,ny3d)
+
+      k  = mexPrintf('Finished computations...\n')
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+C     Load the data into pointers, which are the outputs to MATLAB
+      call mxCopyReal8ToPtr(y3d,y3d_pr,size4)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#endif
 
       return
       end subroutine mexFunction
