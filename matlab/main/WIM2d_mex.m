@@ -183,7 +183,7 @@ elseif params_in.MEX_OPT==3
    T_init   = 1/max(wave_stuff.freq);
    dir_init = max(wave_stuff.dirs);
 
-   TEST_MESH_INTERP  = 0;
+   TEST_MESH_INTERP  = 1;
    if TEST_MESH_INTERP
       %%test mesh inputs:
       xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
@@ -215,6 +215,7 @@ elseif params_in.MEX_OPT==3
       clear PP jp;
       fnames   = {'xe','ye','c','h','Nfloes','broken'};
       Mesh_e   = mesh_e;
+      clear mesh_e;
       for j=1:nmesh_vars
          mesh_e.(fnames{j})   = Mesh_e(:,j);
       end
@@ -245,6 +246,8 @@ elseif params_in.MEX_OPT==3
    for j=1:Nout
       out_fields.(fldnames{j})   = out_arrays(:,:,j);
    end
+
+   taux_max = max(out_fields.tau_x(:))
 
    %nmesh_e,nmesh_vars
    %[length(mesh_arr),nmesh_e*nmesh_vars]

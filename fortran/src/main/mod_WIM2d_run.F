@@ -39,8 +39,9 @@
 
       !!only subroutines are public
       public   :: wim2d_run,wim2d_run_io,wim2d_run_vSdir                &
-     &            ,mex_io_gate,mex_io_gate_v2                           &
-     &            ,mex_io_gate_vSdir,mex_io_gate_vSdir_mesh
+     &            ,mex_io_gate_v2                                       &
+     &            ,mex_io_gate_vSdir                                    &
+     &            ,mex_io_gate_vSdir_mesh
       
       contains
       
@@ -412,7 +413,8 @@
       dt    = CFL*dx/amax
       x_ext = idm*dx/1.0e3!km
       y_ext = jdm*dy/1.0e3!km
-      nt    = nint(duration/dt)
+      nt    = ceiling(duration/dt)
+      dt    = duration/nt
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
@@ -626,7 +628,8 @@
       dt    = CFL*dx/amax
       x_ext = idm*dx/1.0e3!km
       y_ext = jdm*dy/1.0e3!km
-      nt    = nint(duration/dt)
+      nt    = ceiling(duration/dt)
+      dt    = duration/nt
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!print info
@@ -796,60 +799,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine mex_io_gate(
-     &                   y1,y2,y3,y4,y5,y6                              &
-     &                  ,x1,x2,x3,x4,x5,x6                              &
-     &                  ,int_prams,real_prams                           &
-     &                  ,nx,ny,ni,nr)
-      
-      !! gateway between run_wim2d_io_mex.m,
-      !! mex function WIM2d_run_io_mex.F,
-      !! and wim2d_run_io subroutine in this file
-      !! - 3d arrays hard to do in mex/fortran
-
-      implicit none
-
-      integer,intent(in)                  :: nx,ny,ni,nr
-      integer,dimension(ni)               :: int_prams
-      real,dimension(nr)                  :: real_prams
-      real,dimension(nx*ny),intent(in)    :: x1,x2,x3,x4,x5,x6
-      real,dimension(nx*ny),intent(out)   :: y1,y2,y3,y4,y5,y6
-
-      integer                 :: i,j,s
-      real,dimension(nx,ny,6) :: in_arrays
-      real,dimension(nx,ny,6) :: out_arrays
-
-      do j=1,ny
-      do i=1,nx
-         s                 = i+(j-1)*nx
-         in_arrays(i,j,1)  = x1(s)
-         in_arrays(i,j,2)  = x2(s)
-         in_arrays(i,j,3)  = x3(s)
-         in_arrays(i,j,4)  = x4(s)
-         in_arrays(i,j,5)  = x5(s)
-         in_arrays(i,j,6)  = x6(s)
-      end do
-      end do
-
-      call wim2d_run_io(in_arrays,out_arrays                            &
-     &                  ,int_prams,real_prams,nx,ny)
-
-      do j=1,ny
-      do i=1,nx
-         s     = i+(j-1)*nx
-         y1(s) = out_arrays(i,j,1)
-         y2(s) = out_arrays(i,j,2)
-         y3(s) = out_arrays(i,j,3)
-         y4(s) = out_arrays(i,j,4)
-         y5(s) = out_arrays(i,j,5)
-         y6(s) = out_arrays(i,j,6)
-      end do
-      end do
-
-      end subroutine mex_io_gate
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mex_io_gate_v2(y3d,x3d,int_prams,real_prams            &
      &                  ,nx,ny,ni,nr,nx3d,ny3d)
       
@@ -860,24 +809,25 @@
 
       implicit none
 
-      integer                    ,intent(in)    :: nx,ny,ni,nr,nx3d,ny3d
-      integer,dimension(ni)      ,intent(in)    :: int_prams
-      real,dimension(nr)         ,intent(in)    :: real_prams
-      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
-      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
+      integer              ,intent(in) :: nx,ny,ni,nr,nx3d,ny3d
+      integer,dimension(ni),intent(in) :: int_prams
+      !!
+      real*8,dimension(nr)         ,intent(in)    :: real_prams
+      real*8,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
+      real*8,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
 
       integer                    :: i,j,s
       real,dimension(nx,ny,nx3d) :: in_arrays
       real,dimension(nx,ny,ny3d) :: out_arrays
 
-      in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
+      in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/)) !convert to real*4 if necessary
 
       print*,'before wim2d_run_io:',shape(in_arrays),nx,ny,nx3d
       call wim2d_run_io(in_arrays,out_arrays                            &
-     &                  ,int_prams,real_prams,nx,ny)
+     &                  ,int_prams,real(real_prams),nx,ny)
 
       print*,'after wim2d_run_io:',shape(out_arrays),nx,ny,ny3d
-      y3d   = reshape(out_arrays,(/nx*ny*ny3d/))
+      y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/)) !convert to real*8 if necessary
 
       end subroutine mex_io_gate_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -902,13 +852,15 @@
       integer,parameter :: ny    = jj
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
-      integer                    ,intent(in)    :: ni,nr,nx3d,ny3d,nxy4d
-      real                       ,intent(in)    :: Tp_io,mwd_io
-      integer,dimension(ni)      ,intent(in)    :: int_prams
-      real,dimension(nr)         ,intent(in)    :: real_prams
-      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
-      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
-      real,dimension(nx*ny*nxy4d),intent(inout) :: xy4d !4d input array (Sdir)
+      !!
+      integer              ,intent(in)    :: ni,nr,nx3d,ny3d,nxy4d
+      integer,dimension(ni),intent(in)    :: int_prams
+      !!
+      real*8                       ,intent(in)    :: Tp_io,mwd_io
+      real*8,dimension(nr)         ,intent(in)    :: real_prams
+      real*8,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
+      real*8,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
+      real*8,dimension(nx*ny*nxy4d),intent(inout) :: xy4d !4d input array (Sdir)
       !!
       integer  :: i,j,s,w,wth
       integer  :: STEADY
@@ -920,26 +872,25 @@
       PI = 4.*atan(1.)
 
       !! initial ice conditions
-      in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
+      in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/))!convert to real*4 if necessary
       icec        = in_arrays(:,:,1)
       iceh        = in_arrays(:,:,2)
       dfloe       = in_arrays(:,:,3)
 
       !! get input directional wave spectrum
-      sdf_dir  = reshape(xy4d,(/nx,ny,ndir,nw/))
+      sdf_dir  = reshape(real(xy4d),(/nx,ny,ndir,nw/))!convert to real*4 if necessary
       sdf_inc  = sdf_dir
 
-      !print*,nw,(nw.eq.1),Tp_io
       if (nw.eq.1) then
-         freq_vec(1) = 1./Tp_io
-         !print*,Tp_io,freq_vec
+         freq_vec(1) = 1./real(Tp_io)!convert to real*4 if necessary
       end if
       if (ndir.eq.1) then
-         wavdir(1)   = mwd_io
-         !print*,mwd_io
+         wavdir(1)   = real(mwd_io)!convert to real*4 if necessary
       end if
 
-      call wim2d_run_vSdir(out_arrays,int_prams,real_prams,1)!1=dummy arg for nmesh_e
+      call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams),1)
+         !1=dummy arg for nmesh_e
+         !convert to real*4 if necessary TODO make real_prams double?
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
@@ -963,8 +914,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!outputs
-      xy4d  = reshape(sdf_dir,(/nx*ny*ndir*nw/))
-      y3d   = reshape(out_arrays,(/nx*ny*ny3d/))
+      xy4d  = reshape(dble(sdf_dir),(/nx*ny*ndir*nw/))!convert to real*8 if necessary
+      y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/))!convert to real*8 if necessary
 
       end subroutine mex_io_gate_vSdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -987,18 +938,18 @@
       include "grid_info.h"
       include "wave_info.h"
 
-      integer,parameter :: nx    = ii
-      integer,parameter :: ny    = jj
-      integer,parameter :: nw    = n_wave_freq
-      integer,parameter :: ndir  = n_wavdir
-      integer,parameter :: nmesh_vars  = 6
-      integer,intent(in)    :: ni,nr,nx3d,ny3d,nxy4d,nmesh_e
+      integer,parameter  :: nx    = ii
+      integer,parameter  :: ny    = jj
+      integer,parameter  :: nw    = n_wave_freq
+      integer,parameter  :: ndir  = n_wavdir
+      integer,parameter  :: nmesh_vars  = 6
+      integer,intent(in) :: ni,nr,nx3d,ny3d,nxy4d,nmesh_e
       !!
-      real                       ,intent(in)    :: Tp_io,mwd_io
       integer,dimension(ni)      ,intent(in)    :: int_prams
-      real,dimension(nr)         ,intent(in)    :: real_prams
-      real,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
-      real,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
+      real*8                       ,intent(in)  :: Tp_io,mwd_io
+      real*8,dimension(nr)         ,intent(in)  :: real_prams
+      real*8,dimension(nx*ny*nx3d) ,intent(in)  :: x3d !all 2d input arrays merged into 1 3d array
+      real*8,dimension(nx*ny*ny3d) ,intent(out) :: y3d !all 2d output arrays merged into 1 3d array
       !!
       real,dimension(nx*ny*nxy4d),intent(inout)          :: xy4d !4d input array (Sdir)
       real,dimension(nmesh_e*nmesh_vars),intent(inout)   :: ymesh !
@@ -1014,28 +965,25 @@
       PI = 4.*atan(1.)
 
       !! initial ice conditions
-      in_arrays   = reshape(x3d,(/nx,ny,nx3d/))
+      in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/))!convert to real*4 if necessary
       icec        = in_arrays(:,:,1)
       iceh        = in_arrays(:,:,2)
       dfloe       = in_arrays(:,:,3)
 
       !! get input directional wave spectrum
-      sdf_dir  = reshape(xy4d,(/nx,ny,ndir,nw/))
+      sdf_dir  = reshape(real(xy4d),(/nx,ny,ndir,nw/))!convert to real*4 if necessary
       sdf_inc  = sdf_dir
 
-      !print*,nw,(nw.eq.1),Tp_io
       if (nw.eq.1) then
          freq_vec(1) = 1./Tp_io
-         !print*,Tp_io,freq_vec
       end if
       if (ndir.eq.1) then
          wavdir(1)   = mwd_io
-         !print*,mwd_io
       end if
 
       mesh_e   = reshape(ymesh,(/nmesh_e,nmesh_vars/))
-      call wim2d_run_vSdir(out_arrays,int_prams,real_prams
-     &         ,nmesh_e,mesh_e)
+      call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams)
+     &         ,nmesh_e,mesh_e)!convert to real*4 if necessary
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
@@ -1059,9 +1007,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!outputs
-      xy4d  = reshape(sdf_dir,(/nx*ny*ndir*nw/))
-      y3d   = reshape(out_arrays,(/nx*ny*ny3d/))
-      ymesh = reshape(mesh_e,(/nmesh_e*nmesh_vars/))
+      xy4d  = reshape(dble(sdf_dir)   ,(/nx*ny*ndir*nw/))      !convert to real*8 if necessary
+      y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/))         !convert to real*8 if necessary
+      ymesh = reshape(dble(mesh_e)    ,(/nmesh_e*nmesh_vars/)) !convert to real*8 if necessary
 
       end subroutine mex_io_gate_vSdir_mesh
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

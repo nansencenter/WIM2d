@@ -56,13 +56,8 @@ C
       logical  :: critter
 
       !! outputs from main subroutine (float)
-      !! - need to be converted to double before passing to matlab (plhs)
-      !! - use dble
-#if !defined (REAL2DOUBLE)
-      real,dimension(ii*jj*ny3d) :: y3d
-#else
+      !! - need to be double to pass to matlab (plhs)
       real*8,dimension(ii*jj*ny3d) :: y3d
-#endif
       character(len=12)          :: cii,cjj,cj,cm,cn,cdum
       character(len=80)          :: msg
 
@@ -101,7 +96,7 @@ C     Get the size of the input arrays.
          write(cn,'(i4.4)')  mxGetN(prhs(j))
 
 C        matrices should be ii*jj
-         critter  = ((mxGetM(prhs(j)).ne.n3d)                            &
+         critter  = ((mxGetM(prhs(j)).ne.n3d)                           &
      &               .or.(mxGetN(prhs(j)).ne.1))
          if (critter) then
             k  = mexPrintf('Input '//cj//' dimensions:\n')
@@ -188,27 +183,14 @@ C     Create matrix for the return arguments.
       k  = mexPrintf('Have pointers, about to do computations...\n')
       k  = mexPrintf('Entering mex_io_gate_v2...\n')
 
-#if !defined (REAL2DOUBLE)
-      call mex_io_gate_v2(y3d,real(x3d),nint(ip),real(rp)               &
-     &                    ,ii,jj,ni,nr,nx3d,ny3d)
-
-      k  = mexPrintf('Finished computations...\n')
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-C     Load the data into pointers, which are the outputs to MATLAB
-      call mxCopyReal8ToPtr(dble(y3d),y3d_pr,size4)
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#else
       call mex_io_gate_v2(y3d,x3d,nint(ip),rp
      &                    ,ii,jj,ni,nr,nx3d,ny3d)
 
       k  = mexPrintf('Finished computations...\n')
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 C     Load the data into pointers, which are the outputs to MATLAB
       call mxCopyReal8ToPtr(y3d,y3d_pr,size4)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#endif
 
       return
       end subroutine mexFunction

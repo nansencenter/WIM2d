@@ -26,7 +26,7 @@
       integer,intent(in)                  :: nx,ny,int_prams(9)
       real,intent(in)                     :: real_prams(4)
       real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,5),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx,ny,6),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy,mwd
 !f2py intent(hide)   :: nx,ny
 
       call wim2d_run_io(in_arrays,out_arrays,int_prams,real_prams,nx,ny)
@@ -55,7 +55,7 @@
 
       !!arrays
       real,dimension(nx,ny,3),intent(in)        :: ice_arrays  !! pass in  icec,iceh,dfloe
-      real,dimension(nx,ny,5),intent(out)       :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx,ny,6),intent(out)       :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy,mwd
       real,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_io     !! pass in/out directional spec
       real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2    !! pass in/out directional spec
 
@@ -141,7 +141,7 @@
 
       !!arrays
       real,dimension(nx,ny,3),intent(in)        :: ice_arrays   !! pass in  icec,iceh,dfloe
-      real,dimension(nx,ny,5),intent(out)       :: out_arrays   !! pass out Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx,ny,6),intent(out)       :: out_arrays   !! pass out Dmax,Hs,Tp,taux,tauy,mwd
       real,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_io      !! pass in directional spec
       real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2     !! pass out directional spec
 
@@ -266,7 +266,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine atten_youngs(outputs,inputs)
-      use mod_wim_prams, only: gravity
+      use mod_common_wim, only: wim_info
 
       real,intent(in)   :: inputs(4)
       real,intent(out)  :: outputs(8)
@@ -277,14 +277,14 @@
 
       ! h        = inputs(1)
       ! om       = inputs(2)
-      ! young    = inputs(3)
-      ! visc_rp  = inputs(4)
+      wim_info%young    = inputs(3)
+      wim_info%viscrp   = inputs(4)
       om    = inputs(2)
-      guess = om**2/gravity
+      guess = om**2/wim_info%gravity
 
       call RTparam_outer(damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT,
-     &                  inputs,guess)
+     &                  inputs(1:2),guess)
 
       outputs  = (/damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT/)

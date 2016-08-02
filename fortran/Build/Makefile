@@ -48,17 +48,16 @@ IFLAGS=-I$(MDIR) -I$(HDIR)
 # Put modules in $(MDIR) when they are created
 OFLAGS=-J$(MDIR)
 
-# Flags for f2py
-F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
-
 # Flags for mex
 MEX_FLAGS=-largeArrayDims -g $(IFLAGS)
 
 # ============================================================================
 # run in double precision (mex files need to be rewritten to allow for both)
-MEX_FLAGS	+=  	-DREAL2DOUBLE
-FCFLAGS		+=	-fdefault-real-8 -fdefault-double-8
+FCFLAGS += -fdefault-real-8 -fdefault-double-8
 # ============================================================================
+
+# Flags for f2py
+F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS) $(FCFLAGS)"
 
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh
