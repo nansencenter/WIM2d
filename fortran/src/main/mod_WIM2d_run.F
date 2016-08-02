@@ -23,6 +23,7 @@
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
       integer  :: FSD_OPT=1 !TODO make this an input
       integer  :: YOUNG_OPT=1
+      integer,parameter :: n_param_vec   = 27
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
@@ -37,11 +38,16 @@
       real*4 :: et,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      !!only subroutines are public
+      !!subroutines are public (& n_param_vec)
+      !! -also:
+      !!   n_param_vec (for mex functions)
+      !!   STEADY      (for f2py)
       public   :: wim2d_run,wim2d_run_io,wim2d_run_vSdir                &
      &            ,mex_io_gate_v2                                       &
      &            ,mex_io_gate_vSdir                                    &
-     &            ,mex_io_gate_vSdir_mesh
+     &            ,mex_io_gate_vSdir_mesh                               &
+     &            ,read_param_vec                                       &
+     &            ,n_param_vec,STEADY
       
       contains
       
@@ -231,7 +237,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wim2d_run_io(in_arrays,out_arrays                      &
-     &                       ,int_prams,real_prams,nx,ny)
+     &                       ,real_prams,nx,ny)
 
       use mod_gridinfo     !! grid info
       use mod_wim_init     !! initial wave fields
@@ -260,18 +266,18 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny
-      integer,dimension(9),intent(in)     :: int_prams
+      !integer,dimension(9),intent(in)     :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
       ! STEADY,BRK_OPT,DO_ATTEN
 
-      real,dimension(4),intent(in)        :: real_prams  !! young,visc_rp,duration
+      real*8,intent(in) :: real_prams(n_param_vec)
       real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,5),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx,ny,6),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy,mwd
 
       real              :: PI
-      real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
-
+      !real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
+      real     :: wim_prams_in(2),init_cons(6)
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
@@ -287,32 +293,33 @@
       logical :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
-                               ! 0: scattering treated like attenuation
-                               ! 1: directional scattering
-      ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
-                               ! and also testing many parameters at once
-                               ! ie each 'y' row can be a different experiment
-                               !    if we use this option
-                               !    - in practice we set speed in 'y' dirn to 0.
-      ADV_OPT  = int_prams(3)  ! 0, not periodic;
-                               ! 1, periodic in both x,y;
-                               ! 2, periodic in y only;
+      call read_param_vec(init_cons,real_prams)
+!     SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
+!                              ! 0: scattering treated like attenuation
+!                              ! 1: directional scattering
+!     ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
+!                              ! and also testing many parameters at once
+!                              ! ie each 'y' row can be a different experiment
+!                              !    if we use this option
+!                              !    - in practice we set speed in 'y' dirn to 0.
+!     ADV_OPT  = int_prams(3)  ! 0, not periodic;
+!                              ! 1, periodic in both x,y;
+!                              ! 2, periodic in y only;
 
-      !! Inputs to determine if results
-      !! should be dumped to binaries or not
-      DO_CHECK_FINAL = int_prams(4)
-      DO_CHECK_PROG  = int_prams(5)
-      DO_CHECK_INIT  = int_prams(6)
-      STEADY         = int_prams(7)
-      BRK_OPT        = int_prams(8)
-      DO_ATTEN       = int_prams(9)
+!     !! Inputs to determine if results
+!     !! should be dumped to binaries or not
+!     DO_CHECK_FINAL = int_prams(4)
+!     DO_CHECK_PROG  = int_prams(5)
+!     DO_CHECK_INIT  = int_prams(6)
+!     STEADY         = int_prams(7)
+!     BRK_OPT        = int_prams(8)
+!     DO_ATTEN       = int_prams(9)
 
-      !!real inputs
-      wim_info%young    = real_prams(1)   !!young,visc_rp
-      wim_info%viscrp   = real_prams(2)   !!young,visc_rp
-      duration          = real_prams(3)   !!length of sim [s]
-      CFL               = real_prams(4)   !!cg*dt/dx
+!     !!real inputs
+!     wim_info%young    = real_prams(1)   !!young,visc_rp
+!     wim_info%viscrp   = real_prams(2)   !!young,visc_rp
+!     duration          = real_prams(3)   !!length of sim [s]
+!     CFL               = real_prams(4)   !!cg*dt/dx
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -456,7 +463,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_vSdir(out_arrays,int_prams,real_prams
+      subroutine wim2d_run_vSdir(out_arrays!,int_prams,real_prams
      &   ,nmesh_e,mesh_e)
 
       use mod_gridinfo     !! grid info
@@ -482,13 +489,13 @@
       !!variables
       integer,parameter                :: ndir  = n_wavdir
       integer,parameter                :: nw    = n_wave_freq
-      integer,dimension(9),intent(in)  :: int_prams
+      !integer,dimension(9),intent(in)  :: int_prams
       ! SCATMOD,ADV_DIM,ADV_OPT,
       ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
       ! BRK_OPT,STEADY,DO_ATTEN
 
-      real,dimension(ii,jj,6),intent(out) :: out_arrays        !! Dmax,Hs,Tp,taux,tauy
-      real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
+      real,dimension(ii,jj,6),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy,mwd
+      !real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
 
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
@@ -510,32 +517,32 @@
       logical :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
-                               ! 0: scattering treated like attenuation
-                               ! 1: directional scattering
-      ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
-                               ! and also testing many parameters at once
-                               ! ie each 'y' row can be a different experiment
-                               !    if we use this option
-                               !    - in practice we set speed in 'y' dirn to 0.
-      ADV_OPT  = int_prams(3)  ! 0, not periodic;
-                               ! 1, periodic in both x,y;
-                               ! 2, periodic in y only;
+      ! SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
+      !                          ! 0: scattering treated like attenuation
+      !                          ! 1: directional scattering
+      ! ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
+      !                          ! and also testing many parameters at once
+      !                          ! ie each 'y' row can be a different experiment
+      !                          !    if we use this option
+      !                          !    - in practice we set speed in 'y' dirn to 0.
+      ! ADV_OPT  = int_prams(3)  ! 0, not periodic;
+      !                          ! 1, periodic in both x,y;
+      !                          ! 2, periodic in y only;
 
-      !! Inputs to determine if results
-      !! should be dumped to binaries or not
-      DO_CHECK_FINAL = int_prams(4)
-      DO_CHECK_PROG  = int_prams(5)
-      DO_CHECK_INIT  = int_prams(6)
-      STEADY         = int_prams(7)
-      BRK_OPT        = int_prams(8)
-      DO_ATTEN       = int_prams(9)
+      ! !! Inputs to determine if results
+      ! !! should be dumped to binaries or not
+      ! DO_CHECK_FINAL = int_prams(4)
+      ! DO_CHECK_PROG  = int_prams(5)
+      ! DO_CHECK_INIT  = int_prams(6)
+      ! STEADY         = int_prams(7)
+      ! BRK_OPT        = int_prams(8)
+      ! DO_ATTEN       = int_prams(9)
 
-      !!real inputs
-      wim_info%young    = real_prams(1)   !!young,visc_rp
-      wim_info%viscrp   = real_prams(2)   !!young,visc_rp
-      duration          = real_prams(3)   !!length of simulation [s]
-      CFL               = real_prams(4)   !!cg*dt/dx
+      ! !!real inputs
+      ! wim_info%young    = real_prams(1)   !!young,visc_rp
+      ! wim_info%viscrp   = real_prams(2)   !!young,visc_rp
+      ! duration          = real_prams(3)   !!length of simulation [s]
+      ! CFL               = real_prams(4)   !!cg*dt/dx
 
       !!using mesh?
       INTERP_MESH = .false.
@@ -597,7 +604,6 @@
       if (ndir.gt.1) then
          call waves_init_dir()
       end if
-      !print*,freq_vec
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! initialise WIM (mod_wavesice)
@@ -799,8 +805,10 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine mex_io_gate_v2(y3d,x3d,int_prams,real_prams            &
-     &                  ,nx,ny,ni,nr,nx3d,ny3d)
+!     subroutine mex_io_gate_v2(y3d,x3d,int_prams,real_prams            &
+!    &                  ,nx,ny,ni,nr,nx3d,ny3d)
+      subroutine mex_io_gate_v2(y3d,x3d,real_prams
+     &                  ,nx,ny,nx3d,ny3d)
       
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
@@ -809,10 +817,10 @@
 
       implicit none
 
-      integer              ,intent(in) :: nx,ny,ni,nr,nx3d,ny3d
-      integer,dimension(ni),intent(in) :: int_prams
+      integer              ,intent(in) :: nx,ny,nx3d,ny3d!,ni,nr
+      !integer,dimension(ni),intent(in) :: int_prams
       !!
-      real*8,dimension(nr)         ,intent(in)    :: real_prams
+      real*8,dimension(n_param_vec),intent(in)    :: real_prams
       real*8,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
       real*8,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
 
@@ -824,7 +832,7 @@
 
       print*,'before wim2d_run_io:',shape(in_arrays),nx,ny,nx3d
       call wim2d_run_io(in_arrays,out_arrays                            &
-     &                  ,int_prams,real(real_prams),nx,ny)
+     &                  ,real_prams,nx,ny)
 
       print*,'after wim2d_run_io:',shape(out_arrays),nx,ny,ny3d
       y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/)) !convert to real*8 if necessary
@@ -833,8 +841,8 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine mex_io_gate_vSdir(xy4d,y3d,x3d,int_prams,real_prams    &
-     &                  ,Tp_io,mwd_io,ni,nr,nx3d,ny3d,nxy4d)
+      subroutine mex_io_gate_vSdir(xy4d,y3d,x3d,real_prams
+     &                  ,nx3d,ny3d,nxy4d)
       
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
@@ -853,15 +861,14 @@
       integer,parameter :: nw    = n_wave_freq
       integer,parameter :: ndir  = n_wavdir
       !!
-      integer              ,intent(in)    :: ni,nr,nx3d,ny3d,nxy4d
-      integer,dimension(ni),intent(in)    :: int_prams
+      integer              ,intent(in)    :: nx3d,ny3d,nxy4d!,ni,nr
       !!
-      real*8                       ,intent(in)    :: Tp_io,mwd_io
-      real*8,dimension(nr)         ,intent(in)    :: real_prams
+      real*8,dimension(n_param_vec),intent(in)    :: real_prams
       real*8,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
       real*8,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
       real*8,dimension(nx*ny*nxy4d),intent(inout) :: xy4d !4d input array (Sdir)
       !!
+      real     :: Tp_io,mwd_io,init_cons(6)
       integer  :: i,j,s,w,wth
       integer  :: STEADY
       real     :: PI,adv_dir
@@ -870,6 +877,10 @@
       real,dimension(nx,ny,ny3d) :: out_arrays
 
       PI = 4.*atan(1.)
+
+      call read_param_vec(init_cons,real_prams)
+      Tp_io    = init_cons(2)
+      mwd_io   = init_cons(3)
 
       !! initial ice conditions
       in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/))!convert to real*4 if necessary
@@ -882,21 +893,21 @@
       sdf_inc  = sdf_dir
 
       if (nw.eq.1) then
-         freq_vec(1) = 1./real(Tp_io)!convert to real*4 if necessary
+         freq_vec(1) = 1./Tp_io
       end if
       if (ndir.eq.1) then
-         wavdir(1)   = real(mwd_io)!convert to real*4 if necessary
+         wavdir(1)   = mwd_io
       end if
 
-      call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams),1)
+      !call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams),1)
+      call wim2d_run_vSdir(out_arrays,1)
          !1=dummy arg for nmesh_e
-         !convert to real*4 if necessary TODO make real_prams double?
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
 
       !! correction for STEADY (copied from mod_waves_ice.F)
-      STEADY   = int_prams(8)
+      ! STEADY   = int_prams(8)
       if (STEADY.eq.1) then
          do w=1,nw
          do wth=1,n_wavdir
@@ -923,8 +934,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine mex_io_gate_vSdir_mesh(xy4d,y3d,ymesh                  &
-     &                  ,x3d,int_prams,real_prams                       &
-     &                  ,Tp_io,mwd_io,ni,nr,nx3d,ny3d,nxy4d,nmesh_e)
+     &                  ,x3d,real_prams,nx3d,ny3d,nxy4d,nmesh_e)
       
       !! gateway between run_wim2d_io_mex.m,
       !! mex function WIM2d_run_io_mex.F,
@@ -943,26 +953,28 @@
       integer,parameter  :: nw    = n_wave_freq
       integer,parameter  :: ndir  = n_wavdir
       integer,parameter  :: nmesh_vars  = 6
-      integer,intent(in) :: ni,nr,nx3d,ny3d,nxy4d,nmesh_e
+      integer,intent(in) :: nx3d,ny3d,nxy4d,nmesh_e!,nr,ni
       !!
-      integer,dimension(ni)      ,intent(in)    :: int_prams
-      real*8                       ,intent(in)  :: Tp_io,mwd_io
-      real*8,dimension(nr)         ,intent(in)  :: real_prams
+      real*8,dimension(n_param_vec),intent(in)  :: real_prams
       real*8,dimension(nx*ny*nx3d) ,intent(in)  :: x3d !all 2d input arrays merged into 1 3d array
       real*8,dimension(nx*ny*ny3d) ,intent(out) :: y3d !all 2d output arrays merged into 1 3d array
       !!
-      real,dimension(nx*ny*nxy4d),intent(inout)          :: xy4d !4d input array (Sdir)
-      real,dimension(nmesh_e*nmesh_vars),intent(inout)   :: ymesh !
+      real*8,dimension(nx*ny*nxy4d),intent(inout)        :: xy4d !4d input array (Sdir)
+      real*8,dimension(nmesh_e*nmesh_vars),intent(inout) :: ymesh !
       !!
       integer  :: i,j,s,w,wth
-      integer  :: STEADY
       real     :: PI,adv_dir
+      real     :: Tp_io,mwd_io,init_cons(6)
       !!
       real,dimension(nx,ny,nx3d) :: in_arrays
       real,dimension(nx,ny,ny3d) :: out_arrays
       real,dimension(nmesh_e,nmesh_vars) :: mesh_e
 
       PI = 4.*atan(1.)
+
+      call read_param_vec(init_cons,real_prams)
+      Tp_io    = init_cons(2)
+      mwd_io   = init_cons(3)
 
       !! initial ice conditions
       in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/))!convert to real*4 if necessary
@@ -982,14 +994,14 @@
       end if
 
       mesh_e   = reshape(ymesh,(/nmesh_e,nmesh_vars/))
-      call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams)
-     &         ,nmesh_e,mesh_e)!convert to real*4 if necessary
+!     call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams)
+!    &         ,nmesh_e,mesh_e)!convert to real*4 if necessary
+      call wim2d_run_vSdir(out_arrays,nmesh_e,mesh_e)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
 
       !! correction for STEADY (copied from mod_waves_ice.F)
-      STEADY   = int_prams(8)
       if (STEADY.eq.1) then
          do w=1,nw
          do wth=1,n_wavdir
@@ -1365,6 +1377,148 @@
       !stop
 
       end subroutine read_infile
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine read_param_vec(init_cons,param_vec)
+      !!determines where to read inputs/outputs from
+      use mod_wavesice,    only: REF_HS_ICE,USE_ICE_VEL
+      
+      implicit none
+      
+      real,intent(out)  :: init_cons(6)
+      real*8,intent(in) :: param_vec(27)
+      integer  :: i,j
+
+      i  = 0
+
+      ! ===================================================
+      !! int_prams
+      i        = i+1
+      SCATMOD  = int(param_vec(i))
+      print*,'SCATMOD: ',SCATMOD
+      i        = i+1
+      ADV_DIM  = int(param_vec(i))
+      print*,'ADV_DIM: ',ADV_DIM
+      i        = i+1
+      ADV_OPT  = int(param_vec(i))
+      print*,'ADV_OPT: ',ADV_OPT
+      !!
+      i        = i+1
+      BRK_OPT  = int(param_vec(i))
+      print*,'BRK_OPT: ',BRK_OPT
+      i        = i+1
+      STEADY   = int(param_vec(i))
+      print*,'STEADY: ',STEADY
+      i        = i+1
+      DO_ATTEN = int(param_vec(i))
+      print*,'DO_ATTEN: ',DO_ATTEN
+      !!
+      i              = i+1
+      DO_CHECK_FINAL = int(param_vec(i))
+      print*,'DO_CHECK_FINAL: ',DO_CHECK_FINAL
+      i              = i+1
+      DO_CHECK_PROG  = int(param_vec(i))
+      print*,'DO_CHECK_PROG: ',DO_CHECK_PROG
+      i              = i+1
+      DO_CHECK_INIT  = int(param_vec(i))
+      print*,'DO_CHECK_INIT: ',DO_CHECK_INIT
+      ! ===================================================
+
+      ! ===================================================
+      !! real_prams
+      i              = i+1
+      wim_info%young = real(param_vec(i))
+      print*,"Young's modulus: ",wim_info%young
+      i                 = i+1
+      wim_info%viscrp   = real(param_vec(i))
+      print*,"RP damping: ",wim_info%viscrp
+      i        = i+1
+      duration = real(param_vec(i))
+      print*,"Duration (s): ",duration
+      i     = i+1
+      CFL   = real(param_vec(i))
+      print*,"Duration (s): ",CFL
+      print*,'******************************************************'
+      print*,' '
+      ! ===================================================
+
+      ! ===================================================
+      !! other integer parameters
+      print*,' '
+      print*,'******************************************************'
+      i        = i+1
+      FSD_OPT  = int(param_vec(i))
+      print*,'FSD_OPT: ',FSD_OPT
+      i           = i+1
+      REF_HS_ICE  = int(param_vec(i))
+      print*,'REF_HS_ICE: ',REF_HS_ICE
+      i           = i+1
+      USE_ICE_VEL = int(param_vec(i))
+      print*,'USE_ICE_VEL: ',USE_ICE_VEL
+      print*,'******************************************************'
+      ! ===================================================
+
+      ! ===================================================
+      ! initial conditions
+      print*,' '
+      print*,'******************************************************'
+      do j=1,6
+         i     = i+1
+         init_cons(j)   = real(param_vec(i))
+      end do
+      print*,"Hs_init (m): "     ,init_cons(1)
+      print*,"T_init (s): "      ,init_cons(2)
+      print*,"mwd_init (deg): "  ,init_cons(3)
+      print*,"conc_init: "       ,init_cons(4)
+      print*,"h_init: "          ,init_cons(5)
+      print*,"Dmax_init: "       ,init_cons(6)
+      print*,'******************************************************'
+      ! ===================================================
+
+      ! ===================================================
+      ! time info
+      i              = i+1
+      model_day      = int(param_vec(i))
+      i              = i+1
+      model_seconds  = dble(param_vec(i))
+      call model_time_to_year_info(model_year_info,
+     &      model_day,model_seconds)
+      model_year_info_start   = model_year_info
+
+      print*,' '
+      print*,'******************************************************'
+      print*,'Start date & time: '//                                    &
+     &   model_year_info%cyear //'/'//                                  &
+     &   model_year_info%cmonth//'/'//                                  &
+     &   model_year_info%cday//' '//
+     &   model_year_info%chour  //':'//                                 &
+     &   model_year_info%cminute//':'//                                 &
+     &   model_year_info%csecond
+      print*,'Starting model day: '                                     &
+     &   ,model_year_info%model_day
+      print*,'Seconds in starting model day: '                          &
+     &   ,model_year_info%dsecond
+      print*,'******************************************************'
+      ! ===================================================
+
+
+      !! diagnostic grid cell
+      print*,' '
+      print*,'******************************************************'
+      i     = i+1
+      itest = int(param_vec(i))
+      i     = i+1
+      jtest = int(param_vec(i))
+      print*,'Diagnostics requested at (i,j):',itest,jtest
+      i        = i+1
+      dumpfreq = int(param_vec(i))
+      print*,'Diagnostic output freq:',dumpfreq
+      print*,'******************************************************'
+      print*,' '
+      !stop
+
+      end subroutine read_param_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim2d_run

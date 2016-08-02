@@ -103,8 +103,7 @@ if params_in.MEX_OPT==1
 
    %% make the call!
    tic;
-   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),...
-                  params_in.int_prams,params_in.real_prams);
+   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),params_in.params_vec);
    toc;
 
    %% extract outputs
@@ -145,8 +144,7 @@ elseif params_in.MEX_OPT==2
    shp   = size(wave_stuff.dir_spec);
    [wave_stuff.dir_spec,out_arrays] =...
       WIM2d_run_io_mex_vSdir(...
-         wave_stuff.dir_spec(:),in_arrays(:),...
-         params_in.int_prams,params_in.real_prams,T_init,dir_init);
+         wave_stuff.dir_spec(:),in_arrays(:),params_in.params_vec);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
@@ -234,7 +232,7 @@ elseif params_in.MEX_OPT==3
    [wave_stuff.dir_spec,out_arrays,mesh_arr] =...
       WIM2d_run_io_mex_vSdir_mesh(...
          wave_stuff.dir_spec(:),in_arrays(:),mesh_arr(:),...
-         params_in.int_prams,params_in.real_prams,T_init,dir_init,nmesh_e);
+         params_in.params_vec,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 

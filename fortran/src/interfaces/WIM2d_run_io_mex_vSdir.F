@@ -4,8 +4,7 @@ C
 C
 C     CALL:
 C     [Sdir_io,out_arrays]=...
-C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,int_prams,...
-C                               real_prams,Tp_io,mwd_io);
+C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,param_vec);
 C
 #endif
 C
@@ -14,7 +13,7 @@ C     This is a MEX-file for MATLAB.
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 C-----------------------------------------------------------------------
 C
-      use mod_WIM2d_run, only: mex_io_gate_vSdir
+      use mod_WIM2d_run, only: mex_io_gate_vSdir,n_param_vec
       implicit none
 
       include "grid_info.h"
@@ -35,10 +34,9 @@ C-----INPUTS------------------------------------------------------------
       mwpointer Tp_pr
       mwpointer MD_pr
       integer,parameter :: nxy4d  = n_wavdir*n_wave_freq  ! size(xy4d) = ii*jj*nxy4d
-      integer,parameter :: Nin   = 6   ! no of inputs
+      integer,parameter :: Nin   = 3   ! no of inputs
       integer,parameter :: nx3d  = 3   ! size(x3d) = ii*jj*nx3d -- ice_arrays rearranged to a vector
-      integer,parameter :: ni    = 9   ! length of int_prams
-      integer,parameter :: nr    = 4   ! length of real_prams
+      integer,parameter :: nr    = n_param_vec  ! length of real_prams
 
       mwsize,dimension (Nin)  :: mvec_in,nvec_in,size_vec_in
       integer,dimension(Nin)  :: mvec_in_0,nvec_in_0,size_vec_in_0
@@ -46,7 +44,6 @@ C-----INPUTS------------------------------------------------------------
       !!inputs from matlab - need to be double precision
       real*8,dimension(ii*jj*nx3d)  :: x3d
       real*8,dimension(ii*jj*nxy4d) :: x4d
-      real*8,dimension(ni)          :: ip
       real*8,dimension(nr)          :: rp
       real*8                        :: Tp_io,mwd_io
 C-----------------------------------------------------------------------
@@ -91,9 +88,9 @@ C     Check for proper number of arguments.
 
       ! =================================================
       ! expected sizes of inputs:
-      ! Sdir,ice_arrays,int_prams,real_prams,Tp_io,mwd_io
-      mvec_in_0      = (/ii*jj*nxy4d,ii*jj*nx3d,1 ,1 ,1,1/)
-      nvec_in_0      = (/1    ,1   ,ni,nr,1,1/)
+      ! Sdir,ice_arrays,real_prams
+      mvec_in_0      = (/ii*jj*nxy4d,ii*jj*nx3d,nr/)
+      nvec_in_0      = (/1    ,1               ,1/)
       size_vec_in_0  = mvec_in_0*nvec_in_0
 
       do j=1,Nin
@@ -137,18 +134,12 @@ C     Check for proper number of arguments.
       !!pointers to input memory
       x4d_pr   = mxGetPr(prhs(1))
       x3d_pr   = mxGetPr(prhs(2))
-      ip_pr    = mxGetPr(prhs(3))
-      rp_pr    = mxGetPr(prhs(4))
-      Tp_pr    = mxGetPr(prhs(5))
-      MD_pr    = mxGetPr(prhs(6))
+      rp_pr    = mxGetPr(prhs(3))
 
       !!copy input memory to fortran arrays
       call mxCopyPtrToReal8(x4d_pr,x4d    ,size_vec_in(1))
       call mxCopyPtrToReal8(x3d_pr,x3d    ,size_vec_in(2))
-      call mxCopyPtrToReal8(ip_pr,ip      ,size_vec_in(3))
-      call mxCopyPtrToReal8(rp_pr,rp      ,size_vec_in(4))
-      call mxCopyPtrToReal8(Tp_pr,Tp_io   ,size_vec_in(5))
-      call mxCopyPtrToReal8(MD_pr,mwd_io  ,size_vec_in(6))
+      call mxCopyPtrToReal8(rp_pr,rp      ,size_vec_in(3))
       y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
 
       if (PRINT_INFO) then
@@ -182,9 +173,7 @@ C     Create matrices for the return arguments.
          k  = mexPrintf('Entering mex_io_gate_vSdir...\n')
       end if
 
-      call mex_io_gate_vSdir(y4d,y3d,x3d,nint(ip),rp
-     &                    ,Tp_io,mwd_io
-     &                    ,ni,nr,nx3d,ny3d,nxy4d)
+      call mex_io_gate_vSdir(y4d,y3d,x3d,rp,nx3d,ny3d,nxy4d)
 
       if (PRINT_INFO) then
          k  = mexPrintf('Finished computations...\n')

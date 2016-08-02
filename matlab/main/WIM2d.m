@@ -688,12 +688,12 @@ if params_in.DO_DISP; disp('BEGINNING MAIN INTEGRATION...'); end
 %% Different versions of mex functions
 if params_in.MEX_OPT==1
 
-   params_mex  = get_params_mex(params_in,duration,ice_prams);
+   params_mex  = get_params_mex(params_in,duration,ice_prams,year_info);
    out_fields  = WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields);
 
 elseif params_in.MEX_OPT==2
 
-   params_mex  = get_params_mex(params_in,duration,ice_prams);
+   params_mex  = get_params_mex(params_in,duration,ice_prams,year_info);
    %%
    [out_fields,wave_stuff ]   =...
       WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
@@ -701,7 +701,7 @@ elseif params_in.MEX_OPT==2
 
 elseif params_in.MEX_OPT==3
 
-   params_mex  = get_params_mex(params_in,duration,ice_prams);
+   params_mex  = get_params_mex(params_in,duration,ice_prams,year_info);
    %%
    [out_fields,wave_stuff,mesh_e]   =...
       WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
@@ -1904,20 +1904,15 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function params_mex  = get_params_mex(params,duration,ice_prams)
-%%           SCATMOD: 1
-%%           ADV_DIM: 2
-%%           ADV_OPT: 2
-%%     DO_CHECK_INIT: 1
-%%     DO_CHECK_PROG: 1
-%%    DO_CHECK_FINAL: 1
-%%           BRK_OPT: 0
-%%            STEADY: 1
-%%          DO_ATTEN: 1
-%%               CFL: 0.7000
-%%          duration: 7200
-%%         ice_prams: structure (young,visc_rp)
+function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
+%%           MEX_OPT: 1
+%%            DODISP: 2
+%%        params_vec: [27x1 double]
+%%          - order of parameters same as in fortran/infiles/infile_nonIO.txt
+%%          - also see read_params_vec subroutine in fortran/src/main/mod_WIM2d_run.F
 
+params_vec  = zeros(27,1);
+i           = 0;
 
 %% ================================================
 %% set int_prams
@@ -1936,18 +1931,23 @@ fields   = {...
 Ni = length(fields);
 params_mex.int_prams = zeros(1,Ni);
 for j=1:Ni
+   i     = i+1;
    fld   = fields{j};
-   params_mex.int_prams(j)  = params.(fld);
+   %params_mex.int_prams(j) = params.(fld);
+   params_vec(i)  = params.(fld);
 end
 %% ================================================
 
 %% ================================================
 %% set real_prams
 Nr = 4;
-params_mex.real_prams   = [ice_prams.young,...
-                           ice_prams.visc_rp,...
-                           duration,...
-                           params.CFL];
+i  = i+1;
+% params_mex.real_prams   = [ice_prams.young,...
+params_vec(i:i+3) = [ice_prams.young,...
+                     ice_prams.visc_rp,...
+                     duration,...
+                     params.CFL];
+i  = i+3;
 %% ================================================
    
 
@@ -1959,15 +1959,66 @@ fields   = {...
             };
 
 for j=1:length(fields)
-   fld   = fields{j};
+   fld               = fields{j};
    params_mex.(fld)  = params.(fld);
 end
+%% ===============================================
 
+
+%% ===============================================
+%% other integer parameters
+fields   = {'FSD_OPT',...
+            'REF_Hs_ICE',...
+            'USE_ICE_VEL'};
+for j=1:length(fields)
+   i              = i+1;
+   params_vec(i)  = params.(fields{j});
+end
+%% ===============================================
+
+
+%% ===============================================
+%% initial conditions
+fields   = {'Hs_init',...
+            'T_init',...
+            'dir_init',...
+            'conc_init',...
+            'h_init',...
+            'Dmax_init'};
+for j=1:length(fields)
+   i              = i+1;
+   params_vec(i)  = params.(fields{j});
+end
+%% ===============================================
+
+
+%% ===============================================
+%% start time
+fields   = {'model_day',...
+            'model_seconds'};
+for j=1:length(fields)
+   i              = i+1;
+   params_vec(i)  = year_info.(fields{j});
+end
+%% ===============================================
+
+
+%% ===============================================
+%% diagnostics
+fields   = {'itest',...
+            'jtest',...
+            'dumpfreq'};
+for j=1:length(fields)
+   i              = i+1;
+   params_vec(i)  = params.(fields{j});
+end
+%% ===============================================
+
+params_mex.params_vec   = params_vec;
 if params.DO_DISP
    ice_prams
    params_mex
-   params_mex.int_prams
-   params_mex.real_prams
+   params_mex.params_vec
    %pause;
 end
-%% ===============================================
+return;
