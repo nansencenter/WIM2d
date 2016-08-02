@@ -28,4 +28,35 @@
 
       character(len=80) :: outdir
 
+      type wim_params
+         ! Model parameters
+         real :: young             ! Young's modulus
+         real :: viscrp            ! Robinson-Palmer drag coefficient
+         real :: viscVE   = 0.     ! viscosity for Mosig et al viscoelastic rheology
+         real :: rhowtr   = 1025   ! Ice density      [kg/m^3]
+         real :: rhoice   = 922.5  ! Ice density      [kg/m^3]
+         real :: gravity  = 9.81   ! Gravity          [m/s^2]
+         real :: poisson  = .3     ! Poisson's ratio
+
+         ! Mohr-Coulomb failure criterion (BRK_OPT=3)
+         real :: cohesion = 1.e5   ! Cohesion         [Pa]
+         real :: friction = .7     ! Tangent of friction angle
+
+         !breaking criterion
+         real  :: epsc     !! breaking strain [-]
+         real  :: stress_c !! breaking stress [Pa]
+         real  :: vbf      !! brine volume fraction [-]
+         real  :: sigma_c  !! flexural strength [Pa]
+         real  :: flex_rig_coeff
+            !! flex rigidity = flex_rig_coeff*h^3
+            !! critical stress (for Marchenko criterion)
+
+         ! Parameters for the floe size distribution
+         real  :: Dmin        = 20   ! min floe size [m]
+         real  :: xi          = 2    ! [-]
+         real  :: fragility   = 0.9  ! [-]
+      end type wim_params
+
+      type(wim_params) :: wim_info
+
       end module mod_common_wim

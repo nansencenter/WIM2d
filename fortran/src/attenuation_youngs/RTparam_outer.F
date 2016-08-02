@@ -4,15 +4,13 @@
       subroutine RTparam_outer(damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT,
      &                  inputs,guess)
-!    &                  h,om,visc_rp,guess,params)
 
-      use mod_wim_prams, only: poisson,rhowtr,rhoice,gravity            &
-!    &   ,young,visc_rp
+      use mod_common_wim, only:wim_info
 
       real,intent(out)   :: damping,kice,kwtr,int_adm,
      &                           ac,modT,argR,argT
-      real,intent(in)    :: inputs(4),guess
-      real               :: h,om,visc_rp,young
+      real,intent(in)    :: inputs(2),guess
+      real               :: h,om
       
       real   :: alp_nd,hnd,zeta_nd
       real   :: Hw_nd,varpi,L
@@ -25,13 +23,11 @@
 
       h        = inputs(1)
       om       = inputs(2)
-      young    = inputs(3)
-      visc_rp  = inputs(4)
       
-      rho      = rhoice/rhowtr
-      D        = young*(h*h*h)/12.0/(1.0-poisson*poisson)
-      L        = exp( 0.2*log(D/rhowtr/om/om) )
-      alp_nd   = om*om/gravity*L
+      rho      = wim_info%rhoice/wim_info%rhowtr
+      D        = wim_info%young*(h*h*h)/12.0/(1.0-wim_info%poisson**2)
+      L        = exp( 0.2*log(D/wim_info%rhowtr/om/om) )
+      alp_nd   = om*om/wim_info%gravity*L
       hnd      = h/L
       zeta_nd  = rho*hnd
       
@@ -59,7 +55,7 @@
       int_adm  = BG1/BG2
          
       !!get viscous attenuation;
-      visc_rp_nd  = visc_rp/rhowtr/om/L
+      visc_rp_nd  = wim_info%viscrp/wim_info%rhowtr/om/L
       damping_nd  = avc*visc_rp_nd
       damping     = damping_nd/L
       

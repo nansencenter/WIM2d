@@ -4,8 +4,8 @@ C
 C
 C     CALL:
 C     [Sdir_io,out_arrays,mesh_e]=...
-C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,int_prams,...
-C                               real_prams,Tp_io,mwd_io,mesh_e);
+C        WIM2d_run_io_mex_vSdir(Sdir_io,ice_arrays,...
+C                               real_prams,mesh_e);
 C
 #endif
 C
@@ -14,7 +14,7 @@ C     This is a MEX-file for MATLAB.
       subroutine mexFunction(nlhs, plhs, nrhs, prhs)
 C-----------------------------------------------------------------------
 C
-      use mod_WIM2d_run, only: mex_io_gate_vSdir_mesh
+      use mod_WIM2d_run, only: mex_io_gate_vSdir_mesh,n_param_vec
       implicit none
 
       include "grid_info.h"
@@ -38,10 +38,9 @@ C-----INPUTS------------------------------------------------------------
       mwpointer nmesh_e_pr !pointer to no of mesh elements
 
       integer,parameter :: nxy4d      = n_wavdir*n_wave_freq   ! size(xy4d) = ii*jj*nxy4d
-      integer,parameter :: Nin        = 8                      ! no of inputs
+      integer,parameter :: Nin        = 5                      ! no of inputs
       integer,parameter :: nx3d       = 3                      ! size(x3d) = ii*jj*nx3d -- ice_arrays rearranged to a vector
-      integer,parameter :: ni         = 9                      ! length of int_prams
-      integer,parameter :: nr         = 4                      ! length of real_prams
+      integer,parameter :: nr         = n_param_vec            ! length of real_prams
 
       mwsize,dimension (Nin)  :: mvec_in,nvec_in,size_vec_in
       integer,dimension(Nin)  :: mvec_in_0,nvec_in_0,size_vec_in_0
@@ -50,10 +49,7 @@ C-----INPUTS------------------------------------------------------------
       real*8,dimension(ii*jj*nx3d)  :: x3d
       real*8,dimension(ii*jj*nxy4d) :: x4d
       real*8, allocatable           :: xmesh(:)
-      real*8,dimension(ni)          :: ip
       real*8,dimension(nr)          :: rp
-      real*8                        :: Tp_io
-      real*8                        :: mwd_io
       real*8                        :: nmesh_e
 C-----------------------------------------------------------------------
 
@@ -66,18 +62,16 @@ C-----OUTPUTS-----------------------------------------------------------
       mwpointer y4d_pr!pointer to output of Sdir
       mwpointer ymesh_pr!pointer to output on mesh
 
-      integer,parameter       :: ny3d  = 5   ! size(y3d) = ii*jj*ny3d
+      integer,parameter       :: ny3d  = 6   ! size(y3d) = ii*jj*ny3d
       mwsize,dimension(Nout)  :: mvec_out,nvec_out,size_vec_out
       mwsize                  :: nmesh
 
       !! outputs from main subroutine (float)
-      !! - need to be converted to double before passing to matlab (plhs)
+      !! - need to be double to pass to matlab (plhs)
       !! - use dble
-      real,dimension(ii*jj*ny3d)    :: y3d
-      real,dimension(ii*jj*nxy4d)   :: y4d
-      real,   allocatable           :: ymesh(:)
-      !real,   allocatable           :: tmp_mesh(:,:)
-      !integer                       :: j0,j1
+      real*8,dimension(ii*jj*ny3d)  :: y3d
+      real*8,dimension(ii*jj*nxy4d) :: y4d
+      real*8,allocatable            :: ymesh(:)
 C-----------------------------------------------------------------------
 
 
@@ -132,19 +126,13 @@ C     Check for proper number of arguments.
       mvec_in_0      = (/ii*jj*nxy4d   !Sdir      
      &                 ,ii*jj*nx3d     !ice_arrays
      &                 ,nmeshi         !xmesh
-     &                 ,1              !int_prams
-     &                 ,1              !real_prams
-     &                 ,1              !Tp_io
-     &                 ,1              !mwd_io
+     &                 ,nr             !real_prams
      &                 ,1/)            !nmesh_e
 
       nvec_in_0      = (/1    !Sdir      
      &                 ,1     !ice_arrays
      &                 ,1     !xmesh
-     &                 ,ni    !int_prams
-     &                 ,nr    !real_prams
-     &                 ,1     !Tp_io
-     &                 ,1     !mwd_io
+     &                 ,1     !real_prams
      &                 ,1/)   !nmesh_e
 
       size_vec_in_0  = mvec_in_0*nvec_in_0
@@ -167,13 +155,6 @@ C     Check for proper number of arguments.
          write(cn0,'(i4.4)')     nvec_in_0(j) !expected N
          write(cm,'(i12.12)')    mvec_in(j)   !given M
          write(cn,'(i4.4)')      nvec_in(j)   !given N
-
-!        msg   = trim(cj) //' | '//                                     &
-!    &           trim(cm0)//' | '//                                     &
-!    &           trim(cn0)//' | '//                                     &
-!    &           trim(cm) //' | '//                                     &
-!    &           trim(cn) //'\n'
-!        k  = mexPrintf(trim(msg)//'\n')
 
          !! test sizes
          critter  = (    (int(mvec_in(j)).ne.mvec_in_0(j))              &
@@ -200,21 +181,15 @@ C     Check for proper number of arguments.
       x4d_pr      = mxGetPr(prhs(1))
       x3d_pr      = mxGetPr(prhs(2))
       xmesh_pr    = mxGetPr(prhs(3))
-      ip_pr       = mxGetPr(prhs(4))
-      rp_pr       = mxGetPr(prhs(5))
-      Tp_pr       = mxGetPr(prhs(6))
-      MD_pr       = mxGetPr(prhs(7))
-      nmesh_e_pr  = mxGetPr(prhs(8))
+      rp_pr       = mxGetPr(prhs(4))
+      nmesh_e_pr  = mxGetPr(prhs(5))
 
       !!copy input memory to fortran arrays
       call mxCopyPtrToReal8(x4d_pr    ,x4d    ,size_vec_in(1))
       call mxCopyPtrToReal8(x3d_pr    ,x3d    ,size_vec_in(2))
       call mxCopyPtrToReal8(xmesh_pr  ,xmesh  ,size_vec_in(3))
-      call mxCopyPtrToReal8(ip_pr     ,ip     ,size_vec_in(4))
-      call mxCopyPtrToReal8(rp_pr     ,rp     ,size_vec_in(5))
-      call mxCopyPtrToReal8(Tp_pr     ,Tp_io  ,size_vec_in(6))
-      call mxCopyPtrToReal8(MD_pr     ,mwd_io ,size_vec_in(7))
-      call mxCopyPtrToReal8(nmesh_e_pr,nmesh_e,size_vec_in(8))
+      call mxCopyPtrToReal8(rp_pr     ,rp     ,size_vec_in(4))
+      call mxCopyPtrToReal8(nmesh_e_pr,nmesh_e,size_vec_in(5))
 
       if (PRINT_INFO) then
          k  = mexPrintf('All input pointers copied to arrays...\n')
@@ -226,7 +201,7 @@ C     Check for proper number of arguments.
 C     Create matrices for the return arguments.
       mvec_out       = (/ii*jj*nxy4d   !y4d
      &                  ,ii*jj*ny3d    !y3d
-     &                  ,nmeshi/)       !ymesh
+     &                  ,nmeshi/)      !ymesh
 
       nvec_out       = (/1    !y4d
      &                  ,1    !y3d
@@ -246,18 +221,9 @@ C     Create matrices for the return arguments.
       y3d   = 0.0
 
       !! in/out arrays
-      y4d   = real(x4d)!cast to real*4: this goes into the main function with intent(inout)
-
       allocate(ymesh(nmesh))
-      ymesh = real(xmesh)!cast to real*4: this goes into the main function with intent(inout)
-
-      !allocate(tmp_mesh(int(nmesh_e),2))
-      !!j  = 5 ! Nfloes_e
-      !j  = 6 ! broken_e
-      !j0 = int(1+(j-1)*nmesh_e)
-      !j1 = int(j*nmesh_e)
-      !tmp_mesh(:,1)  = ymesh(j0:j1)
-
+      ymesh = xmesh
+      y4d   = x4d
 
       if (PRINT_INFO) then
          k  = mexPrintf('Initialised output arrays...\n')
@@ -265,39 +231,24 @@ C     Create matrices for the return arguments.
          k  = mexPrintf('Entering mex_io_gate_vSdir_mesh...\n')
       end if
 
-      call mex_io_gate_vSdir_mesh(y4d,y3d,ymesh                         &
-     &                    ,real(x3d),nint(ip),real(rp)                  &
-     &                    ,real(Tp_io),real(mwd_io)                     &
-     &                    ,ni,nr,nx3d,ny3d,nxy4d,nint(nmesh_e))
-c     subroutine mex_io_gate_vSdir_mesh(xy4d,y3d,ymesh,x3d,int_prams,real_prams    &
-c    &                  ,Tp_io,mwd_io,ni,nr,nx3d,ny3d,nxy4d,nmesh_e)
+
+      call mex_io_gate_vSdir_mesh(y4d,y3d,ymesh
+     &                    ,x3d,rp
+     &                    ,nx3d,ny3d,nxy4d,nint(nmesh_e))
 
       if (PRINT_INFO) then
          k  = mexPrintf('Finished computations...\n')
       endif
 
 C     Load the data into pointers, which are the outputs to MATLAB
-      call mxCopyReal8ToPtr(dble(y4d),y4d_pr,size_vec_out(1))
-      call mxCopyReal8ToPtr(dble(y3d),y3d_pr,size_vec_out(2))
-      call mxCopyReal8ToPtr(dble(ymesh),ymesh_pr,size_vec_out(3))
+      call mxCopyReal8ToPtr(y4d,y4d_pr,size_vec_out(1))
+      call mxCopyReal8ToPtr(y3d,y3d_pr,size_vec_out(2))
+      call mxCopyReal8ToPtr(ymesh,ymesh_pr,size_vec_out(3))
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      !tmp_mesh(:,2)  = ymesh(j0:j1)
       deallocate(xmesh)
       deallocate(ymesh)
-
-      !do j=1,int(nmesh_e)
-      !   write(msg,'(f8.2)') tmp_mesh(j,1)
-      !   write(msg,'(a,a,f8.2)') trim(msg),'   ',tmp_mesh(j,2)
-      !   k  = mexPrintf(trim(msg)//'\n')
-      !end do
-
-      !k  = mexPrintf('\nMax(broken):\n')
-      !write(msg,'(f8.2)') maxval(tmp_mesh(:,1))
-      !write(msg,'(a,a,f8.2)') trim(msg),'   ',maxval(tmp_mesh(:,2))
-      !k  = mexPrintf('\n'//trim(msg)//'\n')
-      !deallocate(tmp_mesh)
-
       return
 
       end subroutine mexFunction
