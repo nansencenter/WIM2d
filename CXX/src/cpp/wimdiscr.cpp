@@ -1182,8 +1182,8 @@ void WimDiscr<T>::timeStep(bool step)
 
             //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i][j]  <<"\n";
 
-            Pstrain  = 0.;
-            P_crit   = std::exp(-1.0);
+            Pstrain      = 0.;
+            P_crit       = std::exp(-1.0);
             if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
             {
                 // significant strain amp
@@ -1220,23 +1220,7 @@ void WimDiscr<T>::timeStep(bool step)
                     dfloe[ny*i+j] = std::min<value_type>(Dc,dfloe[ny*i+j]);
                     //std::cout<<"DMAX= std::MAX("<< Dc << "," << dfloe[ny*i+j] <<")\n";
                 }
-
-                test_ij = (i==wim_itest)&&(j==wim_jtest);
-                if (dumpDiag && (ice_mask[i][j] == 1.) && test_ij)
-                {
-                   std::fstream diagID(diagfile, std::ios::out | std::ios::app);
-                   diagID << "\nIce info: post-breaking\n";
-                   diagID << std::setw(16) << std::left
-                      << Pstrain << " # P_strain\n";
-                   diagID << std::setw(16) << std::left
-                      << P_crit << " # P_crit\n";
-                   diagID << std::setw(16) << std::left
-                      << wlng_crest << " # peak wavelength, m\n";
-                   diagID << std::setw(16) << std::left
-                      << dfloe[ny*i+j] << " # D_max, m\n";
-                   diagID.close();
-                }
-            }
+            }//end test for ice and waves
             else if (wtr_mask[i][j] == 1.)
             {
                 dfloe[ny*i+j] = 0;
@@ -1246,8 +1230,25 @@ void WimDiscr<T>::timeStep(bool step)
 
             if (dfloe[ny*i+j] > 0.)
                 nfloes[ny*i+j] = icec[i][j]/std::pow(dfloe[ny*i+j],2.);
+
+            test_ij  = (i==wim_itest)&&(j==wim_jtest);
+            if (dumpDiag && (ice_mask[i][j] == 1.) && test_ij)
+            {
+               //dump diagnostic even if no waves (but only if ice)
+               std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+               diagID << "\nIce info: post-breaking\n";
+               diagID << std::setw(16) << std::left
+                  << Pstrain << " # P_strain\n";
+               diagID << std::setw(16) << std::left
+                  << P_crit << " # P_crit\n";
+               diagID << std::setw(16) << std::left
+                  << wlng_crest << " # peak wavelength, m\n";
+               diagID << std::setw(16) << std::left
+                  << dfloe[ny*i+j] << " # D_max, m\n";
+               diagID.close();
+            }
         }
-    }
+    }//end spatial loop i
 
 
     // for (int i = 0; i < nx; i++)
