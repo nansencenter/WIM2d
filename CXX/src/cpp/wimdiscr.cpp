@@ -344,6 +344,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     dfloe.resize(nx*ny);
     nfloes.resize(nx*ny);
 
+    dave.resize(boost::extents[nx][ny]);
     atten_dim.resize(boost::extents[nx][ny]);
     damp_dim.resize(boost::extents[nx][ny]);
 
@@ -803,13 +804,57 @@ void WimDiscr<T>::timeStep(bool step)
     mom2w.resize(boost::extents[nx][ny]);
 
     value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
-    value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, dom, dave, c1d, tmp;
+    value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, dom, c1d, tmp;
     int jcrest;
-    bool break_criterion;
+    bool break_criterion,test_ij;
+
+    value_type t_step = cpt*dt;//seconds from start time
+    std::string timestpstr = ptime(init_time_str, t_step);
+
+    // dump local diagnostic file
+    // - directory to put it
+    std::string outdir = vm["wim.outparentdir"].template as<std::string>();
+    fs::path path(outdir);
+    path /= "diagnostics/local";
+    if ( !fs::exists(path) )
+        fs::create_directories(path);
+
+    //set file name and open
+    std::string diagfile   = (boost::format( "%1%/WIMdiagnostics_local%2%.txt" )
+            % path.string() % timestpstr).str();
+
+    if ( dumpDiag )
+    {
+
+       std::fstream diagID(diagfile, std::ios::out | std::ios::trunc);
+       if (diagID.is_open())
+       {
+         //
+         //diagID << "20150101" << " # date";
+         //diagID << "04:06:35" << " # time";
+         //diagID << "042003" << " # model day";
+         //diagID << "14794.52055" << " # model second";
+         diagID << timestpstr << " # model time\n";
+         diagID << std::setw(16) << std::left
+            << wim_itest << " # itest\n";
+         diagID << std::setw(16) << std::left
+            << wim_jtest << " # jtest\n";
+         diagID << std::setw(16) << std::left
+            << ice_mask[wim_itest][wim_jtest] << " # ICE_MASK\n";
+       }
+       else
+       {
+         std::cout << "Cannot open " << diagfile  << "\n";
+         std::cerr << "error: open file " << diagfile << " for output failed!" <<"\n";
+         std::abort();
+       }
+       diagID.close();
+    }//end dumpDiag
 
     dom = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[0])/(nwavefreq-1);
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+
 
     if (vm["wim.steady"].template as<bool>())
     {
@@ -839,7 +884,55 @@ void WimDiscr<T>::timeStep(bool step)
         }
     }
 
-    dave = 0;
+    //calc mean floe size outside of frequency loop;
+    std::fill( dave.data(), dave.data() + dave.num_elements(), 0. );
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+    for (int i = 0; i < nx; i++)
+    {
+       for (int j = 0; j < ny; j++)
+       {
+          if (ice_mask[i][j] == 1.)
+          {
+             if (dfloe[ny*i+j] <200.)
+             {
+                if ( fsdopt == "RG" )
+                {
+                    floeScaling(dfloe[ny*i+j],1,dave[i][j]);
+                }
+                else if ( fsdopt == "PowerLawSmooth" )
+                {
+                    floeScalingSmooth(dfloe[ny*i+j],1,dave[i][j]);
+                }
+             }
+             else
+             {
+                //just use uniform dist
+                dave[i][j] = dfloe[ny*i+j];
+             }
+          }
+
+          
+          test_ij = (i==wim_itest) && (j==wim_jtest);
+          if ( dumpDiag && test_ij )
+          {
+             std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+             diagID << "\nIce info: pre-breaking\n";
+             diagID << std::setw(16) << std::left
+                << icec[i][j] << " # conc\n";
+             diagID << std::setw(16) << std::left
+                << iceh[i][j] << " # h, m\n";
+             diagID << std::setw(16) << std::left
+                << dave[i][j] << " # D_av, m\n";
+             diagID << std::setw(16) << std::left
+                << dfloe[ny*i+j] << " # D_max, m\n";
+ 
+             if (atten)
+               diagID << "\n# period, s | atten_dim, m^{-1}| damp_dim, m^{-1}\n";
+
+             diagID.close();
+          }
+       }
+    }//end spatial loop i - have dave
 
     for (int fq = 0; fq < nwavefreq; fq++)
     {
@@ -851,37 +944,30 @@ void WimDiscr<T>::timeStep(bool step)
         {
             for (int j = 0; j < ny; j++)
             {
-                value_type dave, c1d;
+                value_type c1d;
                 if ((ice_mask[i][j] == 1.) && (atten))
                 {
-                    if (dfloe[ny*i+j] <200.)
-                    {
-                       if ( fsdopt == "RG" )
-                       {
-                           floeScaling(dfloe[ny*i+j],1,dave);
-                       }
-                       else if ( fsdopt == "PowerLawSmooth" )
-                       {
-                           floeScalingSmooth(dfloe[ny*i+j],1,dave);
-                       }
-                    }
-                    else
-                    {
-                       //just use uniform dist
-                       dave = dfloe[ny*i+j];
-                    }
-
                     // floes per unit length
-                    c1d = icec[i][j]/dave;
+                    c1d = icec[i][j]/dave[i][j];
 
                     // scattering
                     atten_dim[i][j] = atten_nond[i][j][fq]*c1d;
 
                     // damping
                     damp_dim[i][j] = 2*damping[i][j][fq]*icec[i][j];
-                }
+
+                    test_ij = (i==wim_itest) && (j==wim_jtest);
+                    if ( dumpDiag && test_ij )
+                    {
+                       std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+                       diagID << vec_period[fq] << "   "
+                              << atten_dim[i][j] << "   "
+                              << damp_dim[i][j] << "\n";
+                       diagID.close();
+                    }
+                }//end of ice check
             }
-        }
+        }//end of spatial loop i
 
 
         // copy for application of advAttenSimple
@@ -1037,6 +1123,34 @@ void WimDiscr<T>::timeStep(bool step)
     //update mwd
     calcMWD();
 
+    if ( dumpDiag )
+    {
+       int i =  wim_itest;
+       int j =  wim_jtest;
+       std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+
+       diagID << std::setw(16) << std::left
+          << mom0w[i][j] << " # mom0w, m^2\n";
+       diagID << std::setw(16) << std::left
+          << mom2w[i][j] <<" # mom2w, m^2/s^2\n";
+       diagID << std::setw(16) << std::left
+          << mom0[i][j] <<" # mom0, m^2\n";
+       diagID << std::setw(16) << std::left
+          << mom2[i][j] <<" # mom2, m^2/s^2\n";
+       diagID << std::setw(16) << std::left
+          << Hs[i][j] <<" # Hs, m\n";
+       diagID << std::setw(16) << std::left
+          << Tp[i][j] <<" # Tp, s\n";
+       diagID << std::setw(16) << std::left
+          << mwd[i][j] <<" # mwd, deg\n";
+       diagID << std::setw(16) << std::left
+          << tau_x[ny*i+j] <<" # tau_x, Pa\n";
+       diagID << std::setw(16) << std::left
+          << tau_y[ny*i+j] <<" # tau_y, Pa\n";
+       diagID.close();
+    }
+
+
     if (!(steady) && !(breaking))
     {
        //check energy conservation
@@ -1062,12 +1176,14 @@ void WimDiscr<T>::timeStep(bool step)
         for (int j = 0; j < ny; j++)
         {
             value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
-            value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, /*dom,*/ dave, c1d, tmp;
+            value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, c1d, tmp;
             int jcrest;
             bool break_criterion;
 
             //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i][j]  <<"\n";
 
+            Pstrain  = 0.;
+            P_crit   = std::exp(-1.0);
             if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
             {
                 // significant strain amp
@@ -1076,7 +1192,6 @@ void WimDiscr<T>::timeStep(bool step)
                 // probability of critical strain
                 // being exceeded from Rayleigh distribution
                 Pstrain = std::exp( -std::pow(epsc,2.)/(2*var_strain[i][j]) );
-                P_crit = std::exp(-1.0);
 
                 break_criterion = (Pstrain >= P_crit) && breaking;
 
@@ -1104,6 +1219,22 @@ void WimDiscr<T>::timeStep(bool step)
                     Dc = std::max<value_type>(dmin,wlng_crest/2.0);
                     dfloe[ny*i+j] = std::min<value_type>(Dc,dfloe[ny*i+j]);
                     //std::cout<<"DMAX= std::MAX("<< Dc << "," << dfloe[ny*i+j] <<")\n";
+                }
+
+                test_ij = (i==wim_itest)&&(j==wim_jtest);
+                if (dumpDiag && (ice_mask[i][j] == 1.) && test_ij)
+                {
+                   std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+                   diagID << "\nIce info: post-breaking\n";
+                   diagID << std::setw(16) << std::left
+                      << Pstrain << " # P_strain\n";
+                   diagID << std::setw(16) << std::left
+                      << P_crit << " # P_crit\n";
+                   diagID << std::setw(16) << std::left
+                      << wlng_crest << " # peak wavelength, m\n";
+                   diagID << std::setw(16) << std::left
+                      << dfloe[ny*i+j] << " # D_max, m\n";
+                   diagID.close();
                 }
             }
             else if (wtr_mask[i][j] == 1.)
@@ -1175,6 +1306,8 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
         critter = !(cpt % vm["wim.dumpfreq"].template as<int>())
            && (vm["wim.checkprog"].template as<bool>());
+        dumpDiag  = !(cpt % vm["wim.dumpfreq"].template as<int>())
+           && (wim_itest>0) && (wim_jtest>0);
 
         if ( critter )
         {
@@ -1204,14 +1337,14 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
 template<typename T>
 void WimDiscr<T>::floeScaling(
-      value_type const& dmax, int const& moment, value_type& dave)
+      value_type const& dmax, int const& moment, value_type& dave_)
 {
     value_type nm,nm1,dm,nsum,ndsum,r;
 
     int mm;
     value_type ffac     = fragility*std::pow(xi,2);
 
-    dave = std::max(std::pow(dmin,moment),std::pow(dmax,moment));
+    dave_ = std::max(std::pow(dmin,moment),std::pow(dmax,moment));
     if (dmax>=xi*dmin)
     {
        //determine number of breaks
@@ -1247,7 +1380,7 @@ void WimDiscr<T>::floeScaling(
           //m=mm:
           nsum   += nm1;
           ndsum  += nm1*std::pow(dm,moment);
-          dave    = ndsum/nsum;
+          dave_   = ndsum/nsum;
           //std::cout<<"nsum,dm: "<<nsum<<" , "<<dm<<"\n";
        }
     }
@@ -1255,7 +1388,7 @@ void WimDiscr<T>::floeScaling(
 
 template<typename T>
 void WimDiscr<T>::floeScalingSmooth(
-      value_type const& dmax,int const& moment, value_type& dave)
+      value_type const& dmax,int const& moment, value_type& dave_)
 {
     value_type fsd_exp,b,A;
 
@@ -1264,19 +1397,19 @@ void WimDiscr<T>::floeScalingSmooth(
 
     // calculate <D^moment> from Dmax
     // - uniform dist for larger floes
-    dave  = std::pow(dmax,moment);
+    dave_ = std::pow(dmax,moment);
 
     if (dmax<=dmin)
     {
        // small floes
-       dave  = std::pow(dmin,moment);
+       dave_ = std::pow(dmin,moment);
     }
     else
     {
        // bigger floes
        A     = (fsd_exp*std::exp(fsd_exp*(std::log(dmin)+std::log(dmax))));
        A     = A/(std::exp(fsd_exp*std::log(dmax))-std::exp(fsd_exp*std::log(dmin)));
-       dave  = -(A/b)*(std::exp(b*std::log(dmin))-exp(b*std::log(dmax)));
+       dave_ = -(A/b)*(std::exp(b*std::log(dmin))-exp(b*std::log(dmax)));
     }
 }
 

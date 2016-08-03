@@ -148,11 +148,12 @@ private:
     value_type dt,duration;
 
     int nwavedirn, nwavefreq, advdim, ncs ,nt;
-    bool ref_Hs_ice, atten, useicevel, steady, breaking;
+    bool ref_Hs_ice, atten, useicevel, steady, breaking, dumpDiag;
     std::string scatmod, advopt, fsdopt;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
 
-    array2_type steady_mask, wave_mask, ice_mask, wtr_mask, icec, iceh, atten_dim, damp_dim, ag2d_eff_temp, mwd, Hs, Tp;
+    array2_type steady_mask, wave_mask, ice_mask, wtr_mask, icec, iceh,
+                dave, atten_dim, damp_dim, ag2d_eff_temp, mwd, Hs, Tp;
     array3_type ag_eff, ap_eff, wlng_ice, atten_nond, damping, disp_ratio, sdf3d_dir_temp;
     array4_type sdf_dir, sdf_inc;
 
