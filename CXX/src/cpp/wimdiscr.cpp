@@ -1034,6 +1034,7 @@ void WimDiscr<T>::timeStep(bool step)
         }
     }
 
+    //update mwd
     calcMWD();
 
     if (!(steady) && !(breaking))
@@ -1146,6 +1147,8 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 {
     std::cout << "-----------------------Simulation started on "<< current_time_local() <<"\n";
 
+    //init_time_str is human readable time eg "2015-01-01 00:00:00"
+    //init_time is "formal" time format eg "20150101T000000Z"
     init_time_str = vm["wim.initialtime"].as<std::string>();
     std::string init_time = ptime(init_time_str);
     std::cout<<"---------------INITIAL TIME= "<< init_time <<"\n";
@@ -1967,13 +1970,12 @@ void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
 template<typename T>
 void WimDiscr<T>::calcMWD()
 {
-    value_type adv_dir, wt_theta, om;
-    array2_type cmom0,cmom_dir,CSfreq, cmom_dir0, CF;
+    value_type adv_dir, wt_theta, om, CF;
+    array2_type cmom0,cmom_dir,CSfreq, cmom_dir0;
     cmom0.resize(boost::extents[nx][ny]);
     cmom_dir.resize(boost::extents[nx][ny]);
     CSfreq.resize(boost::extents[nx][ny]);
     cmom_dir0.resize(boost::extents[nx][ny]);
-    CF.resize(boost::extents[nx][ny]);
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
@@ -2006,7 +2008,7 @@ void WimDiscr<T>::calcMWD()
                     cmom_dir0[i][j] += wt_theta*sdf_dir[i][j][dn][fq]*adv_dir;
                 }
             }
-        }
+        }//end loop over directions (still in freq loop)
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
@@ -2014,16 +2016,17 @@ void WimDiscr<T>::calcMWD()
             for (int j = 0; j < ny; j++)
             {
                 if (ref_Hs_ice)
-                    CF[i][j] = disp_ratio[i][j][fq];
+                    CF = std::pow(disp_ratio[i][j][fq],2);
                 else
-                    CF[i][j] = 1;
+                    CF = 1.;
 
-                cmom0[i][j] += std::abs(wt_om[fq]*std::pow(CF[i][j],2.)*CSfreq[i][j]);
-                cmom_dir[i][j] += std::abs(wt_om[fq]*std::pow(CF[i][j],2.)*cmom_dir0[i][j]);
+                cmom0[i][j]    += std::abs(wt_om[fq]*CF*CSfreq[i][j]);
+                cmom_dir[i][j] += std::abs(wt_om[fq]*CF*cmom_dir0[i][j]);
             }
-        }
-    }
+        }//end spatial loop i
+    }//end freq loop
 
+    //assign mwd
     std::fill( mwd.data(), mwd.data() + mwd.num_elements(), 0. );
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
@@ -2034,9 +2037,9 @@ void WimDiscr<T>::calcMWD()
             if (cmom0[i][j] > 0.)
                 mwd[i][j] = -90.-180*(cmom_dir[i][j]/cmom0[i][j])/PI;
         }
-    }
+    }//end spatial loop i
 
-}
+}//end calcMWD
 
 template<typename T>
 typename WimDiscr<T>::value_type
@@ -2166,6 +2169,7 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
         fs::create_directories(path);
 
     //std::string timestpstr = std::string(4-std::to_string(timestp).length(),'0') + std::to_string(timestp);
+    std::string init_time = ptime(init_time_str);
     std::string timestpstr = ptime(init_time_str, t_out);
 
     std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestpstr).str();
@@ -2215,6 +2219,10 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
             for (int j = 0; j < Tp.shape()[1]; j++)
                 out.write((char *)&Tp[i][j], sizeof(value_type));
 
+        for (int i = 0; i < mwd.shape()[0]; i++)
+            for (int j = 0; j < mwd.shape()[1]; j++)
+                out.write((char *)&mwd[i][j], sizeof(value_type));
+
         out.close();
     }
     else
@@ -2225,7 +2233,7 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     }
 
     // export the txt file for grid field information
-    std::string fileoutb = (boost::format( "%1%/wim_prog%2%.b" ) % path.string() % timestpstr).str();
+    std::string fileoutb   = (boost::format( "%1%/wim_prog%2%.b" ) % path.string() % timestpstr).str();
     std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
 
     if (outb.is_open())
@@ -2234,12 +2242,12 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
         outb << std::setw(15) << std::left << "0"   << "    Norder   # "<< "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
         outb << std::setw(15) << std::left << nx    << "    nx       # "<< "Record length in x direction (elements)" <<"\n";
         outb << std::setw(15) << std::left << ny    << "    ny       # "<< "Record length in y direction (elements)" <<"\n";
-        outb << std::setw(15) << std::left << t_out << "    t_out    # "<< "Model time of output (s)" <<"\n";
-        //outb << std::setw(15) << std::left << nwavefreq << "          "<< "Number of wave frequencies" <<"\n";
-        //outb << std::setw(15) << std::left << nwavedirn << "          "<< "Number of wave directions" <<"\n";
 
         outb <<"\n";
+        outb << std::left << init_time << "    t_start    # "<< "Model time of WIM call" <<"\n";
+        outb << std::left << timestpstr << "    t_out    # "<< "Model time of output" <<"\n";
 
+        outb <<"\n";
         outb << "Record number and name:" <<"\n";
         outb << std::setw(9) << std::left << "01" << "icec" <<"\n";
         outb << std::setw(9) << std::left << "02" << "iceh" <<"\n";
@@ -2248,6 +2256,8 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
         outb << std::setw(9) << std::left << "05" << "tau_y" <<"\n";
         outb << std::setw(9) << std::left << "06" << "Hs" <<"\n";
         outb << std::setw(9) << std::left << "07" << "Tp" <<"\n";
+        outb << std::setw(9) << std::left << "08" << "mwd" <<"\n";
+        outb.close();
     }
     else
     {
