@@ -1297,6 +1297,10 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     std::cout<<"dt= "<< dt <<"\n";
     std::cout<<"nt= "<< nt <<"\n";
 
+
+    //if (vm["wim.checkinit"].template as<bool>())
+        exportResults("init",0);
+
     if ((!vm["nextwim.docoupling"].template as<bool>()) || (!step))
         cpt = 0;
 
@@ -1313,7 +1317,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         if ( critter )
         {
             if (vm["nextwim.exportresults"].template as <bool>())
-                exportResults(cpt,t_out);//global counter from nextsim
+                exportResults("prog",t_out);//global counter from nextsim
            //else
            //exportResults(cpt,t_out);//local counter from wim
         }
@@ -1330,6 +1334,9 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
         ++cpt;//local counter incremented in wim.run()
     }
+    
+    //if (vm["wim.checkfinal"].template as<bool>())
+       exportResults("out",nt*dt);
 
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
 
@@ -2285,7 +2292,8 @@ void WimDiscr<T>::readDataFromFile(std::string const& filein)
 }
 
 template<typename T>
-void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_out) const
+void WimDiscr<T>::exportResults(std::string const& output_type,
+                                 value_type const& t_out) const
 {
 
     std::string str = vm["wim.outparentdir"].template as<std::string>();
@@ -2297,82 +2305,87 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     //}
 
     fs::path path(str);
-    path /= "binaries/prog";
+    std::string init_time  = ptime(init_time_str);
+    std::string timestpstr = ptime(init_time_str, t_out);
+    std::string fileout,fileoutb;
+    if ( output_type == "prog" )
+    {
+       path   /= "binaries/prog";
+       fileout = (boost::format( "%1%/wim_prog%2%" ) % path.string() % timestpstr).str();
+    }
+    else if ( output_type == "out" )
+    {
+       path   /= "binaries";
+       fileout = (boost::format( "%1%/wim_out%2%" ) % path.string() % timestpstr).str();
+    }
+    else if ( output_type == "init" )
+    {
+       path   /= "binaries";
+       fileout = (boost::format( "%1%/wim_init%2%" ) % path.string() % init_time).str();
+    }
 
+    fileoutb   = fileout+".b";
+    fileout    = fileout+".a";
     if ( !fs::exists(path) )
         fs::create_directories(path);
 
-    //std::string timestpstr = std::string(4-std::to_string(timestp).length(),'0') + std::to_string(timestp);
-    std::string init_time = ptime(init_time_str);
-    std::string timestpstr = ptime(init_time_str, t_out);
-
-    std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestpstr).str();
     std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
-
     if (out.is_open())
     {
-        for (int i = 0; i < icec.shape()[0]; i++)
-            for (int j = 0; j < icec.shape()[1]; j++)
-                out.write((char *)&icec[i][j], sizeof(value_type));
+       if ( output_type == "init" )
+       {
+           for (int i = 0; i < icec.shape()[0]; i++)
+               for (int j = 0; j < icec.shape()[1]; j++)
+                   out.write((char *)&icec[i][j], sizeof(value_type));
 
-        for (int i = 0; i < iceh.shape()[0]; i++)
-            for (int j = 0; j < iceh.shape()[1]; j++)
-                out.write((char *)&iceh[i][j], sizeof(value_type));
-#if 0
-        for (int i = 0; i < dfloe.shape()[0]; i++)
-            for (int j = 0; j < dfloe.shape()[1]; j++)
-                out.write((char *)&dfloe[i][j], sizeof(value_type));
+           for (int i = 0; i < iceh.shape()[0]; i++)
+               for (int j = 0; j < iceh.shape()[1]; j++)
+                   out.write((char *)&iceh[i][j], sizeof(value_type));
+       }
 
-        for (int i = 0; i < tau_x.shape()[0]; i++)
-            for (int j = 0; j < tau_x.shape()[1]; j++)
-                out.write((char *)&tau_x[i][j], sizeof(value_type));
+       for (int i = 0; i < nx; i++)
+           for (int j = 0; j < ny; j++)
+               out.write((char *)&dfloe[ny*i+j], sizeof(value_type));
 
-        for (int i = 0; i < tau_y.shape()[0]; i++)
-            for (int j = 0; j < tau_y.shape()[1]; j++)
-                out.write((char *)&tau_y[i][j], sizeof(value_type));
-#endif
+       if ( output_type == "init" )
+       {
+          for (int i = 0; i < nx; i++)
+              for (int j = 0; j < ny; j++)
+                  out.write((char *)&tau_x[ny*i+j], sizeof(value_type));
 
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                out.write((char *)&dfloe[ny*i+j], sizeof(value_type));
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                out.write((char *)&tau_x[ny*i+j], sizeof(value_type));
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                out.write((char *)&tau_y[ny*i+j], sizeof(value_type));
+          for (int i = 0; i < nx; i++)
+              for (int j = 0; j < ny; j++)
+                  out.write((char *)&tau_y[ny*i+j], sizeof(value_type));
+       }
 
 
-        for (int i = 0; i < Hs.shape()[0]; i++)
-            for (int j = 0; j < Hs.shape()[1]; j++)
-                out.write((char *)&Hs[i][j], sizeof(value_type));
+       for (int i = 0; i < Hs.shape()[0]; i++)
+           for (int j = 0; j < Hs.shape()[1]; j++)
+               out.write((char *)&Hs[i][j], sizeof(value_type));
 
-        for (int i = 0; i < Tp.shape()[0]; i++)
-            for (int j = 0; j < Tp.shape()[1]; j++)
-                out.write((char *)&Tp[i][j], sizeof(value_type));
+       for (int i = 0; i < Tp.shape()[0]; i++)
+           for (int j = 0; j < Tp.shape()[1]; j++)
+               out.write((char *)&Tp[i][j], sizeof(value_type));
 
-        for (int i = 0; i < mwd.shape()[0]; i++)
-            for (int j = 0; j < mwd.shape()[1]; j++)
-                out.write((char *)&mwd[i][j], sizeof(value_type));
+       for (int i = 0; i < mwd.shape()[0]; i++)
+           for (int j = 0; j < mwd.shape()[1]; j++)
+               out.write((char *)&mwd[i][j], sizeof(value_type));
 
-        out.close();
+       out.close();
     }
     else
     {
-        std::cout << "Cannot open " << fileout  << "\n";
-        std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
-        std::abort();
+       std::cout << "Cannot open " << fileout  << "\n";
+       std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
+       std::abort();
     }
 
     // export the txt file for grid field information
-    std::string fileoutb   = (boost::format( "%1%/wim_prog%2%.b" ) % path.string() % timestpstr).str();
     std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
 
     if (outb.is_open())
     {
-        outb << std::setw(15) << std::left << "07"  << "    Nrecs    # "<< "Number of records" <<"\n";
+        outb << std::setw(15) << std::left << "06"  << "    Nrecs    # "<< "Number of records" <<"\n";
         outb << std::setw(15) << std::left << "0"   << "    Norder   # "<< "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
         outb << std::setw(15) << std::left << nx    << "    nx       # "<< "Record length in x direction (elements)" <<"\n";
         outb << std::setw(15) << std::left << ny    << "    ny       # "<< "Record length in y direction (elements)" <<"\n";
@@ -2383,14 +2396,55 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
 
         outb <<"\n";
         outb << "Record number and name:" <<"\n";
-        outb << std::setw(9) << std::left << "01" << "icec" <<"\n";
-        outb << std::setw(9) << std::left << "02" << "iceh" <<"\n";
-        outb << std::setw(9) << std::left << "03" << "Dmax" <<"\n";
-        outb << std::setw(9) << std::left << "04" << "tau_x" <<"\n";
-        outb << std::setw(9) << std::left << "05" << "tau_y" <<"\n";
-        outb << std::setw(9) << std::left << "06" << "Hs" <<"\n";
-        outb << std::setw(9) << std::left << "07" << "Tp" <<"\n";
-        outb << std::setw(9) << std::left << "08" << "mwd" <<"\n";
+
+        int recno = 1;
+        std::string rstr;
+
+        if ( output_type == "init" )
+        {
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "icec" <<"\n";
+           ++recno;
+           //
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "iceh" <<"\n";
+           ++recno;
+        }
+
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "Dmax" <<"\n";
+        ++recno;
+
+        if ( output_type != "init" )
+        {
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "tau_x" <<"\n";
+           ++recno;
+           //
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "tau_y" <<"\n";
+           ++recno;
+        }
+
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "Hs" <<"\n";
+        ++recno;
+        //
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "Tp" <<"\n";
+        ++recno;
+        //
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "mwd" <<"\n";
+        ++recno;
         outb.close();
     }
     else
