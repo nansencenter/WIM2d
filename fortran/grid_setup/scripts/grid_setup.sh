@@ -1,15 +1,24 @@
 GS="$WIM2D_PATH/fortran/grid_setup"
-bin="$GS/bin"
+Gbin="$GS/bin"
 P=`pwd`
+bin=`readlink -f $P/../bin`
+
+Gexec=${Gbin}/grid_setup.exec
+if [ ! -f $Gexec ]
+then
+   echo "Compiling grid setup executable"
+   cd $GS/Build
+   make
+   cd $P
+fi
+echo " " 
+echo $Gexec
+echo " " 
+$Gexec
 
 echo " " 
-echo ${bin}/grid_setup.exec
-echo " " 
-${bin}/grid_setup.exec
-
-echo " " 
-echo "Now compile in :  $P"
-echo "Run with $bin in path"
+echo "Now compile in : $P"
+echo "Run with $bin in matlab/python path (or just call executables in there)"
 echo " " 
 
 kernel=(uname -s)
@@ -38,3 +47,5 @@ then
       display $pic &
    fi
 fi
+
+
