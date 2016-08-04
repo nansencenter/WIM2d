@@ -4,11 +4,8 @@
       module mod_wavesice
 
       use mod_gridinfo     !! grid info
-!     use mod_wim_prams    !! ice parameters
-!     use mod_wim_init     !! initial wave fields
       use mod_common_wim   !! initial ice fields
       use mod_year_info
-!     use mod_adv_atten    !! advection routine
 
       implicit none
       private
@@ -56,7 +53,6 @@
       !! - need to do this each time ice is updated
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams,   only: young,visc_rp,gravity   !! ice parameters
       use mod_common_wim,  only: ICE_MASK,iceh           !! initial ice fields
 
       implicit none
@@ -68,7 +64,7 @@
       real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
       integer  :: i,j,w
-      real     :: adv_dir,dtheta,om,dom,guess,inputs(4)
+      real     :: adv_dir,dtheta,om,dom,guess,inputs(2)
 !     integer  :: wth
 !     real     :: wt,Hs_test1,Hs_test2
 
@@ -112,8 +108,8 @@
 
       !! Water wavelength and wave speed
       !! is a function only of wave period
-      wlng     = gravity/(2*PI*freq_vec**2)
-      ap       = sqrt(gravity*wlng/(2*PI))   ! Phase speed
+      wlng     = wim_info%gravity/(2*PI*freq_vec**2)
+      ap       = sqrt(wim_info%gravity*wlng/(2*PI))   ! Phase speed
       ag       = ap/2.0                      ! Group speed
       !print*,'period,wlng,ag,ap',1./freq_vec,wlng,ag,ap
 
@@ -134,7 +130,7 @@
 
             om = 2*PI*freq_vec(w)
             if (w.eq.1) then
-               guess = om**2/gravity!guess for root
+               guess = om**2/wim_info%gravity!guess for root
             else
                guess = 2*PI/wlng_ice(i,j,w-1)
 !              if ((i.eq.itest).and.(j.eq.jtest) then
@@ -147,8 +143,6 @@
 
             inputs(1)   = iceh(i,j)
             inputs(2)   = om
-            inputs(3)   = young
-            inputs(4)   = visc_rp
 
             call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
      &                  atten_nond(i,j,w),modT,argR,argT,               &
@@ -206,8 +200,6 @@
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
-      use mod_wim_prams    !! ice parameters
-!     use mod_wim_init     !! initial wave fields
       use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
       use mod_interp, only: pwl_interp_2d_real
@@ -255,7 +247,7 @@
       real,dimension(nmesh_e) :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
       real,dimension(nmesh_e) :: conc_e,thick_e,Nfloes_e
      &                              ,broken_e,dmax_e
-      real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(4)
+      real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(2)
       character(len=800) :: diag_filename
       !
       INTERP_MESH = .false.
@@ -487,9 +479,11 @@
 
             !! integrate stress densities over frequency
             !! TODO: check if this is correct for ice-covered water
-            tmp1  = rhowtr*gravity*taux_om/ap_eff(:,:,w)  !![Pa*s]
+            tmp1  = wim_info%rhowtr*wim_info%gravity
+     &                  *taux_om/ap_eff(:,:,w)  !![Pa*s]
             tau_x = tau_x+wt_om(w)*tmp1                   !![Pa]
-            tmp1  = rhowtr*gravity*tauy_om/ap_eff(:,:,w)  !![Pa*s]
+            tmp1  = wim_info%rhowtr*wim_info%gravity
+     &                  *tauy_om/ap_eff(:,:,w)  !![Pa*s]
             tau_y = tau_y+wt_om(w)*tmp1                   !![Pa]
 
          end if!!DO_ATTEN
@@ -597,7 +591,7 @@
    
             !! probability of critical strain
             !! being exceeded from Rayleigh distribution;
-            Pstrain  = exp( -epsc**2/(2*var_strain(i,j)) )
+            Pstrain  = exp( -wim_info%epsc**2/(2*var_strain(i,j)) )
             P_crit   = P_crit0+exp(-1.0)
                !!this is critical prob if monochromatic wave
    
@@ -629,7 +623,7 @@
    
                !!change dfloe if wavelength/2 is shorter than it
                !!(keeping it bigger than Dmin)
-               Dc          = max(Dmin,wlng_crest/2.0)
+               Dc          = max(wim_info%Dmin,wlng_crest/2.0)
                dfloe(i,j)  = min(Dc,dfloe(i,j))
 
             end if!! end breaking action;
@@ -678,19 +672,17 @@
 
          do i=1,nmesh_e
             crit_e   = (conc_e(i).gt.0.)                    !ice present
-     &                 .and.(2*var_strain_e(i).gt.epsc**2)  !big enough waves
+     &                 .and.(2*var_strain_e(i).gt.wim_info%epsc**2)  !big enough waves
 
             if (crit_e) then
                ! =============================================================
                !calculate wavelength
                !inputs
                om    = sqrt(mom2_e(i)/mom0_e(i)) !omega=2*pi/T
-               guess = om**2/gravity
+               guess = om**2/wim_info%gravity
                
                inputs(1)   = thick_e(i) !absolute thickness
                inputs(2)   = om
-               inputs(3)   = young
-               inputs(4)   = visc_rp
 
                ! rest of arguments are outputs, but only need kice
                ! so use Tp_e,lam_e as dummy variables
@@ -702,7 +694,7 @@
                lam_e = 2*pi/kice
                if (lam_e.lt.2*dmax_e(i)) then
                   !breaking occurs
-                  dmax_e(i)   = max(Dmin,lam_e/2.) !keep above Dmin
+                  dmax_e(i)   = max(wim_info%Dmin,lam_e/2.) !keep above Dmin
                   broken_e(i) = 1.                 !this records ice has been broken this time
                   !print*,i,broken_e(i)
                end if
@@ -860,8 +852,8 @@
       use mod_file_utils
 
       implicit none
-      character(len=80)             :: afile,bfile
-      integer,parameter             :: Nrecs = 7
+      character(len=80) :: afile,bfile
+      integer,parameter :: Nrecs = 7
 
       afile = trim(outdir)//'/binaries/wim_grid.a'
       bfile = trim(outdir)//'/binaries/wim_grid.b'
@@ -906,16 +898,20 @@
       use mod_file_utils
 
       implicit none
-      character(len=80)             :: afile,bfile
-      integer,parameter             :: Nrecs = 6
+      character(len=80) :: afile,bfile
+      integer,parameter :: Nrecs = 6
+      character(len=16) :: cts
 
-      afile = trim(outdir)//'/binaries/wim_init.a'
-      bfile = trim(outdir)//'/binaries/wim_init.b'
+      cts   = model_year_info%cdatetime
+      afile = trim(outdir)//'/binaries/wim_init'
+     &         //cts//'.a'
+      bfile = trim(outdir)//'/binaries/wim_init'
+     &         //cts//'.b'
 
       !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)
-      call wrt_bfile_header(bfile,Nrecs)
+      call wrt_bfile_header(bfile,Nrecs,.true.)
       open(unit=2,file=trim(bfile),position = 'append')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -944,53 +940,43 @@
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine check_prog(nn,OPT)
+      subroutine check_prog(OPT)
 
       use mod_gridinfo
       use mod_common_wim
       use mod_file_utils
 
       implicit none
-      integer,intent(in)            :: nn(2),OPT
-      character(len=80)             :: afile,bfile
-      character(len=4)              :: cts
-      integer,parameter             :: Nrecs = 5
-      !!
-      integer           :: n_step,n_total
-      character(len=6)  :: frmt
-      real              :: t_out
-
-      n_step   = nn(1)
-      n_total  = nn(2)
-      if (n_total.le.10) then
-         frmt  = '(i1.1)'
-      elseif (n_total.le.100) then
-         frmt  = '(i2.2)'
-      elseif (n_total.le.1000) then
-         frmt  = '(i3.3)'
-      else
-         frmt  = '(i4.4)'
-      end if
+      integer,intent(in)   :: OPT
+      character(len=80)    :: afile,bfile
+      character(len=16)    :: cts
+      integer,parameter    :: Nrecs = 6
 
       if (OPT.eq.0) then
          !!dump only for progress report
-         write(cts,frmt) n_step
+         cts   = model_year_info%cdatetime
          afile = trim(outdir)//'/binaries/prog/wim_prog'                &
-     &               //trim(cts)//'.a'
+     &               //cts//'.a'
          bfile = trim(outdir)//'/binaries/prog/wim_prog'                &
-     &               //trim(cts)//'.b'
-         t_out = n_step*dt
+     &               //cts//'.b'
       else
-         !!final output
-         afile = trim(outdir)//'/binaries/wim_out.a'
-         bfile = trim(outdir)//'/binaries/wim_out.b'
-         t_out = n_total*dt
+#if 1
+         !!final output - use start time as output time in filename
+         cts   = model_year_info_start%cdatetime
+#else
+         !!final output - use end time as output time in filename
+         cts   = model_year_info%cdatetime
+#endif
+         afile = trim(outdir)//'/binaries/wim_out'
+     &               //cts//'.a'
+         bfile = trim(outdir)//'/binaries/wim_out'
+     &               //cts//'.b'
       end if
 
       !! write variable names to .b file (description of stuff in .a file)
  111  format(a)
  112  format(i2.2,a)  
-      call wrt_bfile_header(bfile,Nrecs,t_out)
+      call wrt_bfile_header(bfile,Nrecs,.true.)
       open(unit=2,file=trim(bfile),position = 'append')
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1000,7 +986,7 @@
       write(2,112)    3,    "       tau_y"
       write(2,112)    4,    "       Hs"
       write(2,112)    5,    "       Tp"
-!     write(2,112)    6,    "       mwd"
+      write(2,112)    6,    "       mwd"
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       close(2)
@@ -1012,16 +998,16 @@
       call wrt_afile_2d(afile ,tau_y   ,ii,jj  ,'old'    ,3)
       call wrt_afile_2d(afile ,Hs      ,ii,jj  ,'old'    ,4)
       call wrt_afile_2d(afile ,Tp      ,ii,jj  ,'old'    ,5)
-!     call wrt_afile_2d(afile ,mwd     ,ii,jj  ,'old'    ,6)
+      call wrt_afile_2d(afile ,mwd     ,ii,jj  ,'old'    ,6)
 
       end subroutine check_prog
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wrt_bfile_header(bfile,Nrecs,t_out)
+      subroutine wrt_bfile_header(bfile,Nrecs,add_time)
       character(len=*),intent(in)   :: bfile
       integer,intent(in)            :: Nrecs
-      real,optional,intent(in)      :: t_out
+      logical,optional,intent(in)   :: add_time
 
  111  format(a)
  112  format(i2.2,a)  
@@ -1039,14 +1025,19 @@
      &               "# Record length in x direction (elements)"
       write(2,114) jj,     "       ny       "//                         &
      &               "# Record length in y direction (elements)"
+      write(2,111) ""
 
-      !! if t_out is given add a line with the model time at time of dump
-      if (present(t_out)) then
-         write(2,211) t_out,   "  t_out    "//                          &
-     &               "# Model time of output (s)"
+      !! if cts is given add a line with the model time at time of dump
+      if (present(add_time)) then
+         if (add_time) then
+            write(2,'(a)') , model_year_info_start%cdatetime//
+     &          "  t_start    # Model time of WIM call"
+            write(2,'(a)') , model_year_info%cdatetime//
+     &          "  t_out      # Model time of output"
+         end if
+         write(2,111) ""
       end if
 
-      write(2,111) ""
       close(2)
 
       end subroutine wrt_bfile_header
@@ -1055,7 +1046,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine floe_scaling(Dave,dmax,moment)
 
-      use mod_wim_prams, only: fragility,xi,Dmin
       implicit none
 
       real,    intent(out) :: Dave
@@ -1064,16 +1054,16 @@
       integer              :: m,mm 
       real                 :: nm,nm1,dm,nsum,ndsum,r,ffac
 
-      Dave  = max(dmax**moment,dmin**moment)
-      ffac  = fragility*xi**2
+      Dave  = max(dmax**moment,wim_info%dmin**moment)
+      ffac  = wim_info%fragility*wim_info%xi**2
 
       !! determine no of breaks
-      r     = dmax/dmin
+      r     = dmax/wim_info%dmin
       mm    = 0  
-      do while ( r .ge. xi ) 
+      do while ( r .ge. wim_info%xi ) 
          !! if r<xi,no more breaking
          !! - don't change Dave
-         r  = r/xi 
+         r  = r/wim_info%xi 
          mm = mm+1 
       end do
 
@@ -1084,12 +1074,12 @@
          ndsum = 0      !eventually \sum_m=0^mm.n_m.d_m^moment
 
          do m = 0,mm-1
-            nm    = (1.-fragility)*nm1     !no of floes at dm
+            nm    = (1.-wim_info%fragility)*nm1     !no of floes at dm
             nsum  = nsum +nm
             ndsum = ndsum+nm*dm**moment
             !!
             nm1   = nm1*ffac
-            dm    = dm/xi
+            dm    = dm/wim_info%xi
          end do
 
          !m=M
@@ -1117,7 +1107,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine floe_scaling_smooth(Dave,dmax,mom)
-      use mod_wim_prams, only: fragility,xi,Dmin
       implicit none
 
       real,    intent(out) :: Dave
@@ -1127,7 +1116,7 @@
       real                 :: b,Dthresh,fsd_exp,A
 
       n        = mom
-      fsd_exp  = 2+log(fragility)/log(xi)!!power law exponent: P(d>D)=(D_min/D)^fsd_exp;
+      fsd_exp  = 2+log(wim_info%fragility)/log(wim_info%xi)!!power law exponent: P(d>D)=(D_min/D)^fsd_exp;
       b        = n-fsd_exp
       Dthresh  = 200.
 
@@ -1136,13 +1125,14 @@
       Dave  = Dmax**n
 
       !! small floes
-      if (Dmax.le.Dmin) then
-         Dave  = Dmin**n
+      if (Dmax.le.wim_info%Dmin) then
+         Dave  = wim_info%Dmin**n
       elseif (Dmax.le.Dthresh) then
          !! bigger floes
-         A     = (fsd_exp*exp(fsd_exp*(log(Dmin)+log(Dmax))))
-         A     = A/(exp(fsd_exp*log(Dmax))-exp(fsd_exp*log(Dmin)))
-         Dave  = -(A/b)*(exp(b*log(Dmin))-exp(b*log(Dmax)))
+         A     = (fsd_exp*exp(fsd_exp*(log(wim_info%Dmin)+log(Dmax))))
+         A     = A/( exp(fsd_exp*log(Dmax))
+     &               -exp(fsd_exp*log(wim_info%Dmin)) )
+         Dave  = -(A/b)*(exp(b*log(wim_info%Dmin))-exp(b*log(Dmax)))
       end if
 
 !!     !test subroutine (NB this will crash after 1st call, since status='new')

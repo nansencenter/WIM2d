@@ -103,12 +103,11 @@ if params_in.MEX_OPT==1
 
    %% make the call!
    tic;
-   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),...
-                  params_in.int_prams,params_in.real_prams);
+   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),params_in.params_vec);
    toc;
 
    %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
    for j=1:Nout
@@ -145,13 +144,12 @@ elseif params_in.MEX_OPT==2
    shp   = size(wave_stuff.dir_spec);
    [wave_stuff.dir_spec,out_arrays] =...
       WIM2d_run_io_mex_vSdir(...
-         wave_stuff.dir_spec(:),in_arrays(:),...
-         params_in.int_prams,params_in.real_prams,T_init,dir_init);
+         wave_stuff.dir_spec(:),in_arrays(:),params_in.params_vec);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
    %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
    for j=1:Nout
@@ -183,7 +181,7 @@ elseif params_in.MEX_OPT==3
    T_init   = 1/max(wave_stuff.freq);
    dir_init = max(wave_stuff.dirs);
 
-   TEST_MESH_INTERP  = 0;
+   TEST_MESH_INTERP  = 1;
    if TEST_MESH_INTERP
       %%test mesh inputs:
       xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
@@ -215,6 +213,7 @@ elseif params_in.MEX_OPT==3
       clear PP jp;
       fnames   = {'xe','ye','c','h','Nfloes','broken'};
       Mesh_e   = mesh_e;
+      clear mesh_e;
       for j=1:nmesh_vars
          mesh_e.(fnames{j})   = Mesh_e(:,j);
       end
@@ -233,18 +232,20 @@ elseif params_in.MEX_OPT==3
    [wave_stuff.dir_spec,out_arrays,mesh_arr] =...
       WIM2d_run_io_mex_vSdir_mesh(...
          wave_stuff.dir_spec(:),in_arrays(:),mesh_arr(:),...
-         params_in.int_prams,params_in.real_prams,T_init,dir_init,nmesh_e);
+         params_in.params_vec,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
 
    %% extract outputs
-   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp'};
+   fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
    Nout        = length(fldnames);
    out_arrays  = reshape(out_arrays,[gridprams.nx,gridprams.ny,Nout]);
    for j=1:Nout
       out_fields.(fldnames{j})   = out_arrays(:,:,j);
    end
+
+   taux_max = max(out_fields.tau_x(:))
 
    %nmesh_e,nmesh_vars
    %[length(mesh_arr),nmesh_e*nmesh_vars]

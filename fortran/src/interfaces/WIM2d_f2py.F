@@ -15,7 +15,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine py_wim2d_run_io(in_arrays,out_arrays                   &
-     &                  ,int_prams,real_prams,nx,ny)
+     &                  ,real_prams,nx,ny,nr)
 
       use mod_wim2d_run, only: wim2d_run_io
 
@@ -23,51 +23,52 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,intent(in)                  :: nx,ny,int_prams(9)
-      real,intent(in)                     :: real_prams(4)
+      integer,intent(in)                  :: nx,ny,nr
+      real*8,intent(in)                   :: real_prams(nr)
       real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,5),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy
-!f2py intent(hide)   :: nx,ny
+      real,dimension(nx,ny,6),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy,mwd
+!f2py intent(hide)   :: nx,ny,nr
 
-      call wim2d_run_io(in_arrays,out_arrays,int_prams,real_prams,nx,ny)
+      call wim2d_run_io(in_arrays,out_arrays,real_prams,nx,ny)
 
       end subroutine py_wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine py_wim2d_run_vSdir(Sdir_io2,out_arrays,                &
-     &                  Sdir_io,ice_arrays                              &
-     &                  ,int_prams,real_prams,Tp_io,mwd_io              &
-     &                  ,ndir,nw,nx,ny)
+      subroutine py_wim2d_run_vSdir(Sdir_io2,out_arrays                 &
+     &                 ,Sdir_io,ice_arrays                              &
+     &                 ,real_prams,ndir,nw,nx,ny,nr)
 
       use mod_common_wim,  only: icec,iceh,dfloe                        &
      &                           ,sdf_dir,sdf_inc                       &
      &                           ,freq_vec,wavdir
-      use mod_wim2d_run,   only: wim2d_run_vSdir
+      use mod_wim2d_run,   only: wim2d_run_vSdir,read_param_vec,STEADY
       use mod_wavesice,    only: WAVE_MASK2
 
       implicit none
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! array dimensions (detected by python but need to declare them)
-      integer,intent(in)   :: nx,ny,ndir,nw
-!f2py intent(hide)   :: nx,ny
+      integer,intent(in)   :: nx,ny,ndir,nw,nr
+!f2py intent(hide)   :: nx,ny,nr
 
       !!arrays
       real,dimension(nx,ny,3),intent(in)        :: ice_arrays  !! pass in  icec,iceh,dfloe
-      real,dimension(nx,ny,5),intent(out)       :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx,ny,6),intent(out)       :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy,mwd
       real,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_io     !! pass in/out directional spec
       real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2    !! pass in/out directional spec
 
       !! parameters
-      real,intent(in)      :: real_prams(4),Tp_io,mwd_io
-      integer,intent(in)   :: int_prams(9)
+      real*8,intent(in) :: real_prams(nr)
       !!
       integer  :: i,j,w,wth
-      real     :: PI,STEADY,adv_dir
+      real     :: PI,adv_dir
+      real     :: Tp_io,mwd_io,init_cons(6)
 
       PI       = 4.*atan(1.)
-      STEADY   = int_prams(8)
+      call read_param_vec(init_cons,real_prams)
+      Tp_io    = init_cons(2)
+      mwd_io   = init_cons(3)
 
       !! initial ice conditions
       icec     = ice_arrays(:,:,1)
@@ -90,13 +91,12 @@
 
       !wim2d_run_vSdir(out_arrays,int_prams,real_prams,nmesh_e,mesh_e)
       ! mesh_e is optional, but need a place holder for nmesh_e
-      call wim2d_run_vSdir(out_arrays,int_prams,real_prams,1)
+      call wim2d_run_vSdir(out_arrays,1)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! get updated directional wave spectrum
 
       !! correction for STEADY (copied from mod_waves_ice.F)
-      STEADY   = int_prams(8)
       if (STEADY.eq.1) then
          do w=1,nw
          do wth=1,ndir
@@ -123,25 +123,24 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine py_wim2d_run_vSdir_mesh(Sdir_io2,out_arrays            &
      &                  ,Sdir_io,ice_arrays,mesh_in,mesh_out            &
-     &                  ,int_prams,real_prams,Tp_io,mwd_io              &
-     &                  ,ndir,nw,nmesh_e,nx,ny)
+     &                  ,real_prams,ndir,nw,nmesh_e,nx,ny,nr)
 
       use mod_common_wim,  only: icec,iceh,dfloe                        &
      &                           ,sdf_dir,sdf_inc                       &
      &                           ,freq_vec,wavdir
-      use mod_wim2d_run,   only: wim2d_run_vSdir
+      use mod_wim2d_run,   only: wim2d_run_vSdir,read_param_vec,STEADY
       use mod_wavesice,    only: WAVE_MASK2
 
       implicit none
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! array dimensions (detected by python but need to declare them)
-      integer,intent(in)   :: nx,ny,ndir,nw,nmesh_e
-!f2py intent(hide)   :: nx,ny
+      integer,intent(in)   :: nx,ny,ndir,nw,nmesh_e,nr
+!f2py intent(hide)   :: nx,ny,nr
 
       !!arrays
       real,dimension(nx,ny,3),intent(in)        :: ice_arrays   !! pass in  icec,iceh,dfloe
-      real,dimension(nx,ny,5),intent(out)       :: out_arrays   !! pass out Dmax,Hs,Tp,taux,tauy
+      real,dimension(nx,ny,6),intent(out)       :: out_arrays   !! pass out Dmax,Hs,Tp,taux,tauy,mwd
       real,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_io      !! pass in directional spec
       real,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_io2     !! pass out directional spec
 
@@ -153,14 +152,16 @@
       real,dimension(nmesh_e,nmesh_vars)  :: mesh_e_dummy  !! reshaped mesh_e
 
       !! parameters
-      real,intent(in)      :: real_prams(4),Tp_io,mwd_io
-      integer,intent(in)   :: int_prams(9)
+      real*8,intent(in) :: real_prams(nr)
       !!
       integer  :: i,j,w,wth
-      real     :: PI,STEADY,adv_dir
+      real     :: PI,adv_dir
+      real     :: Tp_io,mwd_io,init_cons(6)
 
       PI       = 4.*atan(1.)
-      STEADY   = int_prams(8)
+      call read_param_vec(init_cons,real_prams)
+      Tp_io    = init_cons(2)
+      mwd_io   = init_cons(3)
 
       !! initial ice conditions
       icec     = ice_arrays(:,:,1)
@@ -184,7 +185,7 @@
       !wim2d_run_vSdir(out_arrays,int_prams,real_prams,nmesh_e,mesh_e)
       ! mesh_e is optional, but need a place holder for nmesh_e
       mesh_e_dummy   = reshape(mesh_in,(/nmesh_e,nmesh_vars/))
-      call wim2d_run_vSdir(out_arrays,int_prams,real_prams
+      call wim2d_run_vSdir(out_arrays
      &                     ,nmesh_e,mesh_e_dummy)
       mesh_out       = reshape(mesh_e_dummy,(/nmesh_e*nmesh_vars/))
 
@@ -192,7 +193,6 @@
       !! get updated directional wave spectrum
 
       !! correction for STEADY (copied from mod_waves_ice.F)
-      STEADY   = int_prams(8)
       if (STEADY.eq.1) then
          do w=1,nw
          do wth=1,ndir
@@ -266,7 +266,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine atten_youngs(outputs,inputs)
-      use mod_wim_prams, only: gravity
+      use mod_common_wim, only: wim_info
 
       real,intent(in)   :: inputs(4)
       real,intent(out)  :: outputs(8)
@@ -277,14 +277,14 @@
 
       ! h        = inputs(1)
       ! om       = inputs(2)
-      ! young    = inputs(3)
-      ! visc_rp  = inputs(4)
+      wim_info%young    = inputs(3)
+      wim_info%viscrp   = inputs(4)
       om    = inputs(2)
-      guess = om**2/gravity
+      guess = om**2/wim_info%gravity
 
       call RTparam_outer(damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT,
-     &                  inputs,guess)
+     &                  inputs(1:2),guess)
 
       outputs  = (/damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT/)

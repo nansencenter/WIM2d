@@ -344,6 +344,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     dfloe.resize(nx*ny);
     nfloes.resize(nx*ny);
 
+    dave.resize(boost::extents[nx][ny]);
     atten_dim.resize(boost::extents[nx][ny]);
     damp_dim.resize(boost::extents[nx][ny]);
 
@@ -743,7 +744,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     // ========================================================================
     // initialise sdf_dir from sdf_inc
     // - only do this if step==0
-    if (!step) 
+    if (!step)
     {
         std::fill( sdf_dir.data(), sdf_dir.data() + sdf_dir.num_elements(), 0. );
 
@@ -803,13 +804,57 @@ void WimDiscr<T>::timeStep(bool step)
     mom2w.resize(boost::extents[nx][ny]);
 
     value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
-    value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, dom, dave, c1d, tmp;
+    value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, dom, c1d, tmp;
     int jcrest;
-    bool break_criterion;
+    bool break_criterion,test_ij;
+
+    value_type t_step = cpt*dt;//seconds from start time
+    std::string timestpstr = ptime(init_time_str, t_step);
+
+    // dump local diagnostic file
+    // - directory to put it
+    std::string outdir = vm["wim.outparentdir"].template as<std::string>();
+    fs::path path(outdir);
+    path /= "diagnostics/local";
+    if ( !fs::exists(path) )
+        fs::create_directories(path);
+
+    //set file name and open
+    std::string diagfile   = (boost::format( "%1%/WIMdiagnostics_local%2%.txt" )
+            % path.string() % timestpstr).str();
+
+    if ( dumpDiag )
+    {
+
+       std::fstream diagID(diagfile, std::ios::out | std::ios::trunc);
+       if (diagID.is_open())
+       {
+         //
+         //diagID << "20150101" << " # date";
+         //diagID << "04:06:35" << " # time";
+         //diagID << "042003" << " # model day";
+         //diagID << "14794.52055" << " # model second";
+         diagID << timestpstr << " # model time\n";
+         diagID << std::setw(16) << std::left
+            << wim_itest << " # itest\n";
+         diagID << std::setw(16) << std::left
+            << wim_jtest << " # jtest\n";
+         diagID << std::setw(16) << std::left
+            << ice_mask[wim_itest][wim_jtest] << " # ICE_MASK\n";
+       }
+       else
+       {
+         std::cout << "Cannot open " << diagfile  << "\n";
+         std::cerr << "error: open file " << diagfile << " for output failed!" <<"\n";
+         std::abort();
+       }
+       diagID.close();
+    }//end dumpDiag
 
     dom = 2*PI*(freq_vec[nwavefreq-1]-freq_vec[0])/(nwavefreq-1);
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+
 
     if (vm["wim.steady"].template as<bool>())
     {
@@ -839,7 +884,55 @@ void WimDiscr<T>::timeStep(bool step)
         }
     }
 
-    dave = 0;
+    //calc mean floe size outside of frequency loop;
+    std::fill( dave.data(), dave.data() + dave.num_elements(), 0. );
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+    for (int i = 0; i < nx; i++)
+    {
+       for (int j = 0; j < ny; j++)
+       {
+          if (ice_mask[i][j] == 1.)
+          {
+             if (dfloe[ny*i+j] <200.)
+             {
+                if ( fsdopt == "RG" )
+                {
+                    floeScaling(dfloe[ny*i+j],1,dave[i][j]);
+                }
+                else if ( fsdopt == "PowerLawSmooth" )
+                {
+                    floeScalingSmooth(dfloe[ny*i+j],1,dave[i][j]);
+                }
+             }
+             else
+             {
+                //just use uniform dist
+                dave[i][j] = dfloe[ny*i+j];
+             }
+          }
+
+          
+          test_ij = (i==wim_itest) && (j==wim_jtest);
+          if ( dumpDiag && test_ij )
+          {
+             std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+             diagID << "\nIce info: pre-breaking\n";
+             diagID << std::setw(16) << std::left
+                << icec[i][j] << " # conc\n";
+             diagID << std::setw(16) << std::left
+                << iceh[i][j] << " # h, m\n";
+             diagID << std::setw(16) << std::left
+                << dave[i][j] << " # D_av, m\n";
+             diagID << std::setw(16) << std::left
+                << dfloe[ny*i+j] << " # D_max, m\n";
+ 
+             if (atten)
+               diagID << "\n# period, s | atten_dim, m^{-1}| damp_dim, m^{-1}\n";
+
+             diagID.close();
+          }
+       }
+    }//end spatial loop i - have dave
 
     for (int fq = 0; fq < nwavefreq; fq++)
     {
@@ -851,37 +944,30 @@ void WimDiscr<T>::timeStep(bool step)
         {
             for (int j = 0; j < ny; j++)
             {
-                value_type dave, c1d;
+                value_type c1d;
                 if ((ice_mask[i][j] == 1.) && (atten))
                 {
-                    if (dfloe[ny*i+j] <200.)
-                    {
-                       if ( fsdopt == "RG" )
-                       {
-                           floeScaling(dfloe[ny*i+j],1,dave);
-                       }
-                       else if ( fsdopt == "PowerLawSmooth" )
-                       {
-                           floeScalingSmooth(dfloe[ny*i+j],1,dave);
-                       }
-                    }
-                    else
-                    {
-                       //just use uniform dist
-                       dave = dfloe[ny*i+j];
-                    }
-
                     // floes per unit length
-                    c1d = icec[i][j]/dave;
+                    c1d = icec[i][j]/dave[i][j];
 
                     // scattering
                     atten_dim[i][j] = atten_nond[i][j][fq]*c1d;
 
                     // damping
                     damp_dim[i][j] = 2*damping[i][j][fq]*icec[i][j];
-                }
+
+                    test_ij = (i==wim_itest) && (j==wim_jtest);
+                    if ( dumpDiag && test_ij )
+                    {
+                       std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+                       diagID << vec_period[fq] << "   "
+                              << atten_dim[i][j] << "   "
+                              << damp_dim[i][j] << "\n";
+                       diagID.close();
+                    }
+                }//end of ice check
             }
-        }
+        }//end of spatial loop i
 
 
         // copy for application of advAttenSimple
@@ -1034,7 +1120,36 @@ void WimDiscr<T>::timeStep(bool step)
         }
     }
 
+    //update mwd
     calcMWD();
+
+    if ( dumpDiag )
+    {
+       int i =  wim_itest;
+       int j =  wim_jtest;
+       std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+
+       diagID << std::setw(16) << std::left
+          << mom0w[i][j] << " # mom0w, m^2\n";
+       diagID << std::setw(16) << std::left
+          << mom2w[i][j] <<" # mom2w, m^2/s^2\n";
+       diagID << std::setw(16) << std::left
+          << mom0[i][j] <<" # mom0, m^2\n";
+       diagID << std::setw(16) << std::left
+          << mom2[i][j] <<" # mom2, m^2/s^2\n";
+       diagID << std::setw(16) << std::left
+          << Hs[i][j] <<" # Hs, m\n";
+       diagID << std::setw(16) << std::left
+          << Tp[i][j] <<" # Tp, s\n";
+       diagID << std::setw(16) << std::left
+          << mwd[i][j] <<" # mwd, deg\n";
+       diagID << std::setw(16) << std::left
+          << tau_x[ny*i+j] <<" # tau_x, Pa\n";
+       diagID << std::setw(16) << std::left
+          << tau_y[ny*i+j] <<" # tau_y, Pa\n";
+       diagID.close();
+    }
+
 
     if (!(steady) && !(breaking))
     {
@@ -1061,12 +1176,14 @@ void WimDiscr<T>::timeStep(bool step)
         for (int j = 0; j < ny; j++)
         {
             value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
-            value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, /*dom,*/ dave, c1d, tmp;
+            value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, c1d, tmp;
             int jcrest;
             bool break_criterion;
 
             //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i][j]  <<"\n";
 
+            Pstrain      = 0.;
+            P_crit       = std::exp(-1.0);
             if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
             {
                 // significant strain amp
@@ -1075,7 +1192,6 @@ void WimDiscr<T>::timeStep(bool step)
                 // probability of critical strain
                 // being exceeded from Rayleigh distribution
                 Pstrain = std::exp( -std::pow(epsc,2.)/(2*var_strain[i][j]) );
-                P_crit = std::exp(-1.0);
 
                 break_criterion = (Pstrain >= P_crit) && breaking;
 
@@ -1104,7 +1220,7 @@ void WimDiscr<T>::timeStep(bool step)
                     dfloe[ny*i+j] = std::min<value_type>(Dc,dfloe[ny*i+j]);
                     //std::cout<<"DMAX= std::MAX("<< Dc << "," << dfloe[ny*i+j] <<")\n";
                 }
-            }
+            }//end test for ice and waves
             else if (wtr_mask[i][j] == 1.)
             {
                 dfloe[ny*i+j] = 0;
@@ -1114,8 +1230,25 @@ void WimDiscr<T>::timeStep(bool step)
 
             if (dfloe[ny*i+j] > 0.)
                 nfloes[ny*i+j] = icec[i][j]/std::pow(dfloe[ny*i+j],2.);
+
+            test_ij  = (i==wim_itest)&&(j==wim_jtest);
+            if (dumpDiag && (ice_mask[i][j] == 1.) && test_ij)
+            {
+               //dump diagnostic even if no waves (but only if ice)
+               std::fstream diagID(diagfile, std::ios::out | std::ios::app);
+               diagID << "\nIce info: post-breaking\n";
+               diagID << std::setw(16) << std::left
+                  << Pstrain << " # P_strain\n";
+               diagID << std::setw(16) << std::left
+                  << P_crit << " # P_crit\n";
+               diagID << std::setw(16) << std::left
+                  << wlng_crest << " # peak wavelength, m\n";
+               diagID << std::setw(16) << std::left
+                  << dfloe[ny*i+j] << " # D_max, m\n";
+               diagID.close();
+            }
         }
-    }
+    }//end spatial loop i
 
 
     // for (int i = 0; i < nx; i++)
@@ -1144,6 +1277,14 @@ void WimDiscr<T>::timeStep(bool step)
 template<typename T>
 void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes, bool step)
 {
+    std::cout << "-----------------------Simulation started on "<< current_time_local() <<"\n";
+
+    //init_time_str is human readable time eg "2015-01-01 00:00:00"
+    //init_time is "formal" time format eg "20150101T000000Z"
+    init_time_str = vm["wim.initialtime"].as<std::string>();
+    std::string init_time = ptime(init_time_str);
+    std::cout<<"---------------INITIAL TIME= "<< init_time <<"\n";
+
     this->assign(ice_c,ice_h,n_floes,step);
 
     bool critter;
@@ -1156,24 +1297,29 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     std::cout<<"dt= "<< dt <<"\n";
     std::cout<<"nt= "<< nt <<"\n";
 
-    int cpt = 0;
-    if (!step)
-        fcpt = 0;
+
+    //if (vm["wim.checkinit"].template as<bool>())
+        exportResults("init",0);
+
+    if ((!vm["nextwim.docoupling"].template as<bool>()) || (!step))
+        cpt = 0;
 
     while (cpt < nt)
     {
         std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
-        value_type t_out = dt*fcpt;
+        value_type t_out = dt*cpt;
 
         critter = !(cpt % vm["wim.dumpfreq"].template as<int>())
            && (vm["wim.checkprog"].template as<bool>());
+        dumpDiag  = !(cpt % vm["wim.dumpfreq"].template as<int>())
+           && (wim_itest>0) && (wim_jtest>0);
 
         if ( critter )
         {
-           if (vm["nextwim.exportresults"].template as <bool>())
-              exportResults(fcpt,t_out);//global counter from nextsim
-           else
-              exportResults(cpt,t_out);//local counter from wim
+            if (vm["nextwim.exportresults"].template as <bool>())
+                exportResults("prog",t_out);//global counter from nextsim
+           //else
+           //exportResults(cpt,t_out);//local counter from wim
         }
 
         // if (cpt == 30)
@@ -1187,22 +1333,26 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         timeStep(step);
 
         ++cpt;//local counter incremented in wim.run()
-        ++fcpt;//global counter incremented in nextsim
     }
+    
+    //if (vm["wim.checkfinal"].template as<bool>())
+       exportResults("out",nt*dt);
 
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
+
+    std::cout << "-----------------------Simulation completed on "<< current_time_local() <<"\n";
 }
 
 template<typename T>
 void WimDiscr<T>::floeScaling(
-      value_type const& dmax, int const& moment, value_type& dave)
+      value_type const& dmax, int const& moment, value_type& dave_)
 {
     value_type nm,nm1,dm,nsum,ndsum,r;
-    
+
     int mm;
     value_type ffac     = fragility*std::pow(xi,2);
 
-    dave = std::max(std::pow(dmin,moment),std::pow(dmax,moment));
+    dave_ = std::max(std::pow(dmin,moment),std::pow(dmax,moment));
     if (dmax>=xi*dmin)
     {
        //determine number of breaks
@@ -1225,10 +1375,10 @@ void WimDiscr<T>::floeScaling(
 
           for (int m=0; m<mm; ++m)
           {
-              //no of floes of length dm; 
+              //no of floes of length dm;
               nm     = nm1*(1-fragility);
-              nsum  += nm;                       
-              ndsum += nm*std::pow(dm,moment);   
+              nsum  += nm;
+              ndsum += nm*std::pow(dm,moment);
               //std::cout<<"nsum,dm: "<<nsum<<" , "<<dm<<"\n";
 
               nm1   *= ffac;
@@ -1238,7 +1388,7 @@ void WimDiscr<T>::floeScaling(
           //m=mm:
           nsum   += nm1;
           ndsum  += nm1*std::pow(dm,moment);
-          dave    = ndsum/nsum;
+          dave_   = ndsum/nsum;
           //std::cout<<"nsum,dm: "<<nsum<<" , "<<dm<<"\n";
        }
     }
@@ -1246,8 +1396,8 @@ void WimDiscr<T>::floeScaling(
 
 template<typename T>
 void WimDiscr<T>::floeScalingSmooth(
-      value_type const& dmax,int const& moment, value_type& dave)
-{     
+      value_type const& dmax,int const& moment, value_type& dave_)
+{
     value_type fsd_exp,b,A;
 
     fsd_exp = 2+log(fragility)/log(xi);//power law exponent: P(d>D)=(D_min/D)^fsd_exp;
@@ -1255,19 +1405,19 @@ void WimDiscr<T>::floeScalingSmooth(
 
     // calculate <D^moment> from Dmax
     // - uniform dist for larger floes
-    dave  = std::pow(dmax,moment);
+    dave_ = std::pow(dmax,moment);
 
     if (dmax<=dmin)
     {
        // small floes
-       dave  = std::pow(dmin,moment);
+       dave_ = std::pow(dmin,moment);
     }
     else
     {
        // bigger floes
        A     = (fsd_exp*std::exp(fsd_exp*(std::log(dmin)+std::log(dmax))));
        A     = A/(std::exp(fsd_exp*std::log(dmax))-std::exp(fsd_exp*std::log(dmin)));
-       dave  = -(A/b)*(std::exp(b*std::log(dmin))-exp(b*std::log(dmax)));
+       dave_ = -(A/b)*(std::exp(b*std::log(dmin))-exp(b*std::log(dmax)));
     }
 }
 
@@ -1961,13 +2111,12 @@ void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
 template<typename T>
 void WimDiscr<T>::calcMWD()
 {
-    value_type adv_dir, wt_theta, om;
-    array2_type cmom0,cmom_dir,CSfreq, cmom_dir0, CF;
+    value_type adv_dir, wt_theta, om, CF;
+    array2_type cmom0,cmom_dir,CSfreq, cmom_dir0;
     cmom0.resize(boost::extents[nx][ny]);
     cmom_dir.resize(boost::extents[nx][ny]);
     CSfreq.resize(boost::extents[nx][ny]);
     cmom_dir0.resize(boost::extents[nx][ny]);
-    CF.resize(boost::extents[nx][ny]);
 
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
 
@@ -2000,7 +2149,7 @@ void WimDiscr<T>::calcMWD()
                     cmom_dir0[i][j] += wt_theta*sdf_dir[i][j][dn][fq]*adv_dir;
                 }
             }
-        }
+        }//end loop over directions (still in freq loop)
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
@@ -2008,16 +2157,17 @@ void WimDiscr<T>::calcMWD()
             for (int j = 0; j < ny; j++)
             {
                 if (ref_Hs_ice)
-                    CF[i][j] = disp_ratio[i][j][fq];
+                    CF = std::pow(disp_ratio[i][j][fq],2);
                 else
-                    CF[i][j] = 1;
+                    CF = 1.;
 
-                cmom0[i][j] += std::abs(wt_om[fq]*std::pow(CF[i][j],2.)*CSfreq[i][j]);
-                cmom_dir[i][j] += std::abs(wt_om[fq]*std::pow(CF[i][j],2.)*cmom_dir0[i][j]);
+                cmom0[i][j]    += std::abs(wt_om[fq]*CF*CSfreq[i][j]);
+                cmom_dir[i][j] += std::abs(wt_om[fq]*CF*cmom_dir0[i][j]);
             }
-        }
-    }
+        }//end spatial loop i
+    }//end freq loop
 
+    //assign mwd
     std::fill( mwd.data(), mwd.data() + mwd.num_elements(), 0. );
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
@@ -2028,9 +2178,9 @@ void WimDiscr<T>::calcMWD()
             if (cmom0[i][j] > 0.)
                 mwd[i][j] = -90.-180*(cmom_dir[i][j]/cmom0[i][j])/PI;
         }
-    }
+    }//end spatial loop i
 
-}
+}//end calcMWD
 
 template<typename T>
 typename WimDiscr<T>::value_type
@@ -2142,7 +2292,8 @@ void WimDiscr<T>::readDataFromFile(std::string const& filein)
 }
 
 template<typename T>
-void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_out) const
+void WimDiscr<T>::exportResults(std::string const& output_type,
+                                 value_type const& t_out) const
 {
 
     std::string str = vm["wim.outparentdir"].template as<std::string>();
@@ -2154,93 +2305,147 @@ void WimDiscr<T>::exportResults(size_type const& timestp, value_type const& t_ou
     //}
 
     fs::path path(str);
-    path /= "binaries/prog";
+    std::string init_time  = ptime(init_time_str);
+    std::string timestpstr = ptime(init_time_str, t_out);
+    std::string fileout,fileoutb;
+    if ( output_type == "prog" )
+    {
+       path   /= "binaries/prog";
+       fileout = (boost::format( "%1%/wim_prog%2%" ) % path.string() % timestpstr).str();
+    }
+    else if ( output_type == "out" )
+    {
+       path   /= "binaries";
+       fileout = (boost::format( "%1%/wim_out%2%" ) % path.string() % timestpstr).str();
+    }
+    else if ( output_type == "init" )
+    {
+       path   /= "binaries";
+       fileout = (boost::format( "%1%/wim_init%2%" ) % path.string() % init_time).str();
+    }
 
+    fileoutb   = fileout+".b";
+    fileout    = fileout+".a";
     if ( !fs::exists(path) )
         fs::create_directories(path);
 
-    std::string timestpstr = std::string(4-std::to_string(timestp).length(),'0') + std::to_string(timestp);
-
-    std::string fileout = (boost::format( "%1%/wim_prog%2%.a" ) % path.string() % timestpstr).str();
     std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
-
     if (out.is_open())
     {
-        for (int i = 0; i < icec.shape()[0]; i++)
-            for (int j = 0; j < icec.shape()[1]; j++)
-                out.write((char *)&icec[i][j], sizeof(value_type));
+       if ( output_type == "init" )
+       {
+           for (int i = 0; i < icec.shape()[0]; i++)
+               for (int j = 0; j < icec.shape()[1]; j++)
+                   out.write((char *)&icec[i][j], sizeof(value_type));
 
-        for (int i = 0; i < iceh.shape()[0]; i++)
-            for (int j = 0; j < iceh.shape()[1]; j++)
-                out.write((char *)&iceh[i][j], sizeof(value_type));
-#if 0
-        for (int i = 0; i < dfloe.shape()[0]; i++)
-            for (int j = 0; j < dfloe.shape()[1]; j++)
-                out.write((char *)&dfloe[i][j], sizeof(value_type));
+           for (int i = 0; i < iceh.shape()[0]; i++)
+               for (int j = 0; j < iceh.shape()[1]; j++)
+                   out.write((char *)&iceh[i][j], sizeof(value_type));
+       }
 
-        for (int i = 0; i < tau_x.shape()[0]; i++)
-            for (int j = 0; j < tau_x.shape()[1]; j++)
-                out.write((char *)&tau_x[i][j], sizeof(value_type));
+       for (int i = 0; i < nx; i++)
+           for (int j = 0; j < ny; j++)
+               out.write((char *)&dfloe[ny*i+j], sizeof(value_type));
 
-        for (int i = 0; i < tau_y.shape()[0]; i++)
-            for (int j = 0; j < tau_y.shape()[1]; j++)
-                out.write((char *)&tau_y[i][j], sizeof(value_type));
-#endif
+       if ( output_type == "init" )
+       {
+          for (int i = 0; i < nx; i++)
+              for (int j = 0; j < ny; j++)
+                  out.write((char *)&tau_x[ny*i+j], sizeof(value_type));
 
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                out.write((char *)&dfloe[ny*i+j], sizeof(value_type));
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                out.write((char *)&tau_x[ny*i+j], sizeof(value_type));
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                out.write((char *)&tau_y[ny*i+j], sizeof(value_type));
+          for (int i = 0; i < nx; i++)
+              for (int j = 0; j < ny; j++)
+                  out.write((char *)&tau_y[ny*i+j], sizeof(value_type));
+       }
 
 
-        for (int i = 0; i < Hs.shape()[0]; i++)
-            for (int j = 0; j < Hs.shape()[1]; j++)
-                out.write((char *)&Hs[i][j], sizeof(value_type));
+       for (int i = 0; i < Hs.shape()[0]; i++)
+           for (int j = 0; j < Hs.shape()[1]; j++)
+               out.write((char *)&Hs[i][j], sizeof(value_type));
 
-        for (int i = 0; i < Tp.shape()[0]; i++)
-            for (int j = 0; j < Tp.shape()[1]; j++)
-                out.write((char *)&Tp[i][j], sizeof(value_type));
+       for (int i = 0; i < Tp.shape()[0]; i++)
+           for (int j = 0; j < Tp.shape()[1]; j++)
+               out.write((char *)&Tp[i][j], sizeof(value_type));
 
-        out.close();
+       for (int i = 0; i < mwd.shape()[0]; i++)
+           for (int j = 0; j < mwd.shape()[1]; j++)
+               out.write((char *)&mwd[i][j], sizeof(value_type));
+
+       out.close();
     }
     else
     {
-        std::cout << "Cannot open " << fileout  << "\n";
-        std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
-        std::abort();
+       std::cout << "Cannot open " << fileout  << "\n";
+       std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
+       std::abort();
     }
 
     // export the txt file for grid field information
-    std::string fileoutb = (boost::format( "%1%/wim_prog%2%.b" ) % path.string() % timestpstr).str();
     std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
 
     if (outb.is_open())
     {
-        outb << std::setw(15) << std::left << "07"  << "    Nrecs    # "<< "Number of records" <<"\n";
+        outb << std::setw(15) << std::left << "06"  << "    Nrecs    # "<< "Number of records" <<"\n";
         outb << std::setw(15) << std::left << "0"   << "    Norder   # "<< "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
         outb << std::setw(15) << std::left << nx    << "    nx       # "<< "Record length in x direction (elements)" <<"\n";
         outb << std::setw(15) << std::left << ny    << "    ny       # "<< "Record length in y direction (elements)" <<"\n";
-        outb << std::setw(15) << std::left << t_out << "    t_out    # "<< "Model time of output (s)" <<"\n";
-        //outb << std::setw(15) << std::left << nwavefreq << "          "<< "Number of wave frequencies" <<"\n";
-        //outb << std::setw(15) << std::left << nwavedirn << "          "<< "Number of wave directions" <<"\n";
 
         outb <<"\n";
+        outb << std::left << init_time << "    t_start    # "<< "Model time of WIM call" <<"\n";
+        outb << std::left << timestpstr << "    t_out    # "<< "Model time of output" <<"\n";
 
+        outb <<"\n";
         outb << "Record number and name:" <<"\n";
-        outb << std::setw(9) << std::left << "01" << "icec" <<"\n";
-        outb << std::setw(9) << std::left << "02" << "iceh" <<"\n";
-        outb << std::setw(9) << std::left << "03" << "Dmax" <<"\n";
-        outb << std::setw(9) << std::left << "04" << "tau_x" <<"\n";
-        outb << std::setw(9) << std::left << "05" << "tau_y" <<"\n";
-        outb << std::setw(9) << std::left << "06" << "Hs" <<"\n";
-        outb << std::setw(9) << std::left << "07" << "Tp" <<"\n";
+
+        int recno = 1;
+        std::string rstr;
+
+        if ( output_type == "init" )
+        {
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "icec" <<"\n";
+           ++recno;
+           //
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "iceh" <<"\n";
+           ++recno;
+        }
+
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "Dmax" <<"\n";
+        ++recno;
+
+        if ( output_type != "init" )
+        {
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "tau_x" <<"\n";
+           ++recno;
+           //
+           rstr   = std::string(2-std::to_string(recno).length(),'0')
+              + std::to_string(recno);
+           outb << std::setw(9) << rstr << "tau_y" <<"\n";
+           ++recno;
+        }
+
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "Hs" <<"\n";
+        ++recno;
+        //
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "Tp" <<"\n";
+        ++recno;
+        //
+        rstr   = std::string(2-std::to_string(recno).length(),'0')
+           + std::to_string(recno);
+        outb << std::setw(9) << rstr << "mwd" <<"\n";
+        ++recno;
+        outb.close();
     }
     else
     {
