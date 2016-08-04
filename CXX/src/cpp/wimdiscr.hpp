@@ -72,6 +72,7 @@ public:
     void readGridFromFile(std::string const& filein);
     void readDataFromFile(std::string const& filein);
     void exportResults(std::string const& output_type, value_type const& t_out) const;
+    void save_log(value_type const& t_out) const;
     void init();
 
     void assign(std::vector<value_type> const& ice_c = std::vector<value_type>(),

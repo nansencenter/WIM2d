@@ -1338,6 +1338,9 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     //if (vm["wim.checkfinal"].template as<bool>())
        exportResults("out",nt*dt);
 
+    // save diagnostic file
+    save_log(nt*dt);
+
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
 
     std::cout << "-----------------------Simulation completed on "<< current_time_local() <<"\n";
@@ -2453,6 +2456,102 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
         std::cerr << "error: open file " << fileoutb << " for output failed!" <<"\n";
         std::abort();
     }
+}
+
+template<typename T>
+void WimDiscr<T>::save_log(value_type const& t_out) const
+{
+    std::string str = vm["wim.outparentdir"].template as<std::string>();
+    fs::path path(str);
+    path /= "diagnostics/global";
+    if ( !fs::exists(path) )
+       fs::create_directories(path);
+
+    std::string init_time  = ptime(init_time_str);
+    std::string timestpstr = ptime(init_time_str, t_out);
+    std::string fileout    = (boost::format( "%1%/WIMdiagnostics%2%.txt" ) % path.string() % init_time).str();
+
+    std::fstream out(fileout, std::ios::out | std::ios::trunc);
+    if ( !out.is_open() )
+    {
+        std::cout << "Cannot open " << fileout  << "\n";
+        std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
+        std::abort();
+    }
+
+    out << "***********************************************\n";
+    out << "Outer subroutine:\n";
+    out << ">> " << "wimdiscr.cpp\n\n";
+    out << std::left << std::setw(32) << "Start time:  " << init_time << "\n";
+    out << std::left << std::setw(32) << "Output time: " << timestpstr << "\n";
+    out << "***********************************************\n";
+
+    out << "\n***********************************************\n";
+    out << "Main parameters:" << "\n";
+    out << std::left << std::setw(32) << "SCATMOD:" << scatmod << "\n";
+    out << std::left << std::setw(32) << "ADV_DIM:" << advdim << "\n";
+    out << std::left << std::setw(32) << "ADV_OPT:" << advopt << "\n";
+#if 0
+    //TODO implement brkopt
+    out << std::left << std::setw(32) << "BRK_OPT:" << brkopt << "\n";
+    if (BRK_OPT.eq.0) then
+       write(fid,'(a)'),'(No breaking)'
+    elseif (BRK_OPT.eq.1) then
+       write(fid,'(a)'),'(Williams et al, 2013, Oc Mod)'
+    elseif (BRK_OPT.eq.2) then
+       write(fid,'(a)'),'(Marchenko)'
+    elseif (BRK_OPT.eq.3) then
+       write(fid,'(a)'),'(Mohr-Coulomb)'
+    end if
+#endif
+    out << std::left << std::setw(32) << "STEADY:" << steady << "\n";
+    out << std::left << std::setw(32) << "DO_ATTEN:" << atten << "\n";
+    out << "***********************************************\n";
+
+    out << "\n***********************************************\n";
+    out << "Other integer parameters:" << "\n";
+    out << std::left << std::setw(32) << "FSD_OPT:" << fsdopt << "\n";
+    out << "***********************************************\n";
+
+    out << "\n***********************************************\n";
+    out << "WIM parameters:" << "\n";
+    out << std::left << std::setw(32) << "Brine volume fraction:" << vbf << "\n";
+    out << std::left << std::setw(32) << "Youngs modulus (Pa):" << young << "\n";
+    out << std::left << std::setw(32) << "Flexural strength (Pa):" << sigma_c << "\n";
+//    out << std::left << std::setw(32) << "Breaking stress (Pa):" << stress_c << "\n";
+    out << std::left << std::setw(32) << "Breaking strain:" << epsc << "\n";
+    out << std::left << std::setw(32) << "Damping (Pa.s/m):" << visc_rp << "\n";
+    out << "***********************************************\n";
+
+    out << "\n***********************************************\n";
+    out << "Other parameters:" << "\n";
+    out << std::left << std::setw(32) << "Time step (s):" << dt << "\n";
+    out << std::left << std::setw(32) << "CFL number:" << cfl << "\n";
+    out << std::left << std::setw(32) << "Max wave group vel (m/s):" << amax << "\n";
+    out << std::left << std::setw(32) << "Number of time steps:" << nt << "\n";
+    out << std::left << std::setw(32) << "Time interval (h):" << duration/60.0/60.0 << "\n";
+    out << "***********************************************\n";
+
+    out << "\n***********************************************\n";
+    out << std::left << std::setw(32) << "Grid dimensions:" << nx << ", " << ny << "\n";
+    out << std::left << std::setw(32) << "Spatial resolution (km):" << dx/1.0e3 << ", " << dy/1.0e3 << "\n";
+    out << std::left << std::setw(32) << "Extent of domain (km):" << nx*dx/1.e3 << ", " << ny*dy/1.e3 << "\n";
+    out << std::left << std::setw(32) << "Minimum period (s):" << 1.0/freq_vec[nwavefreq-1] << "\n";
+    out << std::left << std::setw(32) << "Maximum period (s):" << 1.0/freq_vec[0] << "\n";
+    out << std::left << std::setw(32) << "Number of wave frequencies:" << nwavefreq << "\n";
+    out << std::left << std::setw(32) << "Number of wave directions:"  << nwavedirn << "\n";
+    out << std::left << std::setw(32) << "Directional resolution (deg):" << 360.0/nwavedirn << "\n";
+    out << "***********************************************\n";
+
+//    out << "\n***********************************************\n";
+//    out << "Diagnostics:\n";
+//    out << std::left << std::setw(32) << "MIZ width (km):"         << W_MIZ/1.e3 << "\n";
+//    out << std::left << std::setw(32) << "Dmax range in MIZ (m):"  << Dmax_min << ", ",Dmax_max << "\n";
+//    out << std::left << std::setw(32) << "tau_x range (Pa):"       << taux_min << ", " << taux_max << "\n";
+//    out << std::left << std::setw(32) << "tau_y range (Pa):"       << tauy_min << ", " << tauy_max << "\n";
+//    out << "***********************************************\n";
+
+    out.close();
 }
 
 // instantiate wim class for type float
