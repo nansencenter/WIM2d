@@ -2543,13 +2543,55 @@ void WimDiscr<T>::save_log(value_type const& t_out) const
     out << std::left << std::setw(32) << "Directional resolution (deg):" << 360.0/nwavedirn << "\n";
     out << "***********************************************\n";
 
-//    out << "\n***********************************************\n";
-//    out << "Diagnostics:\n";
-//    out << std::left << std::setw(32) << "MIZ width (km):"         << W_MIZ/1.e3 << "\n";
-//    out << std::left << std::setw(32) << "Dmax range in MIZ (m):"  << Dmax_min << ", ",Dmax_max << "\n";
-//    out << std::left << std::setw(32) << "tau_x range (Pa):"       << taux_min << ", " << taux_max << "\n";
-//    out << std::left << std::setw(32) << "tau_y range (Pa):"       << tauy_min << ", " << tauy_max << "\n";
-//    out << "***********************************************\n";
+    value_type taux_min  = *std::min_element(tau_x.begin(), tau_x.end());
+    value_type taux_max  = *std::max_element(tau_x.begin(), tau_x.end());
+    value_type tauy_min  = *std::min_element(tau_y.begin(), tau_y.end());
+    value_type tauy_max  = *std::max_element(tau_y.begin(), tau_y.end());
+
+    //MIZ diagnostics
+    value_type Dmax_min = 10.e3;
+    value_type Dmax_max = 0.e3;
+    int Nmiz   = 0;
+
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+#pragma omp parallel for num_threads(max_threads) collapse(1)
+    for (int j = 0; j < dfloe.size(); j++)
+    {
+       if ((dfloe[j]<dfloe_pack_init)&&(dfloe[j]>0))
+       {
+          ++Nmiz;
+          Dmax_min   = std::min(dfloe[j],Dmax_min);
+          Dmax_max   = std::max(dfloe[j],Dmax_max);
+       }
+    }
+
+#define WIMDIAG1D
+#if defined (WIMDIAG1D)
+    //this definition of MIZ only works in 1d geometries
+    value_type W_miz;
+    if ( ny == 1 )
+    {
+       W_miz = (Nmiz*dx);
+    }
+    else if ( vm["wim.landon3edges"].template as<bool>() )
+    {
+       W_miz = (Nmiz*dx)/(ny-2);
+    }
+    else
+    {
+       W_miz = (Nmiz*dx)/ny;
+    }
+#endif
+
+    out << "\n***********************************************\n";
+    out << "Diagnostics:\n";
+#if defined (WIMDIAG1D)
+    out << std::left << std::setw(32) << "MIZ width (km):"         << W_miz/1.e3 << "\n";
+#endif
+    out << std::left << std::setw(32) << "Dmax range in MIZ (m):"  << Dmax_min << ", " << Dmax_max << "\n";
+    out << std::left << std::setw(32) << "tau_x range (Pa):"       << taux_min << ", " << taux_max << "\n";
+    out << std::left << std::setw(32) << "tau_y range (Pa):"       << tauy_min << ", " << tauy_max << "\n";
+    out << "***********************************************\n";
 
     out.close();
 }
