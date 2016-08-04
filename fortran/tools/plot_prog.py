@@ -28,14 +28,21 @@ else:
 if not os.path.exists(figdir):
    os.mkdir(figdir)
 
-PLOT_INIT   = 1
-PLOT_FINAL  = 1
+PLOT_INIT   = 0
+PLOT_FINAL  = 0
 PLOT_PROG   = 1
+binlist     = os.listdir(bindir)
 
 ##########################################################################
 if PLOT_INIT:
-   if not os.path.exists(bindir+'/wim_init.a'):
-      print('Initial conditions not outputted: wim_init.[a,b]')
+   afile = None
+   for f in binlist:
+      if ('wim_init' in f) and ('.a' in f):
+         afile = bindir+'/'+f
+         break
+
+   if afile is None:
+      print('Initial conditions not outputted: wim_init*.[a,b]')
       print('- not plotting')
    else:
       # Look at initial fields:
@@ -45,7 +52,7 @@ if PLOT_INIT:
          os.mkdir(figdir1)
 
       # new way (more general)
-      fields,info = Fdat.fn_read_general_binary(bindir+'/wim_init.a')
+      fields,info = Fdat.fn_read_general_binary(afile)
       Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot initial conditions
 
       print("Plots in "+figdir1)
@@ -54,8 +61,14 @@ if PLOT_INIT:
 
 ################################################################
 if PLOT_FINAL:
-   if not os.path.exists(bindir+'/wim_init.a'):
-      print('Final conditions not outputted: wim_out.[a,b]')
+   afile = None
+   for f in binlist:
+      if ('wim_out' in f) and ('.a' in f):
+         afile = bindir+'/'+f
+         break
+
+   if afile is None:
+      print('Final conditions not outputted: wim_out*.[a,b]')
       print('- not plotting')
    else:
       # Look at end results:
@@ -64,7 +77,7 @@ if PLOT_FINAL:
       if not os.path.exists(figdir2):
          os.mkdir(figdir2)
 
-      fields,info = Fdat.fn_read_general_binary(bindir+'/wim_out.a')
+      fields,info = Fdat.fn_read_general_binary(afile)
       Fplt.fn_plot_gen(grid_prams,fields,figdir2)    # plot final results
 
       print("Plots in "+figdir2+'\n')
@@ -82,25 +95,71 @@ if PLOT_PROG:
 
    # Typical limits for parameters
    # NB use the same key names as in the .b file
-   zlims  = {'icec':[0,1],      \
-             'iceh':[0,5],      \
-             'Dmax':[0,300],    \
-             'tau_x':[-.5,.5],  \
-             'tau_y':[-.05,.05],\
-             'Hs':[0,4],        \
-             'Tp':[10,20],      \
-             'mwd':[-180,180]}
+   if 0:
+      # set colorbar axes manually
+      zlims  = {'icec':[0,1],      \
+                'iceh':[0,5],      \
+                'Dmax':[0,300],    \
+                'tau_x':[-.5,.5],  \
+                'tau_y':[-.05,.05],\
+                'Hs':[0,4],        \
+                'Tp':[10,20],      \
+                'mwd':[-180,180]}
+   else:
+      # set colorbar axes automatically
+      zdef  = [1.e30,-1.e30]
+      zlims  = {'icec' :1*zdef,\
+                'iceh' :1*zdef,\
+                'Dmax' :1*zdef,\
+                'tau_x':1*zdef,\
+                'tau_y':1*zdef,\
+                'Hs'   :1*zdef,\
+                'Tp'   :1*zdef,\
+                'mwd'  :1*zdef}
 
+   alist    = []
+   steplist = []
+   tlist    = []
    for pf in prog_files:
       if '.a'==pf[-2:]:
-         stepno   = pf.strip('wim_prog').strip('.a')
+         alist.append(pf)
+         stepno   = pf.strip('wim_prog').strip('.a') # step no eg 001 or date yyyymmddThhmmssZ
+         tlist.append(stepno)
+         if ('T' in stepno) and ('Z' in stepno):
+            # date
+            from datetime import datetime as dtm
+            steplist.append(dtm.strptime(stepno,'%Y%m%dT%H%M%SZ'))
+         else:
+            # integer step no
+            steplist.append(stepno)
          #
-         afile    = pdir+'/'+pf
+         afile = pdir+'/'+pf
          print(afile)
          #
          fields,info = Fdat.fn_read_general_binary(afile)
-         figdir3B    = figdir3+'/'+stepno
-         Fplt.fn_plot_gen(grid_prams,fields,figdir3B,zlims_in=zlims)
+         for key in fields.keys():
+            if key in zlims.keys():
+               zmin  = fields[key].min()
+               zmax  = fields[key].max()
+               if zmin<zlims[key][0]:
+                  zlims[key][0]  = zmin
+               if zmax>zlims[key][1]:
+                  zlims[key][1]  = zmax
+
+   # sort according to steplist:
+   slist = sorted([(e,i) for i,e in enumerate(steplist)])
+   alist = [alist[i] for e,i in slist]
+   tlist = [tlist[i] for e,i in slist]
+
+   for vbl in fields.keys():
+      figdir3B    = figdir3+'/'+vbl
+      if not os.path.exists(figdir3B):
+         os.mkdir(figdir3B)
+      for i,pf in enumerate(alist):
+         afile       = pdir+'/'+pf
+         fields,info = Fdat.fn_read_general_binary(afile)
+         Fplt.fn_plot_gen(grid_prams,fields,figdir3B,zlims_in=zlims,text=tlist[i],vlist=[vbl])
+
 
    ################################################################
    print('\n**********************************************************************')

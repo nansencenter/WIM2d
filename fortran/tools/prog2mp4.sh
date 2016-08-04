@@ -31,33 +31,33 @@ cd $P
 mkdir tmp
 
 n=-1
-for stepdir in $P/*
+vdir=$P/$vbl
+for f in $vdir/*.png
 do
-   if [ ! -f $stepdir ]
-   then
-      n=$((n+1))
-      cn=`printf "%3.3d" $n`
-      f0=$stepdir/$vbl.png
-      echo $f0
-      f=tmp/${vbl}$cn.png
-      echo $f
-      echo ln -s $f0 $f
-      ln -s $f0 $f
-   fi
+   n=$((n+1))
+   cn=`printf "%6.6d" $n`
+   f0=$vdir/`basename $f`
+   echo $f0
+   g=tmp/${vbl}$cn.png
+   echo $g
+   echo ln -s $f0 $g
+   ln -s $f0 $g
 done
+
+cd tmp
+# pwd
 
 # make movie
 fps=7 # frames per second
 mov=${vbl}.mp4
-cd tmp
-echo ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
+echo ffmpeg -framerate $fps -i ${vbl}%06d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
 
 #ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
 #ffmpeg -r 1/5 -i ${vbl}%03d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p $mov
 #ffmpeg -framerate 25 -i ${vbl}%03d.png -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p $mov
 #ffmpeg -framerate $fps -i ${vbl}%03d.png -b:v 64k -c:v libx264 -r 24 -pix_fmt yuv420p $mov
 #ffmpeg -r 5 -i ${vbl}%03d.png -vf "scale=1920:1080,format=yuv420p" -codec:v libx264 $mov
-ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p $mov
+ffmpeg -framerate $fps -i ${vbl}%06d.png -c:v libx264 -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p $mov
 
 #ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" $mov
 
