@@ -173,12 +173,16 @@ def fn_bfile_info(bfile):
 
          # if not at "Record number and name"
          if not(ls[0]=='Record' and ls[1]=='number'):
+            val   = ls[0]
             key   = ls[1]
             if not do_vlist:
                if key in int_list:
-                  val   = int(ls[0])
+                  val   = int(val)
+               elif ("T" in val) and ("Z" in val):
+                  import datetime as dtm
+                  val   = dtm.datetime.strptime(val,"%Y%m%dT%H%M%SZ")
                else:
-                  val   = float(ls[0])
+                  val   = float(val)
                binfo.update({key:val})
             else:
                vlist.append(key)

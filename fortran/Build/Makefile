@@ -121,36 +121,59 @@ $(ODIR)/%.o:	%.F
 
 # Link objects to make executable $(TARGET_F)
 # (default)
+lin="*********************************************************"
 exec: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+	@echo " "
+	@echo $(lin)$(lin)$(lin)
 	@mkdir -p $(bin)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
+	@echo $(lin)$(lin)$(lin)
+	@echo " "
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJ_MAIN) $(OBJS)
+	@echo " "
+	@echo $(lin)$(lin)$(lin)
 	@mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
 	mv $(TARGET_PY).so $(bin)
+	@echo $(lin)$(lin)$(lin)
+	@echo " "
 
 # Link objects to make python module $(TARGET_PY).so
 mex1:	$(MEX1) $(OBJ_MAIN) $(OBJS)
+	@echo " "
+	@echo $(lin)$(lin)$(lin)
 	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX1)* $(bin)
+	@echo $(lin)$(lin)$(lin)
+	@echo " "
 
 mex2:	$(MEX2) $(OBJ_MAIN) $(OBJS)
+	@echo " "
+	@echo $(lin)$(lin)$(lin)
 	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX2)* $(bin)
+	@echo $(lin)$(lin)$(lin)
+	@echo " "
 
 mex3:	$(MEX3) $(OBJ_MAIN) $(OBJS)
+	@echo " "
+	@echo $(lin)$(lin)$(lin)
 	@mkdir -p $(bin)
 	$(MXC) $(MEX_FLAGS) $^
 	mv $(TARGET_MEX3)* $(bin)
+	@echo $(lin)$(lin)$(lin)
+	@echo " "
 
 all:	py exec mex1 mex2 mex3
 
 All:	py exec
+
+mex:	mex1 mex2 mex3
 
 # DEPENDENCIES
 $(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	$(HDIR)/grid_info.h

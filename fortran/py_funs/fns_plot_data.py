@@ -199,7 +199,7 @@ def cmap_3d(x,y,z,labs,pobj=None,zlims=None):
 #######################################################################
 
 #######################################################################
-def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
+def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None,text='',vlist=None):
 
    from matplotlib import pyplot as plt
 
@@ -221,18 +221,30 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
       y  = np.concatenate([[y[0]-dy],y])/1.e3
 
    # dictionary of figure names
-   figs   = {'icec':'icec.png','iceh':'iceh.png','dfloe':'Dmax.png',\
-             'taux':'taux.png','tauy':'tauy.png',\
-             'Hs':'Hs.png'    ,'Tp':'Tp.png'   ,'mwd':'mwd.png',\
-             'ICE_MASK':'ice_mask.png','WAVE_MASK':'wave_mask.png',\
-             'LANDMASK':'land_mask.png'}
+   figs   = {'icec':'icec'+text+'.png',\
+             'iceh':'iceh'+text+'.png',\
+             'dfloe':'Dmax'+text+'.png',\
+             'taux':'taux'+text+'.png',\
+             'tauy':'tauy'+text+'.png',\
+             'Hs':'Hs'+text+'.png',\
+             'Tp':'Tp'+text+'.png',\
+             'mwd':'mwd'+text+'.png',\
+             'ICE_MASK':'ice_mask'+text+'.png',\
+             'WAVE_MASK':'wave_mask'+text+'.png',\
+             'LANDMASK':'land_mask'+text+'.png'}
 
    # dictionary of labels for colorbars
-   labs   = {'icec':'$c$'     ,'iceh':'$h$, m'  ,'dfloe':'$D_{max}$, m',\
-             'taux':r'$\tau_x$, Pa','tauy':r'$\tau_y$, Pa',\
-             'Hs':'$H_{s}$, m' ,'Tp':'$T_p$, s'  ,'mwd':'mwd, degrees',\
-             'ICE_MASK':'Ice mask','WAVE_MASK':'Wave mask',\
-             'LANDMASK':'Land mask'}
+   labs   = {'icec':'$c$',\
+         'iceh':'$h$, m',\
+         'dfloe':'$D_{max}$, m',\
+         'taux':r'$\tau_x$, Pa',\
+         'tauy':r'$\tau_y$, Pa',\
+         'Hs':'$H_{s}$, m',\
+         'Tp':'$T_p$, s',\
+         'mwd':'mwd, degrees',\
+         'ICE_MASK':'Ice mask',\
+         'WAVE_MASK':'Wave mask',\
+         'LANDMASK':'Land mask'}
 
    # Default is let python choose range for variables
    zlims  = {'icec'     : None,   \
@@ -261,7 +273,10 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None):
          zlims[key]  = zlims_in[key]
 
    # make plots
-   for key in fields.keys():
+   if vlist is None:
+      vlist = fields.keys()
+
+   for key in vlist:
       fig   = figdir+'/'+figs[key]
       zlim  = zlims[key]
       if ny>1:
