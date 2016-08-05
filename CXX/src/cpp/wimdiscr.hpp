@@ -38,11 +38,12 @@ extern "C"
 
 #define PI M_PI
 
+namespace Wim
+{
+
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
-namespace Wim
-{
 template<typename T=float> class WimDiscr
 {
 	typedef T value_type;

@@ -2,6 +2,7 @@
 
 #include <wimdiscr.hpp>
 #include <iomanip>
+#include <options.hpp>
 
 namespace
 {
@@ -9,21 +10,11 @@ namespace
     const size_t SUCCESS = 0;
 } // namespace
 
-
-namespace po = boost::program_options;
-
-namespace WIMOPT
-{
-    po::options_description descrOptions();
-}// WIMOPT
-
 int main(int argc, char** argv )
 {
-
-    using namespace WIMOPT;
     using namespace Wim;
 
-    po::options_description desc = descrOptions();
+    po::options_description desc = descrWimOptions();
     po::variables_map vm;
 
     try
@@ -73,7 +64,7 @@ int main(int argc, char** argv )
     double dave,dmax;
     std::vector<double> dmaxvec={15,20,30,40,80,160,200,220};
     int mom=2;
-   
+
     for (int j=0; j<dmaxvec.size(); ++j)
     {
        dmax = dmaxvec[j];
