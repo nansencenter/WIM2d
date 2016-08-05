@@ -111,8 +111,13 @@ def fn_check_grid(outdir):
 ##############################################################
 def fn_check_init(outdir):
    # routine to get initial fields from binary files:
-   afile       = outdir+'/wim_init.a'
-   bfile       = outdir+'/wim_init.b'
+   lst   = os.listdir(outdir)
+   afile = None
+   for f in lst:
+      if 'wim_init' in f and '.a' in f:
+         afile = outdir+'/'+f
+         break
+   bfile       = afile.replace('.a','.b')
    fields,info = fn_read_general_binary(afile)
    aliases     = key_aliases(inverse=True)
 
@@ -242,8 +247,13 @@ def fn_read_general_binary(afile):
 ##############################################################
 def fn_check_out_bin(outdir):
    # routine to get output fields from binary files:
-   afile       = outdir+'/wim_out.a'
-   bfile       = outdir+'/wim_out.b'
+   lst   = os.listdir(outdir)
+   afile = None
+   for f in lst:
+      if 'wim_out' in f and '.a' in f:
+         afile = outdir+'/'+f
+         break
+   bfile       = afile.replace('.a','.b')
    fields,info = fn_read_general_binary(afile)
    aliases     = key_aliases(inverse=True)
 
