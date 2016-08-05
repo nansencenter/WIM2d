@@ -1,167 +1,35 @@
-import numpy as np
-import os
-import sys
-import shutil
-import struct
-import matplotlib.pyplot as plt
-
-wim2d_path  = os.getenv('WIM2D_PATH')
-dd          = os.path.abspath(wim2d_path+"/fortran")
-sys.path.append(dd+"/bin")
-sys.path.append(dd+"/py_funs")
-
+import os,sys
 import fns_get_data  as Fdat
-import fns_plot_data as Fplt
 
 # run from root results directory eg out, out_io
 outdir   = os.getcwd()
-bindir   = outdir+'/binaries'
-figdir   = outdir+'/figs'
+results  = Fdat.wim_results(outdir=outdir)
 
-if not os.path.exists(bindir):
-   raise ValueError('No binaries folder in current directory')
-else:
-   grid_prams  = Fdat.fn_check_grid(bindir)
-
-##########################################################################
-# Make plots
-if not os.path.exists(figdir):
-   os.mkdir(figdir)
-
-PLOT_INIT   = 0
-PLOT_FINAL  = 0
+PLOT_INIT   = 1
+PLOT_FINAL  = 1
 PLOT_PROG   = 1
-binlist     = os.listdir(bindir)
+
 
 ##########################################################################
 if PLOT_INIT:
-   afile = None
-   for f in binlist:
-      if ('wim_init' in f) and ('.a' in f):
-         afile = bindir+'/'+f
-         break
-
-   if afile is None:
-      print('Initial conditions not outputted: wim_init*.[a,b]')
-      print('- not plotting')
-   else:
-      # Look at initial fields:
-      print("Plotting initial conditions...")
-      figdir1  = figdir+'/init/'
-      if not os.path.exists(figdir1):
-         os.mkdir(figdir1)
-
-      # new way (more general)
-      fields,info = Fdat.fn_read_general_binary(afile)
-      Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot initial conditions
-
-      print("Plots in "+figdir1)
-      print(" ")
+   results.plot_initial()
 ##########################################################################
+
 
 ################################################################
 if PLOT_FINAL:
-   afile = None
-   for f in binlist:
-      if ('wim_out' in f) and ('.a' in f):
-         afile = bindir+'/'+f
-         break
-
-   if afile is None:
-      print('Final conditions not outputted: wim_out*.[a,b]')
-      print('- not plotting')
-   else:
-      # Look at end results:
-      print("Plotting final results...")
-      figdir2     = figdir+'/final/'
-      if not os.path.exists(figdir2):
-         os.mkdir(figdir2)
-
-      fields,info = Fdat.fn_read_general_binary(afile)
-      Fplt.fn_plot_gen(grid_prams,fields,figdir2)    # plot final results
-
-      print("Plots in "+figdir2+'\n')
-      print(" ")
+   results.plot_final()
 ################################################################
 
+
+################################################################
 if PLOT_PROG:
-   ################################################################
-   # Plot progress files (if they exist)
-   pdir        = bindir+'/prog'
-   prog_files  = os.listdir(pdir)
-   figdir3     = figdir+'/prog'
-   if not os.path.exists(figdir3):
-      os.mkdir(figdir3)
-
-   # Typical limits for parameters
-   # NB use the same key names as in the .b file
-   if 0:
-      # set colorbar axes manually
-      zlims  = {'icec':[0,1],      \
-                'iceh':[0,5],      \
-                'Dmax':[0,300],    \
-                'tau_x':[-.5,.5],  \
-                'tau_y':[-.05,.05],\
-                'Hs':[0,4],        \
-                'Tp':[10,20],      \
-                'mwd':[-180,180]}
-   else:
-      # set colorbar axes automatically
-      zdef  = [1.e30,-1.e30]
-      zlims  = {'icec' :1*zdef,\
-                'iceh' :1*zdef,\
-                'Dmax' :1*zdef,\
-                'tau_x':1*zdef,\
-                'tau_y':1*zdef,\
-                'Hs'   :1*zdef,\
-                'Tp'   :1*zdef,\
-                'mwd'  :1*zdef}
-
-   alist    = []
-   steplist = []
-   tlist    = []
-   for pf in prog_files:
-      if '.a'==pf[-2:]:
-         alist.append(pf)
-         stepno   = pf.strip('wim_prog').strip('.a') # step no eg 001 or date yyyymmddThhmmssZ
-         tlist.append(stepno)
-         if ('T' in stepno) and ('Z' in stepno):
-            # date
-            from datetime import datetime as dtm
-            steplist.append(dtm.strptime(stepno,'%Y%m%dT%H%M%SZ'))
-         else:
-            # integer step no
-            steplist.append(stepno)
-         #
-         afile = pdir+'/'+pf
-         print(afile)
-         #
-         fields,info = Fdat.fn_read_general_binary(afile)
-         for key in fields.keys():
-            if key in zlims.keys():
-               zmin  = fields[key].min()
-               zmax  = fields[key].max()
-               if zmin<zlims[key][0]:
-                  zlims[key][0]  = zmin
-               if zmax>zlims[key][1]:
-                  zlims[key][1]  = zmax
-
-   # sort according to steplist:
-   slist = sorted([(e,i) for i,e in enumerate(steplist)])
-   alist = [alist[i] for e,i in slist]
-   tlist = [tlist[i] for e,i in slist]
-
-   for vbl in fields.keys():
-      figdir3B    = figdir3+'/'+vbl
-      if not os.path.exists(figdir3B):
-         os.mkdir(figdir3B)
-      for i,pf in enumerate(alist):
-         afile       = pdir+'/'+pf
-         fields,info = Fdat.fn_read_general_binary(afile)
-         Fplt.fn_plot_gen(grid_prams,fields,figdir3B,zlims_in=zlims,text=tlist[i],vlist=[vbl])
+   results.plot_prog()
 
 
    ################################################################
+   wim2d_path  = os.getenv('WIM2D_PATH')
+
    print('\n**********************************************************************')
    print('to make movie, type')
    print(wim2d_path+'/fortran/tools/prog2mp4.sh Hs '+outdir+'/figs/prog')
@@ -169,3 +37,6 @@ if PLOT_PROG:
    print(wim2d_path+'/fortran/tools/prog2mp4.sh Dmax '+outdir+'/figs/prog')
    print('**********************************************************************\n')
    ################################################################
+
+
+################################################################

@@ -15,83 +15,127 @@ def convert_dict(dd,di):
 ###################################################
 def default_params(convert=False):
    
+   param_dict  = {}
    ###################################################
    # default integer parameters
-   int_prams   = {}
-   int_indices = {}
-   i           = -1
    
-   i +=1
-   int_prams.update({'SCATMOD'   : 1})
-   int_indices.update({'SCATMOD' : i})
-   
-   i +=1
-   int_prams.update({'ADV_DIM'   : 1})
-   int_indices.update({'ADV_DIM' : i})
-
-   i +=1
-   int_prams.update({'ADV_OPT'   : 2})
-   int_indices.update({'ADV_OPT' : i})
-
-   i +=1
-   int_prams.update({'CHECK_FINAL'  : 1})
-   int_indices.update({'CHECK_FINAL': i})
-
-   i +=1
-   int_prams.update({'CHECK_PROG'   : 1})
-   int_indices.update({'CHECK_PROG' : i})
-
-   i +=1
-   int_prams.update({'CHECK_INIT'   : 1})
-   int_indices.update({'CHECK_INIT' : i})
-
-   i +=1
-   int_prams.update({'STEADY'       : 1})
-   int_indices.update({'STEADY'     : i})
-
-   i +=1
-   int_prams.update({'DO_BREAKING'  : 1})
-   int_indices.update({'DO_BREAKING': i})
-
-   i +=1
-   int_prams.update({'DO_ATTEN'  : 1})
-   int_indices.update({'DO_ATTEN': i})
+   param_dict.update({'SCATMOD'     : 0})
+   param_dict.update({'ADV_DIM'     : 2})
+   param_dict.update({'ADV_OPT'     : 2})
+   param_dict.update({'CHECK_FINAL' : 1})
+   param_dict.update({'CHECK_PROG'  : 1})
+   param_dict.update({'CHECK_INIT'  : 1})
+   param_dict.update({'STEADY'      : 1})
+   param_dict.update({'DO_BREAKING' : 1})
+   param_dict.update({'DO_ATTEN'    : 1})
    ###################################################
 
 
    ###################################################
    # default real parameters:
-   real_prams     = {}
-   real_indices   = {}
-   i              = -1
-
-   i += 1
    real_prams.update({'young'    : 5.49e9})
-   real_indices.update({'young'  : i})
+   real_prams.update({'visc_rp'  : 13.0})
+   duration_hours = 6.
+   real_prams.update({'duration' : duration_hours*60*60})
+   real_prams.update({'CFL'      : 0.7})
+   ###################################################
 
-   i += 1
-   real_prams.update({'visc_rp'  : 0.0})
-   real_indices.update({'visc_rp': i})
 
-   i += 1
-   duration_hours = 17.77
-   real_prams.update({'duration'    : duration_hours*60*60})
-   real_indices.update({'duration'  : i})
+   ###################################################
+   # other integer params
+   param_dict.update({"FSD_OPT"     :1})
+   param_dict.update({"REF_HS_ICE"  :1})
+   param_dict.update({"USE_ICE_VEL" :0})
+   ###################################################
 
-   i += 1
-   real_prams.update({'CFL'   : 0.7})
-   real_indices.update({'CFL' : i})
+
+   ###################################################
+   # init cons
+   param_dict.update({"Hs_init"     :3.})
+   param_dict.update({"T_init"      :12.})
+   param_dict.update({"mwd_init"    :-90.})
+   param_dict.update({"conc_init"   :.7})
+   param_dict.update({"h_init"      :1.})
+   param_dict.update({"Dmax_init"   :300.})
+   ###################################################
+
+
+   ###################################################
+   # start time
+   from datetime import datetime as dtm
+   param_dict.update({'start_time':dtm(2015,1,1)})
+   ###################################################
+
+
+   ###################################################
+   # diagnostics
+   param_dict.update({"itest"    :-1})
+   param_dict.update({"jtest"    :-1})
+   param_dict.update({"dumpfreq" :10})
    ###################################################
 
    if convert:
-      int_prams   = convert_dict(int_prams,int_indices)
-      real_prams  = convert_dict(real_prams,real_indices)
-      return int_prams,real_prams
+      return param_dict2vec(param_dict)
    else:
-      print(int_prams,real_prams,int_indices,real_indices)
-      return int_prams,real_prams,int_indices,real_indices
+      return param_dict
 ################################################################
 
+
+# ================================================================
+def param_dict2vec(param_dict):
+   param_vec   = []
+
+   # old int_prams
+   param_vec.append(param_dict["SCATMOD"])
+   param_vec.append(param_dict["ADV_DIM"])
+   param_vec.append(param_dict["ADV_OPT"])
+   param_vec.append(param_dict["BRK_OPT"])
+   param_vec.append(param_dict["STEADY"])
+   param_vec.append(param_dict["DO_ATTEN"])
+   param_vec.append(param_dict["DO_CHECK_FINAL"])
+   param_vec.append(param_dict["DO_CHECK_PROG"])
+   param_vec.append(param_dict["DO_CHECK_INIT"])
+
+   # old real_prams
+   param_vec.append(param_dict["young"])
+   param_vec.append(param_dict["viscrp"])
+   param_vec.append(param_dict["duration"])
+   param_vec.append(param_dict["CFL"])
+
+   # other integers
+   param_vec.append(param_dict["FSD_OPT"])
+   param_vec.append(param_dict["REF_HS_ICE"])
+   param_vec.append(param_dict["USE_ICE_VEL"])
+
+   # init cons
+   param_vec.append(param_dict["Hs_init"])
+   param_vec.append(param_dict["T_init"])
+   param_vec.append(param_dict["mwd_init"])
+   param_vec.append(param_dict["conc_init"])
+   param_vec.append(param_dict["h_init"])
+   param_vec.append(param_dict["Dmax_init"])
+
+   # start time
+   from datetime import datetime as dtm
+   t0       = param_dict['start_time']
+   reftime  = dtm(1900,1,1)
+   tdiff    = t0-reftime
+ 
+   model_day      = tdiff.days
+   model_seconds  = tdiff.total_seconds()-24*3600*model_day
+   param_vec.append(model_day)
+   param_vec.append(model_seconds)
+
+   # diagnostics
+   param_vec.append(param_dict["itest"])
+   param_vec.append(param_dict["jtest"])
+   param_vec.append(param_dict["dumpfreq"])
+
+   return param_vec
+# ================================================================
+
+
+# ================================================================
 def mesh_dict2arr(mesh_e,inverse=False):
    # mesh_e=dictionary with keys:
    # NB order important
@@ -109,15 +153,16 @@ def mesh_dict2arr(mesh_e,inverse=False):
    return out
 
 ################################################################
-def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
+def do_run(RUN_OPT=0,in_fields=None,params_in=None):
 
    import numpy as np
    import os
    import sys
 
-   dd   = os.path.abspath("..")
+   w2d   = os.getenv('WIM2D_PATH')
+   sys.path.append(w2d+"/py_funs")
+   dd = os.path.abspath(".")
    sys.path.append(dd+"/bin")
-   sys.path.append(dd+"/misc_py")
 
    import WIM2d_f2py as Fwim # fortran code compiled with f2py
    import fns_get_data as Fdat
@@ -134,9 +179,9 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
 
    # check directories for outputs exist
    if (RUN_OPT < 2):
-      outdir   = 'out'
+      outdir   = 'out_py'
    else:
-      outdir   = 'out_io'
+      outdir   = 'out_py_io'
 
    figdir   = outdir+'/figs'
    dirs  = [outdir,outdir+'/log',
@@ -188,22 +233,16 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       # run wim2d with inputs and outputs
 
       ##########################################################
-      int_prams_def,real_prams_def  = default_params(convert=True)
+      params_dict  = default_params()
 
-      # check input int_prams, if present
-      if int_prams is None:
-         int_prams   = int_prams_def
-      elif len(int_prams)!=len(int_prams_def):
-         print('Length of int_prams = '+str(len(int_prams)))
-         print('- should be: '+str(len(int_prams_def)))
-         raise ValueError('int_prams')
+      if params_in is not None:
+         for key in params_in:
+            if key not in param_dict:
+               raise ValueError('Parameter '+key+'invalid')
+            else:
+               param_dict[key]   = params_in[key]
 
-      # check input real_prams, if present
-      if real_prams is None:
-         real_prams  = real_prams_def
-      elif len(real_prams)!=len(real_prams_def):
-         print('Length of real_prams = '+str(len(real_prams)))
-         raise ValueError('- should be: '+str(len(real_prams_def)))
+      params_vec  = param_dict2vec(param_dict)
       ##########################################################
 
 
@@ -227,7 +266,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
       elif 1:
          # 'in_fields' not given as input
          # - read in inputs from saved files:
-         in_dir                  = 'out/binaries'
+         in_dir                  = 'out_py/binaries'
          grid_prams              = Fdat.fn_check_grid(in_dir)
          ice_fields,wave_fields  = Fdat.fn_check_init(in_dir)
 
@@ -319,7 +358,7 @@ def do_run(RUN_OPT=0,in_fields=None,int_prams=None,real_prams=None):
 ################################################################
 def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
                     Tp_single_freq=12.,mwd_single_dir=-90.,\
-                    int_prams=None,real_prams=None,mesh_e=None):
+                    params_in=None,mesh_e=None):
 
    import numpy as np
    import os
@@ -382,21 +421,16 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
       # run wim2d with inputs and outputs
 
       ##########################################################
-      int_prams_def,real_prams_def  = default_params(convert=True)
+      params_dict = default_params()
 
-      if int_prams is None:
-         int_prams   = int_prams_def
-      elif len(int_prams)!=len(int_prams_def):
-         print('Length of int_prams = '+str(len(int_prams)))
-         print('- should be: '+str(len(int_prams_def)))
-         raise ValueError('int_prams')
+      if params_in is not None:
+         for key in params_in:
+            if key not in param_dict:
+               raise ValueError('Parameter '+key+'invalid')
+            else:
+               param_dict[key]   = params_in[key]
 
-      if real_prams is None:
-         real_prams  = real_prams_def
-      elif len(real_prams)!=len(real_prams_def):
-         print('Length of real_prams = '+str(len(real_prams)))
-         print('- should be: '+str(len(real_prams_def)))
-         raise ValueError('real_prams')
+      params_vec  = param_dict2vec(param_dict)
       ##########################################################
 
       # dimensions of grid
@@ -555,9 +589,8 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
       sdf_dir              = np.array(sdf_dir,dtype='float32')
       
       if mesh_e is None:
-         sdf_dir2,out_arrays  = Fwim.py_wim2d_run_vsdir(sdf_dir,ice_arrays,\
-                                                     int_prams,real_prams,Tp_single_freq,mwd_single_dir,\
-                                                     ndir,nfreq)
+         sdf_dir2,out_arrays  = Fwim.py_wim2d_run_vsdir(
+               sdf_dir,ice_arrays,param_vec,ndir,nfreq)
 
          print(" ")
          print("###################################################")
@@ -580,11 +613,11 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
          mesh_arr    = mesh_arr.reshape((nmesh_e*nmesh_vars,),order='fortran')
          #############################################################################
 
+
          #############################################################################
          # run WIM, with interpolation of Nfloes onto the mesh
-         out  = Fwim.py_wim2d_run_vsdir_mesh(sdf_dir,ice_arrays,mesh_arr,\
-                                                     int_prams,real_prams,Tp_single_freq,mwd_single_dir,\
-                                                     ndir,nfreq,nmesh_e)
+         out  = Fwim.py_wim2d_run_vsdir_mesh(
+               sdf_dir,ice_arrays,mesh_arr,param_vec,ndir,nfreq,nmesh_e)
          sdf_dir2,out_arrays,mesh_arr  = out
 
          print(" ")
@@ -608,7 +641,7 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
       # Tp    = out_arrays[:,:,2]
       # tau_x = out_arrays[:,:,3]
       # tau_y = out_arrays[:,:,4]
-      # ?? mwd   = out_arrays[:,:,5] ??
+      # mwd   = out_arrays[:,:,5]
 
       # convert out_arrays to Out_Fields object
       out_fields  = Fdat.fn_check_out_arr(out_arrays)
@@ -620,16 +653,22 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
          print('Testing integrals of output spectrum...')
          wave_fields2   = {'Hs':0,'Tp':0,'mwd':0}
          if nfreq==1:
+            Tp_single_freq = param_dict['T_init']
             freq_vec_   = np.array([1./Tp_single_freq])
          else:
             freq_vec_   = freq_vec
+
          if ndir==1:
+            mwd_single_dir = param_dict['mwd_init']
             wavdir_   = np.array([mwd_single_dir])
          else:
             wavdir_  = wavdir
 
-         wave_fields2['Hs'],wave_fields2['Tp'],wave_fields2['mwd']   = \
-               Fmisc.spectrum_integrals(sdf_dir2,freq_vec_,wavdir_)
+         wave_fields2['Hs'],\
+               wave_fields2['Tp'],\
+               wave_fields2['mwd']   = \
+                  Fmisc.spectrum_integrals(\
+                     sdf_dir2,freq_vec_,wavdir_)
 
          arrays   = [wave_fields2,out_fields]
          keys     = ['Hs','Tp']
@@ -642,24 +681,28 @@ def do_run_vSdir(RUN_OPT=0,sdf_dir=None,wave_fields=None,ice_fields=None,\
          if 1:
             # plot Tp for visual comparison
             # - small differences?
-            gf = Fdat.fn_check_grid('inputs')
+            gf    = Fdat.fn_check_grid('inputs')
             labs  = ['$x$, km','$y$, km', '$T_p$, s']
             #
-            f     = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,wave_fields2['Tp'],labs)
+            f  = Fplt.cmap_3d(\
+                  gf['X']/1.e3,gf['Y']/1.e3,wave_fields2['Tp'],labs)
             f.show()
             #
-            f  = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,out_fields['Tp'],labs)
+            f  = Fplt.cmap_3d(\
+                  gf['X']/1.e3,gf['Y']/1.e3,out_fields['Tp'],labs)
             f.show()
 
          if 0:
             # plot Hs for visual comparison
-            gf = Fdat.fn_check_grid('inputs')
+            gf    = Fdat.fn_check_grid('inputs')
             labs  = ['$x$, km','$y$, km', '$H_s$, m']
             #
-            f     = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,wave_fields2['Hs'],labs)
+            f  = Fplt.cmap_3d(\
+                  gf['X']/1.e3,gf['Y']/1.e3,wave_fields2['Hs'],labs)
             f.show()
             #
-            f  = Fplt.cmap_3d(gf['X']/1.e3,gf['Y']/1.e3,out_fields['Hs'],labs)
+            f  = Fplt.cmap_3d(\
+                  gf['X']/1.e3,gf['Y']/1.e3,out_fields['Hs'],labs)
             f.show()
 
          sys.exit()
