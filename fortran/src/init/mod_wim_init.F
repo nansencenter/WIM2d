@@ -194,11 +194,13 @@
          !! - initialise from Tp array
          !! - set it to mean over the wave mask
 
+         print*,sum(WAVE_MASK)
          Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
          freq_vec(1) = 1.0/Tmean
          !!
          Tvar     = sum(WAVE_MASK*(Tp-Tmean)**2)/sum(WAVE_MASK)!variance of the periods
          Tstdev   = sqrt(Tvar)
+         print*,'mean of peak periods : ',Tmean
          print*,'std dev of peak periods : ',Tstdev
          !!
          if (abs(Tstdev).gt.1.0e-2) then
@@ -209,6 +211,9 @@
             print*,' '
             STOP
          end if
+         !!
+         !if ((abs(Tmean)-) then
+         !end if
 
       end if
 

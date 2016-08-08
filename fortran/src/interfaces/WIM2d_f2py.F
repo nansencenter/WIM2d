@@ -25,8 +25,8 @@
       !!variables
       integer,intent(in)                  :: nx,ny,nr
       real*8,intent(in)                   :: real_prams(nr)
-      real,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,6),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy,mwd
+      real*8,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
+      real*8,dimension(nx,ny,6),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy,mwd
 !f2py intent(hide)   :: nx,ny,nr
 
       call wim2d_run_io(in_arrays,out_arrays,real_prams,nx,ny)

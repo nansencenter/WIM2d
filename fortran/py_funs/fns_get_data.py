@@ -275,7 +275,7 @@ def fn_check_out_bin(outdir):
 
 ##############################################################
 def fn_check_out_arr(out_arrays):
-   # routine to convert out_arrays to Out_Fields object
+   # routine to convert out_arrays to dictionary
    out_fields  = {}
 
    keys  = ['dfloe','taux','tauy','Hs','Tp','mwd']
@@ -330,6 +330,7 @@ class wim_results:
 
    def __init__(self,outdir='.',grid_dir=None):
 
+      self.rootdir   = outdir
       self.bindir    = outdir+'/binaries'
       if not os.path.exists(self.bindir):
          raise ValueError(self.bindir+ ' does not exist')
@@ -507,7 +508,7 @@ class wim_results:
       else:
          print("Plotting initial conditions...")
          if not os.path.exists(self.figdir):
-            os.mkdir(figdir)
+            os.mkdir(self.figdir)
 
          figdir1  = self.figdir+'/init/'
          if not os.path.exists(figdir1):
@@ -534,7 +535,7 @@ class wim_results:
       else:
          print("Plotting final conditions...")
          if not os.path.exists(self.figdir):
-            os.mkdir(figdir)
+            os.mkdir(self.figdir)
 
          figdir1  = self.figdir+'/final/'
          if not os.path.exists(figdir1):
@@ -676,8 +677,8 @@ class wim_results:
             os.mkdir(figdir3B)
 
          for i,pf in enumerate(alist):
+            print(self.prog_times[i])
             afile       = pdir+'/'+pf
-            print(afile)
             fields,info = fn_read_general_binary(afile)
             Fplt.fn_plot_gen(grid_prams,fields,figdir3B,\
                   zlims_in=zlims,text=tlist[i],vlist=[vbl])

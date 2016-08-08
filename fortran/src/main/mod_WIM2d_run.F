@@ -272,8 +272,8 @@
       ! STEADY,BRK_OPT,DO_ATTEN
 
       real*8,intent(in) :: real_prams(n_param_vec)
-      real,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
-      real,dimension(nx,ny,6),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy,mwd
+      real*8,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
+      real*8,dimension(nx,ny,6),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy,mwd
 
       real              :: PI
       !real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
@@ -294,32 +294,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       call read_param_vec(init_cons,real_prams)
-!     SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
-!                              ! 0: scattering treated like attenuation
-!                              ! 1: directional scattering
-!     ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
-!                              ! and also testing many parameters at once
-!                              ! ie each 'y' row can be a different experiment
-!                              !    if we use this option
-!                              !    - in practice we set speed in 'y' dirn to 0.
-!     ADV_OPT  = int_prams(3)  ! 0, not periodic;
-!                              ! 1, periodic in both x,y;
-!                              ! 2, periodic in y only;
-
-!     !! Inputs to determine if results
-!     !! should be dumped to binaries or not
-!     DO_CHECK_FINAL = int_prams(4)
-!     DO_CHECK_PROG  = int_prams(5)
-!     DO_CHECK_INIT  = int_prams(6)
-!     STEADY         = int_prams(7)
-!     BRK_OPT        = int_prams(8)
-!     DO_ATTEN       = int_prams(9)
-
-!     !!real inputs
-!     wim_info%young    = real_prams(1)   !!young,visc_rp
-!     wim_info%viscrp   = real_prams(2)   !!young,visc_rp
-!     duration          = real_prams(3)   !!length of sim [s]
-!     CFL               = real_prams(4)   !!cg*dt/dx
+      !stop
 
       PI       = 4.0*atan(1.0)
       et       = etime(tictoc)!!startup etime
@@ -357,9 +332,9 @@
       call get_grid_file(indir)     ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
-      icec     = in_arrays(:,:,1)
-      iceh     = in_arrays(:,:,2)
-      dfloe    = in_arrays(:,:,3)
+      icec     = real(in_arrays(:,:,1))
+      iceh     = real(in_arrays(:,:,2))
+      dfloe    = real(in_arrays(:,:,3))
       ICE_MASK = 0.0
       where (icec.gt.min_conc)
          ICE_MASK = 1.0
@@ -369,14 +344,17 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! set incident waves from inputs
-      Hs          = in_arrays(:,:,4)
-      Tp          = in_arrays(:,:,5)
-      mwd         = in_arrays(:,:,6)
+      Hs          = real(in_arrays(:,:,4))
+      Tp          = real(in_arrays(:,:,5))
+      mwd         = real(in_arrays(:,:,6))
       WAVE_MASK   = 0.0
       where ((ICE_MASK.lt.1.0).and.(Hs.gt.0.0))
          !!kill waves inside ice and propagate them in ourselves
          WAVE_MASK   = 1.0
       end where
+      !print*,WAVE_MASK
+      ! print*,'# of wave cells',sum(WAVE_MASK)
+      ! stop
 
       ! set waves grid
       call waves_init_freq()
@@ -450,11 +428,12 @@
       !call print_log_info()
 
       !! put in same order as binary outputs:
-      out_arrays(:,:,1) = dfloe     ! maximum floe size
-      out_arrays(:,:,2) = tau_x     ! wave stress (x dirn)
-      out_arrays(:,:,3) = tau_y     ! wave stress (y dirn)
-      out_arrays(:,:,4) = Hs        ! significant wave height
-      out_arrays(:,:,5) = Tp        ! mean wave period
+      out_arrays(:,:,1) = dble(dfloe)  ! maximum floe size
+      out_arrays(:,:,2) = dble(tau_x)  ! wave stress (x dirn)
+      out_arrays(:,:,3) = dble(tau_y)  ! wave stress (y dirn)
+      out_arrays(:,:,4) = dble(Hs   )  ! significant wave height
+      out_arrays(:,:,5) = dble(Tp   )  ! mean wave period
+      out_arrays(:,:,6) = dble(mwd  )  ! mean wave period
 
       !!print  some outputs to log file
       !call print_log_info()
@@ -824,18 +803,18 @@
       real*8,dimension(nx*ny*nx3d) ,intent(in)    :: x3d !all 2d input arrays merged into 1 3d array
       real*8,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
 
-      integer                    :: i,j,s
-      real,dimension(nx,ny,nx3d) :: in_arrays
-      real,dimension(nx,ny,ny3d) :: out_arrays
+      integer                      :: i,j,s
+      real*8,dimension(nx,ny,nx3d) :: in_arrays
+      real*8,dimension(nx,ny,ny3d) :: out_arrays
 
-      in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/)) !convert to real*4 if necessary
+      in_arrays   = reshape(x3d,(/nx,ny,nx3d/)) !convert to real*4 if necessary
 
       print*,'before wim2d_run_io:',shape(in_arrays),nx,ny,nx3d
       call wim2d_run_io(in_arrays,out_arrays                            &
      &                  ,real_prams,nx,ny)
 
       print*,'after wim2d_run_io:',shape(out_arrays),nx,ny,ny3d
-      y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/)) !convert to real*8 if necessary
+      y3d   = reshape(out_arrays,(/nx*ny*ny3d/)) !convert to real*8 if necessary
 
       end subroutine mex_io_gate_v2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1438,7 +1417,7 @@
       print*,"Duration (s): ",duration
       i     = i+1
       CFL   = real(param_vec(i))
-      print*,"Duration (s): ",CFL
+      print*,"CFL: ",CFL
       print*,'******************************************************'
       print*,' '
       ! ===================================================
