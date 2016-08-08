@@ -265,19 +265,13 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,intent(in)                  :: nx,ny
-      !integer,dimension(9),intent(in)     :: int_prams
-      ! SCATMOD,ADV_DIM,ADV_OPT,
-      ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! STEADY,BRK_OPT,DO_ATTEN
-
-      real*8,intent(in) :: real_prams(n_param_vec)
+      integer,intent(in)   :: nx,ny
+      real*8,intent(in)    :: real_prams(n_param_vec)
       real*8,dimension(nx,ny,6),intent(in)  :: in_arrays   !! c,h,Dmax,Hs,Tp,mwd
       real*8,dimension(nx,ny,6),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy,mwd
 
-      real              :: PI
-      !real,dimension(2) :: wim_prams_in  !! (young,visc_rp) -> inputs to set_wim_prams
-      real     :: wim_prams_in(2),init_cons(6)
+      real  :: PI,Tdiff,mwd_diff
+      real  :: wim_prams_in(2),init_cons(6)
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
@@ -358,7 +352,23 @@
 
       ! set waves grid
       call waves_init_freq()
+      Tdiff = abs(1./freq_vec(1)-init_cons(2))
+      if ((nw.eq.1).and.(Tdiff.gt.init_cons(2)*1.e-5) ) then
+         print*,"Inconsistent values of parameter T_init and array Tp"
+         print*,init_cons(2)
+         print*,1./freq_vec(1)
+         stop
+      end if
+
       call waves_init_dir()
+      mwd_diff = abs(wavdir(1)-init_cons(3))
+      if ((ndir.eq.1).and.(mwd_diff.gt.init_cons(3)*1.e-5) ) then
+         print*,"Inconsistent values of parameter mwd_init"//
+     &            " and array mwd"
+         print*,init_cons(3)
+         print*,wavdir(1)
+         stop
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !! create full incident wave spectrum
