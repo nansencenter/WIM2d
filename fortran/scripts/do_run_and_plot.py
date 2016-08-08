@@ -22,7 +22,7 @@ grid_prams  = gf
 
 ###########################################################################
 if RUN_OPT==0:
-   results  = Rwim.do_run(RUN_OPT=RUN_OPT)
+   results  = Rwim.do_run()
 else:
    # set inputs: (icec,iceh,dfloe), (Hs,Tp,mwd)
 
@@ -113,8 +113,7 @@ else:
       params_in.update({'jtest'   : 10})
 
    # call gateway between python and pre-compiled f2py module
-   out_fields,results   = Rwim.do_run(RUN_OPT=RUN_OPT,in_fields=in_fields,
-                                       params_in=params_in)
+   out_fields,results   = Rwim.do_run(in_fields=in_fields,params_in=params_in)
 
 ##########################################################################
 if DO_PLOTTING==0:

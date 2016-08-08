@@ -4,22 +4,17 @@ import shutil
 import struct
 from matplotlib import pyplot as plt
 
-##
-## NB run from 'run' directory !!
-##
 w2d   = os.getenv('WIM2D_PATH')
-dd    = w2d+'/fortran'
-sys.path.append(dd+"/bin")
-sys.path.append(dd+"/py_funs")
+sys.path.append("bin")
 
 import run_WIM2d     as Rwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-RUN_OPT  = 2 # rerun then plot
-# RUN_OPT  = 3 # plot saved results
+TEST_MESH   = 1
+DO_PLOTTING = 0
 
-gf          = Fdat.fn_check_grid('inputs')
+gf          = Fdat.fn_check_grid('grid')
 gfl         = gf['LANDMASK']
 ICEMASK     = 1.-gfl
 WAVEMASK    = 1.-gfl
@@ -28,88 +23,97 @@ grid_prams  = gf
 ###########################################################################
 # set inputs: (icec,iceh,dfloe), (Hs,Tp,mwd)
 if 1:
-
-   if 1:
-      # ice edge
-      xe       = .5*(gf['X'].min()+gf['X'].max())\
+   # ice edge
+   xe       = .5*(gf['X'].min()+gf['X'].max())\
+               -.7*.5*(-gf['X'].min()+gf['X'].max())
+   ICEMASK  = 1+0*gf['X']
+   #
+   ICEMASK[gf['X']<xe]  = 0.
+   ICEMASK[gfl>0]       = 0.
+   #
+   c_in  = .7
+   h_in  = 1.
+   D_in  = 300.
+else:
+   # strip
+   strip_width = 100.e3
+   xe          = .5*(gf['X'].min()+gf['X'].max())\
                   -.7*.5*(-gf['X'].min()+gf['X'].max())
-      ICEMASK  = 1+0*gf['X']
-      #
-      ICEMASK[gf['X']<xe]  = 0.
-      ICEMASK[gfl>0]       = 0.
-      #
-      c_in  = .7
-      h_in  = 2.
-      D_in  = 300.
-   else:
-      # strip
-      strip_width = 100.e3
-      xe          = .5*(gf['X'].min()+gf['X'].max())\
-                     -.7*.5*(-gf['X'].min()+gf['X'].max())
-      ICEMASK     = 1+0*gf['X']
-      #
-      ICEMASK[abs(gf['X'])<xe]               = 0.
-      ICEMASK[abs(gf['X'])>xe+strip_width]   = 0.
-      ICEMASK[gfl>0]                         = 0. # 0 on land
-      #
-      c_in  = .7
-      h_in  = 2.
-      D_in  = 100.
+   ICEMASK     = 1+0*gf['X']
+   #
+   ICEMASK[abs(gf['X'])<xe]               = 0.
+   ICEMASK[abs(gf['X'])>xe+strip_width]   = 0.
+   ICEMASK[gfl>0]                         = 0. # 0 on land
+   #
+   c_in  = .7
+   h_in  = 1.
+   D_in  = 100.
 
-   ice_fields0 = {'icec':c_in*ICEMASK,'iceh':h_in*ICEMASK,'dfloe':D_in*ICEMASK}
-   if 0:
-      # test plot of inputs:
-      fig   = plt.figure()
-      ax1   = fig.add_subplot(3,1,1)
-      ax2   = fig.add_subplot(3,1,2)
-      ax3   = fig.add_subplot(3,1,3)
-      ax1.plot(gf['X']/1.e3,ice_fields0['icec' ])
-      ax2.plot(gf['X']/1.e3,ice_fields0['iceh' ])
-      ax3.plot(gf['X']/1.e3,ice_fields0['dfloe'])
-      plt.show(fig)
-      sys.exit()
+ice_fields0 = {'icec'   :c_in*ICEMASK,\
+               'iceh'   :h_in*ICEMASK,\
+               'dfloe'  :D_in*ICEMASK}
+if 0:
+   # test plot of inputs:
+   fig   = plt.figure()
+   ax1   = fig.add_subplot(3,1,1)
+   ax2   = fig.add_subplot(3,1,2)
+   ax3   = fig.add_subplot(3,1,3)
+   ax1.plot(gf['X']/1.e3,ice_fields0['icec' ])
+   ax2.plot(gf['X']/1.e3,ice_fields0['iceh' ])
+   ax3.plot(gf['X']/1.e3,ice_fields0['dfloe'])
+   plt.show(fig)
+   sys.exit()
 
-   # edge of wave mask
-   xw                   = .5*(gf['X'].min()+gf['X'].max())\
-                           -.8*.5*(-gf['X'].min()+gf['X'].max())
-   WAVEMASK             = 1+0*gf['X']
-   WAVEMASK[gf['X']>xw] = 0.
-   WAVEMASK[gfl>0]      = 0.
+# edge of wave mask
+xw                   = .5*(gf['X'].min()+gf['X'].max())\
+                        -.8*.5*(-gf['X'].min()+gf['X'].max())
+WAVEMASK             = 1+0*gf['X']
+WAVEMASK[gf['X']>xw] = 0.
+WAVEMASK[gfl>0]      = 0.
 
-   Hs_in          = 2.
-   Tp_in          = 12.
-   mwd_in         = -90.
-   wave_fields0   = {'Hs':Hs_in*WAVEMASK,'Tp':Tp_in*WAVEMASK,'mwd':mwd_in*WAVEMASK}
+Hs_in          = 3.
+Tp_in          = 12.
+mwd_in         = -90.
+wave_fields0   = {'Hs'  :Hs_in*WAVEMASK,\
+                  'Tp'  :Tp_in*WAVEMASK,\
+                  'mwd' :mwd_in*WAVEMASK}
 
-int_prams   = None # default integer parameters
-real_prams  = None # default real parameters
+params_in   = {}
+params_in.update({'Hs_init'   :Hs_in})
+params_in.update({'T_init'    :Tp_in})
+params_in.update({'mwd_init'  :mwd_in})
+params_in.update({'conc_init' :c_in})
+params_in.update({'h_init'    :h_in})
+params_in.update({'Dmax_init' :D_in})
+
 
 if 1:
    # change integer parameters:
-   ip,rp,ii,ri       = Rwim.default_params(convert=False)
-   ip['SCATMOD']     = 1
-   ip['ADV_DIM']     = 1
-   ip['ADV_OPT']     = 2
-   ip['CHECK_FINAL'] = 1
-   ip['CHECK_PROG']  = 1
-   ip['CHECK_INIT']  = 1
-   ip['STEADY']      = 1
-   ip['DO_BREAKING'] = 1
-   ip['DO_ATTEN']    = 1
+   params_in.update({'SCATMOD'         : 0})
+   params_in.update({'ADV_DIM'         : 2})
+   params_in.update({'ADV_OPT'         : 2})
+   params_in.update({'DO_CHECK_FINAL'  : 1})
+   params_in.update({'DO_CHECK_PROG'   : 1})
+   params_in.update({'DO_CHECK_INIT'   : 1})
+   params_in.update({'STEADY'          : 1})
+   params_in.update({'DO_BREAKING'     : 1})
+   params_in.update({'DO_ATTEN'        : 1})
 
 if 1:
    # change real parameters:
-   rp['young']    = 5.49e9
-   rp['visc_rp']  = 0.0
-
    duration_hours = 6.0
-   rp['duration'] = duration_hours*60*60
-   rp['CFL']      = 0.7
-
-int_prams   = Rwim.convert_dict(ip,ii)
-real_prams  = Rwim.convert_dict(rp,ri)
+   params_in.update({'young'    : 5.49e9})
+   params_in.update({'visc_rp'  : 13.0})
+   params_in.update({'duration' : duration_hours*60*60})
+   params_in.update({'CFL'      : 0.7})
 
 if 1:
+   # change real parameters:
+   params_in.update({'dumpfreq': 10})
+   params_in.update({'itest'   : 25})
+   params_in.update({'jtest'   : 10})
+
+if TEST_MESH:
    # inputs on test mesh
    ny       = gf['ny']
    nx       = gf['nx']
@@ -130,12 +134,12 @@ if 1:
    bb             = 0*xx
    Nfloes         = 0*xx
    Nfloes[dd>0]   = cc[dd>0]/dd[dd>0]**2
-   mesh_e.update({'x':xx})
-   mesh_e.update({'y':yy})
-   mesh_e.update({'conc':cc})
-   mesh_e.update({'thick':hh})
-   mesh_e.update({'broken':bb})
-   mesh_e.update({'Nfloes':Nfloes})
+   mesh_e.update({'x'      :xx})
+   mesh_e.update({'y'      :yy})
+   mesh_e.update({'conc'   :cc})
+   mesh_e.update({'thick'  :hh})
+   mesh_e.update({'broken' :bb})
+   mesh_e.update({'Nfloes' :Nfloes})
    # print(mesh_e)
    # sys.exit()
 
@@ -166,15 +170,12 @@ else:
 
 # call gateway between python and pre-compiled f2py module
 out = Rwim.do_run_vSdir(ice_fields=ice_fields0,wave_fields=wave_fields0,\
-                                       int_prams=int_prams,real_prams=real_prams,mesh_e=mesh_e)
-out_fields,outdir = out[:2]
+                                       params_in=params_in,mesh_e=mesh_e)
+out_fields,results = out[:2]
 
 
 ##########################################################################
 # Make plots
-bindir   = outdir+'/binaries'
-figdir   = outdir+'/figs'
-
 if mesh_e is not None:
    mesh_out = out[2]
    fig      = plt.figure()
@@ -194,12 +195,14 @@ if mesh_e is not None:
 
    ax.legend(lines,['mesh in','grid out','mesh out'])
 
-   if 0:
+   if 1:
       # plot figure and exit
       plt.show(fig)
       sys.exit()
    else:
-      testdir  = figdir+'/test/'
+      testdir  = results.figdir+'/test_mesh/'
+      if not os.path.exists(results.figdir):
+         os.mkdir(results.figdir)
       if not os.path.exists(testdir):
          os.mkdir(testdir)
       testfig1 = testdir+'test_mesh_interp.png'
@@ -207,66 +210,42 @@ if mesh_e is not None:
       fig.savefig(testfig1)
 ##########################################################################
 
+if DO_PLOTTING==0:
+   # stop here
+   
+   w2d   = os.getenv('WIM2D_PATH')
+   print('#####################################################################')
+   print("To plot init, final, and progress files, type:")
+   print(w2d+"/fortran/tools/plot_prog.sh 0 "+results.rootdir)
+   print("(0 = no movie; change to 1 to make a movie)\n")
 
-##########################################################################
-# Look at initial fields:
-print("Plotting initial conditions...")
-grid_prams              = Fdat.fn_check_grid(bindir) # load grid from binaries
-ice_fields,wave_fields  = Fdat.fn_check_init(bindir) # load initial conditions from binaries
-#
-figdir1  = figdir+'/init/'
-Fplt.fn_plot_init(grid_prams,ice_fields,wave_fields,figdir1) # plot initial conditions
-print("Plots in "+figdir+"/init")
-print(" ")
-##########################################################################
+   print("Or, to just plot 1d slices, type:")
+   print(w2d+"/fortran/tools/plot_prog_profiles.sh 0 "+results.rootdir)
+   print('#####################################################################')
 
-################################################################
-# Look at end results:
-print("Plotting results...")
-figdir2  = figdir+'/final/'
-Fplt.fn_plot_final(grid_prams,out_fields,figdir2)
-print("Plots in "+figdir2+'\n')
-print(" ")
-################################################################
+else:
+   ##########################################################################
+   # Look at initial fields:
+   results.plot_initial()
+   ##########################################################################
 
-if 1:
    ################################################################
+   # Look at end results:
+   results.plot_final()
+   ################################################################
+
+   #########################
    # Plot progress files (if they exist)
    # - as colormaps
-   figdir3     = figdir+'/prog'
-   prog_files  = os.listdir(bindir+'/prog')
-   steps       = []
-   for pf in prog_files:
-      if '.a'==pf[-2:]:
-         stepno   = pf.strip('wim_prog').strip('.a')
-         steps.append(stepno)
-
-   # make dir for progress plots
-   if (not os.path.exists(figdir3)) and len(steps)>0:
-      os.mkdir(figdir3)
-
-   # clear old progress plots
-   old_dirs = os.listdir(figdir3)
-   for od in old_dirs:
-      # need this for macs
-      if od!='.DS_Store':
-         # os.rmdir(figdir3+'/'+od)
-         shutil.rmtree(figdir3+'/'+od)
-
-   for stepno in steps:
-      print("Plotting results at time step "+stepno+" ...")
-      prog_fields = Fdat.fn_check_prog(outdir,stepno)
-      figdir3_0   = figdir3+'/'+stepno
-      Fplt.fn_plot_final(grid_prams,prog_fields,figdir3_0)
-      print("Plots in "+figdir3_0+'\n')
-   ################################################################
-
+   results.plot_prog()
    print(' ')
    print("To make a movie of progress images:")
-   print(dd+'/tools/prog2mp4.sh Hs '+figdir3)
-   print('or try with eg Dmax,taux,tauy)')
+   print(w2d+'/fortran/tools/prog2mp4.sh Hs '+results.figdir+'/prog')
+   print('(or try with eg Dmax,taux,tauy)')
+   ################################################################
 
-elif 0:
+if 0:
+   # TODO implement this as part of wim_results class
    ################################################################
    # Plot progress files (if they exist)
    # - as profiles

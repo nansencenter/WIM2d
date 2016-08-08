@@ -442,8 +442,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine wim2d_run_vSdir(out_arrays!,int_prams,real_prams
-     &   ,nmesh_e,mesh_e)
+      subroutine wim2d_run_vSdir(out_arrays,nmesh_e,mesh_e)
 
       use mod_gridinfo     !! grid info
       use mod_wim_init     !! initial wave fields
@@ -466,18 +465,14 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
-      integer,parameter                :: ndir  = n_wavdir
-      integer,parameter                :: nw    = n_wave_freq
-      !integer,dimension(9),intent(in)  :: int_prams
-      ! SCATMOD,ADV_DIM,ADV_OPT,
-      ! DO_CHECK_FINAL,DO_CHECK_PROG,DO_CHECK_INIT,
-      ! BRK_OPT,STEADY,DO_ATTEN
+      integer,parameter :: ndir  = n_wavdir
+      integer,parameter :: nw    = n_wave_freq
 
-      real,dimension(ii,jj,6),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy,mwd
-      !real,dimension(4),intent(in)        :: real_prams        !! young,visc_rp,duration
+      real*8,dimension(ii,jj,6),intent(out) :: out_arrays  !!Dmax,Hs,Tp,taux,tauy,mwd
 
       integer,intent(in)            :: nmesh_e
-      real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
+      real*8,intent(inout),optional :: mesh_e(nmesh_e,nmesh_vars)
+      real :: mesh_e_dummy(nmesh_e,nmesh_vars)
       logical                       :: INTERP_MESH
 
       real              :: PI
@@ -495,33 +490,6 @@
       !! does infile_dirs exist?
       logical :: fex
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      ! SCATMOD   = int_prams(1) ! solver to use for advection/attenuation
-      !                          ! 0: scattering treated like attenuation
-      !                          ! 1: directional scattering
-      ! ADV_DIM  = int_prams(2)  ! 1d advection option can be useful for checking
-      !                          ! and also testing many parameters at once
-      !                          ! ie each 'y' row can be a different experiment
-      !                          !    if we use this option
-      !                          !    - in practice we set speed in 'y' dirn to 0.
-      ! ADV_OPT  = int_prams(3)  ! 0, not periodic;
-      !                          ! 1, periodic in both x,y;
-      !                          ! 2, periodic in y only;
-
-      ! !! Inputs to determine if results
-      ! !! should be dumped to binaries or not
-      ! DO_CHECK_FINAL = int_prams(4)
-      ! DO_CHECK_PROG  = int_prams(5)
-      ! DO_CHECK_INIT  = int_prams(6)
-      ! STEADY         = int_prams(7)
-      ! BRK_OPT        = int_prams(8)
-      ! DO_ATTEN       = int_prams(9)
-
-      ! !!real inputs
-      ! wim_info%young    = real_prams(1)   !!young,visc_rp
-      ! wim_info%viscrp   = real_prams(2)   !!young,visc_rp
-      ! duration          = real_prams(3)   !!length of simulation [s]
-      ! CFL               = real_prams(4)   !!cg*dt/dx
 
       !!using mesh?
       INTERP_MESH = .false.
@@ -624,7 +592,9 @@
       print*,'Beginning main integration...'
       if (INTERP_MESH) then
          ! run while doing interpolation onto the mesh points
-         call wim2d_run_common(nmesh_e,mesh_e)   !wim2d_run_vSdir
+         mesh_e_dummy   = real(mesh_e)
+         call wim2d_run_common(nmesh_e,mesh_e_dummy)   !wim2d_run_vSdir
+         mesh_e         = dble(mesh_e_dummy)
       else
          call wim2d_run_common(1)   !wim2d_run_vSdir
       end if
@@ -645,12 +615,12 @@
       call print_screen_info()
 
       !! put in same order as binary outputs:
-      out_arrays(:,:,1) = dfloe     ! maximum floe size
-      out_arrays(:,:,2) = tau_x     ! wave stress (x dirn)
-      out_arrays(:,:,3) = tau_y     ! wave stress (y dirn)
-      out_arrays(:,:,4) = Hs        ! significant wave height
-      out_arrays(:,:,5) = Tp        ! mean wave period
-      out_arrays(:,:,6) = mwd       ! mean wave direction
+      out_arrays(:,:,1) = dble(dfloe) ! maximum floe size
+      out_arrays(:,:,2) = dble(tau_x) ! wave stress (x dirn)
+      out_arrays(:,:,3) = dble(tau_y) ! wave stress (y dirn)
+      out_arrays(:,:,4) = dble(Hs   ) ! significant wave height
+      out_arrays(:,:,5) = dble(Tp   ) ! mean wave period
+      out_arrays(:,:,6) = dble(mwd  ) ! mean wave direction
 
       !!print  some outputs to log file
       !call print_log_info()
@@ -852,8 +822,8 @@
       integer  :: STEADY
       real     :: PI,adv_dir
       !!
-      real,dimension(nx,ny,nx3d) :: in_arrays
-      real,dimension(nx,ny,ny3d) :: out_arrays
+      real*8,dimension(nx,ny,nx3d) :: in_arrays
+      real*8,dimension(nx,ny,ny3d) :: out_arrays
 
       PI = 4.*atan(1.)
 
@@ -905,7 +875,7 @@
 
       !!outputs
       xy4d  = reshape(dble(sdf_dir),(/nx*ny*ndir*nw/))!convert to real*8 if necessary
-      y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/))!convert to real*8 if necessary
+      y3d   = reshape(out_arrays,(/nx*ny*ny3d/))!convert to real*8 if necessary
 
       end subroutine mex_io_gate_vSdir
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -945,9 +915,9 @@
       real     :: PI,adv_dir
       real     :: Tp_io,mwd_io,init_cons(6)
       !!
-      real,dimension(nx,ny,nx3d) :: in_arrays
-      real,dimension(nx,ny,ny3d) :: out_arrays
-      real,dimension(nmesh_e,nmesh_vars) :: mesh_e
+      real*8,dimension(nx,ny,nx3d) :: in_arrays
+      real*8,dimension(nx,ny,ny3d) :: out_arrays
+      real*8,dimension(nmesh_e,nmesh_vars) :: mesh_e
 
       PI = 4.*atan(1.)
 
@@ -975,6 +945,7 @@
       mesh_e   = reshape(ymesh,(/nmesh_e,nmesh_vars/))
 !     call wim2d_run_vSdir(out_arrays,int_prams,real(real_prams)
 !    &         ,nmesh_e,mesh_e)!convert to real*4 if necessary
+      
       call wim2d_run_vSdir(out_arrays,nmesh_e,mesh_e)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -998,9 +969,9 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!outputs
-      xy4d  = reshape(dble(sdf_dir)   ,(/nx*ny*ndir*nw/))      !convert to real*8 if necessary
-      y3d   = reshape(dble(out_arrays),(/nx*ny*ny3d/))         !convert to real*8 if necessary
-      ymesh = reshape(dble(mesh_e)    ,(/nmesh_e*nmesh_vars/)) !convert to real*8 if necessary
+      xy4d  = reshape(dble(sdf_dir),(/nx*ny*ndir*nw/))
+      y3d   = reshape(out_arrays   ,(/nx*ny*ny3d/))
+      ymesh = reshape(mesh_e       ,(/nmesh_e*nmesh_vars/))
 
       end subroutine mex_io_gate_vSdir_mesh
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

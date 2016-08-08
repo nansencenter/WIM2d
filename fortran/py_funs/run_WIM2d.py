@@ -2,7 +2,7 @@ import numpy as np
 
 
 ################################################################
-def do_run(RUN_OPT=0,in_fields=None,params_in={}):
+def do_run(in_fields=None,params_in={}):
 
    import numpy as np
    import os
@@ -16,6 +16,14 @@ def do_run(RUN_OPT=0,in_fields=None,params_in={}):
    import WIM2d_f2py as Fwim # fortran code compiled with f2py
    import fns_get_data as Fdat
    import fns_plot_data as Fplt
+
+   if in_fields is not None:
+      RUN_OPT  = 1
+   else:
+      RUN_OPT  = 0
+      if len(params_in)>0:
+         import warnings
+         warnings.warn('params_in input being ignored - no input arrays')
 
    run_dict = {0: 'old version (no in/out)',
                1: 'in/out'}
@@ -248,9 +256,18 @@ def do_run_vSdir(sdf_dir=None,\
       outdir = 'out_py_io_3'
 
    dirs  = [outdir,
-            outdir+'/log',
+            outdir+'/diagnostics',
+            outdir+'/diagnostics/global',
+            outdir+'/diagnostics/local',
             outdir+'/binaries',
             outdir+'/binaries/prog']
+
+   # tell fortran where to save the outputs
+   ifd_name = 'infile_dirs.txt'
+   fid      = open(ifd_name,'w')
+   fid.write('grid\n')
+   fid.write(outdir+'\n')
+   fid.close()
 
    for j in range(0,len(dirs)):
       dirj  = dirs[j]
@@ -268,7 +285,7 @@ def do_run_vSdir(sdf_dir=None,\
    # run wim2d with inputs and outputs
 
    ##########################################################
-   params_dict = default_params()
+   param_dict  = default_params()
 
    for key in params_in:
       if key not in param_dict:
@@ -276,7 +293,7 @@ def do_run_vSdir(sdf_dir=None,\
       else:
          param_dict[key]   = params_in[key]
 
-   params_vec  = param_dict2vec(param_dict)
+   param_vec   = param_dict2vec(param_dict)
    ##########################################################
 
    # dimensions of grid
@@ -431,6 +448,7 @@ def do_run_vSdir(sdf_dir=None,\
    sdf_dir  = sdf_dir.reshape(sdf_dir.size,order='fortran')
    sdf_dir  = np.array(sdf_dir,dtype='float32')
    
+   print(param_vec)
    if mesh_e is None:
       sdf_dir2,out_arrays  = Fwim.py_wim2d_run_vsdir(
             sdf_dir,ice_arrays,param_vec,ndir,nfreq)
@@ -567,7 +585,7 @@ def do_run_vSdir(sdf_dir=None,\
 
    #############################################################
 
-   return out_fields,outdir,mesh_e
+   return out_fields,Fdat.wim_results(outdir),mesh_e
 ################################################################
 
 
