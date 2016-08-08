@@ -194,7 +194,7 @@
          !! - initialise from Tp array
          !! - set it to mean over the wave mask
 
-         print*,sum(WAVE_MASK)
+         !print*,sum(WAVE_MASK)
          Tmean       = sum(WAVE_MASK*Tp)/sum(WAVE_MASK)!mean period
          freq_vec(1) = 1.0/Tmean
          !!
@@ -211,9 +211,6 @@
             print*,' '
             STOP
          end if
-         !!
-         !if ((abs(Tmean)-) then
-         !end if
 
       end if
 
