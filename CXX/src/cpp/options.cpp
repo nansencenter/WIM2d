@@ -1,13 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
 
-#include "boost/program_options.hpp"
+#include <options.hpp>
 
-namespace po = boost::program_options;
-
-namespace WIMOPT
+namespace Wim
 {
     po::options_description
-    descrOptions()
+    descrWimOptions()
     {
         po::options_description desc("Options");
 
