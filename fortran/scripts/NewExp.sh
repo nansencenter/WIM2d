@@ -4,6 +4,7 @@
 GS=$WIM2D_PATH/fortran/grid_setup
 BUILD=$WIM2D_PATH/fortran/Build
 TOOLS=$WIM2D_PATH/fortran/tools
+SDIR=$WIM2D_PATH/fortran/scripts
 
 bdir=Build_F
 tdir=scripts
@@ -44,6 +45,12 @@ for f in $TOOLS/*
 do
    g=`basename $f`
    ln -s $f $Tdir/$g
+done
+
+# f2py scripts
+for f in do_run_and_plot.py
+do
+    ln -s $SDIR/$f $Tdir/$f
 done
 # ========================================================
 

@@ -52,8 +52,12 @@ OFLAGS=-J$(MDIR)
 MEX_FLAGS=-largeArrayDims -g $(IFLAGS)
 
 # ============================================================================
-# run in double precision (mex files need to be rewritten to allow for both)
-FCFLAGS += -fdefault-real-8 -fdefault-double-8
+# run in double precision
+# - export WIM2D_TYPE=single to use single precision;
+#   leave undefined or set to double (for example) to use double precision
+ifneq ($(WIM2D_TYPE),single)
+	FCFLAGS += -fdefault-real-8 -fdefault-double-8
+endif
 # ============================================================================
 
 # Flags for f2py
