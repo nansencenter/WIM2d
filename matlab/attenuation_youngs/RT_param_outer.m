@@ -11,16 +11,16 @@ if nargin==0
    ice_prams   = fn_fill_iceprams();
    if 0
       %% test R-P drag
-      ice_prams.drag_rp          = 13;
-      ice_prams.viscoelastic_ws  = 0;
+      ice_prams.drag_rp = 13;
+      ice_prams.visc_ws = 0;
    elseif 1
       %% test W-S viscoelastic
-      ice_prams.drag_rp          = 0;
-      ice_prams.viscoelastic_ws  = 1;
+      ice_prams.drag_rp = 0;
+      ice_prams.visc_ws = 1;
    elseif 1
       %% no damping
-      ice_prams.drag_rp          = 0;
-      ice_prams.viscoelastic_ws  = 0;
+      ice_prams.drag_rp = 0;
+      ice_prams.visc_ws = 0;
    end
    guess       = om^2/ice_prams.g;
    do_test     = 1;
@@ -95,12 +95,12 @@ end
 drag_rp_nd  = ice_prams.drag_rp/ice_prams.rhowtr./(om.*L);
 
 %% W&S (still non-dim):
-%% d(D)  = [-i*om*h^3*rhoi*viscoelastic_ws/6/(1+nu)]/[rhow*om^2*L^5]
-%%       = [-i*om*h^3*rhoi*viscoelastic_ws/6/(1+nu)]/[rhow*om^2*L^5]
-%%       = -i*h^3*rho*viscoelastic_ws/(6*(1+nu)*om*L^5)
+%% d(D)  = [-i*om*h^3*rhoi*visc_ws/6/(1+nu)]/[rhow*om^2*L^5]
+%%       = [-i*om*h^3*rhoi*visc_ws/6/(1+nu)]/[rhow*om^2*L^5]
+%%       = -i*h^3*rho*visc_ws/(6*(1+nu)*om*L^5)
 %%       = -i*vews_nd
 %% d(k)  = coeff_D*d(D)=-i*coeff_D*vews_nd = i*damping_nd;
-vews_nd     = h^3*rho*ice_prams.viscoelastic_ws./(6*(1+ice_prams.poisson)*om.*L.^5);
+vews_nd     = h^3*rho*ice_prams.visc_ws./(6*(1+ice_prams.poisson)*om.*L.^5);
 
 %% add both effects together
 damping_nd  = -coeff_del.*drag_rp_nd - coeff_D.*vews_nd;

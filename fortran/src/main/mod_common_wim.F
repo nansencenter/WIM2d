@@ -31,8 +31,8 @@
       type wim_params
          ! Model parameters
          real :: young             ! Young's modulus
-         real :: viscrp            ! Robinson-Palmer drag coefficient
-         real :: viscVE   = 0.     ! viscosity for Mosig et al viscoelastic rheology
+         real :: drag_rp           ! Robinson-Palmer drag coefficient
+         real :: visc_ws  = 0.     ! viscosity for Mosig et al viscoelastic rheology
          real :: rhowtr   = 1025   ! Ice density      [kg/m^3]
          real :: rhoice   = 922.5  ! Ice density      [kg/m^3]
          real :: gravity  = 9.81   ! Gravity          [m/s^2]

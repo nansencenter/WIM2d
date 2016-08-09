@@ -15,7 +15,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine py_wim2d_run_io(in_arrays,out_arrays                   &
-     &                  ,real_prams,nx,ny,nr)
+     &                  ,param_vec,nx,ny,nr)
 
       use mod_wim2d_run, only: wim2d_run_io
 
@@ -24,12 +24,14 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!variables
       integer,intent(in)                  :: nx,ny,nr
-      real*8,intent(in)                   :: real_prams(nr)
+      real*8,intent(in)                   :: param_vec(nr)
       real*8,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
       real*8,dimension(nx,ny,6),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy,mwd
 !f2py intent(hide)   :: nx,ny,nr
 
-      call wim2d_run_io(in_arrays,out_arrays,real_prams,nx,ny)
+      print*,param_vec
+
+      call wim2d_run_io(in_arrays,out_arrays,param_vec,nx,ny)
 
       end subroutine py_wim2d_run_io
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -37,7 +39,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine py_wim2d_run_vSdir(Sdir_out,out_arrays                 &
      &                 ,Sdir_in,ice_arrays                              &
-     &                 ,real_prams,ndir,nw,nx,ny,nr)
+     &                 ,param_vec,ndir,nw,nx,ny,nr)
 
       use mod_common_wim,  only: icec,iceh,dfloe                        &
      &                           ,sdf_dir,sdf_inc                       &
@@ -59,14 +61,14 @@
       real*8,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_out    !! pass in/out directional spec
 
       !! parameters
-      real*8,intent(in) :: real_prams(nr)
+      real*8,intent(in) :: param_vec(nr)
       !!
       integer  :: i,j,w,wth
       real*8   :: PI,adv_dir
       real*8   :: Tp_io,mwd_io,init_cons(6)
 
       PI       = 4.*atan(1.)
-      call read_param_vec(init_cons,real_prams)
+      call read_param_vec(init_cons,param_vec)
       Tp_io    = init_cons(2)
       mwd_io   = init_cons(3)
 
@@ -89,7 +91,6 @@
          print*,mwd_io
       end if
 
-      !wim2d_run_vSdir(out_arrays,int_prams,real_prams,nmesh_e,mesh_e)
       ! mesh_e is optional, but need a place holder for nmesh_e
       call wim2d_run_vSdir(out_arrays,1)
 
@@ -122,7 +123,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine py_wim2d_run_vSdir_mesh(Sdir_out,out_arrays            &
      &                  ,Sdir_in,ice_arrays,mesh_in,mesh_out            &
-     &                  ,real_prams,ndir,nw,nmesh_e,nx,ny,nr)
+     &                  ,param_vec,ndir,nw,nmesh_e,nx,ny,nr)
 
       use mod_common_wim,  only: icec,iceh,dfloe                        &
      &                           ,sdf_dir,sdf_inc                       &
@@ -151,14 +152,14 @@
       real*8,dimension(nmesh_e,nmesh_vars)  :: mesh_e_dummy  !! reshaped mesh_e
 
       !! parameters
-      real*8,intent(in) :: real_prams(nr)
+      real*8,intent(in) :: param_vec(nr)
       !!
       integer  :: i,j,w,wth
       real*8   :: PI,adv_dir
       real*8   :: Tp_io,mwd_io,init_cons(6)
 
       PI       = 4.*atan(1.)
-      call read_param_vec(init_cons,real_prams)
+      call read_param_vec(init_cons,param_vec)
       Tp_io    = init_cons(2)
       mwd_io   = init_cons(3)
 
@@ -181,7 +182,7 @@
          print*,mwd_io
       end if
 
-      !wim2d_run_vSdir(out_arrays,int_prams,real_prams,nmesh_e,mesh_e)
+      !wim2d_run_vSdir(out_arrays,int_prams,param_vec,nmesh_e,mesh_e)
       ! mesh_e is optional, but need a place holder for nmesh_e
       mesh_e_dummy   = reshape(mesh_in,(/nmesh_e,nmesh_vars/))
       call wim2d_run_vSdir(out_arrays
@@ -277,7 +278,7 @@
       ! h        = inputs(1)
       ! om       = inputs(2)
       wim_info%young    = inputs(3)
-      wim_info%viscrp   = inputs(4)
+      wim_info%drag_rp  = inputs(4)
       om    = inputs(2)
       guess = om**2/wim_info%gravity
 

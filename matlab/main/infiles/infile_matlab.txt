@@ -63,9 +63,9 @@
 1     # FSD_OPT         : 0: RG; 1: smooth power law
 
 # correspond to "real_prams" in fortran code 
-5.49e9   # young           : Young's modulus
-13.0     # drag_rp         : Robinson-Palmer drag coefficient
-0.0      # viscoelastic_ws : Wang-Shen viscoelasticity coefficient
+5.49e9   # young           : Young's modulus [Pa]
+13.0     # drag_rp         : Robinson-Palmer drag coefficient [Pa.s/m]
+0.0      # visc_ws         : Wang-Shen viscosity [m^2/s]
 6        # duration_hours  : length of simulation [h]
                            # (NB convert to seconds before inputting to mex functions)
 

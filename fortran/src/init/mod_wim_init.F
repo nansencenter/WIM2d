@@ -43,7 +43,7 @@
 
       if (present(YOUNG_OPT)) then
          !!Robinson-Palmer viscosity parameter
-         wim_info%viscrp  = 13.
+         wim_info%drag_rp  = 13.
 
          !!Young's modulus
          if (YOUNG_OPT.eq.1) then
@@ -94,7 +94,8 @@
       print*,'Flexural strength (Pa):     ',wim_info%sigma_c
       print*,'Breaking stress (Pa):       ',wim_info%stress_c
       print*,'Breaking strain:            ',wim_info%epsc
-      print*,'Damping (Pa.s/m):           ',wim_info%viscrp
+      print*,'RP drag (Pa.s/m):           ',wim_info%drag_rp
+      print*,'WS viscosity (m^2/s):       ',wim_info%visc_ws
       print*,'********************************************'
       print*,' '
 

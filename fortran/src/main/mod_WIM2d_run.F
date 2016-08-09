@@ -23,7 +23,7 @@
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
       integer  :: FSD_OPT=1 !TODO make this an input
       integer  :: YOUNG_OPT=1
-      integer,parameter :: n_param_vec   = 27
+      integer,parameter :: n_param_vec   = 28
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
@@ -1089,8 +1089,10 @@
      &                           ,wim_info%stress_c
       write(fid,'(a,e10.3)'),'Breaking strain:            '
      &                           ,wim_info%epsc
-      write(fid,'(a,f5.2)'), 'Damping (Pa.s/m):           '
-     &                           ,wim_info%viscrp
+      write(fid,'(a,f5.2)'), 'RP drag (Pa.s/m):           '
+     &                           ,wim_info%drag_rp
+      write(fid,'(a,f5.2)'), 'WS viscosity (Pa.s/m):      '
+     &                           ,wim_info%visc_ws
       write(fid,'(a)'),'***********************************************'
 
       write(fid,'(a)'),' '
@@ -1198,7 +1200,7 @@
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.2) then
+      if (inf_version.ne.3) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1236,14 +1238,16 @@
       !! real_prams
       read(fid,'(a)'), ctmp !blank
       read(fid,'(a)'), ctmp !comment
-      read(fid,'(e10.3,a)'),  wim_info%young ,ctmp
-      print*,"Young's modulus: ",wim_info%young
-      read(fid,'(f5.2,a)'),   wim_info%viscrp ,ctmp
-      print*,"RP damping: ",wim_info%viscrp
-      read(fid,'(f7.2,a)'),   duration        ,ctmp
-      print*,"Duration (s): ",duration
-      read(fid,'(f7.2,a)'),   CFL            ,ctmp
-      print*,"Duration (s): ",CFL
+      read(fid,'(e10.3,a)')      ,wim_info%young  ,ctmp
+      print*,"Young's modulus: " ,wim_info%young
+      read(fid,'(f5.2,a)')       ,wim_info%drag_rp,ctmp
+      print*,"RP drag: "         ,wim_info%drag_rp
+      read(fid,'(f5.2,a)')       ,wim_info%visc_ws,ctmp
+      print*,"WS viscosity: "    ,wim_info%visc_ws
+      read(fid,'(f7.2,a)')       ,duration        ,ctmp
+      print*,"Duration (s): "    ,duration
+      read(fid,'(f7.2,a)')       ,CFL             ,ctmp
+      print*,"Duration (s): "    ,CFL
       print*,'******************************************************'
       print*,' '
       ! ===================================================
@@ -1351,7 +1355,7 @@
       implicit none
       
       real*8,intent(out)  :: init_cons(6)
-      real*8,intent(in) :: param_vec(27)
+      real*8,intent(in) :: param_vec(n_param_vec)
       integer  :: i,j
 
       i  = 0
@@ -1395,8 +1399,11 @@
       wim_info%young = real(param_vec(i))
       print*,"Young's modulus: ",wim_info%young
       i                 = i+1
-      wim_info%viscrp   = real(param_vec(i))
-      print*,"RP damping: ",wim_info%viscrp
+      wim_info%drag_rp  = real(param_vec(i))
+      print*,"RP drag: ",wim_info%drag_rp
+      i                 = i+1
+      wim_info%visc_ws  = real(param_vec(i))
+      print*,"WS viscosity: ",wim_info%visc_ws
       i        = i+1
       duration = real(param_vec(i))
       print*,"Duration (s): ",duration

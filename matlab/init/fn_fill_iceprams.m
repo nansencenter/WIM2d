@@ -19,8 +19,8 @@ s1.poisson  = .3;    % Poisson's ratio
 if ~isfield(s1,'drag_rp')
  s1.drag_rp  = 13;    % Robinson-Palmer drag coefficient [Pa/(m/s)]
 end
-if ~isfield(s1,'viscoelastic_ws')
- s1.viscoelastic_ws  = 0;    % Wang-Shen viscosity coefficient [m^2/s]
+if ~isfield(s1,'visc_ws')
+ s1.visc_ws  = 0;    % Wang-Shen viscosity coefficient [m^2/s]
 end
 
 %%Brine vol fraction -> Young's modulus and flexural strength

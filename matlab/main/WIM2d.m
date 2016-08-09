@@ -182,8 +182,8 @@ end
 if ~isnan(params_in.drag_rp)
    ice_prams.drag_rp = params_in.drag_rp;
 end
-if ~isnan(params_in.viscoelastic_ws)
-   ice_prams.viscoelastic_ws  = params_in.viscoelastic_ws;
+if ~isnan(params_in.visc_ws)
+   ice_prams.visc_ws  = params_in.visc_ws;
 end
 ice_prams.BRK_OPT = params_in.BRK_OPT;
 ice_prams         = fn_fill_iceprams(ice_prams);
@@ -194,7 +194,7 @@ ice_prams         = fn_fill_iceprams(ice_prams);
 %%           young: 2.000000000000000e+09       % Young's modulus                [Pa]
 %%          bc_opt: 0
 %%         drag_rp: 13                          % Robinson-Palmer drag coeff     [Pa/(m/s)]
-%% viscoelastic_ws: 0                           % Wang-Shen viscoelastic coeff   [Pa/(m/s)]
+%% visc_ws: 0                           % Wang-Shen viscoelastic coeff   [Pa/(m/s)]
 %%          rhowtr: 1.025000000000000e+03       % Water density                  [kg/m^3]
 %%          rhoice: 9.225000000000000e+02       % Ice density                    [kg/m^3]
 %%               g: 9.810000000000000           % Gravitational acceleration     [m/s^2]
@@ -227,7 +227,7 @@ fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
 fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
 fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
 fprintf(logid,'%s%5.2f\n','Drag RP (Pa.s/m):            ' ,ice_prams.drag_rp);
-fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.viscoelastic_ws);
+fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.visc_ws);
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n','');
 fclose(logid);
@@ -1912,12 +1912,11 @@ end
 function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
 %%           MEX_OPT: 1
 %%            DODISP: 2
-%%        params_vec: [27x1 double]
+%%        params_vec: [28x1 double]
 %%          - order of parameters same as in fortran/infiles/infile_nonIO.txt
 %%          - also see read_params_vec subroutine in fortran/src/main/mod_WIM2d_run.F
 
-params_vec  = zeros(27,1);
-i           = 0;
+i  = 0;
 
 %% ================================================
 %% set int_prams
@@ -1934,7 +1933,6 @@ fields   = {...
             };
             
 Ni = length(fields);
-params_mex.int_prams = zeros(1,Ni);
 for j=1:Ni
    i     = i+1;
    fld   = fields{j};
@@ -1945,19 +1943,20 @@ end
 
 %% ================================================
 %% set real_prams
-Nr = 4;
 i  = i+1;
 % params_mex.real_prams   = [ice_prams.young,...
-params_vec(i:i+3) = [ice_prams.young,...
+params_vec(i:i+4) = [ice_prams.young,...
                      ice_prams.drag_rp,...
+                     ice_prams.visc_ws,...
                      duration,...
                      params.CFL];
-i  = i+3;
+i  = i+4;
 %% ================================================
    
 
 %% ===============================================
-%% set rest automatically
+%% not in params_vec
+%% - can be set in automatically
 fields   = {...
             'MEX_OPT',...
             'DO_DISP',...
@@ -2019,7 +2018,7 @@ for j=1:length(fields)
 end
 %% ===============================================
 
-params_mex.params_vec   = params_vec;
+params_mex.params_vec   = params_vec';
 if params.DO_DISP
    ice_prams
    params_mex

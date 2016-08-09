@@ -102,7 +102,7 @@ else:
       # change real parameters:
       duration_hours = 6.0
       params_in.update({'young'   : 5.49e9})
-      params_in.update({'visc_rp' : 13.0})
+      params_in.update({'drag_rp' : 13.0})
       params_in.update({'duration': duration_hours*60*60})
       params_in.update({'CFL'     : .7})
 
