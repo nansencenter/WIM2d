@@ -14,8 +14,11 @@ s1.rhoice   = 922.5; % Ice density      [kg/m^3]
 s1.g        = 9.81;  % Gravity          [m/s^2]
 s1.poisson  = .3;    % Poisson's ratio
 
-if ~isfield(s1,'visc_rp')
- s1.visc_rp  = 13;    % Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+if ~isfield(s1,'drag_rp')
+ s1.drag_rp  = 13;    % Robinson-Palmer drag coefficient [Pa/(m/s)]
+end
+if ~isfield(s1,'viscoelastic_ws')
+ s1.viscoelastic_ws  = 0;    % Wang-Shen viscosity coefficient [m^2/s]
 end
 
 %%Brine vol fraction -> Young's modulus and flexural strength

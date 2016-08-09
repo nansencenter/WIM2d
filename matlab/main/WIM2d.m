@@ -182,25 +182,29 @@ end
 if ~isnan(params_in.drag_rp)
    ice_prams.drag_rp = params_in.drag_rp;
 end
+if ~isnan(params_in.viscoelastic_ws)
+   ice_prams.viscoelastic_ws  = params_in.viscoelastic_ws;
+end
 ice_prams.BRK_OPT = params_in.BRK_OPT;
 ice_prams         = fn_fill_iceprams(ice_prams);
 %% ice_prams = structure eg:
 %%               c: 0.750000000000000
 %%               h: 2
 %%            Dmax: 300
-%%           young: 2.000000000000000e+09       % Young's modulus             [Pa]
+%%           young: 2.000000000000000e+09       % Young's modulus                [Pa]
 %%          bc_opt: 0
-%%         drag_rp: 13                          % Robinson-Palmer coeff       [Pa/(m/s)]
-%%          rhowtr: 1.025000000000000e+03       % Water density               [kg/m^3]
-%%          rhoice: 9.225000000000000e+02       % Ice density                 [kg/m^3]
-%%               g: 9.810000000000000           % Gravitational acceleration  [m/s^2]
+%%         drag_rp: 13                          % Robinson-Palmer drag coeff     [Pa/(m/s)]
+%% viscoelastic_ws: 0                           % Wang-Shen viscoelastic coeff   [Pa/(m/s)]
+%%          rhowtr: 1.025000000000000e+03       % Water density                  [kg/m^3]
+%%          rhoice: 9.225000000000000e+02       % Ice density                    [kg/m^3]
+%%               g: 9.810000000000000           % Gravitational acceleration     [m/s^2]
 %%         poisson: 0.300000000000000           % Poisson's ratio
 %%             vbf: 0.100000000000000           % brine volume fraction
 %%              vb: 100                         % ppt (1e3*vbf)
-%%         sigma_c: 2.741429878818372e+05       % breaking stress    [Pa] 
-%%        strain_c: 1.370714939409186e-04       % breaking strain    [-] 
+%%         sigma_c: 2.741429878818372e+05       % breaking stress                [Pa] 
+%%        strain_c: 1.370714939409186e-04       % breaking strain                [-] 
 %%  flex_rig_coeff: 1.831501831501831e+08
-%%            Dmin: 20                          % minimum floe size  [m]
+%%            Dmin: 20                          % minimum floe size              [m]
 %%              xi: 2                           % no of pieces floes break into
 %%       fragility: 0.900000000000000           % probability that floes break
 
@@ -222,7 +226,8 @@ fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
 fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
 fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
 fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
-fprintf(logid,'%s%5.2f\n','Damping (Pa.s/m):           '  ,ice_prams.drag_rp);
+fprintf(logid,'%s%5.2f\n','Drag RP (Pa.s/m):            ' ,ice_prams.drag_rp);
+fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.viscoelastic_ws);
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n','');
 fclose(logid);
@@ -301,6 +306,10 @@ Info  = { '------------------------------------';
          ' '};
 if params_in.DO_DISP; disp(strvcat(Info)); end
 
+atten_in.young             = ice_prams.young;
+atten_in.drag_rp           = ice_prams.drag_rp;
+atten_in.viscoelastic_ws   = ice_prams.viscoelastic_ws;
+
 for i = 1:gridprams.nx
 for j = 1:gridprams.ny
 
@@ -309,6 +318,7 @@ for j = 1:gridprams.ny
 %     disp([' - initialised ',num2str(i),' rows out of ',num2str(gridprams.nx)])
 %  end
 
+   atten_in.h  = ice_fields.hice(i,j);
    if ICE_MASK(i,j)==1
       %% if ice is present:
       %% get ice wavelengths, group velocities,
@@ -317,8 +327,7 @@ for j = 1:gridprams.ny
       if params_in.DO_ATTEN==1
          [damping_rp,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
-               RT_param_outer(ice_fields.hice(i,j),om_vec,...
-                  ice_prams.young,ice_prams.drag_rp);
+               RT_param_outer(om_vec,atten_in);
          %%
          if params_in.CHK_ATTEN==1
             %%check with old version

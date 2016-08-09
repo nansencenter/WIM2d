@@ -1,6 +1,6 @@
 function [damping,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
-               RT_param_outer(h,om,E,drag_rp,guess)
+               RT_param_outer(om,atten_in,guess)
 
 do_test  = 0;
 if nargin==0
@@ -10,7 +10,7 @@ if nargin==0
    else
       h  = 10;
       om = 2*pi/1;
-      E  = 10e9;
+      young  = 10e9;
    end
    drag_rp  = 13;
    g        = 9.81;
@@ -18,10 +18,20 @@ if nargin==0
    do_test  = 1;
 end
 
+if exist('atten_in','var')
+   flds  = fieldnames(atten_in);
+   Nf    = length(flds);
+   for j=1:Nf
+      fld   = flds{j};
+      cmd   = [fld,' = ','atten_in.',fld,';'];
+      eval(cmd);
+   end
+end
+
 prams    = NDphyspram(0);
 
-if ~exist('E')
-   E  = prams(1);
+if ~exist('young')
+   young  = prams(1);
 end
 if ~exist('drag_rp')
    drag_rp  = 13;
@@ -33,7 +43,7 @@ rhoi  = prams(4);
 nu    = prams(5);
 rho   = rhoi/rhow;
 %%
-D        = E*h^3/12/(1-nu^2);
+D        = young*h^3/12/(1-nu^2);
 L        = ( D/rhow./om.^2 ).^.2;
 Lc       = ( D/rhow/g ).^.25;
 alp_nd   = om.^2/g.*L;
