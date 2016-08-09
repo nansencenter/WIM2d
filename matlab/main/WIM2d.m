@@ -15,7 +15,7 @@ function [out_fields,wave_stuff,diagnostics,mesh_e] =...
 %%            STEADY: 1
 %%          DO_ATTEN: 1
 %%             young: 5.4900e+09
-%%           visc_rp: 0
+%%           drag_rp: 0
 %%               CFL: 0.7000
 %%    duration_hours: 24
 %%           DO_DISP: 0
@@ -179,8 +179,8 @@ if ~isnan(params_in.young)
 else
    ice_prams.young_opt  = 1;
 end
-if ~isnan(params_in.visc_rp)
-   ice_prams.visc_rp = params_in.visc_rp;
+if ~isnan(params_in.drag_rp)
+   ice_prams.drag_rp = params_in.drag_rp;
 end
 ice_prams.BRK_OPT = params_in.BRK_OPT;
 ice_prams         = fn_fill_iceprams(ice_prams);
@@ -190,7 +190,7 @@ ice_prams         = fn_fill_iceprams(ice_prams);
 %%            Dmax: 300
 %%           young: 2.000000000000000e+09       % Young's modulus             [Pa]
 %%          bc_opt: 0
-%%         visc_rp: 13                          % Robinson-Palmer coeff       [Pa/(m/s)]
+%%         drag_rp: 13                          % Robinson-Palmer coeff       [Pa/(m/s)]
 %%          rhowtr: 1.025000000000000e+03       % Water density               [kg/m^3]
 %%          rhoice: 9.225000000000000e+02       % Ice density                 [kg/m^3]
 %%               g: 9.810000000000000           % Gravitational acceleration  [m/s^2]
@@ -222,7 +222,7 @@ fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
 fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
 fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
 fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
-fprintf(logid,'%s%5.2f\n','Damping (Pa.s/m):           '  ,ice_prams.visc_rp);
+fprintf(logid,'%s%5.2f\n','Damping (Pa.s/m):           '  ,ice_prams.drag_rp);
 fprintf(logid,'%s\n','***********************************************');
 fprintf(logid,'%s\n','');
 fclose(logid);
@@ -318,7 +318,7 @@ for j = 1:gridprams.ny
          [damping_rp,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
                RT_param_outer(ice_fields.hice(i,j),om_vec,...
-                  ice_prams.young,ice_prams.visc_rp);
+                  ice_prams.young,ice_prams.drag_rp);
          %%
          if params_in.CHK_ATTEN==1
             %%check with old version
@@ -328,7 +328,7 @@ for j = 1:gridprams.ny
          damping(i,j,:)    = damping_rp;
       else
          [damping_rp,kice,kwtr,int_adm,NDprams] =...
-            RT_param_outer(ice_fields.hice(i,j),om_vec,ice_prams.young,ice_prams.visc_rp);
+            RT_param_outer(ice_fields.hice(i,j),om_vec,ice_prams.young,ice_prams.drag_rp);
          modT  = 1;
       end
 
@@ -406,7 +406,7 @@ Info  = { '------------------------------------';
          ['strain_c           = '  num2str(ice_prams.strain_c,'%5.5e')];
          ['h                  = '  num2str(h_av) ' m const'];
          ['c                  = '  num2str(c_av) ' const'];
-         ['Damping            = '  num2str(ice_prams.visc_rp) ' Pa.s/m'];
+         ['Damping            = '  num2str(ice_prams.drag_rp) ' Pa.s/m'];
          [' '];
          ['Tp                 = '  num2str(Tp_av) ' s'];
          ['Hs                 = '  num2str(Hs_av) ' m'];
@@ -1944,7 +1944,7 @@ Nr = 4;
 i  = i+1;
 % params_mex.real_prams   = [ice_prams.young,...
 params_vec(i:i+3) = [ice_prams.young,...
-                     ice_prams.visc_rp,...
+                     ice_prams.drag_rp,...
                      duration,...
                      params.CFL];
 i  = i+3;

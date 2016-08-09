@@ -1,6 +1,6 @@
 function [damping,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
-               RT_param_outer(h,om,E,visc_rp,guess)
+               RT_param_outer(h,om,E,drag_rp,guess)
 
 do_test  = 0;
 if nargin==0
@@ -12,7 +12,7 @@ if nargin==0
       om = 2*pi/1;
       E  = 10e9;
    end
-   visc_rp  = 13;
+   drag_rp  = 13;
    g        = 9.81;
    guess    = om^2/g;
    do_test  = 1;
@@ -23,8 +23,8 @@ prams    = NDphyspram(0);
 if ~exist('E')
    E  = prams(1);
 end
-if ~exist('visc_rp')
-   visc_rp  = 13;
+if ~exist('drag_rp')
+   drag_rp  = 13;
 end
 
 g     = prams(2);
@@ -85,9 +85,9 @@ for j_=1:length(om)
    end
 end
 
-%%get viscous attenuation;
-visc_rp_nd  = visc_rp/rhow./(om.*L);
-damping_nd  = avc.*visc_rp_nd;
+%%get attenuation due to Robinson-Palmer drag;
+drag_rp_nd  = drag_rp/rhow./(om.*L);
+damping_nd  = avc.*drag_rp_nd;
 damping     = damping_nd./L;
 
 %%Get other quantities via interpolation;
@@ -157,7 +157,7 @@ denom          = H*(Lam.^2.*ki.^2-1)+Lampr;
 res            = -ki/denom;
 BG2            = Lam^2*res;
 %%
-avc   = ki/denom;%% -1i*dk/d(visc_rp) - non-dimensional
+avc   = ki/denom;%% -1i*dk/d(drag_rp) - non-dimensional
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [kw,BG1]=fn_root_wtr(del,H,guess)
