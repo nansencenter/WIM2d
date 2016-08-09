@@ -1,53 +1,22 @@
 function [damping,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
-               RT_param_outer(om,atten_in,guess)
+               RT_param_outer(om,h,ice_prams,guess)
 
 do_test  = 0;
 if nargin==0
-   if 0
-      h  = 2;
-      om = 2*pi/10;
-   else
-      h  = 10;
-      om = 2*pi/1;
-      young  = 10e9;
-   end
-   drag_rp  = 13;
-   g        = 9.81;
-   guess    = om^2/g;
-   do_test  = 1;
+   h           = 2;
+   om          = 2*pi/10;
+   ice_prams   = fn_fill_iceprams();
+   guess       = om^2/ice_prams.g;
+   do_test     = 1;
 end
 
-if exist('atten_in','var')
-   flds  = fieldnames(atten_in);
-   Nf    = length(flds);
-   for j=1:Nf
-      fld   = flds{j};
-      cmd   = [fld,' = ','atten_in.',fld,';'];
-      eval(cmd);
-   end
-end
-
-prams    = NDphyspram(0);
-
-if ~exist('young')
-   young  = prams(1);
-end
-if ~exist('drag_rp')
-   drag_rp  = 13;
-end
-
-g     = prams(2);
-rhow  = prams(3);
-rhoi  = prams(4);
-nu    = prams(5);
-rho   = rhoi/rhow;
-%%
-D        = young*h^3/12/(1-nu^2);
-L        = ( D/rhow./om.^2 ).^.2;
-Lc       = ( D/rhow/g ).^.25;
-alp_nd   = om.^2/g.*L;
-alp      = om.^2/g;
+rho      = ice_prams.rhoice/ice_prams.rhowtr;
+D        = ice_prams.young*h^3/12/(1-ice_prams.poisson^2);
+L        = ( D/ice_prams.rhowtr./om.^2 ).^.2;
+Lc       = ( D/ice_prams.rhowtr/ice_prams.g ).^.25;
+alp_nd   = om.^2/ice_prams.g.*L;
+alp      = om.^2/ice_prams.g;
 alp_nd   = alp.*L;
 h_nd     = h./L;
 zeta_nd  = rho*h_nd;
@@ -96,7 +65,7 @@ for j_=1:length(om)
 end
 
 %%get attenuation due to Robinson-Palmer drag;
-drag_rp_nd  = drag_rp/rhow./(om.*L);
+drag_rp_nd  = ice_prams.drag_rp/ice_prams.rhowtr./(om.*L);
 damping_nd  = avc.*drag_rp_nd;
 damping     = damping_nd./L;
 
@@ -177,7 +146,7 @@ fac   = 0;
 tol   = 1e-12;
 k0    = guess;
 dk    = NR_corr_term(k0,del,H,fac);
-kw     = k0-dk;
+kw    = k0-dk;
 
 while abs(dk) > tol
    k0       = kw;

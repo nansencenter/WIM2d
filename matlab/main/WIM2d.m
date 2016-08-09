@@ -306,9 +306,6 @@ Info  = { '------------------------------------';
          ' '};
 if params_in.DO_DISP; disp(strvcat(Info)); end
 
-atten_in.young             = ice_prams.young;
-atten_in.drag_rp           = ice_prams.drag_rp;
-atten_in.viscoelastic_ws   = ice_prams.viscoelastic_ws;
 
 for i = 1:gridprams.nx
 for j = 1:gridprams.ny
@@ -318,7 +315,6 @@ for j = 1:gridprams.ny
 %     disp([' - initialised ',num2str(i),' rows out of ',num2str(gridprams.nx)])
 %  end
 
-   atten_in.h  = ice_fields.hice(i,j);
    if ICE_MASK(i,j)==1
       %% if ice is present:
       %% get ice wavelengths, group velocities,
@@ -327,7 +323,7 @@ for j = 1:gridprams.ny
       if params_in.DO_ATTEN==1
          [damping_rp,kice,kwtr,int_adm,NDprams,...
             alp_scat,modT,argR,argT] =...
-               RT_param_outer(om_vec,atten_in);
+               RT_param_outer(om_vec,ice_fields.hice(i,j),ice_prams);
          %%
          if params_in.CHK_ATTEN==1
             %%check with old version
@@ -337,7 +333,7 @@ for j = 1:gridprams.ny
          damping(i,j,:)    = damping_rp;
       else
          [damping_rp,kice,kwtr,int_adm,NDprams] =...
-            RT_param_outer(ice_fields.hice(i,j),om_vec,ice_prams.young,ice_prams.drag_rp);
+            RT_param_outer(om_vec,ice_fields.hice(i,j),ice_prams);
          modT  = 1;
       end
 

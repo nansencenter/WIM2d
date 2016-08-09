@@ -5,8 +5,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function s1 = fn_fill_iceprams(ice_prams)
 
-s1 = ice_prams;%%shorten name for convenience
-clear ice_prams;
+if exist('ice_prams','var')
+   s1 = ice_prams;%%shorten name for convenience
+   clear ice_prams;
+end
 
 %% Model Parameters
 s1.rhowtr   = 1025;  % Ice density      [kg/m^3]
