@@ -387,12 +387,11 @@ def do_run_vSdir(sdf_dir=None,\
                      # test_sum_ = 0.
                      for wth in range(ndir):
                         theta_fac_   = Fmisc.theta_dirfrac(wavdir[wth]-.5*abs(dtheta),abs(dtheta),mwd[i,j])/abs(D2R*dtheta)
-                        chi      = PI/180.0*(wavdir[wth]-mwd[i,j])
-
-                        if (np.cos(chi)>0.0):
-                           theta_fac   = 2.0/PI*pow(np.cos(chi),2)
-                        else:
-                           theta_fac   = 0.0
+                        # chi      = PI/180.0*(wavdir[wth]-mwd[i,j])
+                        # if (np.cos(chi)>0.0):
+                        #    theta_fac   = 2.0/PI*pow(np.cos(chi),2)
+                        # else:
+                        #    theta_fac   = 0.0
 
                         sdf_dir[i,j,wth,:]   = sdf_dir[i,j,wth,:]*theta_fac_
                         # test_sum += theta_fac_
