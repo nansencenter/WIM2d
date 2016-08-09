@@ -62,8 +62,8 @@
       real*8,intent(in) :: real_prams(nr)
       !!
       integer  :: i,j,w,wth
-      real     :: PI,adv_dir
-      real     :: Tp_io,mwd_io,init_cons(6)
+      real*8   :: PI,adv_dir
+      real*8   :: Tp_io,mwd_io,init_cons(6)
 
       PI       = 4.*atan(1.)
       call read_param_vec(init_cons,real_prams)
@@ -154,8 +154,8 @@
       real*8,intent(in) :: real_prams(nr)
       !!
       integer  :: i,j,w,wth
-      real     :: PI,adv_dir
-      real     :: Tp_io,mwd_io,init_cons(6)
+      real*8   :: PI,adv_dir
+      real*8   :: Tp_io,mwd_io,init_cons(6)
 
       PI       = 4.*atan(1.)
       call read_param_vec(init_cons,real_prams)

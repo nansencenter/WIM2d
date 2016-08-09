@@ -84,7 +84,8 @@
 
       !! function to print time
       real     :: etime
-      real     :: wim_prams_in(2),init_cons(6)
+      real     :: wim_prams_in(2)
+      real*8   :: init_cons(6)
 
       !! does infile* exist?
       logical  :: fex,fex2
@@ -152,10 +153,10 @@
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! set idealised incident ice parameters
-      call icecons_ideal(init_cons(4:6))      ! - initial icec,iceh,dfloe
+      call icecons_ideal(real(init_cons(4:6)))      ! - initial icec,iceh,dfloe
 
       !! set idealised incident wave parameters
-      call wavecons_ideal(init_cons(1:3))
+      call wavecons_ideal(real(init_cons(1:3)))
 
       !! set wave grid
       call waves_init_freq()
@@ -271,7 +272,8 @@
       real*8,dimension(nx,ny,6),intent(out) :: out_arrays  !! Dmax,Hs,Tp,taux,tauy,mwd
 
       real  :: PI,Tdiff,mwd_diff
-      real  :: wim_prams_in(2),init_cons(6)
+      real  :: wim_prams_in(2)
+      real*8   :: init_cons(6)
       integer,parameter :: ndir  = n_wavdir
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
@@ -827,7 +829,8 @@
       real*8,dimension(nx*ny*ny3d) ,intent(out)   :: y3d !all 2d output arrays merged into 1 3d array
       real*8,dimension(nx*ny*nxy4d),intent(inout) :: xy4d !4d input array (Sdir)
       !!
-      real     :: Tp_io,mwd_io,init_cons(6)
+      real     :: Tp_io,mwd_io
+      real*8   :: init_cons(6)
       integer  :: i,j,s,w,wth
       integer  :: STEADY
       real     :: PI,adv_dir
@@ -838,8 +841,8 @@
       PI = 4.*atan(1.)
 
       call read_param_vec(init_cons,real_prams)
-      Tp_io    = init_cons(2)
-      mwd_io   = init_cons(3)
+      Tp_io    = real(init_cons(2))
+      mwd_io   = real(init_cons(3))
 
       !! initial ice conditions
       in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/))!convert to real*4 if necessary
@@ -923,7 +926,8 @@
       !!
       integer  :: i,j,s,w,wth
       real     :: PI,adv_dir
-      real     :: Tp_io,mwd_io,init_cons(6)
+      real     :: Tp_io,mwd_io
+      real*8   :: init_cons(6)
       !!
       real*8,dimension(nx,ny,nx3d) :: in_arrays
       real*8,dimension(nx,ny,ny3d) :: out_arrays
@@ -932,8 +936,8 @@
       PI = 4.*atan(1.)
 
       call read_param_vec(init_cons,real_prams)
-      Tp_io    = init_cons(2)
-      mwd_io   = init_cons(3)
+      Tp_io    = real(init_cons(2))
+      mwd_io   = real(init_cons(3))
 
       !! initial ice conditions
       in_arrays   = reshape(real(x3d),(/nx,ny,nx3d/))!convert to real*4 if necessary
@@ -1169,7 +1173,7 @@
       
       implicit none
       
-      real,intent(out)  :: init_cons(6)
+      real*8,intent(out)  :: init_cons(6)
       character(len=*),intent(in)   :: infile
       integer,parameter :: fid=99
       integer           :: inf_version
@@ -1346,7 +1350,7 @@
       
       implicit none
       
-      real,intent(out)  :: init_cons(6)
+      real*8,intent(out)  :: init_cons(6)
       real*8,intent(in) :: param_vec(27)
       integer  :: i,j
 
@@ -1425,7 +1429,7 @@
       print*,'******************************************************'
       do j=1,6
          i     = i+1
-         init_cons(j)   = real(param_vec(i))
+         init_cons(j)   = param_vec(i)
       end do
       print*,"Hs_init (m): "     ,init_cons(1)
       print*,"T_init (s): "      ,init_cons(2)
