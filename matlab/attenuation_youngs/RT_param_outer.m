@@ -4,9 +4,24 @@ function [damping,kice,kwtr,int_adm,NDprams,...
 
 do_test  = 0;
 if nargin==0
-   h           = 2;
-   om          = 2*pi/10;
+   h     = 2;
+   om    = 2*pi/10;
+   H_nd  = 10;%%inf depth
+   %%
    ice_prams   = fn_fill_iceprams();
+   if 0
+      %% test R-P drag
+      ice_prams.drag_rp          = 13;
+      ice_prams.viscoelastic_ws  = 0;
+   elseif 1
+      %% test W-S viscoelastic
+      ice_prams.drag_rp          = 0;
+      ice_prams.viscoelastic_ws  = 1;
+   elseif 1
+      %% no damping
+      ice_prams.drag_rp          = 0;
+      ice_prams.viscoelastic_ws  = 0;
+   end
    guess       = om^2/ice_prams.g;
    do_test     = 1;
 end
@@ -22,27 +37,32 @@ h_nd     = h./L;
 zeta_nd  = rho*h_nd;
 %tst_ah   = {alp_nd,h_nd}
 %%
-H_nd     = 4;%%inf depth
+if ~exist('H_nd')
+   H_nd  = 4;%%inf depth
+end
 NDprams  = [alp_nd,zeta_nd,L,H_nd+0*om,Lc+0*om];
 
 if ~exist('guess')
    guess = min(alp);
 end
 
-kice     = 0*om;
-kwtr     = 0*om;
-int_adm  = 0*om;
-avc      = 0*om;
-[dum,JJ] = sort(om);
+kice        = 0*om;
+kwtr        = 0*om;
+int_adm     = 0*om;
+coeff_del   = 0*om;
+coeff_D     = 0*om;
+[dum,JJ]    = sort(om);
 
 for j_=1:length(om)
    j  = JJ(j_);
 
    %%get wavenumber for ice;
-   varpi             = 1/alp_nd(j)-zeta_nd(j);
-   [ki,BG2,avc(j)]   = fn_root_ice(varpi,H_nd,guess*L(j));
-   kice(j)           = ki/L(j);
-   guess             = kice(j);%%make guess the last root found;
+   varpi = 1/alp_nd(j)-zeta_nd(j);
+   [ki,BG2,coeff_del(j),coeff_D(j)]   =...
+      fn_root_ice(varpi,H_nd,guess*L(j));
+
+   kice(j)  = ki/L(j);
+   guess    = kice(j);%%make guess the last root found;
 
    %%get wavenumber for water;
    varpi    = 1/alp_nd(j);
@@ -64,9 +84,26 @@ for j_=1:length(om)
    end
 end
 
-%%get attenuation due to Robinson-Palmer drag;
+%% get attenuation due to Robinson-Palmer drag:
+%% * dimensional eqn:
+%% [ (D/rhow/om^2)*k^4+ g/om^2-rhoi*h/rhow-i*drag_rp/(om*rhow) ]*k*tanh(k*H) -1 = 0
+%%    >> -i*om*drag_rp/(rhow*om^2) = -i*om*drag_rp/(rhow*om)
+%% * non-dimensional eqn K=k*L:
+%% [ D/(rhow*om^2*L^5)*K^4+ del-i*drag_rp/(L*om*rhow) ]*K*tanh(K*H/L) -1 = 0
+%% d(del)   = -i*drag_rp/(L*om*rhow) = -i*drag_rp_nd
+%% d(k)     = coeff_del*d(del)=-i*drag_rp_nd*coeff_del = i*damping_nd;
 drag_rp_nd  = ice_prams.drag_rp/ice_prams.rhowtr./(om.*L);
-damping_nd  = avc.*drag_rp_nd;
+
+%% W&S (still non-dim):
+%% d(D)  = [-i*om*h^3*rhoi*viscoelastic_ws/6/(1+nu)]/[rhow*om^2*L^5]
+%%       = [-i*om*h^3*rhoi*viscoelastic_ws/6/(1+nu)]/[rhow*om^2*L^5]
+%%       = -i*h^3*rho*viscoelastic_ws/(6*(1+nu)*om*L^5)
+%%       = -i*vews_nd
+%% d(k)  = coeff_D*d(D)=-i*coeff_D*vews_nd = i*damping_nd;
+vews_nd     = h^3*rho*ice_prams.viscoelastic_ws./(6*(1+ice_prams.poisson)*om.*L.^5);
+
+%% add both effects together
+damping_nd  = -coeff_del.*drag_rp_nd - coeff_D.*vews_nd;
 damping     = damping_nd./L;
 
 %%Get other quantities via interpolation;
@@ -96,6 +133,18 @@ if do_test
    disp(['|T|     = ',num2str(modT,    '%.9e')]);
    disp(['Arg[R]  = ',num2str(argR,    '%.9e')]);
    disp(['Arg[T]  = ',num2str(argT,    '%.9e')]);
+
+   c5    = 1-1i*vews_nd(1);
+   del   = alp_nd(1)-zeta_nd(1);
+   c1    = del - 1i*drag_rp_nd;
+   Q     = roots([c5,0,0,0,c1,-1])/L(1);
+   Qap   = kice(1)+1i*damping;
+   %%
+   [dummy,JJ]  = sort(abs(Q-Qap));
+   tst         = [Q(JJ(1));Qap]
+   %%
+   K  = kice(1)*L(1);
+   [tanh(K*H_nd),(K^4+alp_nd(1))*K*tanh(K*H_nd)-1]
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,7 +165,7 @@ end
 %  y     = -gamma./denom;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [ki,BG2,avc]=fn_root_ice(del,H,guess)
+function [ki,BG2,coeff_del,coeff_D]=fn_root_ice(del,H,guess)
 %% finds the root of the ice dispersion relation nearest to 'guess'.
 
 fac   = 1;
@@ -135,8 +184,17 @@ end
 denom          = H*(Lam.^2.*ki.^2-1)+Lampr;
 res            = -ki/denom;
 BG2            = Lam^2*res;
-%%
-avc   = ki/denom;%% -1i*dk/d(drag_rp) - non-dimensional
+
+%% perturbations to get R&P drag and W&S viscoelastic effect
+%% F=Lam(k,D,del)*k*tanh(k*H)-1=0:
+%%  F_k   = [ (Lam*k)_k+H*( (Lam*k)^2-1 ) ]/(Lam*k);
+%%  F_del = Lam_del/Lam = 1/Lam;
+%%  F_D   = Lam_D/Lam   = k^4/Lam;
+%% dF/dD       = -F_D/F_k;
+%% dF/d(del)   = -F_del/F_k;
+
+coeff_del   = -ki/denom;  %% dk/d(del) - non-dimensional
+coeff_D     = -ki^5/denom;%% dk/d(D)   - non-dimensional
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [kw,BG1]=fn_root_wtr(del,H,guess)

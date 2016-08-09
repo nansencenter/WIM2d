@@ -42,6 +42,11 @@ else%%F&G (1967)
 end
 
 if ~isfield(s1,'young');
+
+   if ~isfield(s1,'young_opt');
+      s1.young_opt   = 2;
+   end
+
    if s1.young_opt==0%%just set it
       s1.young = 2e9;      %%lower ~ Marchenko
    elseif s1.young_opt==1%%Vernon's est from vbf
@@ -49,6 +54,7 @@ if ~isfield(s1,'young');
    elseif s1.young_opt==2%%just set it
       s1.young = 5.49e9;   %%higher ~ Vernon's guess (s1.vbf=.1)
    end
+
 end
 
 % Flexural strength (Timco and O'Brien 1994)
