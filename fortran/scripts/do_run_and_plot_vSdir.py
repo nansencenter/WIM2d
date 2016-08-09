@@ -12,7 +12,7 @@ import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 TEST_MESH   = 1
-DO_PLOTTING = 0
+DO_PLOTTING = 1
 
 gf          = Fdat.fn_check_grid('grid')
 gfl         = gf['LANDMASK']

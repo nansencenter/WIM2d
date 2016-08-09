@@ -12,7 +12,7 @@ import fns_plot_data as Fplt
 
 # RUN_OPT     = 0 # non-IO version
 RUN_OPT     = 1 # rerun then plot
-DO_PLOTTING = 0 # cancel plotting if desired by setting to 0
+DO_PLOTTING = 1 # cancel plotting if desired by setting to 0
 
 gf          = Fdat.fn_check_grid('grid')
 gfl         = gf['LANDMASK']
