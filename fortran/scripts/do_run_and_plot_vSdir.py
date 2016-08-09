@@ -111,7 +111,7 @@ if 1:
    # change real parameters:
    params_in.update({'dumpfreq': 10})
    params_in.update({'itest'   : 25})
-   params_in.update({'jtest'   : 10})
+   params_in.update({'jtest'   : 5})
 
 if TEST_MESH:
    # inputs on test mesh

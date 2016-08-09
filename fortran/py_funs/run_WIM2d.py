@@ -371,7 +371,7 @@ def do_run_vSdir(sdf_dir=None,\
                      # use Bretschneider
                      for w in range(nfreq):
                         om                = 2*PI*freq_vec[w]
-                        sdf_dir[i,j,:,w]  = Fmisc.SDF_Bretscneider(om)
+                        sdf_dir[i,j,:,w]  = Fmisc.SDF_Bretschneider(om)
                   #########################################################
 
                   #########################################################
@@ -382,7 +382,11 @@ def do_run_vSdir(sdf_dir=None,\
                      wavdir      = theta_max+np.arange(ndir)*dtheta
 
                      # modify spectrum depending on direction
+                     D2R   = np.pi/180.
+                     # test_sum = 0.
+                     # test_sum_ = 0.
                      for wth in range(ndir):
+                        theta_fac_   = Fmisc.theta_dirfrac(wavdir[wth]-.5*abs(dtheta),abs(dtheta),mwd[i,j])/abs(D2R*dtheta)
                         chi      = PI/180.0*(wavdir[wth]-mwd[i,j])
 
                         if (np.cos(chi)>0.0):
@@ -390,7 +394,13 @@ def do_run_vSdir(sdf_dir=None,\
                         else:
                            theta_fac   = 0.0
 
-                        sdf_dir[i,j,wth,:]   = sdf_dir[i,j,wth,:]*theta_fac
+                        sdf_dir[i,j,wth,:]   = sdf_dir[i,j,wth,:]*theta_fac_
+                        # test_sum += theta_fac_
+                        # test_sum_ += theta_fac_
+                        # print(wavdir[wth],wavdir[wth]-.5*abs(dtheta),dtheta,mwd[i,j],theta_fac,theta_fac_)
+
+                  # print(test_sum*abs(dtheta),test_sum_*abs(dtheta))
+                  # sys.exit()
                   #########################################################
 
                   if 0:

@@ -48,7 +48,7 @@ do
 done
 
 # f2py scripts
-for f in do_run_and_plot.py
+for f in do_run_and_plot.py do_run_and_plot_vSdir.py
 do
     ln -s $SDIR/$f $Tdir/$f
 done

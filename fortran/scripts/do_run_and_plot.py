@@ -110,7 +110,7 @@ else:
       # change real parameters:
       params_in.update({'dumpfreq': 10})
       params_in.update({'itest'   : 25})
-      params_in.update({'jtest'   : 10})
+      params_in.update({'jtest'   : 5})
 
    # call gateway between python and pre-compiled f2py module
    out_fields,results   = Rwim.do_run(in_fields=in_fields,params_in=params_in)

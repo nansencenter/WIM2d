@@ -21,7 +21,7 @@ echo "Now compile in : $P"
 echo "Run with $bin in matlab/python path (or just call executables in there)"
 echo " " 
 
-kernel=(uname -s)
+kernel=`uname -s`
 
 PLOT=1
 if [ $PLOT -eq 1 ]
@@ -47,5 +47,3 @@ then
       display $pic &
    fi
 fi
-
-
