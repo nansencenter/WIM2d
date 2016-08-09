@@ -6,10 +6,11 @@ DEPENDDIR=.deps/
 BINARYDIR=../bin/
 # ========================================================
 
+WIM2D_CXX=$(WIM2D_PATH)/CXX
 
 # ========================================================
 # C++ files
-CXXSRCDIR=$(WIM2D_PATH)/CXX/src/cpp
+CXXSRCDIR=$(WIM2D_CXX)/src
 CXXSRC=$(wildcard $(CXXSRCDIR)/*.cpp)
 OBJS=$(CXXSRC:$(CXXSRCDIR)/%.cpp=$(OBJECTDIR)/%.o)
 DEPS=$(CXXSRC:$(CXXSRCDIR)/%.cpp=$(DEPENDDIR)/%.d)
@@ -17,20 +18,20 @@ DEPS=$(CXXSRC:$(CXXSRCDIR)/%.cpp=$(DEPENDDIR)/%.d)
 CXX = g++
 CXXFLAGS += -std=c++0x -std=c++11 -ftemplate-depth-256 -Wno-inline
 CXXFLAGS += -fPIC -O3 -pthread -fopenmp -pedantic  -v # -MMD -MP -lm #-Wall
-CXXFLAGS += -I . -I $(BOOST_DIR)/include -I $(OPENMPI_INCLUDE_DIR)/ -I $(CXXSRCDIR) -I $(CCSRCDIR)
+CXXFLAGS += -I . -I $(BOOST_DIR)/include -I $(OPENMPI_INCLUDE_DIR)/ -I $(WIM2D_CXX)/include
 # ========================================================
 
 
 # ========================================================
 # C files
-CCSRCDIR=$(WIM2D_PATH)/CXX/src/c
+CCSRCDIR=$(WIM2D_PATH)/CXX/src
 CCSRC=$(wildcard $(CCSRCDIR)/*.c)
 CCOBJS:=$(CCSRC:$(CCSRCDIR)/%.c=$(OBJECTDIR)/%.o)
 CCDEPS:=$(CCSRC:$(CCSRCDIR)/%.c=$(DEPENDDIR)/%.d)
 
 CC = gcc
 CFLAGS += -pedantic -Wno-inline -fPIC -O3 #-v # -MMD -MP -lm #-Wall
-CFLAGS += -I $(CCSRCDIR) -I . -I $(CXXSRCDIR)
+CFLAGS += -I $(CCSRCDIR) -I . -I $(WIM2D_CXX)/include
 # ========================================================
 
 
