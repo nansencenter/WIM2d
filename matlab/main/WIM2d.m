@@ -76,6 +76,7 @@ else
    mesh_e  = [];
 end
 
+USE_EBS  = 0;
 if params_in.SCATMOD==3
    USE_EBS  = 1;
 end
