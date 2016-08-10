@@ -61,7 +61,7 @@ endif
 # ============================================================================
 
 # Flags for f2py
-F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS) $(FCFLAGS)"
+F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS) $(FCFLAGS)" --f90flags="$(IFLAGS) $(OFLAGS) $(FCFLAGS)"
 
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh
