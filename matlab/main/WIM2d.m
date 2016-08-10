@@ -76,6 +76,9 @@ else
    mesh_e  = [];
 end
 
+if params_in.SCATMOD==3
+   USE_EBS  = 1;
+end
 
 %% get date & time;
 date_vector    = [params_in.start_year,...
@@ -265,6 +268,11 @@ if params_in.STEADY==1
 end
 %%
 T  = 2*pi./om_vec;
+if USE_EBS==1
+   %% enhanced back-scatter method
+   %% - backwards-scattered waves are left alone
+   wave_stuff.dir_spec_scattered = 0*wave_stuff.dir_spec;
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -935,6 +943,10 @@ else
          s1.wavdir      = wave_stuff.dirs;
          %s1.Sdir        = reshape( wave_stuff.dir_spec(:,:,jw,:), gridprams.nx,gridprams.ny,ndir);
          s1.Sdir        = wave_stuff.dir_spec(:,:,:,jw);
+         if USE_EBS == 1;
+            %% "already-scattered" energy - doesn't get scattered anymore
+            s1.Sdir_scattered = wave_stuff.dir_spec_scattered(:,:,:,jw);
+         end
          s1.ag_eff      = ag_eff(:,:,jw);
          s1.atten_dim   = atten_dim;
          s1.damp_dim    = damp_dim;
@@ -956,6 +968,10 @@ else
                %% call advection routine
                s1.Sdir(:,:,jth)  = waveadv_weno(...
                   s1.Sdir(:,:,jth),u,v,gridprams,dt,adv_options);
+               if USE_EBS == 1
+                  s1.Sdir_scattered(:,:,jth)  = waveadv_weno(...
+                     s1.Sdir_scattered(:,:,jth),u,v,gridprams,dt,adv_options);
+               end
             end
          else
             %%1d advection - 1 row at a time
@@ -967,6 +983,10 @@ else
                   %% call advection routine
                   s1.Sdir(:,jy,jth) = waveadv_weno_1d(...
                      s1.Sdir(:,jy,jth),u,gridprams,dt,adv_options);
+                  if USE_EBS == 1
+                     s1.Sdir_scattered(:,jy,jth) = waveadv_weno_1d(...
+                        s1.Sdir_scattered(:,jy,jth),u,gridprams,dt,adv_options);
+                  end
                end
             end
          end
@@ -1006,7 +1026,16 @@ else
             %% Simple attenuation scheme - does conserve scattered energy
             [wave_stuff.dir_spec(:,:,:,jw),S_freq,tau_x_om,tau_y_om] = ...
                atten_simple_conserve(gridprams,ice_prams,s1,dt);
-            clear s1 S_out;  
+            clear s1 S_out;
+         elseif params_in.SCATMOD==3
+            %% isotropic scattering, enhanced backscatter (EBS)
+            [wave_stuff.dir_spec(:,:,:,jw),...
+             wave_stuff.dir_spec_scattered(:,:,:,jw),...
+             S_freq,...
+             tau_x_om,...
+             tau_y_om] = ...
+                atten_iso_EBS(gridprams,ice_prams,s1,dt);
+            clear s1 S_out;
          end
 
          %% integrate stress densities over frequency
@@ -1017,7 +1046,11 @@ else
          tau_y = tau_y+wt_om(jw)*tmp;                 %%[Pa]
 
          %% mwd integrals
-         mwd_om   = calc_mwd_1freq(wave_stuff.dirs,wave_stuff.dir_spec(:,:,:,jw));
+         tmp3  = wave_stuff.dir_spec(:,:,:,jw);
+         if USE_EBS
+            tmp3  = tmp3 + wave_stuff.dir_spec_scattered(:,:,:,jw);
+         end
+         mwd_om   = calc_mwd_1freq(wave_stuff.dirs,tmp3);
          mwd      = mwd+wt_om(jw)*mwd_om;
          %GEN_pause
 
