@@ -50,7 +50,7 @@ LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboos
 .PHONY: all clean mrproper
 
 # Default action.
-all: $(PROGNAME)
+all: exec #$(PROGNAME)
 
 # Delete the object and dependancy files.
 clean:
@@ -88,11 +88,54 @@ $(DEPENDDIR)%.d: $(CXXSRCDIR)/%.cpp
 # ================================================================
 
 
+# # ========================================================
+# # make executable
+# $(PROGNAME): $(OBJS) $(CCOBJS)
+# 	@mkdir -p $(BINARYDIR)
+# 	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$@ $^ $(LDFLAGS)
+# # ========================================================
+
 # ========================================================
 # make executable
-$(PROGNAME): $(OBJS) $(CCOBJS)
+exec: $(OBJS) $(CCOBJS)
 	@mkdir -p $(BINARYDIR)
-	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$@ $^ $(LDFLAGS)
+	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$(PROGNAME) $^ $(LDFLAGS)
+# ========================================================
+
+# ========================================================
+# make wim library
+
+KERNEL := $(shell uname -s)
+
+ifeq ($(KERNEL),Linux)
+	LIBRARYNAME=libwim.so.1.0
+else
+	LIBRARYNAME=libwim.dylib
+endif
+
+LIBRARYDIR=$(WIM2D_PATH)/CXX/lib/
+
+# LOBJS := $(filter-out $(OBJECTDIR)/main.o, $(OBJS))
+
+ifeq ($(KERNEL),Linux)
+lib: $(OBJS) $(CCOBJS)
+	@mkdir -p $(LIBRARYDIR)
+	@echo "============================================"
+	@echo Creating shared library $(LIBRARYDIR)$(LIBRARYNAME)
+	@echo "============================================"
+	$(CXX) $(CXXFLAGS) -o $(LIBRARYDIR)$(LIBRARYNAME) $^ $(LDFLAGS)
+	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.so
+	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.so.1
+else
+lib: $(OBJS) $(CCOBJS)
+	@mkdir -p $(LIBRARYDIR)
+	@echo "============================================"
+	@echo Creating shared library $(LIBRARYDIR)$(LIBRARYNAME)
+	@echo "============================================"
+	$(CXX) $(CXXFLAGS) -o $(LIBRARYDIR)$(LIBRARYNAME) $^ $(LDFLAGS)
+	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.dylib.0
+	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.dylib.1
+endif
 # ========================================================
 
 
