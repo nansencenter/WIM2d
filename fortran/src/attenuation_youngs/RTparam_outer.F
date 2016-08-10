@@ -1,6 +1,6 @@
       !!function [damping,kice,kwtr,int_adm,...
       !!            alp_scat,modT,argR,argT] =...
-      !!               RT_param_outer(h,om,E,visc_rp,guess)
+      !!               RT_param_outer(h,om,E,drag_rp,guess)
       subroutine RTparam_outer(damping,kice,kwtr,int_adm,
      &                  ac,modT,argR,argT,
      &                  inputs,guess)
@@ -14,10 +14,10 @@
       
       real   :: alp_nd,hnd,zeta_nd
       real   :: Hw_nd,varpi,L
-      real   :: damping_nd,visc_rp_nd
+      real   :: damping_nd,drag_rp_nd
       real   :: H_nd = 4.0d0!!infinite depth used in scattering calculation;
       !!
-      real   :: ki,kw,avc,BG1,BG2
+      real   :: ki,kw,coeff_del,BG1,BG2
       !real   :: E,g,rhow,rhoi,nu
       real   :: D,rho
 
@@ -35,8 +35,8 @@
       varpi = 1/alp_nd-zeta_nd
       !print*,'DLvH',D,L,varpi,H_nd
 
-      !![ki,BG2,avc]   = gen_root_ice(varpi,H_nd,guess*L);
-      call gen_root_ice(ki,BG2,avc,varpi,H_nd,guess*L)
+      !![ki,BG2,coeff_del]   = gen_root_ice(varpi,H_nd,guess*L);
+      call gen_root_ice(ki,BG2,coeff_del,coeff_D,varpi,H_nd,guess*L)
       kice = ki/L
       !print*,'vHkGB_i',varpi,H_nd,kice,guess*L,BG1
          
@@ -54,9 +54,12 @@
       !print*,'BG2   = ', BG2
       int_adm  = BG1/BG2
          
-      !!get viscous attenuation;
-      visc_rp_nd  = wim_info%viscrp/wim_info%rhowtr/om/L
-      damping_nd  = avc*visc_rp_nd
+      !!get dissipative attenuation;
+      drag_rp_nd  = wim_info%drag_rp/wim_info%rhowtr/om/L !!RP drag
+      vews_nd     = wim_info%drag_rp/wim_info%rhowtr/om/L !!RP drag
+      vews_nd     = h**3*rho*wim_info%visc_ws/
+     &               (6.*(1.+wim_info%poisson)*om*L**5)
+      damping_nd  = -coeff_del*drag_rp_nd -coeff_D*vews_nd
       damping     = damping_nd/L
       
       !!get interpolated attenuation coefficient;
@@ -66,12 +69,12 @@
       end subroutine RTparam_outer
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
-      !!%%function [ki,BG2,avc]=gen_root_ice(del,H,guess)
+      !!%%function [ki,BG2,coeff_del,coeff_D]=gen_root_ice(del,H,guess)
       !!finds the root of the ice dispersion relation nearest to 'guess'.
-      subroutine gen_root_ice(ki,BG2,avc,
-     &                 del, H,guess)
+      subroutine gen_root_ice(ki,BG2,coeff_del,coeff_D
+     &                ,del, H,guess)
 
-      real,intent(out)  :: ki,BG2,avc
+      real,intent(out)  :: ki,BG2,coeff_del,coeff_D
       real,intent(in)   :: del,H,guess
       
       real     :: fac,k0,dk,tol
@@ -107,7 +110,8 @@
       
       !!Outputs;
       BG2  = Lam*Lam*res
-      avc  = ki/denom!! -1i*dk/d(visc_rp) - non-dimensional
+      coeff_del  = -ki/denom   !! dk/d(del) - non-dimensional
+      coeff_D    = -ki**5/denom!! dk/d(D)   - non-dimensional
       end subroutine gen_root_ice
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       

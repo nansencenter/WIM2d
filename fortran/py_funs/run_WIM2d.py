@@ -618,11 +618,12 @@ def default_params(convert=False):
 
    ###################################################
    # default real parameters:
-   param_dict.update({'young'    : 5.49e9})
-   param_dict.update({'visc_rp'  : 13.0})
    duration_hours = 6.
-   param_dict.update({'duration' : duration_hours*60*60})
-   param_dict.update({'CFL'      : 0.7})
+   param_dict.update({'duration'          : duration_hours*60*60})
+   param_dict.update({'young'             : 5.49e9})
+   param_dict.update({'drag_rp'           : 13.0})
+   param_dict.update({'viscoelastic_ws'   : 0.0})
+   param_dict.update({'CFL'               : 0.7})
    ###################################################
 
 
@@ -684,7 +685,8 @@ def param_dict2vec(param_dict):
 
    # old real_prams
    param_vec.append(param_dict["young"])
-   param_vec.append(param_dict["visc_rp"])
+   param_vec.append(param_dict["drag_rp"])
+   param_vec.append(param_dict['viscoelastic_ws'])
    param_vec.append(param_dict["duration"])
    param_vec.append(param_dict["CFL"])
 

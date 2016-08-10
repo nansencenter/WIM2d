@@ -12,7 +12,7 @@ import fns_plot_data as Fplt
 
 # RUN_OPT     = 0 # non-IO version
 RUN_OPT     = 1 # rerun then plot
-DO_PLOTTING = 0 # cancel plotting if desired by setting to 0
+DO_PLOTTING = 1 # cancel plotting if desired by setting to 0
 
 gf          = Fdat.fn_check_grid('grid')
 gfl         = gf['LANDMASK']
@@ -102,7 +102,7 @@ else:
       # change real parameters:
       duration_hours = 6.0
       params_in.update({'young'   : 5.49e9})
-      params_in.update({'visc_rp' : 13.0})
+      params_in.update({'drag_rp' : 13.0})
       params_in.update({'duration': duration_hours*60*60})
       params_in.update({'CFL'     : .7})
 

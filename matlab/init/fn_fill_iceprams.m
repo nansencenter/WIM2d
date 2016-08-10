@@ -5,8 +5,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function s1 = fn_fill_iceprams(ice_prams)
 
-s1 = ice_prams;%%shorten name for convenience
-clear ice_prams;
+if exist('ice_prams','var')
+   s1 = ice_prams;%%shorten name for convenience
+   clear ice_prams;
+end
 
 %% Model Parameters
 s1.rhowtr   = 1025;  % Ice density      [kg/m^3]
@@ -14,8 +16,11 @@ s1.rhoice   = 922.5; % Ice density      [kg/m^3]
 s1.g        = 9.81;  % Gravity          [m/s^2]
 s1.poisson  = .3;    % Poisson's ratio
 
-if ~isfield(s1,'visc_rp')
- s1.visc_rp  = 13;    % Robinson-Palmer viscosity coefficient [Pa/(m/s)]
+if ~isfield(s1,'drag_rp')
+ s1.drag_rp  = 13;    % Robinson-Palmer drag coefficient [Pa/(m/s)]
+end
+if ~isfield(s1,'visc_ws')
+ s1.visc_ws  = 0;    % Wang-Shen viscosity coefficient [m^2/s]
 end
 
 %%Brine vol fraction -> Young's modulus and flexural strength
@@ -37,6 +42,11 @@ else%%F&G (1967)
 end
 
 if ~isfield(s1,'young');
+
+   if ~isfield(s1,'young_opt');
+      s1.young_opt   = 2;
+   end
+
    if s1.young_opt==0%%just set it
       s1.young = 2e9;      %%lower ~ Marchenko
    elseif s1.young_opt==1%%Vernon's est from vbf
@@ -44,6 +54,7 @@ if ~isfield(s1,'young');
    elseif s1.young_opt==2%%just set it
       s1.young = 5.49e9;   %%higher ~ Vernon's guess (s1.vbf=.1)
    end
+
 end
 
 % Flexural strength (Timco and O'Brien 1994)

@@ -12,7 +12,7 @@ import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
 TEST_MESH   = 1
-DO_PLOTTING = 0
+DO_PLOTTING = 1
 
 gf          = Fdat.fn_check_grid('grid')
 gfl         = gf['LANDMASK']
@@ -103,7 +103,7 @@ if 1:
    # change real parameters:
    duration_hours = 6.0
    params_in.update({'young'    : 5.49e9})
-   params_in.update({'visc_rp'  : 13.0})
+   params_in.update({'drag_rp'  : 13.0})
    params_in.update({'duration' : duration_hours*60*60})
    params_in.update({'CFL'      : 0.7})
 
