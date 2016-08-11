@@ -62,6 +62,8 @@ neXtSIMcoupling/tutorial/out/*
 neXtSIMcoupling/local_data/*
 
 CXX/out_cpp
+CXX/lib
+CXX/bin
 
 fortran/grid_setup/infile_waves.txt
 

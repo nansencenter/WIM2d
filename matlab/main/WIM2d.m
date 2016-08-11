@@ -115,47 +115,45 @@ TEST_IJ  = (params_in.itest>0)&(params_in.jtest>0);
 CSUM     = params_in.DO_CHECK_INIT+params_in.DO_CHECK_PROG+params_in.DO_CHECK_FINAL;
 SV_BIN   = (CSUM>0);
 
+FSUM     = params_in.PLOT_INIT+params_in.PLOT_PROG+params_in.PLOT_FINAL;
+SV_FIGS  = (FSUM>0);
+
 COMP_F   = 0;
 compFdir = 'out_2/binaries/prog/';
 
 %% make a log file similar to fortran file
-if TEST_IJ | params_in.SV_LOG | SV_BIN
-   log_dir  = [params_in.outdir];
-   if ~exist(log_dir,'dir')
-      eval(['!mkdir ',log_dir]);
+if TEST_IJ | params_in.SV_LOG | SV_BIN | SV_FIGS
+   if params_in.outdir==0
    end
+   log_dir  = params_in.outdir;
+   eval(['!mkdir -p ',log_dir]);
 end
 
 if TEST_IJ | params_in.SV_LOG
    log_dir  = [params_in.outdir,'/diagnostics'];
-   if ~exist(log_dir,'dir')
-      eval(['!mkdir ',log_dir]);
-   end
+   eval(['!mkdir -p ',log_dir]);
 end
 
 if SV_BIN
    log_dir  = [params_in.outdir,'/binaries'];
-   if ~exist(log_dir,'dir')
-      eval(['!mkdir ',log_dir]);
-   end
+   eval(['!mkdir -p ',log_dir]);
    log_dir  = [params_in.outdir,'/binaries/prog'];
-   if ~exist(log_dir,'dir')
-      eval(['!mkdir ',log_dir]);
-   end
+   eval(['!mkdir -p ',log_dir]);
+end
+
+if SV_FIGS
+   log_dir  = [params_in.outdir,'/figs'];
+   eval(['!mkdir -p ',log_dir]);
 end
 
 if TEST_IJ
    log_dir2 = [params_in.outdir,'/diagnostics/local'];
-   if ~exist(log_dir2,'dir')
-      eval(['!mkdir ',log_dir]);
-   end
+   eval(['!mkdir -p ',log_dir]);
 end
 
 if params_in.SV_LOG
    log_dir  = [params_in.outdir,'/diagnostics/global'];
-   if ~exist(log_dir,'dir')
-      eval(['!mkdir ',log_dir]);
-   end
+   eval(['!mkdir -p ',log_dir]);
 
    log_file    = [log_dir,'/WIM2d_diagnostics',year_info.date_string,'.txt'];
    this_subr   = mfilename();
