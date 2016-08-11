@@ -38,7 +38,14 @@ infile   = 'infile_matlab.txt';
 if ~exist('verbosity','var')
    verbosity   = 1;
 end
-params   = read_infile_matlab(infile,verbosity);
+if verbosity
+   disp('********************************************************')
+   disp('reading options from infile:')
+   disp(infile)
+   disp('********************************************************')
+   disp(' ')
+end
+params   = read_infile_matlab(infile);
 
 %%Override parameters in infile with input ones
 if exist('params_in','var')
@@ -46,13 +53,30 @@ if exist('params_in','var')
       fnames   = fieldnames(params_in);
       for loop_i  = 1:length(fnames)
          vbl   = fnames{loop_i};
-         eval(['params.',vbl,' = ','params_in.',vbl,';']);
+         params.(vbl)   = params_in.(vbl);
       end
    end
    clear params_in;
 end
 
 TEST_INC_SPEC     = 0;
+if ~isstr(params.outdir)
+   %% directory for binary outputs and diagnostic files
+   if params.outdir==0
+      if params.MEX_OPT==0
+         params.outdir  = 'out_m';
+      else
+         params.outdir  = ['out_io_',num2str(params.MEX_OPT)];
+      end
+   else
+      error(['''outdir'' should either be a string or 0 (to use defaults) - ',...
+               num2str(params.outdir),' given'])
+   end
+end
+
+if verbosity
+   params
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,27 +90,19 @@ if params.MEX_OPT>0
       end
    end
 
+   %%make file to be read by fortran code
    infile_dirs = 'infile_dirs.txt';
-   if ~exist(infile_dirs)
-      if verbosity
-         disp([infile_dirs,' not present - using default directories...'])
-      end
-      indir          = 'grid';
-      params.outdir  = ['out_io_',num2str(params.MEX_OPT)];
-   else
-      if verbosity
-         disp(' ');
-         disp('*******************************************************');
-         disp(['Reading ',infile_dirs,'...']);
-      end
-      fid            = fopen(infile_dirs);
-      indir          = strtrim(fgets(fid));
-      params.outdir  = strtrim(fgets(fid));
-      fclose(fid);
-   end
+   indir       = 'grid';%%where mex functions need to read in grid from
+   fid         = fopen(infile_dirs,'w');
+   fprintf(fid,'%s\n',indir);
+   fprintf(fid,'%s\n',params.outdir);
+   fclose(fid);
 
    %% get grid
    if verbosity
+      disp(['Creating ',infile_dirs,'...']);
+      disp(['>> Contents:']);
+      eval(['!cat ',infile_dirs]);
       disp(' ');
       disp(['Getting grid from ',indir,'...']);
    end
@@ -161,14 +177,13 @@ elseif exist('grid_prams','var');
    end
 end
 
-
-if params.MEX_OPT==0
-   params.outdir  = 'out_m';
+TEST_IJ  = (params.itest>0) & (params.jtest>0);
+CSUM     = params.DO_CHECK_INIT+params.DO_CHECK_PROG+params.DO_CHECK_FINAL;
+SV_BIN   = (CSUM>0);
+if SV_BIN | params.SV_LOG | TEST_IJ
+   %%create output dirs (if needed)
+   prep_mex_dirs(params.outdir);
 end
-
-%%create output dirs
-prep_mex_dirs(params.outdir);
-
 
 if HAVE_GRID==0
    fnames      = {'x0','y0','nx','ny','dx','dy'};

@@ -110,40 +110,76 @@ PLOT_OPT          = 2;%%plot option (only used if doing plotting)
 TEST_INC_SPEC     = 0;
 TEST_FINAL_SPEC   = 0;
 
+TEST_IJ  = (params_in.itest>0)&(params_in.jtest>0);
+
+CSUM     = params_in.DO_CHECK_INIT+params_in.DO_CHECK_PROG+params_in.DO_CHECK_FINAL;
+SV_BIN   = (CSUM>0);
+
 COMP_F   = 0;
 compFdir = 'out_2/binaries/prog/';
 
 %% make a log file similar to fortran file
-log_dir  = [params_in.outdir,'/diagnostics/global'];
-if ~exist(log_dir,'dir')
-   eval(['!mkdir ',log_dir]);
+if TEST_IJ | params_in.SV_LOG | SV_BIN
+   log_dir  = [params_in.outdir];
+   if ~exist(log_dir,'dir')
+      eval(['!mkdir ',log_dir]);
+   end
 end
-log_dir2 = [params_in.outdir,'/diagnostics/local'];
-if ~exist(log_dir2,'dir')
-   eval(['!mkdir ',log_dir]);
+
+if TEST_IJ | params_in.SV_LOG
+   log_dir  = [params_in.outdir,'/diagnostics'];
+   if ~exist(log_dir,'dir')
+      eval(['!mkdir ',log_dir]);
+   end
 end
-log_file    = [log_dir,'/WIM2d_diagnostics',year_info.date_string,'.txt'];
-this_subr   = mfilename();
 
-%%open log file for writing (clear contents)
-logid       = fopen(log_file,'w');
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n','Outer subroutine:');
-fprintf(logid,'%s%s%s\n','>> ',this_subr,'.m');
-fprintf(logid,'%s\n','***********************************************');
+if SV_BIN
+   log_dir  = [params_in.outdir,'/binaries'];
+   if ~exist(log_dir,'dir')
+      eval(['!mkdir ',log_dir]);
+   end
+   log_dir  = [params_in.outdir,'/binaries/prog'];
+   if ~exist(log_dir,'dir')
+      eval(['!mkdir ',log_dir]);
+   end
+end
 
-fprintf(logid,'%s\n',' ');
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n','Main parameters:');
-fprintf(logid,'%s%2.2d\n','SCATMOD:                          ',params_in.SCATMOD);
-fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',params_in.ADV_DIM);
-fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',params_in.ADV_OPT);
-fprintf(logid,'%s%2.2d\n','BRK_OPT:                          ',params_in.BRK_OPT);
-fprintf(logid,'%s%2.2d\n','STEADY:                           ',params_in.STEADY);
-fprintf(logid,'%s%2.2d\n','DO_ATTEN:                         ',params_in.DO_ATTEN);
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n',' ');
-fclose(logid);
+if TEST_IJ
+   log_dir2 = [params_in.outdir,'/diagnostics/local'];
+   if ~exist(log_dir2,'dir')
+      eval(['!mkdir ',log_dir]);
+   end
+end
+
+if params_in.SV_LOG
+   log_dir  = [params_in.outdir,'/diagnostics/global'];
+   if ~exist(log_dir,'dir')
+      eval(['!mkdir ',log_dir]);
+   end
+
+   log_file    = [log_dir,'/WIM2d_diagnostics',year_info.date_string,'.txt'];
+   this_subr   = mfilename();
+
+   %%open log file for writing (clear contents)
+   logid       = fopen(log_file,'w');
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','Outer subroutine:');
+   fprintf(logid,'%s%s%s\n','>> ',this_subr,'.m');
+   fprintf(logid,'%s\n','***********************************************');
+
+   fprintf(logid,'%s\n',' ');
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','Main parameters:');
+   fprintf(logid,'%s%2.2d\n','SCATMOD:                          ',params_in.SCATMOD);
+   fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',params_in.ADV_DIM);
+   fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',params_in.ADV_OPT);
+   fprintf(logid,'%s%2.2d\n','BRK_OPT:                          ',params_in.BRK_OPT);
+   fprintf(logid,'%s%2.2d\n','STEADY:                           ',params_in.STEADY);
+   fprintf(logid,'%s%2.2d\n','DO_ATTEN:                         ',params_in.DO_ATTEN);
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n',' ');
+   fclose(logid);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -222,19 +258,21 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%append to log file
-logid = fopen(log_file,'a');
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n','WIM parameters:');
-fprintf(logid,'%s%4.2f\n','Brine volume fraction:       ' ,ice_prams.vbf);
-fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
-fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
-fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
-fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
-fprintf(logid,'%s%5.2f\n','Drag RP (Pa.s/m):            ' ,ice_prams.drag_rp);
-fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.visc_ws);
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n','');
-fclose(logid);
+if params_in.SV_LOG
+   logid = fopen(log_file,'a');
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','WIM parameters:');
+   fprintf(logid,'%s%4.2f\n','Brine volume fraction:       ' ,ice_prams.vbf);
+   fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
+   fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
+   fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
+   fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
+   fprintf(logid,'%s%5.2f\n','Drag RP (Pa.s/m):            ' ,ice_prams.drag_rp);
+   fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.visc_ws);
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','');
+   fclose(logid);
+end
 
 if TEST_INC_SPEC==1
    if params_in.DO_DISP; disp(' ');
@@ -454,35 +492,37 @@ brkcrt  = zeros(gridprams.nx,gridprams.ny,nt);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%append to log file
-logid = fopen(log_file,'a');
-fprintf(logid,'%s\n',' ');
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n','Other Parameters:');
-fprintf(logid,'%s%6.1f\n','Time step (s):                    ',dt);
-fprintf(logid,'%s%4.3f\n','CFL number:                       ',params_in.CFL);
-fprintf(logid,'%s%5.2f\n','Maximum wave group velocity (m/s):',amax);
-fprintf(logid,'%s%4.4d\n','Number of time steps:             ',nt);
-fprintf(logid,'%s%5.2f\n','Time interval (h):                ',nt*dt/3600 );
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n',' ');
+if params_in.SV_LOG
+   logid = fopen(log_file,'a');
+   fprintf(logid,'%s\n',' ');
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','Other Parameters:');
+   fprintf(logid,'%s%6.1f\n','Time step (s):                    ',dt);
+   fprintf(logid,'%s%4.3f\n','CFL number:                       ',params_in.CFL);
+   fprintf(logid,'%s%5.2f\n','Maximum wave group velocity (m/s):',amax);
+   fprintf(logid,'%s%4.4d\n','Number of time steps:             ',nt);
+   fprintf(logid,'%s%5.2f\n','Time interval (h):                ',nt*dt/3600 );
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n',' ');
 
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s%4.4d%s%4.4d\n','Grid dimensions:                  ' ,...
-   gridprams.nx,' ',gridprams.ny);
-fprintf(logid,'%s%4.1f%s%4.1f\n','Spatial resolution (km):          ' ,...
-   gridprams.dx/1.0e3,' ',gridprams.dy/1.0e3);
-fprintf(logid,'%s%4.1f%s%4.1f\n','Extent of domain   (km):          ' ,...
-   gridprams.nx*gridprams.dx/1.0e3,' ',gridprams.ny*gridprams.dy/1.0e3);
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s%4.4d%s%4.4d\n','Grid dimensions:                  ' ,...
+      gridprams.nx,' ',gridprams.ny);
+   fprintf(logid,'%s%4.1f%s%4.1f\n','Spatial resolution (km):          ' ,...
+      gridprams.dx/1.0e3,' ',gridprams.dy/1.0e3);
+   fprintf(logid,'%s%4.1f%s%4.1f\n','Extent of domain   (km):          ' ,...
+      gridprams.nx*gridprams.dx/1.0e3,' ',gridprams.ny*gridprams.dy/1.0e3);
 
-fprintf(logid,'%s\n',' ');
-fprintf(logid,'%s%5.2f\n','Minimum period (s):               ',1/max(wave_stuff.freq) );
-fprintf(logid,'%s%5.2f\n','Maximum period (s):               ',1/min(wave_stuff.freq) );
-fprintf(logid,'%s%4.4d\n','Number of wave frequencies:       ',wave_stuff.nfreq);
-fprintf(logid,'%s%4.4d\n','Number of wave directions:        ',wave_stuff.ndir);
-fprintf(logid,'%s%5.2f\n','Directional resolution (degrees): ',360.0/(1.0*wave_stuff.ndir) );
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n',' ');
-fclose(logid);
+   fprintf(logid,'%s\n',' ');
+   fprintf(logid,'%s%5.2f\n','Minimum period (s):               ',1/max(wave_stuff.freq) );
+   fprintf(logid,'%s%5.2f\n','Maximum period (s):               ',1/min(wave_stuff.freq) );
+   fprintf(logid,'%s%4.4d\n','Number of wave frequencies:       ',wave_stuff.nfreq);
+   fprintf(logid,'%s%4.4d\n','Number of wave directions:        ',wave_stuff.ndir);
+   fprintf(logid,'%s%5.2f\n','Directional resolution (degrees): ',360.0/(1.0*wave_stuff.ndir) );
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n',' ');
+   fclose(logid);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -627,8 +667,7 @@ if params_in.PLOT_INIT
    %pause;
 end
 
-CSUM  = params_in.DO_CHECK_INIT+params_in.DO_CHECK_PROG+params_in.DO_CHECK_FINAL;
-if (params_in.SV_BIN==1) & (params_in.MEX_OPT==0) & (CSUM>0)
+if SV_BIN & (params_in.MEX_OPT==0)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% save some fields as binaries to [params_in.outdir]/binaries
    Bdims = [gridprams.nx,gridprams.ny,wave_stuff.nfreq,wave_stuff.ndir];
@@ -653,11 +692,13 @@ if (params_in.SV_BIN==1) & (params_in.MEX_OPT==0) & (CSUM>0)
    fn_save_binary(Froot,Bdims,[],pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else
-   params_in.SV_BIN   = 0;
+   %% don't save binaries if MEX_OPT >0 :
+   %% - saved by fortran instead
+   SV_BIN   = 0;
 end
 
 
-if (params_in.SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
+if (SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% save init files
    Fdir  = [params_in.outdir,'/binaries'];
@@ -675,7 +716,7 @@ if (params_in.SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
-if (params_in.SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
+if (SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% 1st prog file
@@ -807,7 +848,7 @@ else
    for n = 1:nt
 
       %%determine if we need to dump local diagnostics
-      DUMP_DIAG   = (mod(n-1,reps)==0)&(params_in.itest>0)&(params_in.jtest>0);
+      DUMP_DIAG   = (mod(n-1,reps)==0)&TEST_IJ;
       if DUMP_DIAG
          logfile2 = [log_dir2,'/WIMdiagnostics_local',year_info.date_string,'.txt'];
          logid2   = fopen(logfile2,'w');
@@ -1478,7 +1519,7 @@ else
          pause
       end
 
-      if (params_in.SV_BIN==1)&(mod(n,reps_ab)==0)&(params_in.DO_CHECK_PROG==1)
+      if (SV_BIN==1)&(mod(n,reps_ab)==0)&(params_in.DO_CHECK_PROG==1)
          %% save matlab files as binaries
          %% to matlab results
          Fdir  = [params_in.outdir,'/binaries/prog'];
@@ -1509,7 +1550,7 @@ else
 end%%params_in.MEX_OPT==0 option
 
 
-if (params_in.SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
+if (SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    %% save matlab files as binaries
    %% to matlab results
    Fdir  = [params_in.outdir,'/binaries'];
@@ -1557,26 +1598,28 @@ diagnostics.tauy_min = tauy_min;
 diagnostics.tauy_max = tauy_max;
 
 %%append to log file
-logid = fopen(log_file,'a');
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n','Diagnostics:');
-if (params_in.OPT==1)|(params_in.OPT==3)
-   fprintf(logid,'%s%9.4f\n','MIZ width (km): ',Wmiz);
-   fprintf(logid,'%s%9.4f%s%9.4f\n','Dmax range in MIZ (m): ',...
-      Dmax_min,' ',Dmax_max);
-end
-fprintf(logid,'%s%13.6e%s%13.6e\n','tau_x range (Pa): ',...
-   taux_min,' ',taux_max);
-fprintf(logid,'%s%13.6e%s%13.6e\n','tau_y range (Pa): ',...
-   tauy_min,' ',tauy_max);
-fprintf(logid,'%s\n','***********************************************');
+if params_in.SV_LOG
+   logid = fopen(log_file,'a');
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','Diagnostics:');
+   if (params_in.OPT==1)|(params_in.OPT==3)
+      fprintf(logid,'%s%9.4f\n','MIZ width (km): ',Wmiz);
+      fprintf(logid,'%s%9.4f%s%9.4f\n','Dmax range in MIZ (m): ',...
+         Dmax_min,' ',Dmax_max);
+   end
+   fprintf(logid,'%s%13.6e%s%13.6e\n','tau_x range (Pa): ',...
+      taux_min,' ',taux_max);
+   fprintf(logid,'%s%13.6e%s%13.6e\n','tau_y range (Pa): ',...
+      tauy_min,' ',tauy_max);
+   fprintf(logid,'%s\n','***********************************************');
 
-fprintf(logid,'%s\n',' ');
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s%7.1f\n','Elapsed time (min): ',t0_fac*(t1-t0));
-fprintf(logid,'%s\n','***********************************************');
-fprintf(logid,'%s\n',' ');
-fclose(logid);
+   fprintf(logid,'%s\n',' ');
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s%7.1f\n','Elapsed time (min): ',t0_fac*(t1-t0));
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n',' ');
+   fclose(logid);
+end
 
 if params_in.SV_SPEC
    %% save final directional spectrum
