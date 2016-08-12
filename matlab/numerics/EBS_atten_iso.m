@@ -3,7 +3,7 @@
 %% Date: 20141018, 18:04:46 CEST
 
 function [S,S_scattered,S_freq,tau_x,tau_y] = ...
-   atten_iso_EBS(grid_prams,ice_prams,s1,dt)
+   EBS_atten_iso(grid_prams,ice_prams,s1,dt)
 
 nx = grid_prams.nx;
 ny = grid_prams.ny;
@@ -101,7 +101,7 @@ for j = 1:ny
       %% ==========================================================
       %%step fwd & apply dissipation afterwards
       Dx = cg*dt;
-      S2 = step_EBS(S2,Dx,inputs)*exp(-q_dis*Dx);
+      S2 = EBS_step(S2,Dx,inputs)*exp(-q_dis*Dx);
       %% ==========================================================
 
       S(i,j,:)             = S2(j_E);

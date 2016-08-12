@@ -1,4 +1,4 @@
-function S_out = step_EBS(S_in,x,inputs,method)
+function S_out = EBS_step(S_in,x,inputs,method)
 %% y'=M_bolt*y
 
 DO_TEST  = 0;
