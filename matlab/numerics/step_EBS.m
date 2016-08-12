@@ -1,4 +1,4 @@
-function S_out = evolve_spectral(S_in,x,inputs,method)
+function S_out = step_EBS(S_in,x,inputs,method)
 %% y'=M_bolt*y
 
 DO_TEST  = 0;
@@ -47,8 +47,13 @@ else
    clear e_vecs;
 end
 
-if ~isempty(find(e_vals>0))
-   error('Shouldn''t be any positive eigenvalues')
+e_tol = 1e-12;
+if ~isempty(find(e_vals>e_tol))
+   disp('Eigen-values:')
+   disp(e_vals)
+   error('\nShouldn''t be any positive eigenvalues')
+else
+   e_vals   = min(e_vals,0);
 end
 
 %%scale matrix/evals by e_fac to give correct decay rate

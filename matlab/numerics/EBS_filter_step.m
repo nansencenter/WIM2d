@@ -11,3 +11,5 @@ for j=1:ndir
    M_filter(i,j)  = (abs(th_i-th_j)<90);
 end
 end
+
+M_filter = 1-M_filter;%%everything zero => no E goes into "already-scattered" spectrum
