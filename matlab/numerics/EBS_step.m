@@ -56,23 +56,9 @@ else
    e_vals   = min(e_vals,0);
 end
 
-%%scale matrix/evals by e_fac to give correct decay rate
-ev    = e_vals(e_vals~=0);
-ev    = max(ev);%%slowest decaying
-e_fac = 1;
-if exist('q_scat')
-   if 1
-      %% scale eigenvalues so rate of decay is q_scat
-      e_fac = q_scat/abs(ev);
-   else
-      %% scale eigenvalues by q_scat
-      e_fac = q_scat;
-   end
-end
 
 if strcmp(method,'matrix_exponential')
    %tic
-   M_bolt         = e_fac*M_bolt;
    S_out          = zeros(2*ndir,nx);
    [X,J]          = sort(x,'descend');
    [eM,nterm]     = mat_exp(X(1)*M_bolt);
@@ -186,8 +172,9 @@ if exist('n_term','var');
       y  = y+t;
    end
 else
-   nM = norm(M);
-   for n=2:200
+   nM       = norm(M);
+   n_term   = 200;
+   for n=2:n_term
       t  = M*t/n;%%M^n/(n!)=M/n*M^(n-1)/(n-1)!
       y  = y+t;
       if norm(t)<1e-12*nM

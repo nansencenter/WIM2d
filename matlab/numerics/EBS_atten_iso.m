@@ -1,6 +1,6 @@
-%% atten_isotropic.m
+%% EBS_atten_iso.m
 %% Author: Timothy Williams
-%% Date: 20141018, 18:04:46 CEST
+%% Date: 20160812
 
 function [S,S_scattered,S_freq,tau_x,tau_y] = ...
    EBS_atten_iso(grid_prams,ice_prams,s1,dt)
@@ -49,10 +49,33 @@ M11      =  -id+(1-M_filter).*M_K;%% E that stays in "normal" spectrum
 M21      = M_filter.*M_K;%% E that is moved to "already-scattered" spectrum
 M_bolt   = [M11,zz;M21,zz];
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [U,D]          = eig(M_bolt);
 inputs.e_vals  = diag(D);
 inputs.e_vecs  = U;
 inputs.M_bolt  = M_bolt;
+
+e_tol = 1e-12;
+if ~isempty(find(inputs.e_vals>e_tol))
+   disp('Eigen-values:')
+   disp(inputs.e_vals)
+   error('\nShouldn''t be any positive eigenvalues')
+else
+   inputs.e_vals   = min(inputs.e_vals,0);
+end
+
+ev    = inputs.e_vals(inputs.e_vals<-e_tol);
+ev    = max(ev);%%slowest decaying
+e_fac = 1;
+if 1
+   %%scale matrix/evals by e_fac to give correct max e-val of -1
+   e_fac = 1./abs(ev);
+end
+inputs.e_vals  = e_fac*inputs.e_vals;
+inputs.M_bolt  = e_fac*inputs.M_bolt;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 for i = 1:nx
 for j = 1:ny
@@ -73,7 +96,6 @@ for j = 1:ny
       j_S   = ndir+(1:ndir)';
       %%
       S2 = [squeeze(S(i,j,:));squeeze(S_scattered(i,j,:))];
-      inputs.q_scat  = q_scat;
 
       %% source has units m^{-1}*[m/s]*[m^2s] = m^2
       %% 1st line comes from D_t(E);
@@ -101,7 +123,7 @@ for j = 1:ny
       %% ==========================================================
       %%step fwd & apply dissipation afterwards
       Dx = cg*dt;
-      S2 = EBS_step(S2,Dx,inputs)*exp(-q_dis*Dx);
+      S2 = EBS_step(S2,q_scat*Dx,inputs)*exp(-q_dis*Dx);
       %% ==========================================================
 
       S(i,j,:)             = S2(j_E);
