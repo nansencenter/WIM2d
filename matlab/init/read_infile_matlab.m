@@ -1,24 +1,14 @@
-function params   = read_infile_matlab(infile,verbosity)
+function params   = read_infile_matlab(infile)
 
 if ~exist('infile','var')
    infile   = 'infile_matlab.txt';
 end
-if ~exist('verbosity','var')
-   verbosity   = 1;
-end
-infile_version = 10;%%latest infile version
+infile_version = 11;%%latest infile version
 
 if ~exist(infile)
    %% now need infile to run code
    error([infile,' not present - get example from "matlab/main/infiles" directory'])
 else
-   if verbosity
-      disp('********************************************************')
-      disp('reading options from infile:')
-      disp(infile)
-      disp('********************************************************')
-      disp(' ')
-   end
    fid   = fopen(infile);
 
    %%check infile version:
@@ -29,13 +19,9 @@ else
 
    %%read in rest of variables:
    while ~feof(fid)
-      [x,name] = read_next(fid,verbosity);
+      [x,name] = read_next(fid);
       if ~isempty(x)
-         cmd   = ['params.',name,' = ',num2str(x),';'];
-         if verbosity
-            disp(cmd);
-         end
-         eval(cmd);
+         params.(name)  = x;
       end
    end
    fclose(fid);
@@ -43,30 +29,29 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [x,name]  = read_next(fid,verbosity)
+function [x,name]  = read_next(fid)
 %% read next line in text file
 
 lin   = strtrim(fgets(fid));  %% trim leading white space
 lin2  = strsplit(lin);        %%split using spaces
-x     = lin2{1};              %%get 1st thing in line
+xs    = lin2{1};              %%get 1st thing in line (as string)
 
-if strcmp(x,'')
+if strcmp(xs,'')
    % blank line
-   if verbosity
-      disp(' ');
-   end
    x     = [];
    name  = [];
-elseif strcmp(x,'#')
+elseif strcmp(xs,'#')
    % comment
-   if verbosity
-      disp(lin);
-   end
    x     = [];
    name  = [];
 else
    % proper variable
-   x     = str2num(x);
+   [x,status]  = str2num(xs);
+   if status==0
+      %% numerical conversion failed
+      %% - leave as string
+      x  = xs;
+   end
    name  = lin2{3};
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

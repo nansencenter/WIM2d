@@ -67,7 +67,7 @@ all: exec #$(PROGNAME)
 
 # Delete the object and dependancy files.
 clean:
-	$(RM) $(OBJS) $(DEPS) $(CCOBJS) $(CCDEPS)
+	$(RM) $(OBJECTDIR)/* $(DEPENDDIR)/*
 
 # Delete the object and dependancy files, and the executable
 rmproper: clean

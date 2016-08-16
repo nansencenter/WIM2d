@@ -177,7 +177,8 @@ def solve_sys(Rmat,width=None,Lmat=None):
          print(evz)
          sys.exit()
    else:
-      # just take the negative one & combine with evl
+      # semi-infinite ice sheet
+      # - just take the negative one & combine with evl
       indx  = np.logical_and(evals<=0.,abs(evals)<Ztol)
       if np.any(indx):
          evz   = np.array([evals[indx[0]]])

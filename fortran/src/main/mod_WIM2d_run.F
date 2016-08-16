@@ -42,7 +42,10 @@
       !! -also:
       !!   n_param_vec (for mex functions)
       !!   STEADY      (for f2py)
-      public   :: wim2d_run,wim2d_run_io,wim2d_run_vSdir                &
+      public   :: wim2d_run
+     &            ,wim2d_run_io                                         &
+     &            ,wim2d_run_vSdir                                      &
+     &            ,py_wim2d_run_vSdir_gate                              &
      &            ,mex_io_gate_v2                                       &
      &            ,mex_io_gate_vSdir                                    &
      &            ,mex_io_gate_vSdir_mesh                               &
@@ -485,9 +488,9 @@
       integer,intent(in)            :: nmesh_e
       real*8,intent(inout),optional :: mesh_e(nmesh_e,nmesh_vars)
       real :: mesh_e_dummy(nmesh_e,nmesh_vars)
-      logical                       :: INTERP_MESH
 
-      real              :: PI
+      logical  :: INTERP_MESH
+      real     :: PI
 
       logical,parameter :: SET_WAVES   = .false.
       integer           :: w,wth
@@ -509,8 +512,8 @@
          INTERP_MESH = .true.
       end if
 
-      PI       = 4.0*atan(1.0)
-      et       = etime(tictoc)!!startup etime
+      PI = 4.0*atan(1.0)
+      et = etime(tictoc)!!startup etime
 
       if ((ADV_DIM.eq.2).and.(jj.eq.1)) then
          print*,'Invalid value of ADV_DIM (2) for jj = 1'
@@ -763,6 +766,88 @@
       call print_log_info()
 
       end subroutine wim2d_run_common
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine py_wim2d_run_vSdir_gate(Sdir_out,out_arrays            &
+     &                 ,Sdir_in,ice_arrays,param_vec)
+
+      use mod_wavesice, only: WAVE_MASK2
+
+      implicit none
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!inputs
+      real*8,dimension(ii*jj*n_wavdir*n_wave_freq)
+     &   ,intent(in) :: Sdir_in                                         !! pass in directional spec
+      real*8,dimension(ii,jj,3),intent(in)  :: ice_arrays              !! pass in  icec,iceh,dfloe
+      real*8,intent(in)                     :: param_vec(n_param_vec)  !! parameters
+
+      !! outputs
+      real*8,dimension(ii,jj,6),intent(out) :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy,mwd
+      real*8,dimension(ii*jj*n_wavdir*n_wave_freq)
+     &   ,intent(out) :: Sdir_out    !! pass in/out directional spec
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      integer,parameter :: nw    = n_wave_freq
+      integer,parameter :: ndir  = n _wavdir
+      !!
+      integer  :: i,j,w,wth
+      real     :: PI,adv_dir
+      real     :: Tp_io,mwd_io,init_cons(6)
+
+      PI = 4.*atan(1.)
+
+      !!get parameters
+      call read_param_vec(init_cons,param_vec)
+      Tp_io    = init_cons(2)
+      mwd_io   = init_cons(3)
+
+      !! initial ice conditions
+      icec     = real(ice_arrays(:,:,1))
+      iceh     = real(ice_arrays(:,:,2))
+      dfloe    = real(ice_arrays(:,:,3))
+
+      !! get input directional wave spectrum
+      sdf_dir  = reshape(real(Sdir_in),(/ii,jj,ndir,nw/))
+      sdf_inc  = sdf_dir
+
+      print*,nw,(nw.eq.1),Tp_io
+      if (nw.eq.1) then
+         freq_vec(1) = 1./Tp_io
+         print*,Tp_io,freq_vec
+      end if
+      if (ndir.eq.1) then
+         wavdir(1)   = mwd_io
+         print*,mwd_io
+      end if
+
+      ! mesh_e is optional, but need a place holder for nmesh_e
+      call wim2d_run_vSdir(out_arrays,1)
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !! get updated directional wave spectrum
+
+      !! correction for STEADY (copied from mod_waves_ice.F)
+      if (STEADY.eq.1) then
+         do w=1,nw
+         do wth=1,ndir
+            adv_dir  = -PI/180.0*(wavdir(wth)+90.0)
+            if (cos(adv_dir).ge.0.0) then
+               where (WAVE_MASK2.gt.0.0)
+                   sdf_dir(:,:,wth,w)   = sdf_inc(:,:,wth,w)
+               end where
+            end if
+         end do
+         end do
+      end if
+
+      !!TODO update Hs,Tp,... also?
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      Sdir_out = reshape(dble(sdf_dir),(/ii*jj*ndir*nw/))
+      end subroutine py_wim2d_run_vSdir_gate
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1354,8 +1439,8 @@
       
       implicit none
       
-      real*8,intent(out)  :: init_cons(6)
-      real*8,intent(in) :: param_vec(n_param_vec)
+      real*8,intent(out)   :: init_cons(6)
+      real*8,intent(in)    :: param_vec(n_param_vec)
       integer  :: i,j
 
       i  = 0
