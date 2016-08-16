@@ -33,9 +33,10 @@ S_freq   = zeros(nx,ny);
 tau_x    = zeros(nx,ny);
 tau_y    = zeros(nx,ny);
 %%
-oo = ones(ndir,ndir);
-zz = zeros(ndir,ndir);
-id = eye(ndir);
+oo    = ones(ndir,ndir);
+zz    = zeros(ndir,ndir);
+id    = eye(ndir);
+id2   = eye(2*ndir);
 
 if 1
    %% choose filter so back-scattered waves
@@ -43,6 +44,7 @@ if 1
 else
    %%for testing - this should give the same answer as SCATMOD==0
    M_filter = zz;
+   disp('warning: filter turned off for testing')
 end
 M_K      = oo/ndir;%% q_scat==1 - can scale eigenvalues & M_bolt inside step_EBS
 M11      =  -id+(1-M_filter).*M_K;%% E that stays in "normal" spectrum
@@ -100,7 +102,7 @@ for j = 1:ny
       %% source has units m^{-1}*[m/s]*[m^2s] = m^2
       %% 1st line comes from D_t(E);
       %% 2nd line comes from D_t(E_scattered);
-      M_bolt_ij   = q_scat*M_bolt-q_dis*eye(2*ndir);%%proper Boltzmann matrix (scaled & with dissipation) 
+      M_bolt_ij   = q_scat*M_bolt-q_dis*id2;%%proper Boltzmann matrix (scaled & with dissipation) 
       source      = cg*M_bolt_ij(j_E,:)*S2+...
                    +cg*M_bolt_ij(j_S,:)*S2;
 
