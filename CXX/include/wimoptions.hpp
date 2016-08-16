@@ -15,8 +15,9 @@ namespace Wim
 {
 namespace po = boost::program_options;
 
-po::options_description
-descrWimOptions();
+    po::options_description
+    descrWimOptions();
+
 } // WIMOPT
 
 #endif

@@ -2,7 +2,7 @@
 
 #include <wimdiscr.hpp>
 #include <iomanip>
-#include <options.hpp>
+#include <wimoptions.hpp>
 
 namespace
 {

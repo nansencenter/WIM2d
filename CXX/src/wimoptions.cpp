@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
 
-#include <options.hpp>
+#include <wimoptions.hpp>
 
 namespace Wim
 {

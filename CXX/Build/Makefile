@@ -1,4 +1,16 @@
 # ========================================================
+# kernel type
+KERNEL := $(shell uname -s)
+
+ifeq ($(KERNEL),Linux)
+	LIBRARYNAME=libwim.so.1.0
+else
+	LIBRARYNAME=libwim.dylib
+endif
+
+# ========================================================
+
+# ========================================================
 # output names/locations
 PROGNAME=prog_wim2d_cpp.exec
 OBJECTDIR=objs/
@@ -16,7 +28,8 @@ OBJS=$(CXXSRC:$(CXXSRCDIR)/%.cpp=$(OBJECTDIR)/%.o)
 DEPS=$(CXXSRC:$(CXXSRCDIR)/%.cpp=$(DEPENDDIR)/%.d)
 
 CXX = g++
-CXXFLAGS += -std=c++0x -std=c++11 -ftemplate-depth-256 -Wno-inline
+#CXXFLAGS += -std=c++0x -std=c++11 -ftemplate-depth-256 -Wno-inline
+CXXFLAGS += -std=c++11 -pedantic -ftemplate-depth-256 -Wno-inline -fPIC -O3 -pthread -v
 CXXFLAGS += -fPIC -O3 -pthread -fopenmp -pedantic  -v # -MMD -MP -lm #-Wall
 CXXFLAGS += -I . -I $(BOOST_DIR)/include -I $(OPENMPI_INCLUDE_DIR)/ -I $(WIM2D_CXX)/include
 # ========================================================
@@ -88,13 +101,6 @@ $(DEPENDDIR)%.d: $(CXXSRCDIR)/%.cpp
 # ================================================================
 
 
-# # ========================================================
-# # make executable
-# $(PROGNAME): $(OBJS) $(CCOBJS)
-# 	@mkdir -p $(BINARYDIR)
-# 	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$@ $^ $(LDFLAGS)
-# # ========================================================
-
 # ========================================================
 # make executable
 exec: $(OBJS) $(CCOBJS)
@@ -105,43 +111,42 @@ exec: $(OBJS) $(CCOBJS)
 # ========================================================
 # make wim library
 
-KERNEL := $(shell uname -s)
-
-ifeq ($(KERNEL),Linux)
-	LIBRARYNAME=libwim.so.1.0
-else
-	LIBRARYNAME=libwim.dylib
-endif
-
 LIBRARYDIR=$(WIM2D_PATH)/CXX/lib/
 
-# LOBJS := $(filter-out $(OBJECTDIR)/main.o, $(OBJS))
+LDFLAGSLIB = $(LDFLAGS)
+ifeq ($(KERNEL),Linux)
+	LDFLAGSLIB += -shared -Wl,-soname,libwim.so.1
+	#LDFLAGSLIB += -lm -ldl #-lhwloc
+else
+	LDFLAGSLIB += -dynamiclib -Wl,-headerpad_max_install_names,-undefined,dynamic_lookup,-current_version,1.0,-install_name,$(LIBRARYDIR)$(LIBRARYNAME)
+	#LDFLAGSLIB += -ldl -lstdc++
+endif
+
+LOBJS := $(filter-out $(OBJECTDIR)/main.o, $(OBJS))
 
 ifeq ($(KERNEL),Linux)
-lib: $(OBJS) $(CCOBJS)
+lib: $(LOBJS) $(CCOBJS)
 	@mkdir -p $(LIBRARYDIR)
 	@echo "============================================"
 	@echo Creating shared library $(LIBRARYDIR)$(LIBRARYNAME)
 	@echo "============================================"
-	$(CXX) $(CXXFLAGS) -o $(LIBRARYDIR)$(LIBRARYNAME) $^ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(LIBRARYDIR)$(LIBRARYNAME) $^ $(LDFLAGSLIB)
 	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.so
 	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.so.1
 else
-lib: $(OBJS) $(CCOBJS)
+lib: $(LOBJS) $(CCOBJS)
 	@mkdir -p $(LIBRARYDIR)
 	@echo "============================================"
 	@echo Creating shared library $(LIBRARYDIR)$(LIBRARYNAME)
 	@echo "============================================"
-	$(CXX) $(CXXFLAGS) -o $(LIBRARYDIR)$(LIBRARYNAME) $^ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(LIBRARYDIR)$(LIBRARYNAME) $^ $(LDFLAGSLIB)
 	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.dylib.0
 	@ln -sf $(LIBRARYNAME) $(LIBRARYDIR)libwim.dylib.1
 endif
 # ========================================================
 
-
 # The compilation depends on this Makefile.
 $(OBJS): Makefile
 
 -include $(DEPS)
-
 -include $(CCDEPS)
