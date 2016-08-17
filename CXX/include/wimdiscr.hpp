@@ -151,6 +151,7 @@ private:
 
     int nwavedirn, nwavefreq, advdim, ncs ,nt;
     bool ref_Hs_ice, atten, useicevel, steady, breaking, dumpDiag;
+    bool docoupling;
     std::string scatmod, advopt, fsdopt;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
 

@@ -43,8 +43,6 @@ namespace Wim
                   "Do breaking (=true), or turn off breaking (=false)")
             ("wim.atten", po::value<bool>()->default_value( true ),
                   "Do attenuation")
-            ("wim.checkprog", po::value<bool>()->default_value( true ),
-                  "Do dump intermediate states to binary files (=true), or don't' (=false)")
             ("wim.fsdopt", po::value<std::string>()->default_value( "PowerLawSmooth" ),
                   "FSD parameterisation: 'PowerLawSmooth' or 'RG'")
 
@@ -83,6 +81,14 @@ namespace Wim
                   "Initial time")
 
             //outputs of WIM
+            ("wim.checkinit", po::value<bool>()->default_value( true ),
+                  "Do/don't dump initial states of each call to WIM.run() to binary files  (true/false)")
+            ("wim.checkprog", po::value<bool>()->default_value( true ),
+                  "Do/don't dump intermediate states to binary files (true/false)")
+            ("wim.checkfinal", po::value<bool>()->default_value( true ),
+                  "Do/don't dump final states after each call to WIM.run() to binary files (true/false)")
+            ("wim.savelog", po::value<bool>()->default_value( true ),
+                  "Do/don't save diagnostic file after each call to WIM.run() to text file (true/false)")
             ("wim.dumpfreq", po::value<int>()->default_value( 10 ),
                   "frequency of dumping (# WIM timesteps)")
             ("wim.outparentdir", po::value<std::string>()->default_value( "out_cpp" ),
@@ -105,8 +111,8 @@ namespace Wim
                   "Don't let Dmax grow above this value [m]")
 
             //coupling to nextsim
-            ("nextwim.docoupling", po::value<bool>()->default_value( false ),
-                  "Enable/Disable coupling with nextsim")
+            //("nextwim.docoupling", po::value<bool>()->default_value( false ),
+            //      "Enable/Disable coupling with nextsim")
             ("nextwim.exportresults", po::value<bool>()->default_value( true ),
                   "Export results in coupled mode")
             ("nextwim.nfloesgridtomesh", po::value<bool>()->default_value( true ),

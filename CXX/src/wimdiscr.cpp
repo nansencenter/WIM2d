@@ -301,7 +301,29 @@ void WimDiscr<T>::init()
     sigma_c  = (1.76e+6)*std::exp(-5.88*std::sqrt(vbf));//flexural strength (Pa)
     epsc = sigma_c/young;//breaking strain
     flex_rig_coeff = young/(12.0*(1-std::pow(poisson,2.)));
-}
+
+    //some options need to be disabled if being called from nextsim
+    docoupling = !( vm.count("simul.use_wim")==0 );
+    if (!docoupling)
+    {
+       //set duration of call to wim.run() from wim.duration
+       duration = vm["wim.duration"].template as<double>();
+
+       //get initial time from wim.initialtime
+       init_time_str = vm["wim.initialtime"].as<std::string>();
+    }
+    else
+    {
+       //set duration of call to wim.run() from nextwim.couplingfreq
+       duration   = vm["nextwim.couplingfreq"].template as<int>()*
+                     vm["simul.timestep"].template as<double>();
+
+       //get initial time from simul.time_init
+       init_time_str  = vm["simul.time_init"].template as<std::string>();
+       init_time_str += " 00:00:00";
+    }
+
+}//end ::init()
 
 template<typename T>
 void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes, bool step) // reset
@@ -779,14 +801,13 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     dt = cfl*dx/amax;
 
     //reduce time step slightly to make duration an integer multiple of dt
-    duration = vm["wim.duration"].template as<double>();
     nt = std::ceil(duration/dt);
     dt = duration/nt;
 
 
     //ncs = std::ceil(nwavedirn/2);
     ncs = std::round(nwavedirn/2);
-}//end: init()
+}//end: assign()
 
 
 template<typename T>
@@ -1277,17 +1298,25 @@ void WimDiscr<T>::timeStep(bool step)
 template<typename T>
 void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes, bool step)
 {
+    this->assign(ice_c,ice_h,n_floes,step);
+
+    bool critter;
+
+    int lcpt  = 0;//local counter
+    if ((!docoupling) || (!step))
+        cpt = 0;//global counter
+    
     std::cout << "-----------------------Simulation started on "<< current_time_local() <<"\n";
 
     //init_time_str is human readable time eg "2015-01-01 00:00:00"
     //init_time is "formal" time format eg "20150101T000000Z"
-    init_time_str = vm["wim.initialtime"].as<std::string>();
     std::string init_time = ptime(init_time_str);
-    std::cout<<"---------------INITIAL TIME= "<< init_time <<"\n";
+    
+    value_type t_in  = cpt*dt;//model time of current call to wim
+    std::string call_time = ptime(init_time_str,t_in);
+    std::cout<<"---------------INITIAL TIME: "<< init_time <<"\n";
+    std::cout<<"---------------CALLING TIME: "<< call_time <<"\n";
 
-    this->assign(ice_c,ice_h,n_floes,step);
-
-    bool critter;
 
     std::cout<<"Running starts\n";
     chrono.restart();
@@ -1298,15 +1327,13 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     std::cout<<"nt= "<< nt <<"\n";
 
 
-    //if (vm["wim.checkinit"].template as<bool>())
-        exportResults("init",0);
+    if (vm["wim.checkinit"].template as<bool>())
+        exportResults("init",t_in);
 
-    if ((!vm["nextwim.docoupling"].template as<bool>()) || (!step))
-        cpt = 0;
-
-    while (cpt < nt)
+    while (lcpt < nt)
     {
-        std::cout <<  ":[WIM2D TIME STEP]^"<< cpt+1 <<"\n";
+        std::cout <<  ":[WIM2D TIME STEP]^"<< lcpt+1
+           <<" (out of "<<nt<<")"<<"\n";
         value_type t_out = dt*cpt;
 
         critter = !(cpt % vm["wim.dumpfreq"].template as<int>())
@@ -1317,9 +1344,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         if ( critter )
         {
             if (vm["nextwim.exportresults"].template as <bool>())
-                exportResults("prog",t_out);//global counter from nextsim
-           //else
-           //exportResults(cpt,t_out);//local counter from wim
+                exportResults("prog",t_out);
         }
 
         // if (cpt == 30)
@@ -1332,14 +1357,16 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
         timeStep(step);
 
-        ++cpt;//local counter incremented in wim.run()
+        ++lcpt;//local counter incremented in wim.run()
+        ++cpt;//global counter incremented in wim.run()
     }
     
-    //if (vm["wim.checkfinal"].template as<bool>())
-       exportResults("out",nt*dt);
+    if (vm["wim.checkfinal"].template as<bool>())
+       exportResults("out",t_in+nt*dt);
 
     // save diagnostic file
-    save_log(nt*dt);
+    if (vm["wim.savelog"].template as<bool>())
+       save_log(t_in);
 
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
 
@@ -2318,13 +2345,13 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
     }
     else if ( output_type == "out" )
     {
-       path   /= "binaries";
+       path   /= "binaries/out";
        fileout = (boost::format( "%1%/wim_out%2%" ) % path.string() % timestpstr).str();
     }
     else if ( output_type == "init" )
     {
-       path   /= "binaries";
-       fileout = (boost::format( "%1%/wim_init%2%" ) % path.string() % init_time).str();
+       path   /= "binaries/init";
+       fileout = (boost::format( "%1%/wim_init%2%" ) % path.string() % timestpstr).str();
     }
 
     fileoutb   = fileout+".b";
@@ -2469,7 +2496,7 @@ void WimDiscr<T>::save_log(value_type const& t_out) const
 
     std::string init_time  = ptime(init_time_str);
     std::string timestpstr = ptime(init_time_str, t_out);
-    std::string fileout    = (boost::format( "%1%/WIMdiagnostics%2%.txt" ) % path.string() % init_time).str();
+    std::string fileout    = (boost::format( "%1%/WIMdiagnostics%2%.txt" ) % path.string() % timestpstr).str();
 
     std::fstream out(fileout, std::ios::out | std::ios::trunc);
     if ( !out.is_open() )
@@ -2483,7 +2510,7 @@ void WimDiscr<T>::save_log(value_type const& t_out) const
     out << "Outer subroutine:\n";
     out << ">> " << "wimdiscr.cpp\n\n";
     out << std::left << std::setw(32) << "Start time:  " << init_time << "\n";
-    out << std::left << std::setw(32) << "Output time: " << timestpstr << "\n";
+    out << std::left << std::setw(32) << "Call time:   " << timestpstr << "\n";
     out << "***********************************************\n";
 
     out << "\n***********************************************\n";

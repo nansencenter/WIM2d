@@ -79,6 +79,10 @@ int main(int argc, char** argv )
 
     // run the simulation
     wim.run();
+      /* NB calls "assign" subroutine
+       * - some quantities need reassignment at each call to wim
+       *   eg conc, thickness, nfloes/dmax
+       */
 
 #if 0
     //std::vector<float> vec1 = {1.,2.,3.,4.,5.};
