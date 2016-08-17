@@ -226,7 +226,8 @@ def fn_read_general_binary(afile):
    nv=len(vlist)
    fmt_size=int(sz/float(nv*nx*ny)) # 4 for single, 8 for double
 
-   # print(sz,4*nx*ny*nv)
+   # print(afile,vlist)
+   # print(sz,4*nx*ny*nv,8*nx*ny*nv)
    # print(fmt_size,nx,ny,nv)
 
    aid   = open(afile,'rb')

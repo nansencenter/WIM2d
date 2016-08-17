@@ -2362,6 +2362,8 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
     std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
     if (out.is_open())
     {
+
+       //icec,iceh: "init"
        if ( output_type == "init" )
        {
            for (int i = 0; i < icec.shape()[0]; i++)
@@ -2373,11 +2375,13 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
                    out.write((char *)&iceh[i][j], sizeof(value_type));
        }
 
+       //dfloe: all files
        for (int i = 0; i < nx; i++)
            for (int j = 0; j < ny; j++)
                out.write((char *)&dfloe[ny*i+j], sizeof(value_type));
 
-       if ( output_type == "init" )
+       //taux,tauy: "out"/"prog"
+       if ( output_type != "init" )
        {
           for (int i = 0; i < nx; i++)
               for (int j = 0; j < ny; j++)
@@ -2388,7 +2392,7 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
                   out.write((char *)&tau_y[ny*i+j], sizeof(value_type));
        }
 
-
+       //wave stuff: all files
        for (int i = 0; i < Hs.shape()[0]; i++)
            for (int j = 0; j < Hs.shape()[1]; j++)
                out.write((char *)&Hs[i][j], sizeof(value_type));

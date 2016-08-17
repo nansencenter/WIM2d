@@ -111,12 +111,10 @@ namespace Wim
                   "Don't let Dmax grow above this value [m]")
 
             //coupling to nextsim
-            //("nextwim.docoupling", po::value<bool>()->default_value( false ),
-            //      "Enable/Disable coupling with nextsim")
+            ("nextwim.applywavestress", po::value<bool>()->default_value( true ),
+                  "Use wave stress from WIM in neXtSIM momentum equations")
             ("nextwim.exportresults", po::value<bool>()->default_value( true ),
                   "Export results in coupled mode")
-            ("nextwim.nfloesgridtomesh", po::value<bool>()->default_value( true ),
-                  "During neXtSIM regridding interpolate from grid-to-mesh or mesh-to-mesh")
             ("nextwim.couplingfreq", po::value<int>()->default_value( 20 ),
                   "Coupling frequency between neXtSIM and WIM (# neXtSIM time-steps)")
             ;
