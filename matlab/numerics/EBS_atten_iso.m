@@ -64,7 +64,7 @@ if ~isempty(find(inputs.e_vals>e_tol))
    disp(inputs.e_vals)
    error('\nShouldn''t be any positive eigenvalues')
 else
-   inputs.e_vals   = min(inputs.e_vals,0);
+   inputs.e_vals   = min(real(inputs.e_vals),0);
 end
 
 ev    = inputs.e_vals(inputs.e_vals<-e_tol);

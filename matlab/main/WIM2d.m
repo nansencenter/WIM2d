@@ -331,8 +331,8 @@ damping     = zeros(gridprams.nx,gridprams.ny,wave_stuff.nfreq);
 
 % Display some parameters here (since initialisation can be slow)
 Nice  = sum(ICE_MASK(:));
-h_av  = sum(ice_fields.hice(:))/Nice;
-c_av  = sum(ice_fields.cice(:))/Nice;
+h_av  = sum(ice_fields.hice(find(ICE_MASK)))/Nice;
+c_av  = sum(ice_fields.cice(find(ICE_MASK)))/Nice;
 %%
 Nwav  = sum(WAVE_MASK(:));
 Hs_av = sum(wave_fields.Hs(:))/Nwav;
