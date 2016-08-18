@@ -1621,13 +1621,17 @@ end
 
 if params_in.SV_SPEC
    %% save final directional spectrum
-   freq_vec = om_vec/2/pi;
-   S_inc    = wave_stuff.dir_spec;
-   Hs       = out_fields.Hs;
    wavdir   = wave_stuff.dirs;
+   freq_vec = om_vec/2/pi;
+   Sdir     = wave_stuff.dir_spec;
+   Hs       = out_fields.Hs;
    cice     = ice_fields.cice;
-   save([params_in.outdir,'Sdir.mat'],'Sdir','wavdir','freq_vec','gridprams','S_inc','cice','Hs');
-   clear wavdir freq_vec S_inc cice;
+   hice     = ice_fields.hice;
+   save([params_in.outdir,'/Sdir.mat'],...
+         'gridprams','S_inc',...
+         'wavdir','freq_vec','Sdir',...
+         'Hs','cice','hice');
+   clear wavdir freq_vec Sdir Hs cice hice;
 end
 
 if TEST_FINAL_SPEC==1
