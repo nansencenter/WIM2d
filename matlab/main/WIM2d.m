@@ -555,8 +555,11 @@ end
 
 if params_in.PLOT_INIT
    %%
-   figure(1),clf;
-   fn_fullscreen;
+   if ~params_in.DO_VIS
+    h1 = figure('visible','off','name','initial ice');
+   else
+    h1 = figure(1); clf; fn_fullscreen;
+   end
    fn_plot_ice(gridprams,ice_fields);
    if params_in.SV_FIG==1
       fig_dir  = [params_in.outdir,'/figs/init'];
@@ -564,19 +567,29 @@ if params_in.PLOT_INIT
       figname  = [fig_dir,'/ice_init.png'];
       saveas(gcf,figname);
    end
-   pause(0.1);
+   if params_in.DO_VIS 
+    pause(0.1); 
+   end
    %%
-   figure(2),clf;
-   fn_fullscreen;
+   if ~params_in.DO_VIS
+    h2 = figure('visible','off','name','initial waves');
+   else
+    h2 = figure(2); clf; fn_fullscreen;
+   end
    fn_plot_waves(gridprams,wave_fields);
    if params_in.SV_FIG==1
       figname  = [fig_dir,'/waves_init.png'];
       saveas(gcf,figname);
    end
-   pause(0.1);
+   if params_in.DO_VIS 
+    pause(0.1); 
+   end
    %%
-   figure(3),clf;
-   fn_fullscreen;
+   if ~params_in.DO_VIS
+    h3 = figure('visible','off','name','progress');
+   else
+    h3 = figure(3); clf; fn_fullscreen;
+   end
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(wave_stuff.ndir/2);
@@ -615,8 +628,11 @@ if params_in.PLOT_INIT
    %%
    if params_in.DIAG1d==1
       %% initial
-      figure(4),clf;
-      fn_fullscreen;
+      if ~params_in.DO_VIS
+       h4 = figure('visible','off','name','DIAG1d');
+      else
+       h4 = figure(4); clf; fn_fullscreen;
+      end
       loop_col = 1;
       %%
       subplot(4,1,4);
@@ -661,8 +677,13 @@ if params_in.PLOT_INIT
          figname  = [fig_dir,'/wim_diag1d.png'];
       end
    end
-   pause(0.1);
+   if params_in.DO_VIS pause(0.1); end
    %pause;
+end
+
+if params_in.PLOT_PROG
+ fig_dir  = [params_in.outdir,'/figs/prog'];
+ eval(['!mkdir -p ',fig_dir]);
 end
 
 if SV_BIN & (params_in.MEX_OPT==0)
@@ -1356,8 +1377,8 @@ else
 
          if params_in.PLOT_PROG
             if params_in.DIAG1d==0
-               figure(3),clf;
-               fn_fullscreen;
+               set(0,'currentfigure',h3); %figure(h3),
+               clf;
                %%
                if PLOT_OPT==1
                   s1 = struct('dir',wave_stuff.dirs(jdir),...
@@ -1405,7 +1426,7 @@ else
                %% params_in.DIAG1d==1
                %% during run
                if 1
-                  figure(4);
+                  set(0,'currentfigure',h4); %figure(h4);
                   %% check symmetry
                   [hmax,imax] = max(out_fields.Hs(:,1));
                   hp          = out_fields.Hs(imax,:);
@@ -1430,7 +1451,7 @@ else
                   end
                else
                   %%check partition of fwd and back energy
-                  figure(4);
+                  set(0,'currentfigure',h4); %figure(h4);
                   subplot(4,1,1);
                   hold on;
                   %%
@@ -1680,8 +1701,8 @@ if TEST_FINAL_SPEC==1
 end
 
 if params_in.PLOT_FINAL%%check exponential attenuation
-   figure(3),clf;
-   fn_fullscreen;
+   set(0,'currentfigure',h3); %figure(h3),
+   clf;
    if PLOT_OPT==1
       s1 = struct('dir',wave_stuff.dirs(jdir),...
                   'period',Tc,...
@@ -1694,8 +1715,8 @@ if params_in.PLOT_FINAL%%check exponential attenuation
    %%
    if 0
       %% figure testing how 1d results are (only appropriate for 1d geometries)
-      figure(4),clf;
-      fn_fullscreen;
+      set(0,'currentfigure',h4); %figure(h4),
+      clf;
       xx = gridprams.X(:,1);
       if 0
          vbl   = 'Hs';
@@ -1742,8 +1763,11 @@ if params_in.PLOT_FINAL%%check exponential attenuation
    %%
    if params_in.DIAG1d==1
       %% final
-      figure(5);
-      fn_fullscreen;
+      if ~params_in.DO_VIS
+       h5 = figure('visible','off','name','final');
+      else
+       h5 = figure(5); fn_fullscreen;
+      end
       clf;
 
       COMP_STEADY = 0;%%compare to fortran results
@@ -1807,14 +1831,14 @@ if params_in.PLOT_FINAL%%check exponential attenuation
 
                %% check y-dependance
                if k==1
-                  figure(4);
+                  set(0,'currentfigure',h4); %figure(h4);
                   ix = find(abs(xx_f-xp)==min(abs(xx-xp)));
                   subplot(2,1,2)
                   hold on;
                   for loop_ix=1:length(ix)
                      plot(yy/1e3,Hs_f(ix(loop_ix))+0*yy,'--m');
                   end
-                  figure(5);
+                  set(0,'currentfigure',h5); %figure(h5);
                end
             else
                if params_in.DO_DISP; disp([dfil,' not present']);
@@ -1893,7 +1917,7 @@ if params_in.PLOT_FINAL%%check exponential attenuation
       fig_dir  = [params_in.outdir,'/figs/final'];
       eval(['!mkdir -p ',fig_dir])
 
-      figure(3);
+      set(0,'currentfigure',h3); %figure(h3);
       eval(['!mkdir -p ',fig_dir,'/fig']);
       saveas(gcf,[fig_dir,'/fig/B',num2str(wave_stuff.ndir,'%3.3d'),'.fig']);
 
@@ -1901,7 +1925,7 @@ if params_in.PLOT_FINAL%%check exponential attenuation
       saveas(gcf,[fig_dir,'/png/B',num2str(wave_stuff.ndir,'%3.3d'),'.png']);
 
       if 0
-         figure(3);
+         set(0,'currentfigure',h3); %figure(h3);
          if 0
             %%fix position so that comparison is easier between computers
             pos   = [0.13   0.121428571428571   0.775   0.803571428571429];
