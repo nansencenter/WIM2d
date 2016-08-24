@@ -1883,7 +1883,6 @@ if params_in.PLOT_FINAL%%check exponential attenuation
             leg_text{end+1}   = 'Total (Simpson''s)';
          end
 
-         fcols
          fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['-',fcols{1}]);
          hold on;
 
