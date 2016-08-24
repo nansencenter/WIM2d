@@ -8,7 +8,7 @@ ln -s $WC/Build/Makefile Makefile
 # get eg config file and run script
 cd ..
 cp $WC/config_files/wim.cfg .
-cp $WC/scripts/run_cpp.sh .
+ln -s $WC/scripts/run_cpp.sh run_cpp.sh
 
 echo "Compile in Build_cpp"
 echo "Run here:"

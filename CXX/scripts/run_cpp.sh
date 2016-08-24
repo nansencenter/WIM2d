@@ -1,4 +1,4 @@
-bin/prog_wim2d_cpp.exec --config-file=wim.cfg
+bin/WIM2d_single_call_cpp.exec --config-file=wim.cfg
 
 echo ' '
 echo 'Make plots of progress with:'

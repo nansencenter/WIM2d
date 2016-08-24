@@ -12,7 +12,6 @@ endif
 
 # ========================================================
 # output names/locations
-PROGNAME=prog_wim2d_cpp.exec
 OBJECTDIR=objs/
 DEPENDDIR=.deps/
 BINARYDIR=../bin/
@@ -47,7 +46,6 @@ CFLAGS += -pedantic -Wno-inline -fPIC -O3 #-v # -MMD -MP -lm #-Wall
 CFLAGS += -I $(CCSRCDIR) -I . -I $(WIM2D_CXX)/include
 # ========================================================
 
-
 # ========================================================
 # Libraries
 LDFLAGS += -fopenmp
@@ -63,15 +61,15 @@ LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboos
 .PHONY: all clean mrproper
 
 # Default action.
-all: exec #$(PROGNAME)
+all: single
 
 # Delete the object and dependancy files.
 clean:
 	$(RM) $(OBJECTDIR)/* $(DEPENDDIR)/*
 
 # Delete the object and dependancy files, and the executable
-rmproper: clean
-	$(RM) $(BINARYDIR)$(PROGNAME)
+vclean: clean
+	$(RM) $(BINARYDIR)$(PROG1)
 # ========================================================
 
 
@@ -101,11 +99,27 @@ $(DEPENDDIR)%.d: $(CXXSRCDIR)/%.cpp
 # ================================================================
 
 
+# ================================================================
+# Programs
+PROGDIR=$(CXXSRCDIR)/programs
+PROGOBJ1=$(OBJECTDIR)/single_call.o
+PROG1=WIM2d_single_call_cpp.exec
+$(PROGOBJ1): $(CXXOBJS) $(CCOBJS)
+
+# Rules to compile all programs
+ALLPROGS=$(wildcard $(PROGDIR)/*.cpp)
+PROGOBJS=$(ALLPROGS:$(PROGDIR)/%.cpp=$(OBJECTDIR)/%.o)
+$(PROGOBJS): $(OBJECTDIR)%.o : $(PROGDIR)/%.cpp
+	@mkdir -p $(OBJECTDIR)
+	$(CXX) -o $@ -c $< $(CXXFLAGS)
+# ================================================================
+
+
 # ========================================================
-# make executable
-exec: $(OBJS) $(CCOBJS)
+# make executable 1
+single: $(PROGOBJ1) $(OBJS) $(CCOBJS)
 	@mkdir -p $(BINARYDIR)
-	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$(PROGNAME) $^ $(LDFLAGS)
+	$(CXX) $(CXXLAGS) -o $(BINARYDIR)$(PROG1) $^ $(LDFLAGS)
 # ========================================================
 
 # ========================================================
