@@ -639,6 +639,7 @@ if params_in.PLOT_INIT
       fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,cols{loop_col});
       %%
       subplot(4,1,1);
+      hold off;
       %fn_plot1d(gridprams.X(:,1)/1e3,wave_fields.Hs(:,1),labs1d_1,cols{loop_col});
       fn_plot1d(gridprams.X(:,1)/1e3,mean(wave_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
       hold on;
@@ -659,17 +660,18 @@ if params_in.PLOT_INIT
          Hs2   = 4*sqrt(mean(Et2,2));
       end
       fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
-      hold on;
+      hold off;
       %%
       subplot(4,1,2);
+      hold off;
       fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
-      hold on;
-      fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
-      hold on;
+      % hold on;
+      % fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
+      % hold off;
       %%
       subplot(4,1,3);
+      hold off;
       fn_plot1d(gridprams.X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
-      hold on;
       %%
       loop_col = loop_col+1;
       if params_in.SV_FIG==1
@@ -1377,6 +1379,7 @@ else
 
          if params_in.PLOT_PROG
             if params_in.DIAG1d==0
+               %% 2d plots
                set(0,'currentfigure',h3); %figure(h3),
                clf;
                %%
@@ -1425,9 +1428,11 @@ else
             else
                %% params_in.DIAG1d==1
                %% during run
-               if 1
+               params_in.check_symmetry      = 0;
+               params_in.check_E_partition   = 1;
+               if params_in.check_symmetry==1
+                  %% check symmetry by plotting some fields against y
                   set(0,'currentfigure',h4); %figure(h4);
-                  %% check symmetry
                   [hmax,imax] = max(out_fields.Hs(:,1));
                   hp          = out_fields.Hs(imax,:);
                   yp          = gridprams.Y(imax,:);
@@ -1449,15 +1454,15 @@ else
                      figname  = [fig_dir,'/wim_prog1d_symm',cn,'.png'];
                      saveas(gcf,figname);
                   end
-               else
+               end
+               if params_in.check_E_partition==1
                   %%check partition of fwd and back energy
                   set(0,'currentfigure',h4); %figure(h4);
                   subplot(4,1,1);
-                  hold on;
+                  hold off;
                   %%
                   %fn_plot1d(gridprams.X(:,1)/1e3,out_fields.Hs(:,1),labs1d_1,cols{loop_col});
                   fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
-                  hold on;
                   %%
                   [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,wave_stuff.dir_spec);
                   %Hp                = 4*sqrt(Ep(:,1));
@@ -1474,18 +1479,19 @@ else
                      %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
                      Hs2   = 4*sqrt(mean(Et2,2));
                   end
-                  fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);
-                  hold on;
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['--',cols{loop_col}]);
+                  hold off;
                   %%
                   subplot(4,1,2);
+                  hold off;
                   fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
-                  hold on;
-                  fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_2,['-',cols{loop_col}]);
-                  hold on;
+                  %hold on;
+                  %fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_2,['--',cols{loop_col}]);
+                  hold off;
                   %%
                   subplot(4,1,3);
+                  hold off;
                   fn_plot1d(gridprams.X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
-                  hold on;
                   %%
                   loop_col = loop_col+1;
                   if loop_col>length(cols)
@@ -1857,7 +1863,7 @@ if params_in.PLOT_FINAL%%check exponential attenuation
       leg_text{end+1}   = 'Total';
       hold on;
       %%
-      if 0
+      if params_in.check_E_partition
          [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,wave_stuff.dir_spec);
          %Hp                = 4*sqrt(Ep(:,1));
          %Hm                = 4*sqrt(Em(:,1));
@@ -1877,6 +1883,7 @@ if params_in.PLOT_FINAL%%check exponential attenuation
             leg_text{end+1}   = 'Total (Simpson''s)';
          end
 
+         fcols
          fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['-',fcols{1}]);
          hold on;
 
