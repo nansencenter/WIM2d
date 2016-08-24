@@ -52,6 +52,7 @@ matlab/boltzmann/solve_boltzmann_numeric.m
 #
 neXtSIMcoupling/results/*
 neXtSIMcoupling/run/*
+neXtSIMcoupling/local_data/MATLAB/*
 
 # include these files from "neXtSIMcoupling/run" in repo
 !neXtSIMcoupling/run/*.m
@@ -68,3 +69,11 @@ CXX/bin
 fortran/grid_setup/infile_waves.txt
 
 matlab/numerics/testing/test_fou.mat
+
+*.mat
+neXtSIMcoupling/local_data/data/mesh/simplesquaresplit2.mat
+neXtSIMcoupling/local_data/data/mesh/simplesquaresplit4.mat
+neXtSIMcoupling/local_data/data/mesh/squaresmall10km.mat
+neXtSIMcoupling/local_data/data/mesh/squaresmall1km.mat
+neXtSIMcoupling/local_data/data/mesh/wim_grid_split2_4000m.mat
+neXtSIMcoupling/local_data/MATLAB/m_map
