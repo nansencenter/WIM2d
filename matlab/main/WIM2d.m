@@ -1359,9 +1359,11 @@ else
       % {jmiz}
 
       %% progress report;
-      if round(n/reps)==(n/reps)
+      if or(...
+        or(and(~params_in.PLOT_INIT,n==1),and(~params_in.PLOT_FINAL,n==nt)),...
+        round(n/reps)==(n/reps))
 
-         if GET_OUT
+         if and(and(n~=1,n~=nt),GET_OUT)
             Dmax_all(:,:,n/reps) = out_fields.Dmax;
          end
 
@@ -1457,7 +1459,13 @@ else
                end
                if params_in.check_E_partition==1
                   %%check partition of fwd and back energy
-                  set(0,'currentfigure',h4); %figure(h4);
+                  if exist('h4','var')
+                   set(0,'currentfigure',h4); 
+                  else
+                   h4=figure('visible','off','name','DIAG1d'); loop_col=1;
+                   subplot(4,1,4);
+                   fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,cols{loop_col});
+                  end
                   subplot(4,1,1);
                   hold off;
                   %%
