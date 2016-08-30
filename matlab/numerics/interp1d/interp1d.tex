@@ -1,0 +1,65 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage{srcltx}%%->enable dvi fwd/rev-search
+\usepackage[dvips]{graphicx}
+\usepackage{amsmath}\usepackage{amsfonts}\usepackage{amssymb}
+\usepackage{pstricks}\usepackage{pst-plot}
+\usepackage{psfrag}%%->replace text in eps files with Latex text
+\usepackage{float}%%->set figure placement
+\usepackage{mathrsfs}%%->script font
+\usepackage{natbib}
+
+%\include{preamble}
+%
+\def\rmd{{\rm d}}
+
+%opening
+\title{On representing wave localisation due to 2D multiple scattering in operational wave models}
+\author{Timothy D. Williams and Luke G. Bennetts}
+
+\begin{document}
+
+\maketitle
+
+%\begin{abstract}
+%\end{abstract}
+
+
+\section{Interpolation node-to-node}
+\section{Interpolation node-to-element}
+$N$ elements, nodes are $x_0,\ldots,x_N$
+\begin{subequations}
+\begin{align}
+\tilde f&=f_n\xi_0^{(n)}+f_{n+1}\xi_1^{(n)},\\
+\xi_1^{(n)}&=\frac{x-x_n}{x_{n+1}-x_n},\\
+\xi_0^{(n)}&=1-\xi_1^{(n)}.
+\end{align}
+\end{subequations}
+Want average value of $\tilde f$ over $y_m<y<y_{m+1}$:
+\begin{align}
+F_m(y_{m+1}-y_m)
+&=\int_{y_m}^{y_{m+1}}\tilde f(x)\rmd x\notag\\
+&=\sum_{n=0}^{N-1}
+\left(I_0^{(mn)}f_n+I_1^{(mn)}f_{n+1}\right)\notag\\
+&=I_0^{(m0)}f_0+I_1^{(m,N-1)}f_N\notag\\
+&\quad+\sum_{n=1}^{N-1}f_n\left(I_0^{(mn)}+I_1^{(m,n-1)}\right)
+,
+\end{align}
+where
+\begin{subequations}
+\begin{align}
+I_1^{(mn)}&=H_{mn}\int_{L_{mn}}^{U_{mn}}\xi_j^{(n)}\rmd x\notag\\
+&=H_{mn}\left[\frac{(x-x_n)^2}{2(x_{n+1}-x_n)}\right]^{U_{mn}}_{L_{mn}},\\
+H_{mn}&=H(x_{n+1}-y_m)H(y_{m+1}-x_n),\\
+L_{mn}&=\max\{y_m,x_n\},\\
+U_{mn}&=\min\{y_{m+1},x_{n+1}\},\\
+I_0^{(mn)}&=H_{mn}\Big(U_{mn}-L_{mn}-I_1^{(mn)}\Big),
+\end{align}
+\end{subequations}
+
+\section{Interpolation element-to-element}
+\section{Interpolation element-to-node}
+\bibliographystyle{bst/jfm}
+\bibliography{master}
+
+\end{document}
