@@ -1113,8 +1113,14 @@ else
          if USE_EBS
             tmp3  = tmp3 + wave_stuff.dir_spec_scattered(:,:,:,jw);
          end
-         mwd_om   = calc_mwd_1freq(wave_stuff.dirs,tmp3);
-         mwd      = mwd+wt_om(jw)*mwd_om;
+
+         %% directional integrals
+         %% - mwd, E in fwd/rev dirns, total/fwd/rev spreading
+         %% - not all are interesting as an integral over freq though
+         %%   (so only integrate mwd over freq at the moment)
+         %% - others are more diagnostics when nfreq==1
+         dirn_ints   = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3);
+         mwd         = mwd+wt_om(jw)*dirn_ints.mwd;
          %GEN_pause
 
          %% INTEGRALS FOR BREAKING PROB:
