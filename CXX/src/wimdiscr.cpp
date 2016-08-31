@@ -236,7 +236,6 @@ void WimDiscr<T>::init()
 {
     // wim grid generation
     this->gridProcessing();
-    //std::cout<<"\nHI\n";
     //this->readGridFromFile("wim_grid.a");
 
     // parameters
@@ -1864,6 +1863,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
 
 
     //final output
+    std::cout<<"in WENO\n";
 #pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {
@@ -1875,6 +1875,14 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
             h[i][j] *= 1-LANDMASK_array[i][j];
         }
     }
+
+    //std::cout<<"min LANDMASK"
+    //   <<*std::min_element(LANDMASK_array.data(),LANDMASK_array.data() + LANDMASK_array.num_elements())
+    //   <<"\n";
+    //std::cout<<"max LANDMASK"
+    //   <<*std::max_element(LANDMASK_array.data(),LANDMASK_array.data() + LANDMASK_array.num_elements())
+    //   <<"\n";
+    //std::cout<<"advected thing at [nx-1,ny-1]: "<<h[nx-1][ny-1]<<"\n";
 }
 
 template<typename T>
