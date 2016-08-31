@@ -1108,28 +1108,26 @@ else
          tmp   = ice_prams.rhowtr*ice_prams.g*tau_y_om./ap_eff(:,:,jw);  %%[Pa*s]
          tau_y = tau_y+wt_om(jw)*tmp;                 %%[Pa]
 
-         %% mwd integrals
-         tmp3  = wave_stuff.dir_spec(:,:,:,jw);
-         if USE_EBS
-            tmp3  = tmp3 + wave_stuff.dir_spec_scattered(:,:,:,jw);
-         end
+         % %% mwd integrals
+         % tmp3  = wave_stuff.dir_spec(:,:,:,jw);
+         % if USE_EBS
+         %    tmp3  = tmp3 + wave_stuff.dir_spec_scattered(:,:,:,jw);
+         % end
 
-         %% directional integrals
-         %% - mwd, E in fwd/rev dirns, total/fwd/rev spreading
-         %% - not all are interesting as an integral over freq though
-         %%   (so only integrate mwd over freq at the moment)
-         %% - others are more diagnostics when nfreq==1
-         dirn_ints   = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3);
-         mwd         = mwd+wt_om(jw)*dirn_ints.mwd;
-         %GEN_pause
+         % %% directional integrals
+         % %% - mwd, E in fwd/rev dirns, total/fwd/rev spreading
+         % %% - not all are interesting as an integral over freq though
+         % %%   (so only integrate mwd over freq at the moment)
+         % %% - others are more diagnostics when nfreq==1
+         % dirn_ints   = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3);
+         % mwd         = mwd+wt_om(jw)*dirn_ints.mwd;
+         % %GEN_pause
 
          %% INTEGRALS FOR BREAKING PROB:
          for i = 1:gridprams.nx
          for j = 1:gridprams.ny
 
             %% INTEGRATE SPECTRUM OVER DIRECTION;
-            %S_freq   = wt_theta'*squeeze(wave_stuff.dir_spec(i,j,jw,:));
-
             %% convert from water amp's to ice amp's;
             F     = disp_ratio(i,j,jw);%%|T| also
             k_ice = 2*pi/wlng_ice(i,j,jw);
@@ -1150,6 +1148,7 @@ else
                var_strain(i,j)   = var_strain(i,j)+...
                                     + wt_om(jw)*strain_density;
             end
+
          end%% end spatial loop x;
          end%% end spatial loop y;
 
@@ -1175,8 +1174,58 @@ else
       out_fields.tau_x  = tau_x;
       out_fields.tau_y  = tau_y;
 
-      %% mwd
-      out_fields.mwd    = mwd;
+      %% ================================================================
+      %% directional integrals
+      %% - use freq corresponding to Tp
+      %% - mwd, E in fwd/rev dirns, total/fwd/rev spreading
+      if wave_stuff.nfreq==1
+         tmp3  = wave_stuff.dir_spec;
+         if USE_EBS
+            tmp3  = tmp3 + wave_stuff.dir_spec_scattered;
+         end
+      else
+         %% find nearest
+         tmp3  = zeros(nx,ny,wave_stuff.ndir);
+         for i=1:nx
+         for j=1:ny
+            T_crit   = out_fields.Tp(i,j);
+            om       = 2*pi/T_crit;
+            om_min   = om_vec(1);
+            om_max   = om_vec(end);
+            if (om<=om_min)
+               jw          = 1;
+               tmp3(i,j,:) = wave_stuff.dir_spec(i,j,:,jw);
+               if USE_EBS
+                  tmp3(i,j,:) = tmp3(i,j,:) + wave_stuff.dir_spec_scattered(i,j,:,jw);
+               end
+            elseif (om>=om_max)
+               jw          = wave_stuff.nfreq;
+               tmp3(i,j,:) = wave_stuff.dir_spec(i,j,:,jw);
+               if USE_EBS
+                  tmp3(i,j,:) = tmp3(i,j,:) + wave_stuff.dir_spec_scattered(i,j,:,jw);
+               end
+            else
+               jw    = floor((om-om_min+dom)/dom);
+               om1   = 2*pi*wave_stuff.freq(jw);
+               om2   = 2*pi*wave_stuff.freq(jw+1);
+               wt1   = (om2-om)/(om2-om1);
+               wt2   = (om-om1)/(om2-om1);
+               tmp3(i,j,:) = wt1*wave_stuff.dir_spec(i,j,:,jw)+...
+                              +wt2*wave_stuff.dir_spec(i,j,:,jw+1);
+               if USE_EBS
+                  tmp3(i,j,:) = tmp3(i,j,:) + wt1*wave_stuff.dir_spec_scattered(i,j,:,jw)+...
+                                 +wt2*wave_stuff.dir_spec_scattered(i,j,:,jw+1);
+               end
+            end
+         end
+         end
+      end
+
+      %% directional integrals
+      %% - mwd, E in fwd/rev dirns, total/fwd/rev spreading
+      dirn_ints      = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3);
+      out_fields.mwd = dirn_ints.mwd;
+      %% ================================================================
 
       if DUMP_DIAG
          fprintf(logid2,'%s\n',' ');

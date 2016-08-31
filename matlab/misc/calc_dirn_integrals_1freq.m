@@ -29,10 +29,7 @@ for wth=1:ndir
    mom0p = mom0p + fwd*dth*Sdir(:,:,wth);
    mom0m = mom0m + rev*dth*Sdir(:,:,wth);
 
-   %%mwd
-   Mom0  = Mom0+dth*Sdir(:,:,wth)*th_vec(wth);
-
-   %%directional wave spreading
+   %% mwd & directional wave spreading
    MomS  = MomS  +     dth*Sdir(:,:,wth)*sin(th_vec(wth));
    MomC  = MomC  +     dth*Sdir(:,:,wth)*cos(th_vec(wth));
    MomSp = MomSp + fwd*dth*Sdir(:,:,wth)*sin(th_vec(wth));
@@ -40,24 +37,30 @@ for wth=1:ndir
    MomSm = MomSm + rev*dth*Sdir(:,:,wth)*sin(th_vec(wth));
    MomCm = MomCm + rev*dth*Sdir(:,:,wth)*cos(th_vec(wth));
 end
-%%
-out.mwd     = zeros(nx,ny);
-jp          = find(mom0>0);
-out.mwd(jp) = -90 -180/pi*sqrt(Mom0(jp)./mom0(jp));
 
+%% mwd (Hauser et al., 2005)
+tmp         = atan2(MomS,MomC);%\theta_1
+out.mwd     = -90 -180/pi*tmp;
+tmp         = atan2(MomSp,MomCp);%\theta_1 (fwd)
+out.mwd_p   = -90 -180/pi*tmp;
+tmp         = atan2(MomSm,MomCm);%\theta_1 (rev)
+out.mwd_m   = -90 -180/pi*tmp;
+
+%% spreading (Hauser et al., 2005)
+jp             = find(mom0>0);
 out.sprd       = zeros(nx,ny);
-tmp            = 1-MomS.^2-MomC.^2;
-out.sprd(jp)   = sqrt(2*tmp(jp)/mom0(jp));
+tmp            = sqrt(MomS.^2+MomC.^2);          %r_1
+out.sprd(jp)   = sqrt(2*( 1-tmp(jp)./mom0(jp) ));%\sigma_1
 
-out.sprd_p     = zeros(nx,ny);
 jp             = find(mom0p>0);
-tmp            = 1-MomSp.^2-MomCp.^2;
-out.sprd_p(jp) = sqrt(2*tmp(jp)/mom0p(jp));
+out.sprd_p     = zeros(nx,ny);
+tmp            = sqrt(MomSp.^2+MomCp.^2);
+out.sprd_p(jp) = sqrt(2*( 1-tmp(jp)./mom0p(jp) ));
 
-out.sprd_m     = zeros(nx,ny);
 jp             = find(mom0m>0);
-tmp            = 1-MomSp.^2-MomCp.^2;
-out.sprd_m(jp) = sqrt(2*tmp(jp)/mom0m(jp));
+out.sprd_m     = zeros(nx,ny);
+tmp            = sqrt(MomSm.^2+MomCm.^2);
+out.sprd_m(jp) = sqrt(2*( 1-tmp(jp)./mom0m(jp) ));
 
 out.E_p  = mom0p;
 out.E_m  = mom0m;
