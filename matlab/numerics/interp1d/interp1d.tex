@@ -14,8 +14,8 @@
 \def\rmd{{\rm d}}
 
 %opening
-\title{On representing wave localisation due to 2D multiple scattering in operational wave models}
-\author{Timothy D. Williams and Luke G. Bennetts}
+\title{Documentation of conservative 1D interpolation routine}
+\author{Timothy D. Williams}
 
 \begin{document}
 
@@ -23,19 +23,51 @@
 
 %\begin{abstract}
 %\end{abstract}
-
-
-\section{Interpolation node-to-node}
-\section{Interpolation node-to-element}
+\section{Interpolation element-to-element}
 $N$ elements, nodes are $x_0,\ldots,x_N$
 \begin{subequations}
 \begin{align}
-\tilde f&=f_n\xi_0^{(n)}+f_{n+1}\xi_1^{(n)},\\
-\xi_1^{(n)}&=\frac{x-x_n}{x_{n+1}-x_n},\\
-\xi_0^{(n)}&=1-\xi_1^{(n)}.
+\tilde f&=f_n\quad\text{for $x_n\leq x\leq x_{n+1}$}.
 \end{align}
 \end{subequations}
-Want average value of $\tilde f$ over $y_m<y<y_{m+1}$:
+Target grid: $M$ elements, nodes are $y_0,\ldots,y_M$:
+\begin{align}
+\tilde F(x)&=F_m\quad\text{for $y_m\leq x\leq y_{m+1}$}.
+\end{align}
+
+Want average value of $\tilde f$ over $y_m<x<y_{m+1}$:
+\begin{align}
+F_m(y_{m+1}-y_m)
+&=\int_{y_m}^{y_{m+1}}\tilde f(x)\rmd x%\notag\\
+=\sum_{n=0}^{N-1}
+I^{(mn)}f_n,
+\end{align}
+where
+\begin{subequations}
+\begin{align}
+I^{(mn)}&=H_{mn}\int_{L_{mn}}^{U_{mn}}1\,\rmd x\notag\\
+&=H_{mn}(U_{mn}-L_{mn}),\\
+H_{mn}&=H(x_{n+1}-y_m)H(y_{m+1}-x_n),\\
+L_{mn}&=\max\{y_m,x_n\},\\
+U_{mn}&=\min\{y_{m+1},x_{n+1}\}.
+\end{align}
+\end{subequations}
+
+\section{Interpolation node-to-element}
+Source grid: $N$ elements, nodes are $x_0,\ldots,x_N$.
+\begin{subequations}
+\begin{align}
+\tilde f(x)&=f_n\xi_0(x;x_n,x_{n+1})\notag\\
+&\quad+f_{n+1}(x;x_n,x_{n+1})\quad\text{for $x_n\leq x\leq x_{n+1}$},\\
+\xi_1(x;x_n,x_{n+1})&=\frac{x-x_n}{x_{n+1}-x_n},\\
+\xi_0(x;x_n,x_{n+1})&=1-\xi_1(x;x_n,x_{n+1}).
+\end{align}
+\end{subequations}
+Target grid: $M$ elements, nodes are $y_0,\ldots,y_M$:
+\begin{align}
+\tilde F(x)&=F_m\quad\text{for $y_m\leq x\leq y_{m+1}$},
+\end{align}
+Want average value of $\tilde f$ over $y_m<x<y_{m+1}$:
 \begin{align}
 F_m(y_{m+1}-y_m)
 &=\int_{y_m}^{y_{m+1}}\tilde f(x)\rmd x\notag\\
@@ -48,17 +80,15 @@ F_m(y_{m+1}-y_m)
 where
 \begin{subequations}
 \begin{align}
-I_1^{(mn)}&=H_{mn}\int_{L_{mn}}^{U_{mn}}\xi_j^{(n)}\rmd x\notag\\
+I_1^{(mn)}&=H_{mn}\int_{L_{mn}}^{U_{mn}}\xi_j(x;x_n,x_{n+1})\rmd x\notag\\
 &=H_{mn}\left[\frac{(x-x_n)^2}{2(x_{n+1}-x_n)}\right]^{U_{mn}}_{L_{mn}},\\
-H_{mn}&=H(x_{n+1}-y_m)H(y_{m+1}-x_n),\\
-L_{mn}&=\max\{y_m,x_n\},\\
-U_{mn}&=\min\{y_{m+1},x_{n+1}\},\\
-I_0^{(mn)}&=H_{mn}\Big(U_{mn}-L_{mn}-I_1^{(mn)}\Big),
+I_0^{(mn)}&=H_{mn}\Big(U_{mn}-L_{mn}\Big)-I_1^{(mn)},
 \end{align}
 \end{subequations}
 
-\section{Interpolation element-to-element}
 \section{Interpolation element-to-node}
+\section{Interpolation node-to-node}
+
 \bibliographystyle{bst/jfm}
 \bibliography{master}
 
