@@ -15,6 +15,7 @@ endif
 OBJECTDIR=objs/
 DEPENDDIR=.deps/
 BINARYDIR=../bin/
+LIBRARYDIR=$(WIM2D_PATH)/CXX/lib/
 # ========================================================
 
 WIM2D_CXX=$(WIM2D_PATH)/CXX
@@ -69,7 +70,7 @@ clean:
 
 # Delete the object and dependancy files, and the executable
 vclean: clean
-	$(RM) $(BINARYDIR)$(PROG1)
+	$(RM) $(BINARYDIR)$(PROG1) $(LIBRARYDIR)/*
 # ========================================================
 
 
@@ -125,7 +126,6 @@ single: $(PROGOBJ1) $(OBJS) $(CCOBJS)
 # ========================================================
 # make wim library
 
-LIBRARYDIR=$(WIM2D_PATH)/CXX/lib/
 
 LDFLAGSLIB = $(LDFLAGS)
 ifeq ($(KERNEL),Linux)
