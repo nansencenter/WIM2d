@@ -548,8 +548,9 @@ end
 if params_in.DIAG1d==1
    cols     = {'-k','-c','-m','-r','-g','-b'};
    labs1d_1 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
-   labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
-   labs1d_3 = {'\itx, \rmkm','{\itH}_{\rm s}^-, m'};
+   %labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}^+, m'};
+   labs1d_2 = {'\itx, \rmkm','{\itH}_{\rm s}, m'};
+   labs1d_3 = {'\itx, \rmkm','{\it\sigma}_1'};
    labs1d_4 = {'\itx, \rmkm','c'};
 end
 
@@ -1223,7 +1224,16 @@ else
 
       %% directional integrals
       %% - mwd, E in fwd/rev dirns, total/fwd/rev spreading
-      dirn_ints      = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3);
+      %%       mwd: [150x10 double]
+      %%     mwd_p: [150x10 double]
+      %%     mwd_m: [150x10 double]
+      %%      sprd: [150x10 double]
+      %%    sprd_p: [150x10 double]
+      %%    sprd_m: [150x10 double]
+      %%     E_tot: [150x10 double]
+      %%       E_p: [150x10 double]
+      %%       E_m: [150x10 double]
+      dirn_ints      = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3)
       out_fields.mwd = dirn_ints.mwd;
       %% ================================================================
 
@@ -1519,15 +1529,22 @@ else
                   else
                    h4=figure('visible','off','name','DIAG1d'); loop_col=1;
                    subplot(4,1,4);
-                   fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,cols{loop_col});
+                   fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,'-k');
                   end
                   subplot(4,1,1);
                   hold off;
                   %%
                   %fn_plot1d(gridprams.X(:,1)/1e3,out_fields.Hs(:,1),labs1d_1,cols{loop_col});
-                  fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+                  %fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
+                  fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,'-k');%%average over y (columns)
+                  leg_text = {'Total (1)'};
+                  hold on;
                   %%
-                  [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,wave_stuff.dir_spec);
+                  tmp3  = wave_stuff.dir_spec;
+                  if USE_EBS
+                     tmp3  = tmp3+wave_stuff.dir_spec_scattered;
+                  end
+                  [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,tmp3);
                   %Hp                = 4*sqrt(Ep(:,1));
                   %Hm                = 4*sqrt(Em(:,1));
                   Hp                = 4*sqrt(mean(Ep,2));
@@ -1542,24 +1559,83 @@ else
                      %Hs2   = 4*sqrt(Et2(:,1));%%check Simpson's rule integration
                      Hs2   = 4*sqrt(mean(Et2,2));
                   end
-                  fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['--',cols{loop_col}]);
-                  hold off;
+                  %fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);%now --
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,'--r');
+                  hold on;
+                  leg_text{end+1}   = 'Total (2)';
                   %%
-                  subplot(4,1,2);
-                  hold off;
-                  fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
-                  %hold on;
+                  %fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_1,'-c');
+                  leg_text{end+1}   = 'Fwd';
+                  hold on;
                   %fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_2,['--',cols{loop_col}]);
-                  hold off;
                   %%
-                  subplot(4,1,3);
-                  hold off;
-                  fn_plot1d(gridprams.X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+                  %fn_plot1d(gridprams.X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hm,labs1d_1,'-m');
+                  leg_text{end+1}   = 'Back';
                   %%
                   loop_col = loop_col+1;
                   if loop_col>length(cols)
                      loop_col = 1;
                   end
+
+                  %% make legend
+                  cmd   = 'legend(';
+                  for k=1:length(leg_text)
+                     cmd   = [cmd,'''',leg_text{k},''','];
+                  end
+                  cmd(end:end+1) = ');';
+                  eval(cmd);
+
+
+                  subplot(4,1,2);
+                  hold off;
+                  Hs_   = mean(4*sqrt(dirn_ints.E_tot),2);
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-k');
+                  hold on;
+                  leg_text = {'Total'};
+                  %%
+                  Hs_   = mean(4*sqrt(dirn_ints.E_p),2);
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-c');
+                  hold on;
+                  leg_text{end+1}   = 'Fwd';
+                  %%
+                  Hs_   = mean(4*sqrt(dirn_ints.E_m),2);
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-m');
+                  leg_text{end+1}   = 'Back';
+
+                  %% make legend
+                  cmd   = 'legend(';
+                  for k=1:length(leg_text)
+                     cmd   = [cmd,'''',leg_text{k},''','];
+                  end
+                  cmd(end:end+1) = ');';
+                  eval(cmd);
+
+
+                  subplot(4,1,3);
+                  hold off;
+                  Hs_   = mean(dirn_ints.sprd,2);
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-k');
+                  hold on;
+                  leg_text = {'Total'};
+                  %%
+                  Hs_   = mean(dirn_ints.sprd_p,2);
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-c');
+                  hold on;
+                  leg_text{end+1}   = 'Fwd';
+                  %%
+                  Hs_   = mean(dirn_ints.sprd_m,2);
+                  fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-m');
+                  leg_text{end+1}   = 'Back';
+
+                  %% make legend
+                  cmd   = 'legend(';
+                  for k=1:length(leg_text)
+                     cmd   = [cmd,'''',leg_text{k},''','];
+                  end
+                  cmd(end:end+1) = ');';
+                  eval(cmd);
 
                   if params_in.SV_FIG==1
 
@@ -1919,7 +1995,8 @@ if params_in.PLOT_FINAL%%check exponential attenuation
          fortcols = fortcols_used;
       end
 
-      fcols    = cols;
+      subplot(3,1,1);
+      fcols    = cols
       fcols{1} = '-r';
       %fn_plot1d(gridprams.X(:,1)/1e3,out_fields.Hs(:,1),labs1d_1,cols{1});
       fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,fcols{1});
@@ -1927,7 +2004,11 @@ if params_in.PLOT_FINAL%%check exponential attenuation
       hold on;
       %%
       if params_in.check_E_partition
-         [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,wave_stuff.dir_spec);
+         tmp3  = wave_stuff.dir_spec;
+         if USE_EBS
+            tmp3  = tmp3+wave_stuff.dir_spec_scattered;
+         end
+         [Ep,Em,Et1,Et2]   = fn_split_energy(om_vec,wave_stuff.dirs,tmp3);
          %Hp                = 4*sqrt(Ep(:,1));
          %Hm                = 4*sqrt(Em(:,1));
          Hp                = 4*sqrt(mean(Ep,2));
@@ -1957,6 +2038,54 @@ if params_in.PLOT_FINAL%%check exponential attenuation
          leg_text{end+1}   = 'Back';
       end
       %%
+
+      %% make legend
+      cmd   = 'legend(';
+      for k=1:length(leg_text)
+         cmd   = [cmd,'''',leg_text{k},''','];
+      end
+      cmd(end:end+1) = ');';
+      eval(cmd);
+
+      subplot(3,1,2);
+      hold off;
+      Hs_   = mean(4*sqrt(dirn_ints.E_tot),2);
+      fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-k');
+      hold on;
+      leg_text = {'Total'};
+      %%
+      Hs_   = mean(4*sqrt(dirn_ints.E_p),2);
+      fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-c');
+      hold on;
+      leg_text{end+1}   = 'Fwd';
+      %%
+      Hs_   = mean(4*sqrt(dirn_ints.E_m),2);
+      fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-m');
+      leg_text{end+1}   = 'Back';
+
+      %% make legend
+      cmd   = 'legend(';
+      for k=1:length(leg_text)
+         cmd   = [cmd,'''',leg_text{k},''','];
+      end
+      cmd(end:end+1) = ');';
+      eval(cmd);
+
+      subplot(3,1,3);
+      hold off;
+      Hs_   = mean(dirn_ints.sprd,2);
+      fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-k');
+      hold on;
+      leg_text = {'Total'};
+      %%
+      Hs_   = mean(dirn_ints.sprd_p,2);
+      fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-c');
+      hold on;
+      leg_text{end+1}   = 'Fwd';
+      %%
+      Hs_   = mean(dirn_ints.sprd_m,2);
+      fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-m');
+      leg_text{end+1}   = 'Back';
 
       %% make legend
       cmd   = 'legend(';

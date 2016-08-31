@@ -62,5 +62,6 @@ out.sprd_m     = zeros(nx,ny);
 tmp            = sqrt(MomSm.^2+MomCm.^2);
 out.sprd_m(jp) = sqrt(2*( 1-tmp(jp)./mom0m(jp) ));
 
-out.E_p  = mom0p;
-out.E_m  = mom0m;
+out.E_tot   = mom0;
+out.E_p     = mom0p;
+out.E_m     = mom0m;

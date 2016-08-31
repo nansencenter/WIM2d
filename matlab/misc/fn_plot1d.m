@@ -18,6 +18,6 @@ end
 if STEPPING
    [x,y]  = step_1d(x,y);
 end
-plot(x,y);
+H  = plot(x,y,col);
 
 GEN_proc_fig(labs{1},labs{2});
