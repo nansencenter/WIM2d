@@ -3,6 +3,35 @@ function out = calc_dirn_integrals_1freq(wavdir,Sdir)
 %% split energy between fwd and back directions
 %% also test integration schemes (const panel vs Simpson's)
 
+if nargin==0
+   ndir     = 16;
+   th_vec   = (0:ndir-1)'*2*pi/ndir;
+   wavdir   = -180/pi*th_vec-90;
+   if 0
+      %% isotropic
+      r1    = 0
+      sig1  = sqrt(2*(1-r1))
+      disp('test isotropic spectrum')
+      Sdir  = ones(1,1,ndir);
+   elseif 0
+      %% delta function
+      r1    = 1
+      sig1  = sqrt(2*(1-r1))
+      disp('test delta function spectrum')
+      Sdir     = zeros(1,1,ndir);
+      Sdir(1)  = 1;
+   elseif 1
+      %% cos^2
+      I1    = 2/pi*quad('cos(x).^3',-pi/2,pi/2);
+      r1    = sqrt(I1^2)
+      sig1  = sqrt(2*(1-r1))
+      disp('test cos^2 (fwd only) spectrum')
+      Sdir           = zeros(1,1,ndir);
+      jp             = find(cos(th_vec)>=0);
+      Sdir(1,1,jp)   = cos(th_vec(jp)).^2;
+   end
+end
+
 [nx,ny,ndir]   = size(Sdir);
 
 
