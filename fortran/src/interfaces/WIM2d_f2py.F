@@ -231,30 +231,15 @@
       end subroutine wim2d_freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine atten_youngs(outputs,inputs)
       use mod_common_wim, only: wim_info
 
-      real,intent(in)   :: inputs(4)
-      real,intent(out)  :: outputs(8)
+      real*8,intent(in)   :: inputs(4)  !(/h,om,young,drag_rp/)
+      real*8,intent(out)  :: outputs(8) !(/damping,kice,kwtr,int_adm,ac,modT,argR,argT/)
 
-      real  :: damping,kice,kwtr,int_adm,ac,modT,argR,argT
-
-      real  :: guess,om
-
-      ! h        = inputs(1)
-      ! om       = inputs(2)
-      wim_info%young    = inputs(3)
-      wim_info%drag_rp  = inputs(4)
-      om    = inputs(2)
-      guess = om**2/wim_info%gravity
-
-      call RTparam_outer(damping,kice,kwtr,int_adm,
-     &                  ac,modT,argR,argT,
-     &                  inputs(1:2),guess)
-
-      outputs  = (/damping,kice,kwtr,int_adm,
-     &                  ac,modT,argR,argT/)
+      call atten_youngs_f2py(outputs,inputs)
 
       end subroutine atten_youngs
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

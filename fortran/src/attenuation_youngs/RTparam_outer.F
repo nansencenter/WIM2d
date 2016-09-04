@@ -1,3 +1,32 @@
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine atten_youngs_f2py(outputs,inputs)
+      use mod_common_wim, only: wim_info
+      !wrapper for f2py (make sure doubles are changed to reals if necessary)
+
+      real*8,intent(in)   :: inputs(4)  !(/h,om,young,drag_rp/)
+      real*8,intent(out)  :: outputs(8) !(/damping,kice,kwtr,int_adm,ac,modT,argR,argT/)
+
+      real  :: damping,kice,kwtr,int_adm,ac,modT,argR,argT
+
+      real  :: guess,om
+
+      wim_info%young    = real(inputs(3))
+      wim_info%drag_rp  = real(inputs(4))
+      om                = real(inputs(2))
+      guess             = om**2/wim_info%gravity
+
+      call RTparam_outer(damping,kice,kwtr,int_adm,
+     &                  ac,modT,argR,argT,
+     &                  real(inputs(1:2)),guess)
+
+      outputs  = dble((/damping,kice,kwtr,int_adm
+     &                 ,ac,modT,argR,argT/))
+
+      end subroutine atten_youngs_f2py
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!function [damping,kice,kwtr,int_adm,...
       !!            alp_scat,modT,argR,argT] =...
       !!               RT_param_outer(h,om,E,drag_rp,guess)
