@@ -1233,7 +1233,7 @@ else
       %%     E_tot: [150x10 double]
       %%       E_p: [150x10 double]
       %%       E_m: [150x10 double]
-      dirn_ints      = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3)
+      dirn_ints      = calc_dirn_integrals_1freq(wave_stuff.dirs,tmp3);
       out_fields.mwd = dirn_ints.mwd;
       %% ================================================================
 
@@ -1527,18 +1527,27 @@ else
                   if exist('h4','var')
                    set(0,'currentfigure',h4); 
                   else
-                   h4=figure('visible','off','name','DIAG1d'); loop_col=1;
-                   subplot(4,1,4);
-                   fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,'-k');
+                   if params_in.DO_VIS
+                    h4=figure('name','DIAG1d'); loop_col=1;
+                    subplot(4,1,4);
+                    fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,'-k');
+                    xl = get(gca,'xlim');
+                   else
+                    h4=figure('visible','off','name','DIAG1d'); loop_col=1;
+                    subplot(4,1,4);
+                    fn_plot1d(gridprams.X(:,1)/1e3,ice_fields.cice(:,1),labs1d_4,'-k');
+                    xl = get(gca,'xlim');
+                   end
                   end
-                  subplot(4,1,1);
-                  hold off;
+                  sp1=subplot(4,1,1);
+                  hold(sp1,'off');
                   %%
                   %fn_plot1d(gridprams.X(:,1)/1e3,out_fields.Hs(:,1),labs1d_1,cols{loop_col});
                   %fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,cols{loop_col});%%average over y (columns)
                   fn_plot1d(gridprams.X(:,1)/1e3,mean(out_fields.Hs,2),labs1d_1,'-k');%%average over y (columns)
+                  xlabel(''); set(gca,'xlim',xl,'xticklabel',{''})
                   leg_text = {'Total (1)'};
-                  hold on;
+                  hold(sp1,'on');
                   %%
                   tmp3  = wave_stuff.dir_spec;
                   if USE_EBS
@@ -1561,13 +1570,13 @@ else
                   end
                   %fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,['-',cols{loop_col}]);%now --
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_1,'--r');
-                  hold on;
+                  hold(sp1,'on');
                   leg_text{end+1}   = 'Total (2)';
                   %%
                   %fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_2,cols{loop_col});
                   fn_plot1d(gridprams.X(:,1)/1e3,Hp,labs1d_1,'-c');
                   leg_text{end+1}   = 'Fwd';
-                  hold on;
+                  hold(sp1,'on');
                   %fn_plot1d(gridprams.X(:,1)/1e3,Hs2,labs1d_2,['--',cols{loop_col}]);
                   %%
                   %fn_plot1d(gridprams.X(:,1)/1e3,Hm,labs1d_3,cols{loop_col});
@@ -1578,64 +1587,80 @@ else
                   if loop_col>length(cols)
                      loop_col = 1;
                   end
+                  
+                  xlabel(''); set(gca,'xticklabel',{''})
 
                   %% make legend
-                  cmd   = 'legend(';
+                  cmd   = 'lg=legend(';
                   for k=1:length(leg_text)
                      cmd   = [cmd,'''',leg_text{k},''','];
                   end
-                  cmd(end:end+1) = ');';
+                  cmd = [cmd, ' ''location'', ''NorthOutside'');'];
                   eval(cmd);
+                  set(lg,'orientation','horizontal','fontsize',8,...
+                   'box','off')
 
 
-                  subplot(4,1,2);
-                  hold off;
+                  sp2=subplot(4,1,2); 
+                  hold(sp2,'off');
                   Hs_   = mean(4*sqrt(dirn_ints.E_tot),2);
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-k');
-                  hold on;
+                  hold(sp2,'on');
                   leg_text = {'Total'};
                   %%
                   Hs_   = mean(4*sqrt(dirn_ints.E_p),2);
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-c');
-                  hold on;
+                  hold(sp2,'on');
                   leg_text{end+1}   = 'Fwd';
                   %%
                   Hs_   = mean(4*sqrt(dirn_ints.E_m),2);
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_2,'-m');
+                  hold(sp2,'on');
                   leg_text{end+1}   = 'Back';
+                  
+                  xlabel(''); set(gca,'xlim',xl,'xticklabel',{''})
 
                   %% make legend
-                  cmd   = 'legend(';
+                  cmd   = 'lg=legend(';
                   for k=1:length(leg_text)
                      cmd   = [cmd,'''',leg_text{k},''','];
                   end
-                  cmd(end:end+1) = ');';
+                  cmd = [cmd, ' ''location'', ''NorthOutside'');'];
                   eval(cmd);
+                  set(lg,'orientation','horizontal','fontsize',8,...
+                   'box','off')
 
-
-                  subplot(4,1,3);
-                  hold off;
+                  sp3=subplot(4,1,3);
+                  hold(sp3,'off');
                   Hs_   = mean(dirn_ints.sprd,2);
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-k');
-                  hold on;
+                  hold(sp3,'on');
                   leg_text = {'Total'};
                   %%
                   Hs_   = mean(dirn_ints.sprd_p,2);
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-c');
-                  hold on;
+                  hold(sp3,'on');
                   leg_text{end+1}   = 'Fwd';
                   %%
                   Hs_   = mean(dirn_ints.sprd_m,2);
                   fn_plot1d(gridprams.X(:,1)/1e3,Hs_,labs1d_3,'-m');
+                  hold(sp3,'on');
                   leg_text{end+1}   = 'Back';
+                  
+                  fn_plot1d(gridprams.X(:,1)/1e3,sqrt(2*(1-2/pi))+0*Hs_,labs1d_3,'k--');
+                  leg_text{end+1}   = 'Isotropic';
+                  
+                  xlabel(''); set(gca,'xlim',xl,'xticklabel',{''})
 
                   %% make legend
-                  cmd   = 'legend(';
+                  cmd   = 'lg=legend(';
                   for k=1:length(leg_text)
                      cmd   = [cmd,'''',leg_text{k},''','];
                   end
-                  cmd(end:end+1) = ');';
+                  cmd = [cmd, ' ''location'', ''NorthOutside'');'];
                   eval(cmd);
+                  set(lg,'orientation','horizontal','fontsize',8,...
+                   'box','off')
 
                   if params_in.SV_FIG==1
 
