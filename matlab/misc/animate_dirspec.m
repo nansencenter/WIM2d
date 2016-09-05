@@ -7,6 +7,11 @@ function animate_dirspec(x,th_vec,Sdir,legend_text)
 nx    = length(x);
 ndir  = length(th_vec);
 
+DO_LEG   = 0;
+if exist('legend_text','var')
+   DO_LEG   = 1;
+end
+
 if iscell(Sdir)
    nS    = length(Sdir);
    tmp   = zeros(ndir,nS,nx);
@@ -16,7 +21,9 @@ if iscell(Sdir)
       for k=1:nx
          tmp(:,j,k)  = tmp2(:,k);
       end
-      leg_text    = [leg_text,legend_text{j},''','''];
+      if DO_LEG
+         leg_text    = [leg_text,legend_text{j},''','''];
+      end
    end
    Sdir     = tmp;%% ndir x nS x nx
    leg_text = [leg_text(1:end-2),');']
@@ -37,7 +44,7 @@ for j=1:nx
    plot(180/pi*th_vec,Sdir(:,:,j))
    %hold on;
    %plot(180/pi*th_vec,S_out((1:ndir),j)+S_out((1:ndir)+ndir,j),'-b')
-   if ~isempty(leg_text)
+   if DO_LEG
       eval(leg_text);
    end
    title(['x = ',num2str(x(j))])

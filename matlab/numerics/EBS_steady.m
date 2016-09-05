@@ -60,9 +60,9 @@ if 1
    S_out = zeros(2*ndir,nx);
    if DO_TEST
       S0 = U(:,jm)*cc
-   %   sum(U)
-   %   sum(U(:,jm))
-   %   pause
+      %sum(U)
+      %sum(U(:,jm))
+      %pause
    end
    for j=1:nx
       S_out(:,j)  = U(:,jm)*diag(exp(e_vals(jm)*x(j)))*cc;
