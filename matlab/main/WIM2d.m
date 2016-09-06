@@ -1526,6 +1526,7 @@ else
                   %%check partition of fwd and back energy
                   if exist('h4','var')
                    set(0,'currentfigure',h4); 
+                   xl = get(gca,'xlim');
                   else
                    if params_in.DO_VIS
                     h4=figure('name','DIAG1d'); loop_col=1;
