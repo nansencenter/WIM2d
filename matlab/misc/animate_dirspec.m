@@ -7,7 +7,7 @@ function [x,th_vec,Sdir_out,legend_text]   = animate_dirspec(x,th_vec,Sdir,legen
 %% - in that case can use legend_text to make a legend
 
 if nargin==0
-   params_in.SCATMOD       = 1;
+   params_in.SCATMOD       = 3;
    params_in.DO_BREAKING   = 0;
    params_in.Dmax_init     = 100;
    params_in.PLOT_INIT     = 0;

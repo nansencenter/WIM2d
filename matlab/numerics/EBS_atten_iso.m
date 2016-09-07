@@ -29,6 +29,9 @@ if ndir>1
 else
    wt_theta = 1;
 end
+
+S_freq0  = dth*sum(S+S_scattered,3);%%init E for testing
+
 S_freq   = zeros(nx,ny);
 tau_x    = zeros(nx,ny);
 tau_y    = zeros(nx,ny);
@@ -139,5 +142,7 @@ for j = 1:ny
    %% - this is to get H_s and other integrals to calculate breaking
    S2_         = S(i,j,:)+S_scattered(i,j,:);%% add the 2 energies together
    S_freq(i,j) = wt_theta'*squeeze(S2_);
-end
-end
+end%j
+end%i
+
+%E_test   = [sum(S_freq0(:)),sum(S_freq(:))]/nx/ny
