@@ -25,8 +25,10 @@ theta = -pi/180*(90+wavdir);%%waves-to, anti-clockwise, radians
 if ndir>1
    dth      = 2*pi/ndir;
    wt_theta = ones(ndir,1)*dth;
+   S_freq0  = dth*sum(S,3);%%init E for testing
 else
    wt_theta = 1;
+   S_freq0  = S;
 end
 S_freq   = zeros(nx,ny);
 tau_x    = zeros(nx,ny);
@@ -164,6 +166,7 @@ for j = 1:ny
    %% INTEGRATE SPECTRUM OVER DIRECTION;
    %% (need this even if only water)
    S_freq(i,j) = wt_theta'*squeeze(S(i,j,:));
-end
-end
+end%j
+end%i
 
+%E_test   = [sum(S_freq(:)),sum(S_freq0(:))]/nx/ny
