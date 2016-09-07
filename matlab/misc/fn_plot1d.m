@@ -8,7 +8,7 @@ if ~exist('labs','var')
 end
 
 if ~exist('col','var')
-   col   = '-k';
+   col   = '-';
 end
 
 if ~exist('STEPPING')
@@ -18,6 +18,7 @@ end
 if STEPPING
    [x,y]  = step_1d(x,y);
 end
+
 H  = plot(x,y,col);
 
 GEN_proc_fig(labs{1},labs{2});

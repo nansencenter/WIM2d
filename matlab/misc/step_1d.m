@@ -8,6 +8,7 @@ xx          = zeros(2*nx,1);
 xx(1:2:end) = x-.5*dx;
 xx(2:2:end) = x+.5*dx;
 %%
-yy          = zeros(2*nx,1);
-yy(1:2:end) = y;
-yy(2:2:end) = y;
+ncols          = size(y,2);
+yy             = zeros(2*nx,ncols);
+yy(1:2:end,:)  = y;
+yy(2:2:end,:)  = y;

@@ -7,17 +7,29 @@ function [x,th_vec,Sdir_out,legend_text]   = animate_dirspec(x,th_vec,Sdir,legen
 %% - in that case can use legend_text to make a legend
 
 if nargin==0
-   [out_fields,diagnostics,wave_stuff,grid_prams]  = run_WIM2d();
+   params_in.SCATMOD       = 1;
+   params_in.DO_BREAKING   = 0;
+   params_in.Dmax_init     = 100;
+   params_in.PLOT_INIT     = 0;
+   params_in.PLOT_PROG     = 0;
+   params_in.PLOT_FINAL    = 0;
+   [out_fields,diagnostics,wave_stuff,grid_prams]  = run_WIM2d(params_in);
    figure(101);
    fn_fullscreen;
    x        = grid_prams.X(:,1)/1e3;
    th_vec   = -pi/180*(90+wave_stuff.dirs);
-   %%wave_stuff.dir_spec : nx * ny * ndirs *nfreq
-   Sdir  = {squeeze(wave_stuff.dir_spec(:,1,:,1))',...
-            squeeze(wave_stuff.dir_spec_scattered(:,1,:,1))',...
-            squeeze(wave_stuff.dir_spec(:,1,:,1))'+...
-            +squeeze(wave_stuff.dir_spec_scattered(:,1,:,1))'}
-   legend_text = {'normal','scattered','total'};
+
+   if params_in.SCATMOD==3
+      %%wave_stuff.dir_spec : nx * ny * ndirs *nfreq
+      Sdir  = {squeeze(wave_stuff.dir_spec(:,1,:,1))',...
+               squeeze(wave_stuff.dir_spec_scattered(:,1,:,1))',...
+               squeeze(wave_stuff.dir_spec(:,1,:,1))'+...
+               +squeeze(wave_stuff.dir_spec_scattered(:,1,:,1))'}
+      legend_text = {'normal','scattered','total'};
+   else
+      Sdir        = squeeze(wave_stuff.dir_spec(:,1,:,1))';
+      legend_text = [];
+   end
 end
 
 nx    = length(x);
@@ -61,15 +73,18 @@ dtheta      = th_vec(2)-th_vec(1);
 norm_facs   = dtheta*sum(Sdir,1);%% 1 * nS * nx
 
 for j=1:nx
-   NF = diag(1./norm_facs(:,:,j));
-   plot(180/pi*th_vec,Sdir(:,:,j)*NF)
+   NF    = diag(1./norm_facs(:,:,j));
+   labs  = {'\theta, degrees','D(\theta)'};
+   fn_plot1d(180/pi*th_vec,Sdir(:,:,j)*NF,labs)
    if DO_LEG
       eval(leg_text);
    end
    title(['x = ',num2str(x(j))])
-   xlabel('\theta, degrees')
-   ylabel('D(\theta)')
    hold off;
+   x0 = 180/pi*(min(th_vec)-.5*dtheta);
+   x1 = 180/pi*(max(th_vec)+.5*dtheta);
+   xlim([x0,x1]);
+   set(gca,'Xtick',-180:90:90);
 
    Hs_test  = 4*sqrt(dtheta*sum(Sdir(:,:,j)))
    if max(Hs_test)<1e-4
