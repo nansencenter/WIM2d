@@ -793,70 +793,6 @@ else
 %% do time-stepping in matlab
 
    if params_in.DO_DISP; disp('Running pure matlab code'); end
-   if COMP_F==1
-      %% load prog binaries and compare saved wim_prog*.[ab] files
-      %% to matlab results
-
-      FF       = dir([compFdir,'wim_prog*.a'])
-      if length(FF)==0
-         error('COMP_F==1, but no fortran files to compare to');
-      end
-      %%
-      F0 = FF(1).name;
-      cn = F0(9:end-2);
-      Ln = length(cn);
-      fmt_n = sprintf('%%%d.%dd',Ln,Ln);
-      afile    = [Fdir,F0];
-      %%
-      fmt            = 'float32';
-      aid            = fopen(afile,'rb');
-      F_fields.Dmax  = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-      F_fields.tau_x = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-      F_fields.tau_y = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-      F_fields.Hs    = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-      F_fields.Tp    = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-      fclose(aid);
-      %%
-      if 1
-         if 0
-            %% plot Hs
-            vc = {'Hs','H_s, m'};
-            v1 = wave_fields.(vc{1});
-         else
-            %% plot Dmax
-            vc = {'Dmax','D_{max}, m'};
-            v1 = ice_fields.(vc{1});
-         end
-         v2    = F_fields.(vc{1});
-         subplot(2,1,1);
-         fn_pcolor(gridprams.X,gridprams.Y,v1,{'\itx, \rmkm','\ity, \rmkm',vc{1}});
-         subplot(2,1,2);
-         fn_pcolor(gridprams.X,gridprams.Y,v2,{'\itx, \rmkm','\ity, \rmkm',vc{2}});
-         maxes = {max(v1(:)),max(v1(:))}
-      elseif 1
-         %% plot relative diff's
-         vlist = {'Hs','Tp','tau_x'};
-         lbl   = {'{\Delta}H_s/H_s','{\Delta}T_p/T_p','\Delta{\tau}_x/{\tau}_x'};
-         for j=1:2
-            subplot(3,1,j);
-            v1    = wave_fields.(vlist{j});
-            v2    = F_fields.(vlist{j});
-            Z     = 0*v2;
-            jn    = find(abs(v2)>0);
-            Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
-            fn_pcolor(gridprams.X,gridprams.Y,Z,{'\itx, \rmkm','\ity, \rmkm',lbl{j}});
-         end
-         for j=3:3
-            subplot(3,1,j);
-            v1    = ice_fields.(vlist{j});
-            v2    = F_fields.(vlist{j});
-            Z     = 0*v2;
-            jn    = find(abs(v2)>0);
-            Z(jn) = 1-v1(jn)./v2(jn);%%relative difference
-            fn_pcolor(gridprams.X,gridprams.Y,Z,{'\itx, \rmkm','\ity, \rmkm',lbl{j}});
-         end
-      end
-   end
 
    %% also give progress report every 'reps' time steps;
    reps     = params_in.dumpfreq;
@@ -867,6 +803,17 @@ else
    end
 
    %nt = 13%%stop straight away for testing
+   if TEST_IJ
+      %% output in diagnostics
+      %% - can be used in animate_dirspec.m
+      diagnostics.dirspec_snapshots.t        = (0:nt-1)'*dt;
+      diagnostics.dirspec_snapshots.th_vec   = -pi/180*(90+wave_stuff.dirs);
+      diagnostics.dirspec_snapshots.dir_spec = zeros(wave_stuff.ndir,nt);
+      if USE_EBS
+         diagnostics.dirspec_snapshots.dir_spec_scattered   = zeros(wave_stuff.ndir,nt);
+      end
+   end
+
    for n = 1:nt
 
       %%determine if we need to dump local diagnostics
@@ -882,6 +829,15 @@ else
          fprintf(logid2,'%d%s\n',params_in.jtest,' # jtest');
          fprintf(logid2,'%d%s\n',ICE_MASK(params_in.itest,params_in.jtest),' # ICE_MASK');
          fprintf(logid2,'%s\n',' ');
+      end
+
+      if TEST_IJ
+         diagnostics.dirspec_snapshots.dir_spec(:,n) =...
+            squeeze(wave_stuff.dir_spec(params_in.itest,params_in.jtest,:,1))';
+         if USE_EBS
+            diagnostics.dirspec_snapshots.dir_spec_scattered(:,n) =...
+               squeeze(wave_stuff.dir_spec_scattered(params_in.itest,params_in.jtest,:,1))';
+         end
       end
 
       if params_in.DO_DISP
@@ -1678,36 +1634,11 @@ else
                end
             end
 
-            if COMP_F==1
-               %% load prog binaries and compare saved wim_prog*.[ab] files
-               %% to matlab results
-               nnn            = num2str(n,'%3.3d');
-               afile          = [compFdir,nnn,'.a'];
-               aid            = fopen(afile,'rb');
-               F_fields.Dmax  = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-               F_fields.tau_x = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-               F_fields.tau_y = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-               F_fields.Hs    = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-               F_fields.Tp    = reshape( fread(aid,gridprams.nx*gridprams.ny,fmt), gridprams.nx,gridprams.ny );
-               fclose(aid);
-            end
-
             clear s1;
             pause(0.1);
          end
-         %%
-         if 0
-            Jlook = nx-16+(1:16);
-            out_fields.Dmax(edge:edge+9,Jlook)
-         end
       end
 
-
-      for jw=[]%11
-         [n,T(jw)],%[ag_ice(jw,1:11,1)]
-         testSatt=S(1:11,1,jw,jmwd)
-         pause
-      end
 
       if (SV_BIN==1)&(mod(n,reps_ab)==0)&(params_in.DO_CHECK_PROG==1)
          %% save matlab files as binaries
