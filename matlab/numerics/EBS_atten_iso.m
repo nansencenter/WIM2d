@@ -43,7 +43,7 @@ id2   = eye(2*ndir);
 
 if 1
    %% choose filter so back-scattered waves
-   M_filter = EBS_filter_step(wavdir);
+   M_filter = EBS_filter(wavdir,'delta');
 else
    %%for testing - this should give the same answer as SCATMOD==0
    M_filter = zz;
