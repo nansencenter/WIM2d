@@ -10,7 +10,7 @@ if nargin==0
    %%
    dtheta         = 360/ndir;
    wavdir         = 90-dtheta*(0:ndir-1)';
-   M_filter       = EBS_filter_step(wavdir)
+   M_filter       = EBS_filter(wavdir,'delta')
    inputs.M_bolt  = [     M_filter.*M_K - qs*eye(ndir) , Z ;
                       (1-M_filter).*M_K                , Z ];
    %%
@@ -19,6 +19,8 @@ if nargin==0
    S_in     = eye(2*ndir,1);
    DO_TEST  = 1;
    itest    = 1;
+
+   method   = 'spectral'
 end
 
 flds  = fieldnames(inputs);
@@ -53,7 +55,7 @@ if ~isempty(find(e_vals>e_tol))
    disp(e_vals)
    error('\nShouldn''t be any positive eigenvalues')
 else
-   e_vals   = min(e_vals,0);
+   e_vals   = min(real(e_vals),0);
 end
 
 
@@ -74,45 +76,17 @@ elseif strcmp(method,'spectral')
    %% reorder
    [e_vals,II] = sort(e_vals,'descend');
    U           = U(:,II);
-   %e_vals
+   %e_vals,U,sum(M_bolt),sum(U)
 
-   %% zero eigenvalues: don't evolve
-   jz    = (1:ndir)';
-   Uz    = U(:,jz);
-
-   e_vals(jz)  = [];
-   U(:,jz)     = [];
-
-   e_vals   = e_fac*e_vals;
-   M_bolt   = e_fac*M_bolt;
-
-   %% non-repeated ones, <0
-   V  = [U(:,1),U(:,ndir)];%% ~1
-   W  = 0*V;               %% ~t
-
-   %% repeated ones, <0
-   for j=1:round(ndir/2)-1
-      ev = e_vals(2*j);
-      V0 = U(:,2*j);
-      V1 = U(:,2*j+1);
-      if sum(V0.*V1)==0
-         W  = [W,0*V0,0*V0];%% no need for a part \propto x
-      else
-         V1 = lsqlin(M_bolt-ev*eye(2*ndir),V0);%%least squares solution
-         W  = [W,0*V0,V0];
-      end
-      %V1 = (M_bolt-ev*eye(2*ndir))\V0;%%least squares solution
-      V  = [V,V0,V1];
-   end
-
-   %%expand in terms of solution
-   %%TODO repeated ones, =0
-   cc = [Uz,V]\S_in;
+   %%expand in terms of e-vecs
+   %% - assume all e-vecs are lin indep (det(U)~=0)
+   %% - can then diagonalise sys and solve
+   cc = U\S_in;
    nx = length(x);
 
    S_out    = zeros(2*ndir,nx);
    for j=1:nx
-      S_out(:,j)  = Uz*cc(jz) + (V+x(j)*W)*diag(exp(e_vals*x(j)))*cc(ndir+jz);
+      S_out(:,j)  = U*diag(exp(e_vals*x(j)))*cc;
    end
    %toc
 else
@@ -146,7 +120,8 @@ if DO_TEST
    hold on;
 
    plot(soln.x,soln.y(itest,:),'--r');
-   hold off
+   hold off;
+
 end
 return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -11,16 +11,29 @@ if nargin==0
    dtheta         = 2*pi/ndir;
    inputs.th_vec  = dtheta*(0:ndir-1)'+.5*dtheta;%%dodge \pm\pi/2 - is this necessary?
    wavdir         = 90-180/pi*inputs.th_vec;
-   M_filter       = EBS_filter_step(wavdir);%% 1 -> scattered SDF; 0 -> normal SDF
+   %M_filter       = EBS_filter(wavdir,'step')%% 1 -> scattered SDF; 0 -> normal SDF
+   M_filter       = EBS_filter(wavdir,'delta')%% 1 -> scattered SDF; 0 -> normal SDF
+   %M_filter       = EBS_filter(wavdir,'cos')%% 1 -> scattered SDF; 0 -> normal SDF
    inputs.M_bolt  = [  (1-M_filter).*M_K - qs*eye(ndir) , Z ;
                            M_filter.*M_K                , Z ];
    %%
-   np = 25;
-   x  = linspace(0,np,np+1);
+   np = 12;
+   x  = linspace(0,np,np+1)';
    %x = [0,.5]';
 
-   S_in           = zeros(2*ndir,1);
-   S_in([1,ndir]) = .5/dtheta;
+   if 0
+      %% delta fxn
+      S_in     = zeros(2*ndir,1);
+      S_in(1)  = 1/dtheta;
+   elseif 0
+      %% wider delta fxn
+      S_in           = zeros(2*ndir,1);
+      S_in([1,ndir]) = .5/dtheta;
+   else
+      %%cos^2
+      S_in           = zeros(2*ndir,1);
+      S_in(1:ndir)   = 2/pi*max(0,cos(inputs.th_vec)).^2;
+   end
    DO_TEST        = 1;
    itest          = 9;
 end
@@ -33,13 +46,25 @@ for j=1:Nf
    eval(cmd);
 end
 clear inputs;
-%sum(M_bolt),pause
 
 ndir  = round(size(M_bolt,1)/2);
 nx    = length(x);
+J1    = (1:ndir);
+J2    = J1+ndir;
 
 Dc    = diag(cos(th_vec));
 Lmat  = [Dc,0*Dc;0*Dc,Dc];
+
+if 0
+   %% look at e-vals/e-vecs of orig system
+   [u,d] = eig(M_K-qs*eye(ndir),Dc);
+   %sum(M_K-qs*eye(ndir))
+   E_vals      = diag(d);
+   [dummy,idx] = sort(abs(E_vals));
+   E_vals      = E_vals(idx)
+   u           = u(:,idx)
+   pause
+end
 
 if 1
    %% if we dodge \pm\pi/2:
@@ -53,19 +78,59 @@ if 1
    [dummy,idx] = sort(abs(e_vals));
    e_vals      = e_vals(idx);
    U           = U(:,idx);
+   %e_vals,U,pause
 
    jm    = find(e_vals<0);     %%decaying e-vals
    Jfwd  = find(cos(th_vec)>0);%%only match fwd-going waves at x=0
-   cc    = U(Jfwd,jm)\S_in(Jfwd);
+   if 0
+      %%only use the "real" energy to fit the inc wave spec
+      lw1   = 1.5; %linewidth-real
+      lw2   = 1.25;%linewidth-total
+      cc    = U(Jfwd,jm)\S_in(Jfwd);
+   else
+      %%use the total energy to fit the inc wave spec
+      lw1   = 1.25;%linewidth-real
+      lw2   = 1.5; %linewidth-total
+      cc    = ( U(Jfwd,jm) + U(Jfwd+ndir,jm) )\S_in(Jfwd);
+   end
+   %U,sum(U(:,jm)),pause
+   S0       = U(:,jm)*cc;
+   cU       = U(:,jm)*diag(cc);
+   cU_main  = cU(J1,1)+cU(J2,1);
+   if find(cU_main<1e-8)
+      disp('Main e-vec:');
+      disp(cU_main);
+      error('Main eigenvector has negative energy');
+   end
+   %cU,e_vals(jm),qs,pause
    S_out = zeros(2*ndir,nx);
-   if DO_TEST
-      S0 = U(:,jm)*cc
+   if 0*DO_TEST
+      T        = 0*S_in;
+      T(Jfwd)  = 1;
+      [S0,S_in,T]
+      pause
       %sum(U)
       %sum(U(:,jm))
       %pause
    end
+
+
    for j=1:nx
-      S_out(:,j)  = U(:,jm)*diag(exp(e_vals(jm)*x(j)))*cc;
+      S_out(:,j)  = cU*exp(e_vals(jm)*x(j));
+
+      if ~isempty(find(S_out(J1,j)+S_out(J2,j)<-1e-8))
+         %%check total energy >0
+         disp(['x=',num2str(x(j))]);
+         disp(' ');
+         disp('Dir spec:');
+         disp(S_out(:,j));
+         disp('Total dir spec:');
+         disp(S_out(J1,j)+S_out(J2,j));
+         disp('Total energy < 0');
+         S0(J1)+S0(J2)
+         pause;
+         %error('Total energy < 0');
+      end
    end
 
 else
@@ -116,76 +181,105 @@ else
 end
 
 
+
 if DO_TEST
 
-   % =================================================================
-   %% numerical solution
-   %tic
-   if ndir<=16
-      soln  = ode45(@(x,y)rhs(x,y,Lmat\M_bolt),[0,max(x)],S0);
+   if 0
+      % =================================================================
+      %% numerical solution
+      %tic
+      if ndir<=16
+         soln  = ode45(@(x,y)rhs(x,y,Lmat\M_bolt),[0,max(x)],S0);
+      end
+      %toc
+
+      if length(x)<10
+         ls = '.b';
+      else
+         ls = '-b';
+      end
+
+      %%plot one of the "incident" waves
+      figure(1);
+      subplot(1,2,1);
+      plot(x,S_out(itest,:),ls);
+      hold on;
+      yl = get(gca,'ylim');
+      ttl  = ['\theta=',num2str(wavdir(itest))];
+      title(ttl);
+
+      plot(soln.x,soln.y(itest,:),'--r');
+      legend('spectral','numeric');
+      ylim(yl);
+      xlabel('x')
+      ylabel('SDF (normal)')
+      hold off
+
+      %%plot one of the "scattered" waves
+      subplot(1,2,2);
+      itest = ndir+itest;
+      plot(x,S_out(itest,:),ls);
+      yl = get(gca,'ylim');
+      hold on;
+      xlabel('x')
+      ylabel('SDF (scattered)')
+      title(ttl);
+
+      plot(soln.x,soln.y(itest,:),'--r');
+      legend('spectral','numeric');
+      ylim(yl);
+      hold off
+      % =================================================================
    end
-   %toc
 
-   if length(x)<10
-      ls = '.b';
-   else
-      ls = '-b';
+
+   if 1
+      % =================================================================
+      %%plot animation of dir spec 
+      figure(2);
+      fn_fullscreen;
+      subplot(1,2,1);
+      %% keep x=0
+      fac   = 0;
+      plot(180/pi*th_vec,S0((1:ndir))+fac*S0((1:ndir)+ndir),'-k');
+      labs        = {'\theta, degrees','D(\theta)'};
+      Y_inc       = nan*zeros(ndir,1);
+      Y_inc(Jfwd) = S_in(Jfwd);
+      Y  = [S0((1:ndir))+    S0((1:ndir)+ndir),...
+            S0((1:ndir))+fac*S0((1:ndir)+ndir),...
+                             S0((1:ndir)+ndir),...
+            cU_main,...
+            Y_inc]
+
+      %% normalise to give D(\theta)
+      nn       = 4;
+      I0       = dtheta*sum(Y(:,1:nn));
+      Y(1:nn)  = Y(1:nn)*diag(1./I0);
+      Y(nn+1)  = Y(nn+1)/(dtheta*sum(S_in));
+
+      H  = fn_plot1d(180/pi*th_vec,Y,labs);
+      set(H(1),'color','k','linewidth',lw2);
+      set(H(2),'color','b','linewidth',lw1);
+      set(H(3),'color','c');
+      set(H(4),'color','y');
+      set(H(5),'color','m','linestyle','--','linewidth',1.05);
+      lg = legend('total','normal','scattered','Mode 1','B Con''s');
+      set(lg,'location','EastOutside');
+      title('x = 0km')
+      xlim(180/pi*[(th_vec(1)-.5*dtheta),th_vec(end)+.5*dtheta]);
+      pause;
+
+      subplot(1,2,2);
+      %% loops over all x
+                                     {cU_main,1+0*x'}
+      Sdir_ = {S_out((1:ndir),:)+    S_out((1:ndir)+ndir,:),...
+               S_out((1:ndir),:)+fac*S_out((1:ndir)+ndir,:),...
+                                     S_out((1:ndir)+ndir,:),...
+                                     cU_main*(1+0*x')}
+      legend_text = {'total','normal','scattered','Mode 1'};
+      animate_dirspec(1e3*x,th_vec,Sdir_,legend_text);
+      % =================================================================
    end
-
-   %%plot one of the "incident" waves
-   figure(1);
-   subplot(1,2,1);
-   plot(x,S_out(itest,:),ls);
-   hold on;
-   yl = get(gca,'ylim');
-   ttl  = ['\theta=',num2str(wavdir(itest))];
-   title(ttl);
-
-   plot(soln.x,soln.y(itest,:),'--r');
-   legend('spectral','numeric');
-   ylim(yl);
-   xlabel('x')
-   ylabel('SDF (normal)')
-   hold off
-
-   %%plot one of the "scattered" waves
-   subplot(1,2,2);
-   itest = ndir+itest;
-   plot(x,S_out(itest,:),ls);
-   yl = get(gca,'ylim');
-   hold on;
-   xlabel('x')
-   ylabel('SDF (scattered)')
-   title(ttl);
-
-   plot(soln.x,soln.y(itest,:),'--r');
-   legend('spectral','numeric');
-   ylim(yl);
-   hold off
-   % =================================================================
-
-
-   % =================================================================
-   %%plot animation of dir spec 
-   figure(2);
-   subplot(1,2,1);
-   %% keep x=0
-   fac   = 0;
-   plot(180/pi*th_vec,S0((1:ndir))+fac*S0((1:ndir)+ndir),'-k');
-   hold on;
-   plot(180/pi*th_vec,S0((1:ndir))+S0((1:ndir)+ndir),'-b');
-   plot(180/pi*th_vec,S_in((1:ndir))+S_in((1:ndir)+ndir),'-m');
-   hold off;
-   legend('normal','total','B Con''s');
-   title('x = 0')
-
-   subplot(1,2,2);
-   %% loops over all x
-   Sdir_ = {S_out((1:ndir),:)+fac*S_out((1:ndir)+ndir,:),...
-            S_out((1:ndir),:)+S_out((1:ndir)+ndir,:)};
-   legend_text = {'normal','total'};
-   animate_dirspec(x,th_vec,Sdir_,legend_text);
-   % =================================================================
 end
 return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,33 +289,4 @@ return
 function dy=rhs(x,y,M_bolt)
 dy = M_bolt*y;
 return
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [y,n_term] = mat_exp(M,n_term)
-
-N  = size(M,1);
-t  = M;
-y  = eye(N)+t;
-
-if exist('n_term','var');
-   for n=2:n_term
-      t  = M*t/n;%%M^n/(n!)=M/n*M^(n-1)/(n-1)!
-      y  = y+t;
-   end
-else
-   nM       = norm(M);
-   n_term   = 200;
-   for n=2:n_term
-      t  = M*t/n;%%M^n/(n!)=M/n*M^(n-1)/(n-1)!
-      y  = y+t;
-      if norm(t)<1e-12*nM
-         %disp(['stopping at n = ',num2str(n)]); pause;
-         n_term   = n;
-         break;
-      end
-   end
-end
-return;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
