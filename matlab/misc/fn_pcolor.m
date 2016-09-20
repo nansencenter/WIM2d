@@ -23,9 +23,17 @@ end
 Z              = zeros(nx+1,ny+1);
 Z(1:nx,1:ny)   = z;
 
-%% want x,y to refer to edges of cells
-xx = cen2edges(x);
-yy = cen2edges(y);
+if (length(x)==(nx+1))&(length(y)==(ny+1))
+   %% q points already (corners)
+   xx = x;
+   yy = y;
+elseif (length(x)==nx)&(length(y)==ny)
+   %% want x,y to refer to edges of cells
+   xx = cen2edges(x);
+   yy = cen2edges(y);
+else
+   error('x,y wrong size');
+end
 
 H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
 set(H,'EdgeColor', 'none');
