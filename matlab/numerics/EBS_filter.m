@@ -9,8 +9,12 @@ end
 
 ndir     = length(wavdir);
 M_filter = zeros(ndir,ndir);%%zeros correspond to staying in normal E
-th_vec   = -pi/180*(90+wavdir);
 
+if strcmp(shape,'zero')
+   %% do nothing for testing
+   return
+end
+th_vec   = -pi/180*(90+wavdir);
 for i=1:ndir
    if strcmp(shape,'delta')
       i_ = mod(i+ndir/2,ndir);
