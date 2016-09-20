@@ -6,6 +6,12 @@
 *.so
 *.pyc
 *fort.6
+*.msh
+*.mat
+*.a
+*.nc
+*.b
+*.png
 #
 fortran/scripts/infile_nonIO.txt
 fortran/scripts/infile_dirs.txt
@@ -68,5 +74,3 @@ CXX/lib
 CXX/bin
 
 fortran/grid_setup/infile_waves.txt
-
-matlab/numerics/testing/test_fou.mat
