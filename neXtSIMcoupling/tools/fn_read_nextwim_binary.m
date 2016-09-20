@@ -34,7 +34,7 @@ end
 aid   = fopen(afile);
 %%
 for n=1:nrec
-   vbl   = vlist{n}
+   vbl   = vlist{n};
    if ~isempty(strfind(vbl,'sc'))
       Nx = nx;
       Ny = ny;
