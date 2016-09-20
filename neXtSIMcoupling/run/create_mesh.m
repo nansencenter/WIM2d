@@ -1,15 +1,53 @@
+function meshfile = create_mesh(OPT,output_type)
+
+if nargin~=2
+   error('create_mesh(OPT,output_type) eg OPT=2, output_type=''msh'' or ''mat''')
+end
+
 w2d   = getenv('WIM2D_PATH');
-gdir  = [w2d,'/fortran/run/Inputs'];
-gfil  = [gdir,'/wim_grid.a'];
+if OPT==1
+   gdir  = [w2d,'/fortran/run/Inputs'];
+   gfil  = [gdir,'/wim_grid.a']
+elseif OPT==2
+   gdir  = [w2d,'/neXtSIMcoupling/grid_setup/ONR_big'];
+   gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_2km_big.a']
+elseif OPT==3
+   gdir  = [w2d,'/neXtSIMcoupling/grid_setup/ONR_small'];
+   gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_2km_small.a']
+end
 
-meshfile = Myconvert_arctic_mesh(gfil);
-%% file is saved to gdir
+% test reading of file (plot land-mask)
+if OPT==1
+   gp = fn_get_grid(gdir);
+   disp(gp);
+   x  = gp.X(:,1)/1e3;
+   y  = gp.Y(1,:)/1e3;
+   LM = gp.LANDMASK;
 
-if 1
+   %%plot original grid
+   figure;
+   fn_fullscreen;
+   fn_pcolor(x,y,LM);
+else
+   [fields,info]  = fn_read_nextwim_binary(gfil)
+   [X,Y]          = mapll(fields.qlat,fields.qlon,60,-45,'N');%km
+   x              = X(:,1);
+   y              = Y(1,:);
+ 
+   %%plot original grid
+   figure;
+   fn_fullscreen;
+   fn_pcolor(x,y,fields.LANDMASK);
+end
+
+meshfile = Myconvert_arctic_mesh(gfil,output_type);
+%% mesh file is saved to gdir
+
+if 0
    %%save mesh to current directory
    disp(['Moving mesh file to current directory']);
    eval(['!mv ',meshfile,' .']);
-else
+elseif 0
    %% save mesh to /Data/sim/data/mesh
    %% (or to mirror dir on external HD)
 
@@ -44,13 +82,3 @@ else
    eval(['!mv ',meshfile,' ',final_dir]);
 end
 
-gp = fn_get_grid(gdir);
-disp(gp);
-x  = gp.X(:,1)/1e3;
-y  = gp.Y(1,:)/1e3;
-LM = gp.LANDMASK;
-
-%%plot original grid
-figure;
-fn_fullscreen;
-fn_pcolor(x,y,LM);
