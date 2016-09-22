@@ -12,6 +12,7 @@
 *.nc
 *.b
 *.png
+*.m~
 #
 fortran/scripts/infile_nonIO.txt
 fortran/scripts/infile_dirs.txt
@@ -55,7 +56,7 @@ matlab/main/infile_dirs.txt
 matlab/boltzmann/out/*
 matlab/boltzmann/*.mat
 matlab/boltzmann/solve_boltzmann_numeric.m
-*.m~
+matlab/attenuation_robinson_palmer/out/*
 #
 neXtSIMcoupling/results/*
 neXtSIMcoupling/run/*
