@@ -521,7 +521,29 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     {
        this->ideal_wave_fields(wave_mask,.8);
     }
-    // TODO else- use inputs
+    else
+    {
+       // =====================================================================
+       // non-ideal wave inputs
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+       for (int i = 0; i < nx; i++)
+       {
+           for (int j = 0; j < ny; j++)
+           {
+                if ((ice_mask[i][j]<1.)&&(swh_in[ny*i+j]>1.e-3))
+                {
+                   Hs[i][j] = swh_in[ny*i+j];
+                   Tp[i][j] = mwp_in[ny*i+j];
+                   mwd[i][j] = mwd_in[ny*i+j];
+                   wave_mask[i][j] = 1.;
+                }
+
+           }//j loop
+       }//i loop
+
+       // end of non-ideal wave inputs
+       // =====================================================================
+    }
     // end wave fields
     //====================================================
 
