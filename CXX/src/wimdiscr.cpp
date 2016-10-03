@@ -468,11 +468,63 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     ag = ap;
     std::for_each(ag.begin(), ag.end(), [&](value_type& f){ f = f/2. ; });
 
+    //====================================================
+    //set ice conditions
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+    if (ice_c.size() == 0)
+    {
+       //ideal ice conditions
+       this->ideal_ice_fields(ice_mask,0.7);
+    }
+    else
+    {
+       // =====================================================================
+       // non-ideal ice inputs
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+       for (int i = 0; i < nx; i++)
+       {
+           for (int j = 0; j < ny; j++)
+           {
+                icec[i][j] = ice_c[ny*i+j];
+                nfloes[ny*i+j] = n_floes[ny*i+j];
+
+                dfloe[ny*i+j] = 0.;
+
+                if (icec[i][j] < vm["wim.cicemin"].template as<double>())
+                {
+                    ice_mask[i][j] = 0.;
+                    icec[i][j] = 0.;
+                    iceh[i][j] = 0.;
+                    nfloes[ny*i+j] = 0.;
+                }
+                else
+                {
+                    ice_mask[i][j] = 1.;
+                    iceh[i][j] = ice_h[ny*i+j]/icec[i][j];
+                    dfloe[ny*i+j] = std::sqrt(icec[i][j]/nfloes[ny*i+j]);
+                }
+
+                if (dfloe[ny*i+j] > dfloe_pack_thresh)
+                    dfloe[ny*i+j] = dfloe_pack_init;
+
+                //std::cout<<"----------------------complex case\n";
+           }//j loop
+       }//i loop
+
+       // end of non-ideal ice inputs
+       // =====================================================================
+    }
 
     //====================================================
-    //ideal ice/waves TODO sep function
-    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
-    this->ideal_wave_fields(wave_mask,.8);
+    // wave fields
+    if (swh_in.size()==0)
+    {
+       this->ideal_wave_fields(wave_mask,.8);
+    }
+    // TODO else- use inputs
+    // end wave fields
+    //====================================================
+
 
     //====================================================
     //set incident wave spec TODO sep function
@@ -556,68 +608,6 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
         }
     }
     //end: set incident wave spec TODO sep function
-    //====================================================
-
-
-    //====================================================
-    //ideal ice conditions TODO sep function
-   x0 = X_array[0][0];
-   xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
-    x_edge = 0.5*(x0+xmax)-0.7*(0.5*(xmax-x0));
-
-#pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            if (X_array[i][j] < x_edge)
-                wtr_mask[i][j] = 1.;
-
-            ice_mask[i][j] = (1-wtr_mask[i][j])*(1-LANDMASK_array[i][j]);
-
-            if (ice_c.size() == 0)
-            {
-                icec[i][j] = unifc*ice_mask[i][j];
-                iceh[i][j] = unifh*ice_mask[i][j];
-                dfloe[ny*i+j] = dfloe_pack_init*ice_mask[i][j];
-            }
-            else
-            {
-                icec[i][j] = ice_c[ny*i+j];
-                nfloes[ny*i+j] = n_floes[ny*i+j];
-
-                dfloe[ny*i+j] = 0.;
-
-                if (icec[i][j] < vm["wim.cicemin"].template as<double>())
-                {
-                    ice_mask[i][j] = 0.;
-                    icec[i][j] = 0.;
-                    iceh[i][j] = 0.;
-                    nfloes[ny*i+j] = 0.;
-                }
-                else
-                {
-                    ice_mask[i][j] = 1.;
-
-                    iceh[i][j] = ice_h[ny*i+j]/icec[i][j];
-
-                    dfloe[ny*i+j] = std::sqrt(icec[i][j]/nfloes[ny*i+j]);
-                }
-
-                if (dfloe[ny*i+j] > dfloe_pack_thresh)
-                    dfloe[ny*i+j] = dfloe_pack_init;
-
-                //std::cout<<"----------------------complex case\n";
-            }
-
-            //std::cout<<"ICE_MASK["<< i  << "," << j << "]= " << ice_mask[i][j] <<"\n";
-            //ice_mask[i][j] = (1-wtr_mask[i][j])*(1-LANDMASK_array[i][j]);
-
-            if ((LANDMASK_array[i][j] == 1.) /*&& (!step)*/)
-                ice_mask[i][j] = 0.;
-        }
-    }
-    //end: ideal ice conditions TODO sep function
     //====================================================
 
 #if 0
@@ -786,15 +776,11 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 
 template<typename T>
 void WimDiscr<T>::ideal_wave_fields(array2_type& wave_mask,value_type const xfac) {
-   value_type x0,xmax,y0,ym,x_edge;
+   value_type x0,xmax,x_edge;
    x0 = X_array[0][0];
    xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
 
-   y0 = Y_array[0][0];
-   ym = Y_array[0][0]+(ny-1)*dy;
-   //value_type ymax = Y_array[nx-1][ny-1];
-
-   //x_edge = 0.5*(x0+xmax)-0.8*(0.5*(xmax-x0));
+   //waves initialised for x<x_edge
    x_edge = 0.5*(x0+xmax)-xfac*(0.5*(xmax-x0));
 
    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
@@ -809,6 +795,33 @@ void WimDiscr<T>::ideal_wave_fields(array2_type& wave_mask,value_type const xfac
             Hs[i][j] = Hs_inc;
             Tp[i][j] = Tp_inc;
             mwd[i][j] = mwd_inc;
+            //std::cout<<Hs[i][j]<<" "<<Tp[i][j]<<" "<<mwd[i][j];
+         }
+      }
+   }
+}
+
+template<typename T>
+void WimDiscr<T>::ideal_ice_fields(array2_type& ice_mask,value_type const xfac) {
+   value_type x0,xmax,x_edge;
+   x0 = X_array[0][0];
+   xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
+
+   //ice initialised for x>=x_edge
+   x_edge = 0.5*(x0+xmax)-xfac*(0.5*(xmax-x0));
+
+   int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+   for (int i = 0; i < nx; i++)
+   {
+      for (int j = 0; j < ny; j++)
+      {
+         if ((X_array[i][j] >= x_edge) && (LANDMASK_array[i][j]<1.))
+         {
+            ice_mask[i][j] = 1.;
+            icec[i][j] = unifc;
+            iceh[i][j] = unifh;
+            dfloe[ny*i+j] = dfloe_pack_init;
             //std::cout<<Hs[i][j]<<" "<<Tp[i][j]<<" "<<mwd[i][j];
          }
       }

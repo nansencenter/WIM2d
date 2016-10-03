@@ -124,6 +124,7 @@ public:
 
     void calcMWD();
     void ideal_wave_fields(array2_type& wave_mask,value_type const xfac);
+    void ideal_ice_fields(array2_type& ice_mask,value_type const xfac);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
     value_type thetaInRange(value_type const& th_, value_type const& th1);
