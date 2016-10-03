@@ -325,7 +325,9 @@ void WimDiscr<T>::init()
 }//end ::init()
 
 template<typename T>
-void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes, bool step) // reset
+void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes,
+      std::vector<value_type> const& swh_in, std::vector<value_type> const& mwp_in, std::vector<value_type> const& mwd_in,
+      bool step) // reset
 {
     wt_simp.resize(nwavefreq);
     wt_om.resize(nwavefreq);
@@ -469,36 +471,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 
     //====================================================
     //ideal ice/waves TODO sep function
-    x0 = X_array[0][0];
-    xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
-
-    y0 = Y_array[0][0];
-    ym = Y_array[0][0]+(ny-1)*dy;
-    //value_type ymax = Y_array[nx-1][ny-1];
-
-    x_edge = 0.5*(x0+xmax)-0.8*(0.5*(xmax-x0));
-
-    //std::cout<<Hs_inc<<" "<<Tp_inc<<" "<<mwd_inc<<std::endl;
-    //std::exit(1);
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
-#pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            if (X_array[i][j] < x_edge)
-            {
-                wave_mask[i][j] = 1.;
-                Hs[i][j] = Hs_inc;
-                Tp[i][j] = Tp_inc;
-                mwd[i][j] = mwd_inc;
-                //std::cout<<Hs[i][j]<<" "<<Tp[i][j]<<" "<<mwd[i][j];
-            }
-        }
-    }
-    //end: ideal ice/waves TODO sep function
-    //====================================================
-
+    this->ideal_wave_fields(wave_mask,.8);
 
     //====================================================
     //set incident wave spec TODO sep function
@@ -587,6 +561,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 
     //====================================================
     //ideal ice conditions TODO sep function
+   x0 = X_array[0][0];
+   xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
     x_edge = 0.5*(x0+xmax)-0.7*(0.5*(xmax-x0));
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
@@ -808,6 +784,36 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     ncs = std::round(nwavedirn/2);
 }//end: assign()
 
+template<typename T>
+void WimDiscr<T>::ideal_wave_fields(array2_type& wave_mask,value_type const xfac) {
+   value_type x0,xmax,y0,ym,x_edge;
+   x0 = X_array[0][0];
+   xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
+
+   y0 = Y_array[0][0];
+   ym = Y_array[0][0]+(ny-1)*dy;
+   //value_type ymax = Y_array[nx-1][ny-1];
+
+   //x_edge = 0.5*(x0+xmax)-0.8*(0.5*(xmax-x0));
+   x_edge = 0.5*(x0+xmax)-xfac*(0.5*(xmax-x0));
+
+   int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+   for (int i = 0; i < nx; i++)
+   {
+      for (int j = 0; j < ny; j++)
+      {
+         if (X_array[i][j] < x_edge)
+         {
+            wave_mask[i][j] = 1.;
+            Hs[i][j] = Hs_inc;
+            Tp[i][j] = Tp_inc;
+            mwd[i][j] = mwd_inc;
+            //std::cout<<Hs[i][j]<<" "<<Tp[i][j]<<" "<<mwd[i][j];
+         }
+      }
+   }
+}
 
 template<typename T>
 void WimDiscr<T>::timeStep(bool step)
@@ -1295,9 +1301,11 @@ void WimDiscr<T>::timeStep(bool step)
 }
 
 template<typename T>
-void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes, bool step)
+void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes,
+      std::vector<value_type> const& swh_in, std::vector<value_type> const& mwp_in, std::vector<value_type> const& mwd_in,
+      bool step)
 {
-    this->assign(ice_c,ice_h,n_floes,step);
+    this->assign(ice_c,ice_h,n_floes,swh_in,mwp_in,mwd_in,step);
 
     bool critter;
 
@@ -1863,7 +1871,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
 
 
     //final output
-    std::cout<<"in WENO\n";
+    //std::cout<<"in WENO\n";
 #pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {

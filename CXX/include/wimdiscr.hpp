@@ -79,6 +79,9 @@ public:
     void assign(std::vector<value_type> const& ice_c = std::vector<value_type>(),
                 std::vector<value_type> const& ice_h = std::vector<value_type>(),
                 std::vector<value_type> const& n_floes = std::vector<value_type>(),
+                std::vector<value_type> const& swh_in = std::vector<value_type>(),
+                std::vector<value_type> const& mwp_in = std::vector<value_type>(),
+                std::vector<value_type> const& mwd_in = std::vector<value_type>(),
                 bool step = false);
 
     void timeStep(bool step = false);
@@ -86,6 +89,9 @@ public:
     void run(std::vector<value_type> const& ice_c = std::vector<value_type>(),
              std::vector<value_type> const& ice_h = std::vector<value_type>(),
              std::vector<value_type> const& n_floes = std::vector<value_type>(),
+             std::vector<value_type> const& swh_in = std::vector<value_type>(),
+             std::vector<value_type> const& mwp_in = std::vector<value_type>(),
+             std::vector<value_type> const& mwd_in = std::vector<value_type>(),
              bool step = false);
 
     //===========================================================================
@@ -117,6 +123,7 @@ public:
 
 
     void calcMWD();
+    void ideal_wave_fields(array2_type& wave_mask,value_type const xfac);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
     value_type thetaInRange(value_type const& th_, value_type const& th1);
