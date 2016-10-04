@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
 
 /**
  * @file   wimdiscr.hpp
@@ -73,7 +73,7 @@ public:
     void readGridFromFile(std::string const& filein);
     void readDataFromFile(std::string const& filein);
     void exportResults(std::string const& output_type, value_type const& t_out) const;
-    void save_log(value_type const& t_out) const;
+    void saveLog(value_type const& t_out) const;
     void init();
 
     void assign(std::vector<value_type> const& ice_c = std::vector<value_type>(),
@@ -123,8 +123,8 @@ public:
 
 
     void calcMWD();
-    void ideal_wave_fields(array2_type& wave_mask,value_type const xfac);
-    void ideal_ice_fields(array2_type& ice_mask,value_type const xfac);
+    void idealWaveFields(array2_type& wave_mask,value_type const xfac);
+    void idealIceFields(array2_type& ice_mask,value_type const xfac);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
     value_type thetaInRange(value_type const& th_, value_type const& th1);

@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
 
 /**
  * @file   wimdiscr.cpp
@@ -610,7 +610,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     if (ice_c.size() == 0)
     {
        //ideal ice conditions
-       this->ideal_ice_fields(ice_mask,0.7);
+       this->idealIceFields(ice_mask,0.7);
     }
     else
     {
@@ -655,7 +655,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     // wave fields
     if (swh_in.size()==0)
     {
-       this->ideal_wave_fields(wave_mask,.8);
+       this->idealWaveFields(wave_mask,.8);
     }
     else
     {
@@ -933,7 +933,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
 }//end: assign()
 
 template<typename T>
-void WimDiscr<T>::ideal_wave_fields(array2_type& wave_mask,value_type const xfac) {
+void WimDiscr<T>::idealWaveFields(array2_type& wave_mask,value_type const xfac)
+{
    value_type x0,xmax,x_edge;
    x0 = X_array[0][0];
    xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
@@ -960,7 +961,8 @@ void WimDiscr<T>::ideal_wave_fields(array2_type& wave_mask,value_type const xfac
 }
 
 template<typename T>
-void WimDiscr<T>::ideal_ice_fields(array2_type& ice_mask,value_type const xfac) {
+void WimDiscr<T>::idealIceFields(array2_type& ice_mask,value_type const xfac)
+{
    value_type x0,xmax,x_edge;
    x0 = X_array[0][0];
    xmax = X_array[nx-1][ny-1]; //x0+(nx-1)*dx;
@@ -1544,7 +1546,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
     // save diagnostic file
     if (vm["wim.savelog"].template as<bool>())
-       save_log(t_in);
+       saveLog(t_in);
 
     std::cout<<"Running done in "<< chrono.elapsed() <<"s\n";
 
@@ -2677,7 +2679,7 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
 }
 
 template<typename T>
-void WimDiscr<T>::save_log(value_type const& t_out) const
+void WimDiscr<T>::saveLog(value_type const& t_out) const
 {
     std::string str = vm["wim.outparentdir"].template as<std::string>();
     fs::path path(str);
