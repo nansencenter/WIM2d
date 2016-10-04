@@ -61,16 +61,16 @@ Y  = simul_out.wim.gridprams.Y(1,:)/1.e3;%km
 tstr  = param;
 if strcmp(param,'taux_waves')
    Z  = simul_out.wim.waves_for_nodes.tau_x;
-   tstr  = '\tau_x, Pa';
+   tstr  = '{\it\tau_x}, Pa';
 elseif strcmp(param,'tauy_waves')
    Z  = simul_out.wim.waves_for_nodes.tau_y;
-   tstr  = '\tau_y, Pa';
+   tstr  = '{\it\tau_y}, Pa';
 elseif strcmp(param,'Hs')
    Z     = simul_out.wim.wave_fields.Hs;
-   tstr  = 'H_{s}, m';
+   tstr  = '{\itH}_{s}, m';
 elseif strcmp(param,'Tp')
    Z     = simul_out.wim.wave_fields.Tp;
-   tstr  = 'T_{p}, s';
+   tstr  = '{\itT}_{p}, s';
 elseif strcmp(param,'mwd')
    Z     = simul_out.wim.wave_fields.mwd;
    tstr  = 'mwd, degrees';
@@ -91,11 +91,11 @@ elseif strcmp(param,'Dmax')
    Z     = Nfloes_to_Dmax( simul_out.wim.ice_for_elements.Nfloes,...
                            simul_out.wim.ice_on_grid.cice,...
                            simul_out.wim.other_prams);
-   tstr  = 'Dmax, m';
+   tstr  = '{\itD}_{max}, m';
    clear Nfloes;
 elseif strcmp(param,'Nfloes')
    Z     = 1e6*simul_out.wim.ice_for_elements.Nfloes;
-   tstr  = 'Nfloes, km^{-2}';
+   tstr  = '{\itN}_{floes}, km^{-2}';
 end
 
 labs  = {'\itx, \rmkm','\ity, \rmkm',tstr};
@@ -111,8 +111,20 @@ end
 if date_flag == 1 && isfield(simul_out,'current_time')
    textstring = datestr(simul_out.current_time,'yyyy/mm/dd   HH:MM');
 end
+return;
 
-if ~strcmp(figure_format,'')
+if strcmp(figure_format,'eps')
+   ss = strsplit(simul_outfile,'.mat');
+   figname  = [ss{1},'_',param,'.',figure_format];
+   disp(['saving to ',figname]);
+   print(gcf,figname,'-painters','-r300','-depsc');
+elseif strcmp(figure_format,'tif')
+   ss = strsplit(simul_outfile,'.mat');
+   figname  = [ss{1},'_',param,'.',figure_format];
+   disp(['saving to ',figname]);
+   print(gcf,figname,'-dtiff','-r300');
+   %saveas(gcf,figname);
+elseif ~strcmp(figure_format,'')
    ss = strsplit(simul_outfile,'.mat');
    figname  = [ss{1},'_',param,'.',figure_format];
    disp(['saving to ',figname]);
