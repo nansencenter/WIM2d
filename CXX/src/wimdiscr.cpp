@@ -14,6 +14,9 @@ namespace Wim
 template<typename T>
 void WimDiscr<T>::gridProcessing()
 {
+    this->readGridFromFile("");
+
+#if 0
     X_array.resize(boost::extents[nx][ny]);
     Y_array.resize(boost::extents[nx][ny]);
     SCUY_array.resize(boost::extents[nx][ny]);
@@ -166,11 +169,62 @@ void WimDiscr<T>::gridProcessing()
     }
 
     std::cout<<"grid generation done in "<< chrono.elapsed() <<"s\n";
+#endif
 }
 
 template<typename T>
 void WimDiscr<T>::readGridFromFile(std::string const& filein)
 {
+    std::cout<<"Reading grid starts...\n";
+
+    char * senv = ::getenv( "WIMGRIDPATH" );
+    if ( (senv == NULL) || (senv[0] == '\0') )
+    {
+        std::cout << "you must define 'WIMGRIDPATH' environment variable for grid file directory needed for WIM"<<"\n";
+        throw std::logic_error("invalid environment variable");
+    }
+
+    // start reading first the record file (.b)
+    std::string str = std::string(senv);
+    fs::path path(str);
+
+    str = vm["wim.gridfilename"].template as<std::string>();
+    std::size_t found = str.find(".");
+    if (found != std::string::npos)
+    {
+        str.erase(std::next( str.begin(), found), str.end());
+        std::cout<<"binary filename for wim grid= "<< str <<"\n";
+    }
+    str += ".b";
+
+    std::string filename = (boost::format("%1%/%2%") % path.string() % str).str();
+    std::ifstream brecord ( filename.c_str(), std::ios::in );
+    std::vector<int> record(5);
+
+    if (brecord.is_open())
+    {
+        for (int i=0; i<record.size(); ++i)
+        {
+            brecord >> record[i];
+            brecord.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    }
+    else
+    {
+        std::cout << "Cannot open " << filename  << "\n";
+        std::cerr << "error: open file " << filename << " for input failed!" <<"\n";
+        std::abort();
+    }
+
+    bool column_major = record[1];
+    int nx = record[2];
+    int ny = record[3];
+    int nbytes = record[4];
+
+    array2_type PLat_array, PLon_array;
+    PLat_array.resize(boost::extents[nx][ny]);
+    PLon_array.resize(boost::extents[nx][ny]);
+
     //array2_type X_array(boost::extents[nx][ny],boost::fortran_storage_order());
     X_array.resize(boost::extents[nx][ny]);
     Y_array.resize(boost::extents[nx][ny]);
@@ -180,55 +234,137 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     SCP2I_array.resize(boost::extents[nx][ny]);
     LANDMASK_array.resize(boost::extents[nx][ny]);
 
-    dx = vm["wim.dx"].template as<double>();
-    dy = vm["wim.dy"].template as<double>();
+    filename = (boost::format("%1%/%2%")
+                % path.string()
+                % vm["wim.gridfilename"].template as<std::string>()).str();
 
-
-    std::fstream in(filein, std::ios::binary | std::ios::in);
+    std::fstream in( filename, std::ios::binary | std::ios::in);
 
     if (in.is_open())
     {
-        for (int i = 0; i < nx; i++)
+        if (column_major)
+        {
+#if 0
+            // get length of file:
+            in.seekg (0, in.end);
+            int length = in.tellg();
+            std::cout<<"length= "<< length <<"\n";
+            in.seekg (0, in.beg);
+#endif
+
+            int off = (nx+1)*(ny+1)*nbytes*2/* skip qlon and qlat*/;
+            in.seekg(off, std::ios::beg); // skip from the beginning of the file
+
             for (int j = 0; j < ny; j++)
-                in.read((char *)&X_array[i][j], sizeof(value_type));
+                for (int i = 0; i < nx; i++)
+                    in.read((char *)&PLon_array[i][j], sizeof(value_type));
 
-        for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&Y_array[i][j], sizeof(value_type));
+                for (int i = 0; i < nx; i++)
+                    in.read((char *)&PLat_array[i][j], sizeof(value_type));
 
 
-        for (int i = 0; i < nx; i++)
+            off = (nx+1)*(ny)*nbytes*2/* skip ulon and ulat*/;
+            off += (nx)*(ny+1)*nbytes*2/* skip vlon and vlat*/;
+            in.seekg(off, std::ios::cur); // skip from the current position of the cursor
+
             for (int j = 0; j < ny; j++)
-                in.read((char *)&SCUY_array[i][j], sizeof(value_type));
+                for (int i = 0; i < nx; i++)
+                    in.read((char *)&SCUY_array[i][j], sizeof(value_type));
 
-
-        for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&SCVX_array[i][j], sizeof(value_type));
+                for (int i = 0; i < nx; i++)
+                    in.read((char *)&SCVX_array[i][j], sizeof(value_type));
 
-
-        for (int i = 0; i < nx; i++)
             for (int j = 0; j < ny; j++)
-                in.read((char *)&SCP2_array[i][j], sizeof(value_type));
+                for (int i = 0; i < nx; i++)
+                    in.read((char *)&LANDMASK_array[i][j], sizeof(value_type));
+        }
+        else
+        {
+            std::cout<< "the grid binary file should be in column-major\n";
+            throw std::logic_error("the grid binary file should be in column-major");
+        }
 
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                in.read((char *)&SCP2I_array[i][j], sizeof(value_type));
-
-
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < ny; j++)
-                in.read((char *)&LANDMASK_array[i][j], sizeof(value_type));
+        std::cout<<"current pos= "<< in.tellg() <<"\n";
 
         in.close();
     }
     else
     {
-        std::cout << "Cannot open " << filein  << "\n";
-        std::cerr << "error: open file " << filein << " for input failed!" <<"\n";
+        std::cout << "Cannot open " << filename << "\n";
+        std::cerr << "error: open file " << filename << " for input failed!" <<"\n";
         std::abort();
     }
+
+
+    // polar stereographic projection
+    mapx_class *map;
+    filename = (boost::format("%1%/%2%") % path.string() % "NpsNextsim.mpp").str();
+    std::cout<<"stereographic description file= "<< filename <<"\n";
+
+    std::vector<char> _str(filename.begin(), filename.end());
+    _str.push_back('\0');
+
+    map = init_mapx(&_str[0]);
+
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            double x, y;
+            int status = forward_mapx(map,PLat_array[i][j],PLon_array[i][j],&x,&y);
+
+            X_array[i][j] = x;
+            Y_array[i][j] = y;
+        }
+    }
+
+    dx = X_array[1][0]-X_array[0][0];
+    dy = Y_array[0][1]-Y_array[0][0];
+
+    std::cout<<"dx= "<< dx <<"\n";
+    std::cout<<"dy= "<< dy <<"\n";
+
+#if 0
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            //std::cout<<"X_array["<< i <<"]["<< j <<"]= "<< X_array[i][j] <<"\n";
+            //std::cout<<"Y_array["<< i <<"]["<< j <<"]= "<< Y_array[i][j] <<"\n";
+
+            //std::cout<<"PLon_array["<< i <<"]["<< j <<"]= "<< PLon_array[i][j] <<"\n";
+            //std::cout<<"PLat_array["<< i <<"]["<< j <<"]= "<< PLat_array[i][j] <<"\n";
+
+            //std::cout<<"SCUY_array["<< i <<"]["<< j <<"]= "<< SCUY_array[i][j] <<"\n";
+            //std::cout<<"SCVX_array["<< i <<"]["<< j <<"]= "<< SCVX_array[i][j] <<"\n";
+            //std::cout<<"LANDMASK_array["<< i <<"]["<< j <<"]= "<< LANDMASK_array[i][j] <<"\n";
+        }
+    }
+#endif
+
+    close_mapx(map);
+
+    // SCP2_array = SCVX_array*SCUY_array;
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            SCP2_array[i][j] = SCVX_array[i][j]*SCUY_array[i][j];
+        }
+    }
+
+    // SCP2I_array = 1./(SCVX_array*SCUY_array);
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            SCP2I_array[i][j] = 1./(SCVX_array[i][j]*SCUY_array[i][j]);
+        }
+    }
+
+    std::cout<<"Reading grid done...\n";
 }
 
 template<typename T>
@@ -931,7 +1067,7 @@ void WimDiscr<T>::timeStep(bool step)
              }
           }
 
-          
+
           test_ij = (i==wim_itest) && (j==wim_jtest);
           if ( dumpDiag && test_ij )
           {
@@ -945,7 +1081,7 @@ void WimDiscr<T>::timeStep(bool step)
                 << dave[i][j] << " # D_av, m\n";
              diagID << std::setw(16) << std::left
                 << dfloe[ny*i+j] << " # D_max, m\n";
- 
+
              if (atten)
                diagID << "\n# period, s | atten_dim, m^{-1}| damp_dim, m^{-1}\n";
 
@@ -1304,13 +1440,13 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     int lcpt  = 0;//local counter
     if ((!docoupling) || (!step))
         cpt = 0;//global counter
-    
+
     std::cout << "-----------------------Simulation started on "<< current_time_local() <<"\n";
 
     //init_time_str is human readable time eg "2015-01-01 00:00:00"
     //init_time is "formal" time format eg "20150101T000000Z"
     std::string init_time = ptime(init_time_str);
-    
+
     value_type t_in  = cpt*dt;//model time of current call to wim
     std::string call_time = ptime(init_time_str,t_in);
     std::cout<<"---------------INITIAL TIME: "<< init_time <<"\n";
@@ -1359,7 +1495,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
         ++lcpt;//local counter incremented in wim.run()
         ++cpt;//global counter incremented in wim.run()
     }
-    
+
     if (vm["wim.checkfinal"].template as<bool>())
        exportResults("out",t_in+nt*dt);
 
@@ -1863,7 +1999,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
 
 
     //final output
-    std::cout<<"in WENO\n";
+    //std::cout<<"in WENO\n";
 #pragma omp parallel for num_threads(max_threads) collapse(2)
     for (int i = 0; i < nx; i++)
     {

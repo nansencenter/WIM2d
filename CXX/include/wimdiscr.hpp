@@ -31,10 +31,10 @@ extern "C"
 {
 #endif
 #include<RTparam_outer.h>
+#include <mapx.h>
 #ifdef __cplusplus
 }
 #endif
-
 
 #define PI M_PI
 
