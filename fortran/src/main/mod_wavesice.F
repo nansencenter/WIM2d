@@ -35,6 +35,12 @@
       real     :: amin,amax,dt
       
       logical  :: DUMP_DIAG
+
+      type break_info
+         real  :: conc,thick
+     &            ,mom0,mom2,var_strain
+     &            ,dmax,broken
+      end type
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -206,6 +212,7 @@
 
       implicit none
 
+      type(break_info)  :: brk_info
       integer,parameter :: n_wim_step_prams  = 7
       integer,dimension(n_wim_step_prams),intent(in) :: wim_step_prams  &
          !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
@@ -575,58 +582,22 @@
 
 
       !! FINALLY DO FLOE BREAKING (BRK_OPT>0);
-      P_crit0  = 0.
-      if (BRK_OPT.eq.0) then
-         P_crit0  = 1.!!added to P_crit: Pstrain<=1 so now ice will never break
-      end if
-
       do j=1,jj
       do i=1,ii
-         if ((ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
+         if ((BRK_OPT.gt.0)                                             &
+     &       .and.(ICE_MASK(i,j).eq.1.0).and.(mom0(i,j).ge.0.0)) then
             !! only try breaking if ice is present
             !!  & some waves have arrived;
-   
-            !! significant strain amp
-            sig_strain  = 2*sqrt(var_strain(i,j))
-   
-            !! probability of critical strain
-            !! being exceeded from Rayleigh distribution;
-            Pstrain  = exp( -wim_info%epsc**2/(2*var_strain(i,j)) )
-            P_crit   = P_crit0+exp(-1.0)
-               !!this is critical prob if monochromatic wave
-   
-            !! FLOE BREAKING:
-            BREAK_CRIT  = ( Pstrain.ge.P_crit ) !! breaks if larger than this
+            brk_info%conc        = icec(i,j)
+            brk_info%thick       = iceh(i,j)
+            brk_info%mom0        = mom0(i,j)
+            brk_info%mom2        = mom2(i,j)
+            brk_info%var_strain  = var_strain(i,j)
+            brk_info%dmax        = dfloe(i,j)
+            brk_info%broken      = 0.
 
-            !! Leave FSD alone if BRK_OPT==0
-            BREAK_CRIT  = BREAK_CRIT.and.(BRK_OPT.gt.0)
-   
-            if (BREAK_CRIT) then
-               !! use crest period to work out wavelength
-               !! - interpolate using pre-calc'd wavelengths
-               !! - half this is max poss floe length;
-               om    = 2*PI/Tp(i,j)
-               ommin = 2*PI*freq_vec(1)
-               ommax = 2*PI*freq_vec(nw)
-               if (om.le.ommin) then
-                  wlng_crest  = wlng_ice(i,j,1)
-               elseif (om.ge.ommax) then
-                  wlng_crest  = wlng_ice(i,j,nw)
-               else
-                  jcrest      = floor((om-ommin+dom)/dom)
-                  !print*,'crest lam',jcrest,nw
-                  om1         = 2*PI*freq_vec(jcrest)
-                  lam1        = wlng_ice(i,j,jcrest)
-                  lam2        = wlng_ice(i,j,jcrest+1)
-                  wlng_crest  = lam1+(om-om1)*(lam2-lam1)/dom
-               end if
-   
-               !!change dfloe if wavelength/2 is shorter than it
-               !!(keeping it bigger than Dmin)
-               Dc          = max(wim_info%Dmin,wlng_crest/2.0)
-               dfloe(i,j)  = min(Dc,dfloe(i,j))
-
-            end if!! end breaking action;
+            call do_breaking(brk_info)
+            dfloe(i,j)  = brk_info%dmax
    
          elseif (WTR_MASK(i,j).eq.1.0) then!! only water present
             dfloe(i,j)  = 0.0
@@ -636,12 +607,6 @@
          test_ij  = (i.eq.itest).and.(j.eq.jtest) 
          if (DUMP_DIAG.and.test_ij) then
             write(fid_diag,'(a)'),'Ice info: post-breaking'
-            write(fid_diag,'(e13.6,a)'),Pstrain
-     &      ,' # P_strain'
-            write(fid_diag,'(e13.6,a)'),P_crit
-     &      ,' # P_crit'
-            write(fid_diag,'(f10.5,a)'),wlng_crest
-     &      ,' # peak wavelength, m'
             write(fid_diag,'(f9.5,a)'),dfloe(i,j)
      &      ,' # D_max, m'
          end if
@@ -650,7 +615,8 @@
       end do!!end spatial loop i in x;
       close(fid_diag)
 
-      if (INTERP_MESH) then
+
+      if ((INTERP_MESH).and.(BRK_OPT>0)) then
          x_e      = mesh_e(:,1)
          y_e      = mesh_e(:,2)
          conc_e   = mesh_e(:,3)
@@ -671,36 +637,20 @@
          end where
 
          do i=1,nmesh_e
-            crit_e   = (conc_e(i).gt.0.)                    !ice present
-     &                 .and.(2*var_strain_e(i).gt.wim_info%epsc**2)  !big enough waves
-
-            if (crit_e) then
-               ! =============================================================
-               !calculate wavelength
-               !inputs
-               om    = sqrt(mom2_e(i)/mom0_e(i)) !omega=2*pi/T
-               guess = om**2/wim_info%gravity
-               
-               inputs(1)   = thick_e(i) !absolute thickness
-               inputs(2)   = om
-
-               ! rest of arguments are outputs, but only need kice
-               ! so use Tp_e,lam_e as dummy variables
-               call RTparam_outer(lam_e,kice,kwtr,int_adm,              &
-     &                  Tp_e,modT,argR,argT,                            &
-     &                  inputs,guess)
-               ! =============================================================
-
-               lam_e = 2*pi/kice
-               if (lam_e.lt.2*dmax_e(i)) then
-                  !breaking occurs
-                  dmax_e(i)   = max(wim_info%Dmin,lam_e/2.) !keep above Dmin
-                  broken_e(i) = 1.                 !this records ice has been broken this time
-                  !print*,i,broken_e(i)
-               end if
+            if (mom0_e(i).gt.0.) then
+               brk_info%conc        = conc_e(i)
+               brk_info%thick       = thick_e(i)
+               brk_info%mom0        = mom0_e(i)
+               brk_info%mom2        = mom2_e(i)
+               brk_info%var_strain  = var_strain_e(i)
+               brk_info%dmax        = dmax_e(i)
+               brk_info%broken      = broken_e(i)
+               call do_breaking(brk_info)
             end if
          end do
 
+         broken_e(i) = brk_info%broken
+         dmax_e(i)   = brk_info%dmax
          where (dmax_e.gt.0.)
             Nfloes_e   = conc_e/dmax_e**2
          end where
@@ -1148,6 +1098,48 @@
 !      close(999)
 
       end subroutine floe_scaling_smooth
+
+
+      subroutine do_breaking(brk_info)
+
+      implicit none
+
+      type(break_info),intent(inout)   :: brk_info
+      logical :: BREAK_CRIT
+      real    :: om,guess,inputs(2),lam,kice,kwtr,int_adm,              &
+     &            Tp,modT,argR,argT,pi
+
+      pi = 4*atan(1.)
+      BREAK_CRIT   = (brk_info%conc.gt.0.)                            !ice present
+     &               .and.(2*brk_info%var_strain.gt.wim_info%epsc**2) !big enough waves
+
+      if (BREAK_CRIT) then
+         ! =============================================================
+         !calculate wavelength
+         !inputs
+         om    = sqrt(brk_info%mom2/brk_info%mom0) !omega=2*pi/T
+         guess = om**2/wim_info%gravity
+         
+         inputs(1)   = brk_info%thick !absolute thickness
+         inputs(2)   = om
+
+         ! rest of arguments are outputs, but only need kice
+         ! so use Tp_e,lam_e as dummy variables
+         call RTparam_outer(lam,kice,kwtr,int_adm,                      &
+     &            Tp,modT,argR,argT,                                    &
+     &            inputs,guess)
+         ! =============================================================
+
+         lam = 2*pi/kice
+         if (lam.lt.2*brk_info%dmax) then
+            !breaking occurs
+            brk_info%dmax     = max(wim_info%Dmin,lam/2.) !keep above Dmin
+            brk_info%broken   = 1.                        !this records ice has been broken this time
+            !print*,i,broken_e(i)
+         end if
+      end if
+
+      end subroutine do_breaking
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wavesice
