@@ -35,6 +35,8 @@ else
    error('x,y wrong size');
 end
 
+fontsize = 20;
+
 H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
 set(H,'EdgeColor', 'none');
 
@@ -43,13 +45,14 @@ set(gca,'xlim',[xx(1),xx(end)],'ylim',[yy(1),yy(end)])
 if ~exist('labs','var')
    labs  = {'\itx, \rmkm','\ity, \rmkm',[]};
 end
-GEN_proc_fig(labs{1},labs{2});
-colorbar;
-GEN_font(gca);
+GEN_proc_fig(labs{1},labs{2},fontsize);
+cb = colorbar;
+GEN_font(gca,fontsize);
 
 if ~isempty(labs{3})
-   ttl   = title(labs{3});
-   GEN_font(ttl);
+   %ttl   = title(labs{3});
+   ttl   = ylabel(cb,labs{3},'rotation',90);
+   GEN_font(ttl,fontsize);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

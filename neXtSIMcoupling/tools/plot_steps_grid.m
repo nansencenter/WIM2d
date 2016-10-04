@@ -14,6 +14,7 @@ if ~exist('rootdir','var');
 end
 OVER_WRITE  = 0;
 DO_RM       = 1;%don't leave files in working folder after plotting
+file_format = 'png';%'tif';%'eps';%'png';
 
 outdir   = [rootdir,'/simul_out_steps_mat']
 figdir   = [rootdir,'/figs'];
@@ -63,6 +64,7 @@ jkeep    = 1:8;
 if 1
    %%shorten:
    jkeep = 1:4;
+   %jkeep = 1:2;
 end
 vbls  = vbls (jkeep);
 cmaps = cmaps(jkeep);
@@ -87,14 +89,14 @@ for n=0:N0
       m     = str2num(ss2{1});
 
       %% initial/final filenames
-      figname0 = [f0,num2str(m),'_',vbl,'.png'];
-      figname  = [vbl,'/',f0,num2str(m,fmt),'.png'];
+      figname0 = [f0,num2str(m),'_',vbl,'.',file_format];
+      figname  = [vbl,'/',f0,num2str(m,fmt),'.',file_format];
       fig_full = [figdir,'/',figname];
 
       if ~(exist(fig_full)&~OVER_WRITE)
          eval(['!cp ',saved_simul_out0,' ',saved_simul_out]);
          %%
-         plot_param_grid(vbl,saved_simul_out,domain,cmap,lim,[],'png');
+         plot_param_grid(vbl,saved_simul_out,domain,cmap,lim,[],file_format);
          eval(['!mkdir -p ',figdir,'/',vbl]);
          eval(['!mv ',figname0,' ',fig_full]);
          disp(['saved to ',fig_full]);

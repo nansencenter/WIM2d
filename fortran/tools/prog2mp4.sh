@@ -48,7 +48,7 @@ cd tmp
 # make movie
 fps=7 # frames per second
 mov=${vbl}.mp4
-echo ffmpeg -framerate $fps -i ${vbl}%06d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
+echo ffmpeg -framerate $fps -i ${vbl}%06d.png -c:v libx264 -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -pix_fmt yuv420p $mov
 
 #ffmpeg -framerate $fps -i ${vbl}%03d.png -c:v libx264 -r $fps -pix_fmt yuv420p $mov
 #ffmpeg -r 1/5 -i ${vbl}%03d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p $mov
