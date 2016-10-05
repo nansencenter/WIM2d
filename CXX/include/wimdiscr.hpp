@@ -70,7 +70,7 @@ public:
     {}
 
     void gridProcessing();
-    void readGridFromFile(std::string const& filein);
+    void readGridFromFile();
     void readDataFromFile(std::string const& filein);
     void exportResults(std::string const& output_type, value_type const& t_out) const;
     void saveLog(value_type const& t_out) const;
@@ -161,6 +161,7 @@ private:
     bool ref_Hs_ice, atten, useicevel, steady, breaking, dumpDiag;
     bool docoupling;
     std::string scatmod, advopt, fsdopt;
+    std::string wim_gridfile;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
 
     array2_type steady_mask, wave_mask, ice_mask, wtr_mask, icec, iceh,

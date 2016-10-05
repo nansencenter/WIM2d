@@ -29,7 +29,8 @@ namespace Wim
                   "Number of wave frequencies")
             ("wim.nwavedirn", po::value<int>()->default_value( 16 ),
                   "Number of wave directions")
-            ("wim.gridfilename", po::value<std::string>()->default_value( "wim_grid_full_ONR_Oct2015_2km_big.a" ),
+            //("wim.gridfilename", po::value<std::string>()->default_value( "wim_grid_full_ONR_Oct2015_2km_big.a" ),
+            ("wim.gridfilename", po::value<std::string>()->default_value( "" ),
                   "wim grid binary filename")
 
             //'int_prams' in fortran

@@ -14,166 +14,183 @@ namespace Wim
 template<typename T>
 void WimDiscr<T>::gridProcessing()
 {
-    this->readGridFromFile("");
+    // * sets the following arrays:
+    // X_array.resize(boost::extents[nx][ny]);
+    // Y_array.resize(boost::extents[nx][ny]);
+    // SCUY_array.resize(boost::extents[nx][ny]);
+    // SCVX_array.resize(boost::extents[nx][ny]);
+    // SCP2_array.resize(boost::extents[nx][ny]);
+    // SCP2I_array.resize(boost::extents[nx][ny]);
+    // LANDMASK_array.resize(boost::extents[nx][ny]);
+    // * if wim.gridfilename is given in the config file
+    // read it from file and apply the stereographic projection
+    // to get it in (x,y) coords
+    // * else set it manually
+    wim_gridfile    = vm["wim.gridfilename"].template as<std::string>();
+    if ( wim_gridfile != "" )
+    {
+        this->readGridFromFile();
+    }
+    else
+    {
+        X_array.resize(boost::extents[nx][ny]);
+        Y_array.resize(boost::extents[nx][ny]);
+        SCUY_array.resize(boost::extents[nx][ny]);
+        SCVX_array.resize(boost::extents[nx][ny]);
+        SCP2_array.resize(boost::extents[nx][ny]);
+        SCP2I_array.resize(boost::extents[nx][ny]);
+        LANDMASK_array.resize(boost::extents[nx][ny]);
 
-#if 0
-    X_array.resize(boost::extents[nx][ny]);
-    Y_array.resize(boost::extents[nx][ny]);
-    SCUY_array.resize(boost::extents[nx][ny]);
-    SCVX_array.resize(boost::extents[nx][ny]);
-    SCP2_array.resize(boost::extents[nx][ny]);
-    SCP2I_array.resize(boost::extents[nx][ny]);
-    LANDMASK_array.resize(boost::extents[nx][ny]);
+        dx = vm["wim.dx"].template as<double>();
+        dy = vm["wim.dy"].template as<double>();
 
-    dx = vm["wim.dx"].template as<double>();
-    dy = vm["wim.dy"].template as<double>();
+        x0 = vm["wim.xmin"].template as<double>();
+        y0 = vm["wim.ymin"].template as<double>();
 
-    x0 = vm["wim.xmin"].template as<double>();
-    y0 = vm["wim.ymin"].template as<double>();
+        // int thread_id;
+        // int total_threads;
+        int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+        // std::cout<<"MAX THREADS= "<< max_threads <<"\n";
 
-    // int thread_id;
-    // int total_threads;
-    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
-    // std::cout<<"MAX THREADS= "<< max_threads <<"\n";
-
-    std::cout<<"grid generation starts\n";
-    chrono.restart();
+        std::cout<<"grid generation starts\n";
+        chrono.restart();
 
 #pragma omp parallel for num_threads(max_threads) collapse(2)
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
+        for (int i = 0; i < nx; i++)
         {
-            X_array[i][j] = x0 + i*dx+.5*dx;
-            Y_array[i][j] = y0 + j*dy+.5*dy;
-            SCUY_array[i][j] = dy;
-            SCVX_array[i][j] = dx;
-            SCP2_array[i][j] = dx*dy;
-            SCP2I_array[i][j] = 1./(dx*dy);
-
-            //add land on 3 edges (upper,lower,RH)
-            if (vm["wim.landon3edges"].template as<bool>())
+            for (int j = 0; j < ny; j++)
             {
-               if (i==nx-1)
-               {
-                   LANDMASK_array[i][j] = 1.;
-               }
+                X_array[i][j] = x0 + i*dx+.5*dx;
+                Y_array[i][j] = y0 + j*dy+.5*dy;
+                SCUY_array[i][j] = dy;
+                SCVX_array[i][j] = dx;
+                SCP2_array[i][j] = dx*dy;
+                SCP2I_array[i][j] = 1./(dx*dy);
 
-               if ((j==0) || (j==ny-1))
-               {
-                   LANDMASK_array[i][j] = 1.;
-               }
+                //add land on 3 edges (upper,lower,RH)
+                if (vm["wim.landon3edges"].template as<bool>())
+                {
+                   if (i==nx-1)
+                   {
+                       LANDMASK_array[i][j] = 1.;
+                   }
+
+                   if ((j==0) || (j==ny-1))
+                   {
+                       LANDMASK_array[i][j] = 1.;
+                   }
+                }
+
+            }
+        }
+
+        bool critter = (vm["wim.checkprog"].template as<bool>())
+                   || (vm["nextwim.exportresults"].template as<bool>());
+        if (critter)
+        {
+           //save grid to binary
+            std::string str = vm["wim.outparentdir"].template as<std::string>();
+
+            //char * senv = ::getenv( "WIM2D_PATH" );
+            //if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
+            //{
+            //    str = std::string( senv ) + "/CXX";
+            //}
+
+            fs::path path(str);
+            path /= "binaries";
+
+            if ( !fs::exists(path) )
+                fs::create_directories(path);
+
+
+            std::string fileout = (boost::format( "%1%/wim_grid.a" ) % path.string()).str();
+            std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
+
+            if (out.is_open())
+            {
+                for (int i = 0; i < X_array.shape()[0]; i++)
+                    for (int j = 0; j < X_array.shape()[1]; j++)
+                        out.write((char *)&X_array[i][j], sizeof(value_type));
+
+                for (int i = 0; i < Y_array.shape()[0]; i++)
+                    for (int j = 0; j < Y_array.shape()[1]; j++)
+                        out.write((char *)&Y_array[i][j], sizeof(value_type));
+
+                for (int i = 0; i < SCUY_array.shape()[0]; i++)
+                    for (int j = 0; j < SCUY_array.shape()[1]; j++)
+                        out.write((char *)&SCUY_array[i][j], sizeof(value_type));
+
+                for (int i = 0; i < SCVX_array.shape()[0]; i++)
+                    for (int j = 0; j < SCVX_array.shape()[1]; j++)
+                        out.write((char *)&SCVX_array[i][j], sizeof(value_type));
+
+                for (int i = 0; i < SCP2_array.shape()[0]; i++)
+                    for (int j = 0; j < SCP2_array.shape()[1]; j++)
+                        out.write((char *)&SCP2_array[i][j], sizeof(value_type));
+
+                for (int i = 0; i < SCP2I_array.shape()[0]; i++)
+                    for (int j = 0; j < SCP2I_array.shape()[1]; j++)
+                        out.write((char *)&SCP2I_array[i][j], sizeof(value_type));
+
+                for (int i = 0; i < LANDMASK_array.shape()[0]; i++)
+                    for (int j = 0; j < LANDMASK_array.shape()[1]; j++)
+                        out.write((char *)&LANDMASK_array[i][j], sizeof(value_type));
+
+                out.close();
+            }
+            else
+            {
+                std::cout << "Cannot open " << fileout  << "\n";
+                std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
+                std::abort();
             }
 
+
+
+            // export the txt file for grid field information
+            std::string fileoutb = (boost::format( "%1%/wim_grid.b" ) % path.string()).str();
+            std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
+
+            std::string nxstr = std::string(4-std::to_string(nx).length(),'0') + std::to_string(nx);
+            std::string nystr = std::string(4-std::to_string(ny).length(),'0') + std::to_string(ny);
+
+            // std::cout<<"-----------nx= "<< nxstr <<"\n";
+            // std::cout<<"-----------ny= "<< nystr <<"\n";
+
+            if (outb.is_open())
+            {
+                outb << std::setw(15) << std::left << "07"  << "    Nrecs    # "<< "Number of records" <<"\n";
+                outb << std::setw(15) << std::left << "0"   << "    Norder   # "<< "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
+                outb << std::setw(15) << std::left << nxstr << "    nx       # "<< "Record length in x direction (elements)" <<"\n";
+                outb << std::setw(15) << std::left << nystr << "    ny       # "<< "Record length in y direction (elements)" <<"\n";
+
+                outb <<"\n";
+
+                outb << "Record number and name:" <<"\n";
+                outb << std::setw(9) << std::left << "01" << "X" <<"\n";
+                outb << std::setw(9) << std::left << "02" << "Y" <<"\n";
+                outb << std::setw(9) << std::left << "03" << "scuy" <<"\n";
+                outb << std::setw(9) << std::left << "04" << "scvx" <<"\n";
+                outb << std::setw(9) << std::left << "05" << "scp2" <<"\n";
+                outb << std::setw(9) << std::left << "06" << "scp2i" <<"\n";
+                outb << std::setw(9) << std::left << "07" << "LANDMASK" <<"\n";
+            }
+            else
+            {
+                std::cout << "Cannot open " << fileoutb  << "\n";
+                std::cerr << "error: open file " << fileoutb << " for output failed!" <<"\n";
+                std::abort();
+            }
         }
+
+        std::cout<<"grid generation done in "<< chrono.elapsed() <<"s\n";
     }
-
-    bool critter = (vm["wim.checkprog"].template as<bool>())
-               || (vm["nextwim.exportresults"].template as<bool>());
-    if (critter)
-    {
-       //save grid to binary
-        std::string str = vm["wim.outparentdir"].template as<std::string>();
-
-        //char * senv = ::getenv( "WIM2D_PATH" );
-        //if ( (str == ".") && (senv != NULL) && (senv[0] != '\0') )
-        //{
-        //    str = std::string( senv ) + "/CXX";
-        //}
-
-        fs::path path(str);
-        path /= "binaries";
-
-        if ( !fs::exists(path) )
-            fs::create_directories(path);
-
-
-        std::string fileout = (boost::format( "%1%/wim_grid.a" ) % path.string()).str();
-        std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
-
-        if (out.is_open())
-        {
-            for (int i = 0; i < X_array.shape()[0]; i++)
-                for (int j = 0; j < X_array.shape()[1]; j++)
-                    out.write((char *)&X_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < Y_array.shape()[0]; i++)
-                for (int j = 0; j < Y_array.shape()[1]; j++)
-                    out.write((char *)&Y_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < SCUY_array.shape()[0]; i++)
-                for (int j = 0; j < SCUY_array.shape()[1]; j++)
-                    out.write((char *)&SCUY_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < SCVX_array.shape()[0]; i++)
-                for (int j = 0; j < SCVX_array.shape()[1]; j++)
-                    out.write((char *)&SCVX_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < SCP2_array.shape()[0]; i++)
-                for (int j = 0; j < SCP2_array.shape()[1]; j++)
-                    out.write((char *)&SCP2_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < SCP2I_array.shape()[0]; i++)
-                for (int j = 0; j < SCP2I_array.shape()[1]; j++)
-                    out.write((char *)&SCP2I_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < LANDMASK_array.shape()[0]; i++)
-                for (int j = 0; j < LANDMASK_array.shape()[1]; j++)
-                    out.write((char *)&LANDMASK_array[i][j], sizeof(value_type));
-
-            out.close();
-        }
-        else
-        {
-            std::cout << "Cannot open " << fileout  << "\n";
-            std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
-            std::abort();
-        }
-
-
-
-        // export the txt file for grid field information
-        std::string fileoutb = (boost::format( "%1%/wim_grid.b" ) % path.string()).str();
-        std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
-
-        std::string nxstr = std::string(4-std::to_string(nx).length(),'0') + std::to_string(nx);
-        std::string nystr = std::string(4-std::to_string(ny).length(),'0') + std::to_string(ny);
-
-        // std::cout<<"-----------nx= "<< nxstr <<"\n";
-        // std::cout<<"-----------ny= "<< nystr <<"\n";
-
-        if (outb.is_open())
-        {
-            outb << std::setw(15) << std::left << "07"  << "    Nrecs    # "<< "Number of records" <<"\n";
-            outb << std::setw(15) << std::left << "0"   << "    Norder   # "<< "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
-            outb << std::setw(15) << std::left << nxstr << "    nx       # "<< "Record length in x direction (elements)" <<"\n";
-            outb << std::setw(15) << std::left << nystr << "    ny       # "<< "Record length in y direction (elements)" <<"\n";
-
-            outb <<"\n";
-
-            outb << "Record number and name:" <<"\n";
-            outb << std::setw(9) << std::left << "01" << "X" <<"\n";
-            outb << std::setw(9) << std::left << "02" << "Y" <<"\n";
-            outb << std::setw(9) << std::left << "03" << "scuy" <<"\n";
-            outb << std::setw(9) << std::left << "04" << "scvx" <<"\n";
-            outb << std::setw(9) << std::left << "05" << "scp2" <<"\n";
-            outb << std::setw(9) << std::left << "06" << "scp2i" <<"\n";
-            outb << std::setw(9) << std::left << "07" << "LANDMASK" <<"\n";
-        }
-        else
-        {
-            std::cout << "Cannot open " << fileoutb  << "\n";
-            std::cerr << "error: open file " << fileoutb << " for output failed!" <<"\n";
-            std::abort();
-        }
-    }
-
-    std::cout<<"grid generation done in "<< chrono.elapsed() <<"s\n";
-#endif
 }
 
 template<typename T>
-void WimDiscr<T>::readGridFromFile(std::string const& filein)
+void WimDiscr<T>::readGridFromFile()
+//void WimDiscr<T>::readGridFromFile(std::string const& filein)
 {
     std::cout<<"Reading grid starts...\n";
 
@@ -188,19 +205,20 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     std::string str = std::string(senv);
     fs::path path(str);
 
-    str = vm["wim.gridfilename"].template as<std::string>();
+    //str = vm["wim.gridfilename"].template as<std::string>();
+    str = wim_gridfile;
     std::size_t found = str.find(".");
     if (found != std::string::npos)
     {
         str.erase(std::next( str.begin(), found), str.end());
         std::cout<<"binary filename for wim grid= "<< str <<"\n";
     }
-    str += ".b";
+    //str += ".b";
+    std::string afilename = (boost::format("%1%/%2%.a") % path.string() % str).str();
+    std::string bfilename = (boost::format("%1%/%2%.b") % path.string() % str).str();
 
-    std::string filename = (boost::format("%1%/%2%") % path.string() % str).str();
-    std::ifstream brecord ( filename.c_str(), std::ios::in );
+    std::ifstream brecord ( bfilename.c_str(), std::ios::in );
     std::vector<int> record(5);
-
     if (brecord.is_open())
     {
         for (int i=0; i<record.size(); ++i)
@@ -211,8 +229,8 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     }
     else
     {
-        std::cout << "Cannot open " << filename  << "\n";
-        std::cerr << "error: open file " << filename << " for input failed!" <<"\n";
+        std::cout << "Cannot open " << bfilename  << "\n";
+        std::cerr << "error: open file " << bfilename << " for input failed!" <<"\n";
         std::abort();
     }
 
@@ -234,11 +252,11 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     SCP2I_array.resize(boost::extents[nx][ny]);
     LANDMASK_array.resize(boost::extents[nx][ny]);
 
-    filename = (boost::format("%1%/%2%")
-                % path.string()
-                % vm["wim.gridfilename"].template as<std::string>()).str();
+    //filename = (boost::format("%1%/%2%")
+    //            % path.string()
+    //            % vm["wim.gridfilename"].template as<std::string>()).str();
 
-    std::fstream in( filename, std::ios::binary | std::ios::in);
+    std::fstream in( afilename, std::ios::binary | std::ios::in);
 
     if (in.is_open())
     {
@@ -292,15 +310,15 @@ void WimDiscr<T>::readGridFromFile(std::string const& filein)
     }
     else
     {
-        std::cout << "Cannot open " << filename << "\n";
-        std::cerr << "error: open file " << filename << " for input failed!" <<"\n";
+        std::cout << "Cannot open " << afilename << "\n";
+        std::cerr << "error: open file " << afilename << " for input failed!" <<"\n";
         std::abort();
     }
 
 
     // polar stereographic projection
     mapx_class *map;
-    filename = (boost::format("%1%/%2%") % path.string() % "NpsNextsim.mpp").str();
+    std::string filename = (boost::format("%1%/%2%") % path.string() % "NpsNextsim.mpp").str();
     std::cout<<"stereographic description file= "<< filename <<"\n";
 
     std::vector<char> _str(filename.begin(), filename.end());
