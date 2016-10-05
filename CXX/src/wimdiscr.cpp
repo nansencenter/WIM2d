@@ -29,10 +29,13 @@ void WimDiscr<T>::gridProcessing()
     wim_gridfile    = vm["wim.gridfilename"].template as<std::string>();
     if ( wim_gridfile != "" )
     {
+        std::cout<<"Getting WIM grid from file: "<<wim_gridfile<<"\n";
         this->readGridFromFile();
     }
     else
     {
+        std::cout<<"Generating WIM grid manually...\n";
+
         X_array.resize(boost::extents[nx][ny]);
         Y_array.resize(boost::extents[nx][ny]);
         SCUY_array.resize(boost::extents[nx][ny]);
@@ -193,7 +196,6 @@ void WimDiscr<T>::gridProcessing()
 
 template<typename T>
 void WimDiscr<T>::readGridFromFile()
-//void WimDiscr<T>::readGridFromFile(std::string const& filein)
 {
     std::cout<<"Reading grid starts...\n";
 
