@@ -137,6 +137,8 @@ public:
     array2_type getSCP2I() const { return SCP2I_array; }
     array2_type getLANDMASK() const { return LANDMASK_array; }
 
+    std::string getWimGridFilename() const { return wim_gridfile; }
+
     std::vector<value_type> getTaux() const { return tau_x; }
     std::vector<value_type> getTauy() const { return tau_y; }
     std::vector<value_type> getNFloes() const { return nfloes; }
