@@ -1817,8 +1817,17 @@ if TEST_FINAL_SPEC==1
 end
 
 if params_in.PLOT_FINAL%%check exponential attenuation
-   set(0,'currentfigure',h3); %figure(h3),
+   if ~exist('h3','var')
+      if ~params_in.DO_VIS
+       h3 = figure('visible','off','name','final');
+      else
+       h3 = figure(3); clf; fn_fullscreen;
+      end
+   else
+      set(0,'currentfigure',h3); %figure(h3),
+   end
    clf;
+
    if PLOT_OPT==1
       s1 = struct('dir',wave_stuff.dirs(jdir),...
                   'period',Tc,...
@@ -2190,17 +2199,161 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
-%%           MEX_OPT: 1
-%%            DODISP: 2
-%%        params_vec: [28x1 double]
-%%          - order of parameters same as in fortran/infiles/infile_nonIO.txt
-%%          - also see read_params_vec subroutine in fortran/src/main/mod_WIM2d_run.F
+%% OUTPUT:
+%% params_mex = 
+%%            SCATMOD: 3
+%%            ADV_DIM: 2
+%%            ADV_OPT: 2
+%%      DO_CHECK_INIT: 1
+%%      DO_CHECK_PROG: 1
+%%     DO_CHECK_FINAL: 1
+%%             STEADY: 1
+%%            BRK_OPT: 1
+%%           DO_ATTEN: 1
+%%              young: 5.490000000000000e+09
+%%            drag_rp: 13
+%%            visc_ws: 0
+%%           duration: 21600
+%%                CFL: 0.700000000000000
+%%            FSD_OPT: 1
+%%         REF_Hs_ICE: 0
+%%        USE_ICE_VEL: 0
+%%            Hs_init: 3
+%%             T_init: 12
+%%           dir_init: -90
+%%          conc_init: 0.700000000000000
+%%             h_init: 1
+%%          Dmax_init: 300
+%%          model_day: 42003
+%%      model_seconds: 0
+%%              itest: 25
+%%              jtest: 5
+%%           dumpfreq: 10
+%%            MEX_OPT: 1
+%%            DO_DISP: 1
+%% - for content see:
+%%   - fortran/infiles/infile_nonIO.txt
+%%   - read_params_vec subroutine in fortran/src/main/mod_WIM2d_run.F
+%%
+%% INPUTS:
+%% 
+%% params = 
+%%               MEX_OPT: 1
+%%                   CFL: 0.700000000000000
+%%                    nw: 1
+%%                  ndir: 16
+%%                  Tmin: 2.500000000000000
+%%                  Tmax: 25
+%%                    x0: 2000
+%%                    y0: 2000
+%%                    nx: 150
+%%                    ny: 10
+%%                    dx: 4000
+%%                    dy: 4000
+%%       DIRSPEC_INC_OPT: 1
+%%               Hs_init: 3
+%%                T_init: 12
+%%              dir_init: -90
+%%             conc_init: 0.700000000000000
+%%                h_init: 1
+%%             Dmax_init: 300
+%%                   OPT: 1
+%%           USE_ICE_VEL: 0
+%%             CHK_ATTEN: 0
+%%            REF_Hs_ICE: 0
+%%               SCATMOD: 3
+%%               ADV_DIM: 2
+%%               ADV_OPT: 2
+%%        DO_CHECK_FINAL: 1
+%%         DO_CHECK_PROG: 1
+%%         DO_CHECK_INIT: 1
+%%                STEADY: 1
+%%               BRK_OPT: 1
+%%              DO_ATTEN: 1
+%%               FSD_OPT: 1
+%%                 young: 5.490000000000000e+09
+%%               drag_rp: 13
+%%               visc_ws: 0
+%%        duration_hours: 6
+%%             PLOT_INIT: 0
+%%             PLOT_PROG: 0
+%%            PLOT_FINAL: 0
+%%                DIAG1d: 0
+%%            DIAG1d_OPT: 0
+%%                SV_LOG: 1
+%%               SV_SPEC: 0
+%%                SV_FIG: 0
+%%               DO_DISP: 1
+%%                DO_VIS: 1
+%%        check_symmetry: 1
+%%     check_E_partition: 1
+%%            start_year: 2015
+%%           start_month: 1
+%%             start_day: 1
+%%            start_hour: 0
+%%          start_minute: 0
+%%          start_second: 0
+%%                 itest: 25
+%%                 jtest: 5
+%%              dumpfreq: 10
+%%                outdir: 'out_io_1'
+%% 
+%% duration =
+%%        21600 %time in seconds
+%% 
+%% 
+%% ice_prams = 
+%%              young: 5.490000000000000e+09
+%%          young_opt: NaN
+%%            drag_rp: 13
+%%            visc_ws: 0
+%%            BRK_OPT: 1
+%%             rhowtr: 1025
+%%             rhoice: 9.225000000000000e+02
+%%                  g: 9.810000000000000
+%%            poisson: 0.300000000000000
+%%                vbf: 0.100000000000000
+%%                 vb: 100
+%%            sigma_c: 2.741429878818372e+05
+%%           strain_c: 4.993497047028000e-05
+%%           stress_c: 3.012560306393816e+05
+%%     flex_rig_coeff: 5.027472527472527e+08
+%%               Dmin: 20
+%%                 xi: 2
+%%          fragility: 0.900000000000000
+%% 
+%% year_info (only need model_day, model_seconds)
+%%
+%% year_info = 
+%%          model_day: 42003
+%%      model_seconds: 0
+%%              iyear: 2015
+%%             imonth: 1
+%%               iday: 1
+%%              ihour: 0
+%%            iminute: 0
+%%            isecond: 0
+%%              cyear: '2015'
+%%             cmonth: '01'
+%%               cday: '01'
+%%              cdate: '20150101'
+%%              chour: '00'
+%%            cminute: '00'
+%%            csecond: '00'
+%%              ctime: '00:00:00'
+%%        date_string: '20150101T000000Z'
+%%         month_name: 'JAN'
+%%       days_in_year: 365
+%%     days_in_months: [31 28 31 30 31 30 31 31 30 31 30 31]
 
-i  = 0;
+fields   = {};
+structs  = {};
 
 %% ================================================
-%% set int_prams
-fields   = {...
+%% old int_prams (in params):
+n  = 9;
+structs(end+1:end+n) = {'params'};
+fields(end+1:end+n)  = {...
             'SCATMOD',...
             'ADV_DIM',...
             'ADV_OPT',...
@@ -2209,34 +2362,70 @@ fields   = {...
             'DO_CHECK_FINAL',...
             'STEADY',...
             'BRK_OPT',...
-            'DO_ATTEN',...
-            };
-            
-Ni = length(fields);
-for j=1:Ni
-   i     = i+1;
-   fld   = fields{j};
-   %params_mex.int_prams(j) = params.(fld);
-   params_vec(i)  = params.(fld);
+            'DO_ATTEN'};
+
+%% old real_prams (mostly in ice_prams):
+n  = 5;
+ice_prams.duration   = duration;
+ice_prams.CFL        = params.CFL;
+structs(end+1:end+n) = {'ice_prams'};
+fields(end+1:end+n)  = {...
+            'young',...
+            'drag_rp',...
+            'visc_ws',...
+            'duration',...
+            'CFL'};
+
+
+%% other integer parameters (in params):
+n  = 3;
+structs(end+1:end+n) = {'params'};
+fields(end+1:end+n)  = {...
+            'FSD_OPT',...
+            'REF_Hs_ICE',...
+            'USE_ICE_VEL'};
+
+
+%% initial conditions (in params):
+n  = 6;
+structs(end+1:end+n) = {'params'};
+fields(end+1:end+n)  = {...
+            'Hs_init',...
+            'T_init',...
+            'dir_init',...
+            'conc_init',...
+            'h_init',...
+            'Dmax_init'};
+
+
+%% start time (in year_info):
+n  = 2;
+structs(end+1:end+n) = {'year_info'};
+fields(end+1:end+n)  = {...
+            'model_day',... % day relative to 1900-1-1
+            'model_seconds'};
+
+
+%% diagnostics (in params):
+n  = 3;
+structs(end+1:end+n) = {'params'};
+fields(end+1:end+n)  = {...
+            'itest',...
+            'jtest',...
+            'dumpfreq'};
+
+
+for j=1:length(fields);
+   cmd   = ['params_mex.',fields{j},' = ',structs{j},'.',fields{j},';'];
+   %disp(cmd);
+   eval(cmd);
 end
 %% ================================================
 
-%% ================================================
-%% set real_prams
-i  = i+1;
-% params_mex.real_prams   = [ice_prams.young,...
-params_vec(i:i+4) = [ice_prams.young,...
-                     ice_prams.drag_rp,...
-                     ice_prams.visc_ws,...
-                     duration,...
-                     params.CFL];
-i  = i+4;
-%% ================================================
-   
 
 %% ===============================================
-%% not in params_vec
-%% - can be set in automatically
+%% final output
+%% - add some more fields from params to params_mex
 fields   = {...
             'MEX_OPT',...
             'DO_DISP',...
@@ -2249,60 +2438,9 @@ end
 %% ===============================================
 
 
-%% ===============================================
-%% other integer parameters
-fields   = {'FSD_OPT',...
-            'REF_Hs_ICE',...
-            'USE_ICE_VEL'};
-for j=1:length(fields)
-   i              = i+1;
-   params_vec(i)  = params.(fields{j});
-end
-%% ===============================================
-
-
-%% ===============================================
-%% initial conditions
-fields   = {'Hs_init',...
-            'T_init',...
-            'dir_init',...
-            'conc_init',...
-            'h_init',...
-            'Dmax_init'};
-for j=1:length(fields)
-   i              = i+1;
-   params_vec(i)  = params.(fields{j});
-end
-%% ===============================================
-
-
-%% ===============================================
-%% start time
-fields   = {'model_day',...
-            'model_seconds'};
-for j=1:length(fields)
-   i              = i+1;
-   params_vec(i)  = year_info.(fields{j});
-end
-%% ===============================================
-
-
-%% ===============================================
-%% diagnostics
-fields   = {'itest',...
-            'jtest',...
-            'dumpfreq'};
-for j=1:length(fields)
-   i              = i+1;
-   params_vec(i)  = params.(fields{j});
-end
-%% ===============================================
-
-params_mex.params_vec   = params_vec';
 if params.DO_DISP
-   ice_prams
    params_mex
-   params_mex.params_vec
    %pause;
 end
+
 return;

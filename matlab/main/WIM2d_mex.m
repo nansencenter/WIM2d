@@ -78,6 +78,7 @@ if ~exist('wave_stuff','var')
    wave_stuff  = [];
 end
 
+params_vec  = get_param_vec(params_in);
 if params_in.MEX_OPT==1
 
    if params_in.DO_DISP; disp(' ');
@@ -103,7 +104,7 @@ if params_in.MEX_OPT==1
 
    %% make the call!
    tic;
-   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),params_in.params_vec);
+   out_arrays  = WIM2d_run_io_mex_v2(in_arrays(:),params_vec);
    toc;
 
    %% extract outputs
@@ -144,7 +145,7 @@ elseif params_in.MEX_OPT==2
    shp   = size(wave_stuff.dir_spec);
    [wave_stuff.dir_spec,out_arrays] =...
       WIM2d_run_io_mex_vSdir(...
-         wave_stuff.dir_spec(:),in_arrays(:),params_in.params_vec);
+         wave_stuff.dir_spec(:),in_arrays(:),params_vec);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
@@ -232,7 +233,7 @@ elseif params_in.MEX_OPT==3
    [wave_stuff.dir_spec,out_arrays,mesh_arr] =...
       WIM2d_run_io_mex_vSdir_mesh(...
          wave_stuff.dir_spec(:),in_arrays(:),mesh_arr(:),...
-         params_in.params_vec,nmesh_e);
+         params_vec,nmesh_e);
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
@@ -271,6 +272,7 @@ elseif params_in.MEX_OPT==3
       plot(xm0/1e3,Dmax_mesh);
       hold on;
       plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
+      legend('mesh','grid')
       fn_fullscreen;
 
       if gridprams.ny>1
@@ -280,6 +282,7 @@ elseif params_in.MEX_OPT==3
          caxis([0 300]);
       end
 
+      %broken   = mesh_arr(:,6)
       error('Finished test of mesh interpolation');
    end
 
@@ -297,10 +300,136 @@ elseif params_in.MEX_OPT==3
 
    return;%%MEX_OPT==3
 end%%choose mex function
+return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function y=avg(x)
 y=.5*(x(1:end-1)+x(2:end));
+return
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function params_vec = get_param_vec(params_mex)
+%% 
+%% INPUT:
+%% params_mex = 
+%%            SCATMOD: 3
+%%            ADV_DIM: 2
+%%            ADV_OPT: 2
+%%      DO_CHECK_INIT: 1
+%%      DO_CHECK_PROG: 1
+%%     DO_CHECK_FINAL: 1
+%%             STEADY: 1
+%%            BRK_OPT: 1
+%%           DO_ATTEN: 1
+%%              young: 5.490000000000000e+09
+%%            drag_rp: 13
+%%            visc_ws: 0
+%%           duration: 21600
+%%                CFL: 0.700000000000000
+%%            FSD_OPT: 1
+%%         REF_Hs_ICE: 0
+%%        USE_ICE_VEL: 0
+%%            Hs_init: 3
+%%             T_init: 12
+%%           dir_init: -90
+%%          conc_init: 0.700000000000000
+%%             h_init: 1
+%%          Dmax_init: 300
+%%          model_day: 42003
+%%      model_seconds: 0
+%%              itest: 25
+%%              jtest: 5
+%%           dumpfreq: 10
+%%            MEX_OPT: 1
+%%            DO_DISP: 1
+%%
+%% OUTPUT:
+%% vector with some of these fields
+%% - for ordering see:
+%%   - fortran/infiles/infile_nonIO.txt
+%%   - read_params_vec subroutine in fortran/src/main/mod_WIM2d_run.F
+
+%% ================================================
+%% old int_prams:
+fields   = {};
+n        = 9;
+fields(end+1:end+n)  = {...
+            'SCATMOD',...
+            'ADV_DIM',...
+            'ADV_OPT',...
+            'DO_CHECK_INIT',...
+            'DO_CHECK_PROG',...
+            'DO_CHECK_FINAL',...
+            'STEADY',...
+            'BRK_OPT',...
+            'DO_ATTEN'};
+%% ================================================
+
+
+%% ================================================
+%% old real_prams:
+n  = 5;
+fields(end+1:end+n)  = {...
+            'young',...
+            'drag_rp',...
+            'visc_ws',...
+            'duration',...
+            'CFL'};
+%% ================================================
+
+
+%% ================================================
+%% other integer parameters (in params):
+n  = 3;
+fields(end+1:end+n)  = {...
+            'FSD_OPT',...
+            'REF_Hs_ICE',...
+            'USE_ICE_VEL'};
+%% ================================================
+
+
+%% ================================================
+%% initial conditions (in params):
+n  = 6;
+fields(end+1:end+n)  = {...
+            'Hs_init',...
+            'T_init',...
+            'dir_init',...
+            'conc_init',...
+            'h_init',...
+            'Dmax_init'};
+%% ================================================
+
+
+%% ================================================
+%% start time (in year_info):
+n  = 2;
+fields(end+1:end+n)  = {...
+            'model_day',... % day relative to 1900-1-1
+            'model_seconds'};
+%% ================================================
+
+
+%% ================================================
+%% diagnostics (in params):
+n  = 3;
+fields(end+1:end+n)  = {...
+            'itest',...
+            'jtest',...
+            'dumpfreq'};
+%% ================================================
+
+Ni = length(fields);
+params_vec   = zeros(Ni,1);
+for j=1:Ni
+   cmd   = ['params_vec(',num2str(j),') = params_mex.',fields{j},';'];
+   %disp(cmd);
+   eval(cmd);
+end
+
+return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

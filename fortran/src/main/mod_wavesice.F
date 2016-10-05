@@ -645,12 +645,14 @@
                brk_info%var_strain  = var_strain_e(i)
                brk_info%dmax        = dmax_e(i)
                brk_info%broken      = broken_e(i)
+
                call do_breaking(brk_info)
+               
+               broken_e(i) = brk_info%broken
+               dmax_e(i)   = brk_info%dmax
             end if
          end do
 
-         broken_e(i) = brk_info%broken
-         dmax_e(i)   = brk_info%dmax
          where (dmax_e.gt.0.)
             Nfloes_e   = conc_e/dmax_e**2
          end where
