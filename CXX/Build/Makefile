@@ -32,7 +32,7 @@ CXX = g++
 CXXFLAGS += -std=c++11 -pedantic -ftemplate-depth-256 -Wno-inline -fPIC -O3 -pthread -v
 CXXFLAGS += -fPIC -O3 -pthread -fopenmp -pedantic  -v # -MMD -MP -lm #-Wall
 CXXFLAGS += -I . -I $(BOOST_DIR)/include -I $(OPENMPI_INCLUDE_DIR)/ -I $(WIM2D_CXX)/include
-CXXFLAGS += -I $(NEXTSIMDIR)/contrib/mapx/include
+CXXFLAGS += -I $(NEXTSIMDIR)/contrib/mapx/include -I $(NEXTSIMDIR)/contrib/bamg/include
 # ========================================================
 
 
@@ -55,7 +55,7 @@ LDFLAGS += -Wl,-rpath,$(OPENMPI_LIB_DIR)/
 LDFLAGS += -L $(OPENMPI_LIB_DIR)/ -lmpi_cxx -lmpi -ldl -lstdc++ -lpthread
 LDFLAGS += -Wl,-rpath,$(BOOST_DIR)/lib
 LDFLAGS += -L $(BOOST_DIR)/lib -lboost_program_options -lboost_filesystem -lboost_system -lboost_mpi -lboost_date_time
-LDFLAGS += -L $(NEXTSIMDIR)/lib -lmapx
+LDFLAGS += -L $(NEXTSIMDIR)/lib -lmapx -lbamg
 # ========================================================
 
 
