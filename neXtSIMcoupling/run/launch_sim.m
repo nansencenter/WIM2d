@@ -77,6 +77,7 @@ if 1
       simul_in.wim.coupling_option  = 2;
       simul_in.wim.test_and_exit    = test_and_exit;
       simul_in.wim.coupling_freq    = 20*simul_in.timestep;
+      simul_in.wim.apply_stress     = 1;
       %simul_in.wim.coupling_freq    = 500*simul_in.timestep; %%long enough to get breaking in 1 call
 
       if strfind(simul_in.domain,'wim_grid')
@@ -85,10 +86,11 @@ if 1
          simul_in.wim.init_waves = 0;
       end
 
-      simul_in.wim.init.Hs          = 4;
-      simul_in.wim.init.Tp          = 12;
-      simul_in.wim.init.mwd         = -90;
-      simul_in.wim.int_prams.STEADY = 1;
+      simul_in.wim.init.Hs     = 4;
+      simul_in.wim.init.Tp     = 12;
+      simul_in.wim.init.mwd    = -90;
+      simul_in.wim.init.STEADY = 1;
+      simul_in.wim.init.Dmax   = 200;
 
       if simul_in.wim.MEX_OPT == 0
          simul_in.wim.single_freq   = 1;
@@ -113,6 +115,8 @@ if 1
          end
       end
    end
+
+   simul_in = check_simul_in_wim(simul_in);%% set dependant parameters (params_mex)
    save(saved_simul_in,'simul_in');
    clear simul_in;
 end

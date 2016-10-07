@@ -62,7 +62,7 @@ function [out_fields,wave_stuff,mesh_e] =...
 %%         xe: [760x1 double]
 %%         ye: [760x1 double]
 %%          c: [760x1 double]
-%%          h: [760x1 double]
+%%      thick: [760x1 double]
 %%     Nfloes: [760x1 double]
 %% ============================================================
 
@@ -219,7 +219,7 @@ elseif params_in.MEX_OPT==3
          end
       end
       clear PP jp;
-      fnames   = {'xe','ye','c','h','Nfloes','broken'};
+      fnames   = {'xe','ye','c','thick','Nfloes','broken'};
       Mesh_e   = mesh_e;
       clear mesh_e;
       for j=1:nmesh_vars
@@ -232,7 +232,7 @@ elseif params_in.MEX_OPT==3
    %% get mesh variables
    nmesh_e     = length(mesh_e.xe);
    nmesh_vars  = length(fieldnames(mesh_e));
-   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.h,mesh_e.Nfloes,mesh_e.broken];
+   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.thick,mesh_e.Nfloes,mesh_e.broken];
    %mesh0 = mesh_arr;
 
    %% make the call!
@@ -294,11 +294,20 @@ elseif params_in.MEX_OPT==3
          X_ = gridprams.X(:,1)/1e3;
          Y_ = gridprams.Y(1,:)/1e3;
 
-         figure(102); fn_pcolor( X_,Y_,out_fields.Dmax ); colorbar; caxis([0 300]);%fn_fullscreen;
-         figure(103); fn_pcolor( X_,Y_,out_fields.Hs ); colorbar;%fn_fullscreen;
-         %figure(104); fn_pcolor( X_,Y_,out_fields.tau_x ); colorbar; fn_fullscreen;
-         %figure(105); fn_pcolor( X_,Y_,ice_fields.cice ); colorbar; fn_fullscreen;
-         %figure(106); fn_pcolor( X_,Y_,gridprams.LANDMASK ); colorbar; fn_fullscreen;
+         figure(102); fn_pcolor( X_,Y_,out_fields.Dmax ); colorbar; caxis([0 300]);
+         figure(103); fn_pcolor( X_,Y_,out_fields.Hs ); colorbar;
+         %figure(104); fn_pcolor( X_,Y_,out_fields.tau_x ); colorbar;
+         figure(105); fn_pcolor( X_,Y_,ice_fields.cice ); colorbar;
+         figure(106); fn_pcolor( X_,Y_,ice_fields.hice ); colorbar;
+         %figure(107); fn_pcolor( X_,Y_,gridprams.LANDMASK ); colorbar;
+      end
+
+      disp(' ');
+      Flds  = fieldnames(ice_fields);
+      for j=1:length(Flds)
+         v  = Flds{j};
+         V  = ice_fields.(v);
+         disp(['Range on grid of ',v,' = [',num2str(min(V(:))),',',num2str(max(V(:))),']']);
       end
 
       disp(' ');
