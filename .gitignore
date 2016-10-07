@@ -75,3 +75,6 @@ CXX/lib
 CXX/bin
 
 fortran/grid_setup/infile_waves.txt
+
+fortran/Build/*.h
+fortran/grid/*

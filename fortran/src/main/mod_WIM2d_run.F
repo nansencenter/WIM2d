@@ -1441,9 +1441,18 @@
       
       real*8,intent(out)   :: init_cons(6)
       real*8,intent(in)    :: param_vec(n_param_vec)
-      integer  :: i,j
+      integer  :: i,j,fid
+      logical,parameter :: test_in=.false.
 
+      if (test_in) then
+         open(unit=fid,file='param_vec.txt',action='write')
+         do i=1,n_param_vec
+            write(fid,*) param_vec(i)
+         end do
+         close(unit=fid)
+      end if
       i  = 0
+
 
       ! ===================================================
       !! int_prams
@@ -1558,7 +1567,6 @@
       print*,'******************************************************'
       ! ===================================================
 
-
       !! diagnostic grid cell
       print*,' '
       print*,'******************************************************'
@@ -1573,6 +1581,7 @@
       print*,'******************************************************'
       print*,' '
       !stop
+
 
       end subroutine read_param_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -38,7 +38,7 @@ if nVarargs >= 6, visible = varargin{6}; end
 if nVarargs >= 7, textstring = varargin{7}; end
 if nVarargs >= 8, error('Too many inputs'), end
 
-% %Detecting domian name from simul_outfile string
+% %Detecting domain name from simul_outfile string
 % str1     = strsplit(simul_outfile,'_');
 % str2     = {'simplesquaresplit2', 'MITgcmsplit2', 'topazrefined', 'topazsplit2', 'topazsplit4', 'topazsplit8', 'arctic50km',     'bigkara20km', 'kara1-5km',  'kara4-5km',  'arctic10km',  'arctic15km', 'bigarctic50km',  'bigkara2km',   'kara15km',  'kara7-5km', 'bigarctic10km',  'kara45km ', 'bk4km', 'bk2km', 'bk1km','bk8km','smallkara1km','smallkara2km','smallkara4km','smallkara8km','smallkara16km','square1km','squarebig1km','squarebig10km','squaresmall10km','squarebig10km','squaresmall2km','squaresmall1km','bigarctic-5km','squaresmall5km','tinykara2km','tinykara1km'};
 % meshfile = str1{ismember(str1,str2)};

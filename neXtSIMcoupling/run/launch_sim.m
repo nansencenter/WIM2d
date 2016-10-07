@@ -1,6 +1,6 @@
-DO_COMPILE     = 1;
+DO_COMPILE     = 0;
 USE_WIM        = 1;%%use waves
-PLOT_STEPS     = 1;%%plot all steps after run
+PLOT_STEPS     = 0;%%plot all steps after run
 DIAGNOSTICS    = 1;%%diagnostics at end of run
 test_and_exit  = 0;%%if 1, exit after 1 call to WIM (if USE_WIM==1)
 
@@ -57,6 +57,9 @@ if 1
    if 0
       %change wind
       simul_in.constant_u  = -10;
+      simul_in.constant_v  = 0;
+   else
+      simul_in.constant_u  = 0;
       simul_in.constant_v  = 0;
    end
 

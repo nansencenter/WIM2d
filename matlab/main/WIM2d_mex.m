@@ -183,8 +183,15 @@ elseif params_in.MEX_OPT==3
    dir_init = max(wave_stuff.dirs);
 
    TEST_MESH_INTERP  = 1;
-   if TEST_MESH_INTERP
-      %%test mesh inputs:
+   FAKE_MESH         = 0;
+
+   %% =============================================================================
+   if TEST_MESH_INTERP & ~exist('mesh_e','var')
+      %%create test mesh inputs:
+      FAKE_MESH      = 1
+      gridprams.x0   = min(gridprams.X(:));
+      gridprams.y0   = min(gridprams.Y(:));
+      %%
       xm0         = (gridprams.x0+gridprams.dx/2)+(0:gridprams.nx-2)*gridprams.dx;
       nmesh_e     = length(xm0);
       nmesh_vars  = 6;
@@ -220,6 +227,7 @@ elseif params_in.MEX_OPT==3
       end
       clear fnames Mesh_e
    end
+   %% =============================================================================
 
    %% get mesh variables
    nmesh_e     = length(mesh_e.xe);
@@ -253,6 +261,10 @@ elseif params_in.MEX_OPT==3
    mesh_arr = reshape(mesh_arr,[nmesh_e,nmesh_vars]);
    %save mesh mesh_e mesh0 mesh_arr out_fields;
 
+   %% recreate mesh_e
+   mesh_e.Nfloes  = mesh_arr(:,5);
+   mesh_e.broken  = mesh_arr(:,6);
+
    if 0
       %look at Nfloes where ice is
       mesh_arr(mesh_out(:,5)>0,5)
@@ -264,33 +276,53 @@ elseif params_in.MEX_OPT==3
       %%look at difference between 1st 4 col's (should be ~0)
       mesh_arr(:,1:4)-mesh_e(:,1:4)
    elseif TEST_MESH_INTERP
-      figure(101);
-      Nfloes_mesh    = mesh_arr(:,5);
-      Dmax_mesh      = 0*mesh_arr(:,5);
-      jp             = find(Nfloes_mesh>0);
-      Dmax_mesh(jp)  = sqrt(mesh_arr(jp,3)./Nfloes_mesh(jp));
-      plot(xm0/1e3,Dmax_mesh);
-      hold on;
-      plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
-      legend('mesh','grid')
-      fn_fullscreen;
 
-      if gridprams.ny>1
-         figure(102);
-         pcolor(gridprams.X/1e3,gridprams.Y/1e3,out_fields.Dmax);
-         colorbar;
-         caxis([0 300]);
+      if FAKE_MESH==1
+         figure(101);
+         Nfloes_mesh    = mesh_arr(:,5);
+         Dmax_mesh      = 0*mesh_arr(:,5);
+         jp             = find(Nfloes_mesh>0);
+         Dmax_mesh(jp)  = sqrt(mesh_arr(jp,3)./Nfloes_mesh(jp));
+         plot(xm0/1e3,Dmax_mesh);
+         hold on;
+         plot(gridprams.X(:,nmy)/1e3,out_fields.Dmax(:,nmy),'--g');
+         legend('mesh','grid')
+         fn_fullscreen;
       end
 
-      %broken   = mesh_arr(:,6)
-      error('Finished test of mesh interpolation');
-   end
+      if gridprams.ny>1
+         X_ = gridprams.X(:,1)/1e3;
+         Y_ = gridprams.Y(1,:)/1e3;
 
-   %% recreate mesh_e
-   fields   = {'Nfloes','broken'};
-   for j=1:2
-      fld            = fields{j};
-      mesh_e.(fld)   = mesh_arr(:,4+j);
+         figure(102); fn_pcolor( X_,Y_,out_fields.Dmax ); colorbar; caxis([0 300]);%fn_fullscreen;
+         figure(103); fn_pcolor( X_,Y_,out_fields.Hs ); colorbar;%fn_fullscreen;
+         %figure(104); fn_pcolor( X_,Y_,out_fields.tau_x ); colorbar; fn_fullscreen;
+         %figure(105); fn_pcolor( X_,Y_,ice_fields.cice ); colorbar; fn_fullscreen;
+         %figure(106); fn_pcolor( X_,Y_,gridprams.LANDMASK ); colorbar; fn_fullscreen;
+      end
+
+      disp(' ');
+      Flds  = fieldnames(out_fields);
+      for j=1:length(Flds)
+         v  = Flds{j};
+         V  = out_fields.(v);
+         disp(['Range on grid of ',v,' = [',num2str(min(V(:))),',',num2str(max(V(:))),']']);
+      end
+
+      disp(' ');
+      Flds  = fieldnames(mesh_e);
+      for j=1:length(Flds)
+         v  = Flds{j};
+         if strcmp(v,'xe')==0&strcmp(v,'ye')==0
+            V  = mesh_e.(v);
+            disp(['Range on mesh of ',v,' = [',num2str(min(V(:))),',',num2str(max(V(:))),']']);
+         end
+      end
+      disp(' ');
+
+      %broken   = mesh_arr(:,6)
+      %error('Finished test of mesh interpolation');
+      %pause
    end
 
    % delete annoying file
@@ -361,12 +393,12 @@ fields(end+1:end+n)  = {...
             'SCATMOD',...
             'ADV_DIM',...
             'ADV_OPT',...
-            'DO_CHECK_INIT',...
-            'DO_CHECK_PROG',...
-            'DO_CHECK_FINAL',...
             'STEADY',...
             'BRK_OPT',...
-            'DO_ATTEN'};
+            'DO_ATTEN',...
+            'DO_CHECK_INIT',...
+            'DO_CHECK_PROG',...
+            'DO_CHECK_FINAL'};
 %% ================================================
 
 
@@ -427,7 +459,7 @@ Ni = length(fields);
 params_vec   = zeros(Ni,1);
 for j=1:Ni
    cmd   = ['params_vec(',num2str(j),') = params_mex.',fields{j},';'];
-   %disp(cmd);
+   disp([cmd(1:end-1),' = ',num2str(params_mex.(fields{j}))]);
    eval(cmd);
 end
 
