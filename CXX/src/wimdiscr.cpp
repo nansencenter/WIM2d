@@ -31,6 +31,7 @@ void WimDiscr<T>::gridProcessing()
     {
         std::cout<<"Getting WIM grid from file: "<<wim_gridfile<<"\n";
         this->readGridFromFile();
+        //this->test(&X_array[0][0]);
     }
     else
     {
@@ -242,6 +243,8 @@ void WimDiscr<T>::readGridFromFile()
     bool column_major = record[1];
     nx = record[2];
     ny = record[3];
+    std::cout<<"nx= "<< nx <<"\n";
+    std::cout<<"ny= "<< ny <<"\n";
     int nbytes = record[4];
 
     array2_type PLat_array, PLon_array;
@@ -387,6 +390,29 @@ void WimDiscr<T>::readGridFromFile()
         }
     }
 
+    std::vector<value_type> X(nx*ny);
+    std::vector<value_type> Y(nx*ny);
+
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            X[ny*i+j] = X_array[i][j];
+            Y[ny*i+j] = Y_array[i][j];
+        }
+    }
+
+    // define wim grid as structure
+    wim_grid = (WimGrid)
+    {
+        nx,
+        ny,
+        dx,
+        dy,
+        X,
+        Y
+    };
+
     std::cout<<"Reading grid done...\n";
 }
 
@@ -525,6 +551,7 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c, std::vector<value
     iceh.resize(boost::extents[nx][ny]);
     dfloe.resize(nx*ny);
     nfloes.resize(nx*ny);
+    broken.resize(nx*ny);
 
     dave.resize(boost::extents[nx][ny]);
     atten_dim.resize(boost::extents[nx][ny]);
@@ -1406,8 +1433,24 @@ void WimDiscr<T>::timeStep(bool step)
 
             Pstrain      = 0.;
             P_crit       = std::exp(-1.0);
+
             if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
             {
+                BreakInfo breakinfo =
+                {
+                    /*conc:*/icec[i][j],
+                    /*thick:*/iceh[i][j],
+                    /*mom0:*/mom0[i][j],
+                    /*mom2:*/mom2[i][j],
+                    /*var_strain:*/var_strain[i][j],
+                    /*dfloe:*/dfloe[ny*i+j],
+                    /*broken:*/false
+                };
+
+                this->doBreaking(breakinfo);
+
+                dfloe[ny*i+j] = breakinfo.dfloe;
+#if 0
                 // significant strain amp
                 sig_strain = 2*std::sqrt(var_strain[i][j]);
 
@@ -1442,6 +1485,7 @@ void WimDiscr<T>::timeStep(bool step)
                     dfloe[ny*i+j] = std::min<value_type>(Dc,dfloe[ny*i+j]);
                     //std::cout<<"DMAX= std::MAX("<< Dc << "," << dfloe[ny*i+j] <<")\n";
                 }
+#endif
             }//end test for ice and waves
             else if (wtr_mask[i][j] == 1.)
             {
@@ -1473,6 +1517,46 @@ void WimDiscr<T>::timeStep(bool step)
     }//end spatial loop i
 
 
+    if (0) // breaking on nextsim mesh
+    {
+        int nb_var=3;
+        std::vector<value_type> interp_in(nb_var*nx*ny, 0.);
+        value_type* interp_out;
+
+        for (int i = 0; i < nx; i++)
+        {
+            for (int j = 0; j < ny; j++)
+            {
+                interp_in[nb_var*(ny*i+j)] = mom0[i][j];
+                interp_in[nb_var*(ny*i+j)+1] = mom2[i][j];
+                interp_in[nb_var*(ny*i+j)+2] = var_strain[i][j];
+            }
+        }
+
+        int interptype = BilinearInterpEnum;
+
+        InterpFromGridToMeshx(interp_out,
+                              &X_array[0][0], nx,
+                              &Y_array[0][0], ny,
+                              &interp_in[0],
+                              ny, nx,
+                              nb_var,
+                              &mesh_x[0], &mesh_y[0], (int)mesh_x.size(),0.,interptype,true);
+
+        // //assign taux,tauy
+        // for (int i=0; i<M_num_nodes; ++i)
+        // {
+        //     // tau
+        //     M_tau[i] = interp_out[nb_var*i];
+        //     M_tau[i+M_num_nodes] = interp_out[nb_var*i+1];
+        // }
+
+        xDelete<value_type>(interp_out);
+    }
+
+
+
+
     // for (int i = 0; i < nx; i++)
     //     for (int j = 0; j < ny; j++)
     //         std::cout << "Dmax[" << i << "," << j << "]= " << dfloe[i][j] <<"\n";
@@ -1494,6 +1578,68 @@ void WimDiscr<T>::timeStep(bool step)
     // std::cout<<"------------------------------------------------------\n";
     // std::cout<<"dfloe_max= "<< *std::max_element(dfloe.data(), dfloe.data()+dfloe.num_elements()) <<"\n";
     // std::cout<<"dfloe_min= "<< *std::min_element(dfloe.data(), dfloe.data()+dfloe.num_elements()) <<"\n";
+}
+
+template<typename T>
+void WimDiscr<T>::setMesh(std::vector<value_type> const& m_rx, std::vector<value_type> const& m_ry,
+                          std::vector<value_type> const& m_conc, std::vector<value_type> const& m_thick, std::vector<value_type> const& m_dfloe)
+{
+    mesh_x = m_rx;
+    mesh_y = m_ry;
+    mesh_conc = m_conc;
+    mesh_thick = m_thick;
+    mesh_dfloe = m_dfloe;
+}
+
+template<typename T>
+void WimDiscr<T>::clearMesh()
+{
+    mesh_x.resize(0);
+    mesh_y.resize(0);
+    mesh_conc.resize(0);
+    mesh_thick.resize(0);
+    mesh_dfloe.resize(0);
+}
+
+template<typename T>
+void WimDiscr<T>::test(value_type* toto)
+{
+    for (int i=0; i<nx; ++i)
+        for (int j=0; j<ny; ++j)
+            std::cout<<"toto["<< ny*i+j<<"]= "<< toto[ny*i+j] <<"\n";
+}
+
+template<typename T>
+void WimDiscr<T>::doBreaking(BreakInfo const& breakinfo)
+{
+
+    bool break_criterion = (breakinfo.conc > 0) /*ice present*/ && ((2*breakinfo.var_strain) > std::pow(epsc, 2.)) /*big enough waves*/;
+
+    if (break_criterion)
+    {
+        double params[5];
+        params[0] = young;
+        params[1] = gravity;
+        params[2] = rhowtr;
+        params[3] = rhoice;
+        params[4] = poisson;
+
+        double outputs[8];
+
+        value_type om = std::sqrt(breakinfo.mom2/breakinfo.mom0);
+        value_type guess = std::pow(om,2.)/gravity;
+
+        RTparam_outer(outputs,breakinfo.thick,double(om),double(visc_rp),double(guess),params);
+
+        value_type kice = outputs[1];
+        value_type lam = 2*PI/kice;
+
+        if (lam < (2*breakinfo.dfloe))
+        {
+            breakinfo.dfloe = std::max<value_type>(dmin,lam/2.);
+            breakinfo.broken = true;
+        }
+    }
 }
 
 template<typename T>
@@ -2840,7 +2986,7 @@ void WimDiscr<T>::saveLog(value_type const& t_out) const
 }
 
 // instantiate wim class for type float
-template class WimDiscr<float>;
+//template class WimDiscr<float>;
 
 // instantiate wim class for type double
 template class WimDiscr<double>;

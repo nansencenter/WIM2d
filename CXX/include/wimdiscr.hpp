@@ -22,6 +22,7 @@
 #include <boost/any.hpp>
 #include <boost/format.hpp>
 #include <boost/mpi/timer.hpp>
+#include <InterpFromGridToMeshx.h>
 #include <date.hpp>
 #include <iomanip>
 #include <omp.h>
@@ -55,6 +56,32 @@ template<typename T=float> class WimDiscr
 
 public:
 
+    typedef struct BreakInfo
+    {
+        // information needed for breaking
+        value_type conc;   // concentration
+        value_type thick;  // thickness
+        value_type mom0;
+        value_type mom2;
+        value_type var_strain;
+        mutable value_type dfloe;
+        mutable bool broken;
+    } BreakInfo;
+
+    typedef struct WimGrid
+    {
+        // information describing wim grid
+        int nx;
+        int ny;
+        value_type dx;
+        value_type dy;
+        std::vector<value_type> X;
+        std::vector<value_type> Y;
+    } WimGrid;
+
+
+public:
+
     WimDiscr()
         :
         vm(),
@@ -85,6 +112,17 @@ public:
                 bool step = false);
 
     void timeStep(bool step = false);
+
+    //void doBreaking(value_type const& mom0, value_type const& mom2, value_type const& var_strain);
+    void doBreaking(BreakInfo const& breakinfo);
+
+    void setMesh(std::vector<value_type> const& m_rx, std::vector<value_type> const& m_ry,
+                 std::vector<value_type> const& m_conc, std::vector<value_type> const& m_thick, std::vector<value_type> const& m_dfloe);
+    void clearMesh();
+
+    WimGrid wimGrid() const { return wim_grid; }
+
+    void test(value_type* toto);
 
     void run(std::vector<value_type> const& ice_c = std::vector<value_type>(),
              std::vector<value_type> const& ice_h = std::vector<value_type>(),
@@ -143,6 +181,7 @@ public:
     std::vector<value_type> getTauy() const { return tau_y; }
     std::vector<value_type> getNFloes() const { return nfloes; }
 
+
 private:
 
     po::variables_map vm;
@@ -177,6 +216,9 @@ private:
 
     //array2_type dfloe, nfloes, tau_x, tau_y;
     std::vector<value_type> dfloe, nfloes, tau_x, tau_y;
+    std::vector<value_type> mesh_x, mesh_y, mesh_conc, mesh_thick, mesh_dfloe, broken;
+
+    WimGrid wim_grid;
 
     boost::mpi::timer chrono;
     std::string init_time_str;
