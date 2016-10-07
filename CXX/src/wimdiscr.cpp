@@ -1038,6 +1038,35 @@ void WimDiscr<T>::idealIceFields(array2_type& ice_mask,value_type const xfac)
    }
 }
 
+#if 0
+template<typename T>
+void getWimCenters(value_type &x,value_type &y,value_type const& rotangle)
+{
+    //get x coord of nodes (rotated)
+    std::vector<value_type> x(nx*ny);
+    std::vector<value_type> y(nx*ny);
+    int cpt = 0;
+    double cos_rotangle=std::cos(rotangle);
+    double sin_rotangle=std::sin(rotangle);
+    for (int i = 0; i<nx; i++)
+    {
+        for (int j = 0; j<nx; j++)
+        {
+        x[cpt] = cos_rotangle*X_array[i][j] + sin_rotangle*Y_array[i][j];
+        y[cpt] = -sin_rotangle*X_array[i][j] + cos_rotangle*Y_array[i][j];
+        ++cpt;
+    }
+}
+
+template<typename T>
+void getWimShape() const
+{
+    //get x coord of nodes (rotated)
+    std::vector<int> shape={nx,ny};
+    return shape;
+}
+#endif
+
 template<typename T>
 void WimDiscr<T>::timeStep(bool step)
 {

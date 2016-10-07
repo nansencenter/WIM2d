@@ -163,6 +163,7 @@ public:
     void calcMWD();
     void idealWaveFields(array2_type& wave_mask,value_type const xfac);
     void idealIceFields(array2_type& ice_mask,value_type const xfac);
+    //void getWimCenters(value_type& x,value_type& y,value_type const& rotangle);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
     value_type thetaInRange(value_type const& th_, value_type const& th1);
@@ -176,6 +177,7 @@ public:
     array2_type getLANDMASK() const { return LANDMASK_array; }
 
     std::string getWimGridFilename() const { return wim_gridfile; }
+    //std::vector<int> getWimShape();
 
     std::vector<value_type> getTaux() const { return tau_x; }
     std::vector<value_type> getTauy() const { return tau_y; }
