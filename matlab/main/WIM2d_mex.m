@@ -297,8 +297,8 @@ elseif params_in.MEX_OPT==3
          figure(102); fn_pcolor( X_,Y_,out_fields.Dmax ); colorbar; caxis([0 300]);
          figure(103); fn_pcolor( X_,Y_,out_fields.Hs ); colorbar;
          %figure(104); fn_pcolor( X_,Y_,out_fields.tau_x ); colorbar;
-         figure(105); fn_pcolor( X_,Y_,ice_fields.cice ); colorbar;
-         figure(106); fn_pcolor( X_,Y_,ice_fields.hice ); colorbar;
+         %figure(105); fn_pcolor( X_,Y_,ice_fields.cice ); colorbar;
+         %figure(106); fn_pcolor( X_,Y_,ice_fields.hice ); colorbar;
          %figure(107); fn_pcolor( X_,Y_,gridprams.LANDMASK ); colorbar;
       end
 
