@@ -97,10 +97,11 @@ void WimDiscr<T>::gridProcessing()
                || (vm["wim.checkfinal"].template as<bool>())
                || (vm["nextwim.exportresults"].template as<bool>());
 
-    std::cout<<" ---before saving\n";
+    //std::cout<<" ---before saving\n";
     if (critter)
        this->saveGrid(); //save grid to binary
-    std::cout<<" ---after saving\n";
+    //std::cout<<" ---after saving\n";
+
     // ==========================================
     // define wim_grid as structure
     // - can be output to nextsim with main grid info
@@ -508,7 +509,6 @@ void WimDiscr<T>::init()
 
        //get initial time from simul.time_init
        init_time_str  = vm["simul.time_init"].template as<std::string>();
-       //init_time_str += " 00:00:00";
     }
 
 }//end ::init()
