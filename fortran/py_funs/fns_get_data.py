@@ -325,6 +325,9 @@ def fn_check_prog(outdir,cts):
    return out_fields
 ##############################################################
 
+# def file_list: #TODO implement this
+#    def __init__(self,directory,pattern):
+#    return
 
 ############################################################################
 class wim_results:
