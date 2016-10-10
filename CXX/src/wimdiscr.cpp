@@ -97,9 +97,10 @@ void WimDiscr<T>::gridProcessing()
                || (vm["wim.checkfinal"].template as<bool>())
                || (vm["nextwim.exportresults"].template as<bool>());
 
+    std::cout<<" ---before saving\n";
     if (critter)
        this->saveGrid(); //save grid to binary
-
+    std::cout<<" ---after saving\n";
     // ==========================================
     // define wim_grid as structure
     // - can be output to nextsim with main grid info
@@ -507,7 +508,7 @@ void WimDiscr<T>::init()
 
        //get initial time from simul.time_init
        init_time_str  = vm["simul.time_init"].template as<std::string>();
-       init_time_str += " 00:00:00";
+       //init_time_str += " 00:00:00";
     }
 
 }//end ::init()
@@ -1691,7 +1692,10 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
 
     //init_time_str is human readable time eg "2015-01-01 00:00:00"
     //init_time is "formal" time format eg "20150101T000000Z"
+
     std::string init_time = ptime(init_time_str);
+
+    std::cout<<"init_time= "<< init_time <<"\n";
 
     value_type t_in  = cpt*dt;//model time of current call to wim
     std::string call_time = ptime(init_time_str,t_in);
