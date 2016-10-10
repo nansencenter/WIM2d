@@ -97,6 +97,7 @@ public:
     {}
 
     void gridProcessing();
+    void saveGrid();
     void readGridFromFile();
     void readDataFromFile(std::string const& filein);
     void exportResults(std::string const& output_type, value_type const& t_out) const;
