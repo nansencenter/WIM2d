@@ -327,8 +327,9 @@ def fn_check_prog(outdir,cts):
 
 class file_list:
    def __init__(self,directory,pattern):
-      self.dir    = directory
-      all_files   = os.listdir(self.dir)
+      self.dir       = directory
+      self.pattern   = pattern
+      all_files      = os.listdir(self.dir)
 
       # find the .a files
       alist    = []
@@ -350,6 +351,10 @@ class file_list:
       self.times  = [e for e,i in slist]
       self.files  = [alist[i] for e,i in slist]
       self.Nfiles = len(alist)
+
+      if self.Nfiles>0:
+         bfile                = self.files[0].replace('.a','.b')
+         info,self.variables  = fn_bfile_info(self.dir+'/'+bfile)
 
       return
 
@@ -427,9 +432,7 @@ class file_list:
                   if zmax>zlims[key][1]:
                      zlims[key][1]  = zmax
 
-            stepno   = pf.strip('wim_prog').strip('.a') # step no eg 001 or date yyyymmddThhmmssZ
-            tlist.append(stepno)
-            #
+            tlist.append('_'+pf[4:-2])
             afile = pdir+'/'+pf
             #
             fields,info = fn_read_general_binary(afile)
@@ -526,54 +529,45 @@ class wim_results:
       # =====================================================================
       # check for initial conditions
       binlist        = os.listdir(self.bindir)
-      self.init_file = None
+      self.init_list = file_list(self.bindir,'wim_init')
 
-      for f in binlist:
-         if ('wim_init' in f) and ('.a' in f):
-            self.init_file = f
-            break
+      if self.init_list.Nfiles==0:
+         # try again in binaries/init
+         print("try again in binaries/init")
+         self.init_list = file_list(self.bindir+'/init','wim_init')
 
-      if self.init_file is not None:
-         bfile = self.init_file.replace('.a','.b')
-         info,self.variables_init   = fn_bfile_info(self.bindir+'/'+bfile)
-         self.start_time  = info['t_out']
+      if self.init_list.Nfiles>0:
+         self.start_time   = self.init_list.times[0]
       # =====================================================================
-      # print(self.init_file)
-      # print(self.start_time)
-      # print(self.variables_init)
-      # sys.exit()
 
 
       # =====================================================================
       # check for final conditions
-      self.out_file = None
-      for f in binlist:
-         if ('wim_out' in f) and ('.a' in f):
-            self.out_file = f
-            break
+      binlist        = os.listdir(self.bindir)
+      self.out_list = file_list(self.bindir,'wim_out')
 
-      if self.out_file is not None:
-         bfile = self.out_file.replace('.a','.b')
-         info,self.variables_out  = fn_bfile_info(self.bindir+'/'+bfile)
-         self.finish_time  = info['t_out']
+      if self.out_list.Nfiles==0:
+         # try again in binaries/out
+         print("try again in binaries/out")
+         self.out_list = file_list(self.bindir+'/out','wim_out')
+
+      if self.out_list.Nfiles>0:
+         self.finish_time  = self.out_list.times[-1]
       # =====================================================================
-      # print(self.out_file)
-      # print(self.finish_time)
-      # print(self.variables_out)
-      # sys.exit()
 
 
       # =====================================================================
       # Check for progress files
       self.prog_dir  = self.bindir+'/prog'
       self.prog_list = file_list(self.prog_dir,'wim_prog')
+      # =====================================================================
 
 
       # =====================================================================
       # final checks
-      if (self.init_file is None) and\
-         (self.out_file is None)  and\
-         (self.prog_list.Nfiles ==0 ):
+      if (self.init_list.Nfiles==0) and\
+         (self.out_list.Nfiles==0)  and\
+         (self.prog_list.Nfiles==0):
          raise ValueError('No results in ' + outdir)
 
       # where to save figures
@@ -591,23 +585,23 @@ class wim_results:
 
 
    ##########################################################################
-   def initial_fields(self):
+   def initial_fields(self,time_index=0):
 
-      if self.init_file is None:
-         raise ValueError('Initial conditions not outputted: wim_init*.[a,b]')
+      if self.init_list.Nfiles==0:
+         raise ValueError('Initial files not outputted: wim_init*.[a,b]')
       else:
-         afile = self.bindir+'/'+self.init_file
+         afile = self.init_list.dir+'/'+self.init_list.files[time_index]
          return fn_read_general_binary(afile)
    ##########################################################################
 
 
    ##########################################################################
-   def out_fields(self):
+   def out_fields(self,time_index):
 
-      if self.out_file is None:
-         raise ValueError('Final conditions not outputted: wim_out*.[a,b]')
+      if self.out_list.Nfiles==0:
+         raise ValueError('Final files not outputted: wim_out*.[a,b]')
       else:
-         afile = self.bindir+'/'+self.out_file
+         afile = self.out_list.dir+'/'+self.out_list.files[time_index]
          return fn_read_general_binary(afile)
    ##########################################################################
 
@@ -615,11 +609,10 @@ class wim_results:
    ##########################################################################
    def prog_fields(self,time_index=0):
 
-      if self.Nprog_files==0:
+      if self.prog_list.Nfiles==0:
          raise ValueError('Progress files not outputted: wim_prog*.[a,b]')
       else:
-         # afile = self.prog_dir+'/'+self.prog_files[time_index]
-         afile = self.prog_dir+'/'+self.prog_list.files[time_index]
+         afile = self.prog_list.dir+'/'+self.prog_list.files[time_index]
          return fn_read_general_binary(afile)
    ##########################################################################
 
@@ -628,25 +621,30 @@ class wim_results:
    def plot_initial(self):
       # Look at initial fields:
 
-      if self.init_file is None:
-         print('Initial conditions not outputted: wim_init*.[a,b]')
-         print('- not plotting')
+      # =============================================================
+      # Plot progress files (if they exist)
+      # if self.Nprog_files==0:
+      if self.init_list.Nfiles==0:
+         print('No initial files wim*init.[a,b] in '+
+               self.init_list.dir)
+         print('Not plotting')
+         return
       else:
-         print("Plotting initial conditions...")
-         if not os.path.exists(self.figdir):
-            os.mkdir(self.figdir)
+         print('\nPLOTTING INITIAL FILES...\n')
+      # =============================================================
 
-         figdir1  = self.figdir+'/init/'
-         if not os.path.exists(figdir1):
-            os.mkdir(figdir1)
 
-         grid_prams  = self.get_grid()
-         afile       = self.bindir+'/'+self.init_file
-         fields,info = fn_read_general_binary(afile)
-         Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot initial conditions
+      grid_prams  = self.get_grid()
 
-         print("Plots in "+figdir1)
-         print(" ")
+      figdir3  = self.figdir
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+      figdir3  = self.figdir+'/init'
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+
+      self.init_list.plot_steps(grid_prams,figdir3)
+      print('\nPlots in '+figdir3+'\n')
       return
    ##########################################################################
 
@@ -655,25 +653,30 @@ class wim_results:
    def plot_final(self):
       # Look at final fields:
 
-      if self.out_file is None:
-         print('Initial conditions not outputted: wim_out*.[a,b]')
-         print('- not plotting')
+      # =============================================================
+      # Plot progress files (if they exist)
+      # if self.Nprog_files==0:
+      if self.out_list.Nfiles==0:
+         print('No final files wim*out.[a,b] in '+
+               self.out_list.dir)
+         print('Not plotting')
+         return
       else:
-         print("Plotting final conditions...")
-         if not os.path.exists(self.figdir):
-            os.mkdir(self.figdir)
+         print('\nPLOTTING FINAL FILES...\n')
+      # =============================================================
 
-         figdir1  = self.figdir+'/final/'
-         if not os.path.exists(figdir1):
-            os.mkdir(figdir1)
 
-         grid_prams  = self.get_grid()
-         afile       = self.bindir+'/'+self.out_file
-         fields,info = fn_read_general_binary(afile)
-         Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot final conditions
+      grid_prams  = self.get_grid()
 
-         print("Plots in "+figdir1)
-         print(" ")
+      figdir3  = self.figdir
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+      figdir3  = self.figdir+'/out'
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+
+      self.out_list.plot_steps(grid_prams,figdir3)
+      print('\nPlots in '+figdir3+'\n')
       return
    ##########################################################################
 
@@ -686,12 +689,11 @@ class wim_results:
       # if self.Nprog_files==0:
       if self.prog_list.Nfiles==0:
          print('No progress files wim*prog.[a,b] in '+
-               self.prog_dir)
-               # self.bindir+'/prog')
+               self.prog_list.dir)
          print('Not plotting')
          return
       else:
-         print('\nPlotting progress files...\n')
+         print('\nPLOTTING PROGRESS FILES...\n')
       # =============================================================
 
 
@@ -705,6 +707,7 @@ class wim_results:
          os.mkdir(figdir3)
 
       self.prog_list.plot_steps(grid_prams,figdir3)
+      print('\nPlots in '+figdir3+'\n')
       return
 
    # =============================================================
