@@ -668,7 +668,17 @@ class wim_results:
 
       # =============================================================
       # do the plots
-      for vbl in fields.keys():
+      flds  = fields.keys()
+      Flds  = []
+
+      # Do interesting plots first
+      for vbl in ['Hs','Dmax']:
+         if vbl in flds:
+            Flds.append(vbl)
+            flds.remove(vbl)
+
+      Flds.extend(flds)
+      for vbl in Flds:
          print('\n')
          print('Plotting results for '+vbl)
          print('\n')
