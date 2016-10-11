@@ -110,6 +110,16 @@
          indir    = 'grid'
          outdir   = 'out'
       end if
+
+      !!check if dir's exist & make them if necessary
+      call create_directory(trim(outdir))
+      call create_directory(trim(outdir)//'/diagnostics')
+      call create_directory(trim(outdir)//'/diagnostics/global')
+      call create_directory(trim(outdir)//'/diagnostics/local')
+      call create_directory(trim(outdir)//'/binaries/')
+      call create_directory(trim(outdir)//'/binaries/init')
+      call create_directory(trim(outdir)//'/binaries/prog')
+      call create_directory(trim(outdir)//'/binaries/final')
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       !log_file    = trim(outdir)//"/log/wim2d.log"
@@ -314,6 +324,16 @@
          indir    = 'grid'
          outdir   = 'out_io_1'
       end if
+
+      !!check if dir's exist & make them if necessary
+      call create_directory(trim(outdir))
+      call create_directory(trim(outdir)//'/diagnostics')
+      call create_directory(trim(outdir)//'/diagnostics/global')
+      call create_directory(trim(outdir)//'/diagnostics/local')
+      call create_directory(trim(outdir)//'/binaries/')
+      call create_directory(trim(outdir)//'/binaries/init')
+      call create_directory(trim(outdir)//'/binaries/prog')
+      call create_directory(trim(outdir)//'/binaries/final')
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       this_subr   = 'wim2d_run_io'
@@ -387,8 +407,14 @@
       call wim_init(STEADY,DO_ATTEN,CFL)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      if (DO_CHECK_INIT.eq.1) then
+      if ((DO_CHECK_INIT.eq.1).or.
+     &    (DO_CHECK_PROG.eq.1).or.
+     &    (DO_CHECK_FINAL.eq.1)) then
+         !!save the grid
          call check_grid()
+      end if
+
+      if (DO_CHECK_INIT.eq.1) then
          call check_init()
       end if
 
@@ -535,6 +561,16 @@
             outdir   = 'out_io_3'
          end if
       end if
+
+      !!check if dir's exist & make them if necessary
+      call create_directory(trim(outdir))
+      call create_directory(trim(outdir)//'/diagnostics')
+      call create_directory(trim(outdir)//'/diagnostics/global')
+      call create_directory(trim(outdir)//'/diagnostics/local')
+      call create_directory(trim(outdir)//'/binaries/')
+      call create_directory(trim(outdir)//'/binaries/init')
+      call create_directory(trim(outdir)//'/binaries/prog')
+      call create_directory(trim(outdir)//'/binaries/final')
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       this_subr   = 'wim2d_run_io'
@@ -675,6 +711,7 @@
 
       call model_time_to_year_info(model_year_info
      &         ,model_day,model_seconds)
+
       log_file = trim(outdir)
      &   //'/diagnostics/global/WIM_diagnostics'
      &   //model_year_info%cdate//'T'
@@ -1584,6 +1621,36 @@
 
 
       end subroutine read_param_vec
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      subroutine create_directory( newDirPath )
+      ! Author:  Jess Vriesema
+      ! Date:    Spring 2011
+      ! Purpose: Creates a directory at ./newDirPath
+      
+      implicit none
+      
+      character(len=*), intent(in) :: newDirPath
+      character(len=256)           :: mkdirCmd
+      logical                      :: dirExists
+      
+      ! Check if the directory exists first
+      inquire( file=trim(newDirPath)//'/.', exist=dirExists )  ! Works with gfortran, but not ifort
+      !inquire( directory=newDirPath, exist=dirExists )         ! Works with ifort, but not gfortran
+      
+      
+      if (dirExists) then
+         write (*,*) "Directory already exists: '"//                    &
+     &      trim(newDirPath)//"'"
+      else
+         mkdirCmd = 'mkdir -p '//trim(newDirPath)
+         write(*,'(a)') "Creating new directory: '"//                   &
+     &      trim(mkdirCmd)//"'"
+         call system( mkdirCmd )
+      endif
+      end subroutine create_directory
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       end module mod_wim2d_run

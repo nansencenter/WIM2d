@@ -855,9 +855,9 @@
       character(len=16) :: cts
 
       cts   = model_year_info%cdatetime
-      afile = trim(outdir)//'/binaries/wim_init'
+      afile = trim(outdir)//'/binaries/init/wim_init'
      &         //cts//'.a'
-      bfile = trim(outdir)//'/binaries/wim_init'
+      bfile = trim(outdir)//'/binaries/init/wim_init'
      &         //cts//'.b'
 
       !! write variable names to .b file (description of stuff in .a file)
@@ -919,9 +919,9 @@
          !!final output - use end time as output time in filename
          cts   = model_year_info%cdatetime
 #endif
-         afile = trim(outdir)//'/binaries/wim_out'
+         afile = trim(outdir)//'/binaries/final/wim_out'
      &               //cts//'.a'
-         bfile = trim(outdir)//'/binaries/wim_out'
+         bfile = trim(outdir)//'/binaries/final/wim_out'
      &               //cts//'.b'
       end if
 
