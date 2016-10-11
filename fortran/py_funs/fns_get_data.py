@@ -548,8 +548,8 @@ class wim_results:
 
       if self.out_list.Nfiles==0:
          # try again in binaries/out
-         print("try again in binaries/out")
-         self.out_list = file_list(self.bindir+'/out','wim_out')
+         print("try again in binaries/final")
+         self.out_list = file_list(self.bindir+'/final','wim_out')
 
       if self.out_list.Nfiles>0:
          self.finish_time  = self.out_list.times[-1]
@@ -671,7 +671,7 @@ class wim_results:
       figdir3  = self.figdir
       if not os.path.exists(figdir3):
          os.mkdir(figdir3)
-      figdir3  = self.figdir+'/out'
+      figdir3  = self.figdir+'/final'
       if not os.path.exists(figdir3):
          os.mkdir(figdir3)
 
