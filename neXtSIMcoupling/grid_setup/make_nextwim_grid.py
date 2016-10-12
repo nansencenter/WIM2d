@@ -87,13 +87,17 @@ if TEST_PROJ:
 # - NB outer cells only used for boundary conditions
 # (fixed or free)
 vertices = []
-ddir     = 'OSI-SAF'
 if grid=='ONR_2km_small':
    res      = 2e3# resolution in m
    gridname = "wim_grid_full_ONR_Oct2015_%ikm_small" %(int(res/1.e3))
    if TEST_PLOT:
+      ddir        = 'OSI-SAF'
       ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+      vbl         = 'fice'
+      HYCOMreg    = 'beau'
       lonlat_file = None
+      time_index  = 0
+      dlabel      = 1
       figname     = outdir+"/test_"+grid+"_OSISAF.png"
    vertices.append(( -153.7   ,71.5 ))
    vertices.append(( -157     ,74.1 ))
@@ -104,7 +108,12 @@ elif grid=='ONR_2km_big':
    res      = 2e3# resolution in m
    gridname = "wim_grid_full_ONR_Oct2015_%ikm_big" %(int(res/1.e3))
    if TEST_PLOT:
+      ddir        = 'OSI-SAF'
       ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+      vbl         = 'fice'
+      HYCOMreg    = 'beau'
+      time_index  = 0
+      dlabel      = 1
       lonlat_file = None
       figname     = outdir+"/test_"+grid+"_OSISAF.png"
    vertices.append(( -160  ,72.5 ))
@@ -116,13 +125,35 @@ elif grid=='ONR_4km_big':
    res      = 4e3# resolution in m
    gridname = "wim_grid_full_ONR_Oct2015_%ikm_big" %(int(res/1.e3))
    if TEST_PLOT:
+      ddir        = 'OSI-SAF'
       ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+      vbl         = 'fice'
+      HYCOMreg    = 'beau'
+      time_index  = 0
+      dlabel      = 1
       lonlat_file = None
       figname     = outdir+"/test_"+grid+"_OSISAF.png"
    vertices.append(( -160  ,72.5 ))
    vertices.append(( -160  ,77 ))
    vertices.append(( -143  ,77 ))
    vertices.append(( -143  ,72.5 ))
+
+elif grid=='FS_4km':
+   res      = 4e3# resolution in m
+   gridname = "wim_grid_full_FS_Dec2015_%ikm_big" %(int(res/1.e3))
+   if TEST_PLOT:
+      ddir        = os.getenv('NEXTSIMDIR')+'/data'
+      ncfil       = ddir+'/SWARP_WW3_ARCTIC-12K_20151217.nc'
+      vbl         = 'swh'
+      HYCOMreg    = 'gre'
+      time_index  = 6
+      dlabel      = 2
+      lonlat_file = None
+      figname     = outdir+"/test_"+grid+"_WW3.png"
+   vertices.append(( -20  ,72.5 ))
+   vertices.append(( -10  ,77 ))
+   vertices.append(( 12  ,77 ))
+   vertices.append(( 12  ,72.5 ))
 
 xc = []
 yc = []
@@ -307,7 +338,7 @@ aid.close()
 bid   = open(outdir+'/'+gridname+'.b','w')
 write_bfile(bid,fields,nx,ny)
 bid.close()
-print("\n grid-files "+gridname+'.[a,b] saved\n')
+print("\n grid-files "+outdir+'/'+gridname+'.[a,b] saved\n')
 # ===============================================================
 
 # ===============================================================
@@ -318,8 +349,11 @@ if TEST_PLOT:
    import mod_reading as mr
    wmsc  = '/work/shared/nersc/msc'
    bmap  = None
+   print('Using '+ncfil)
    nci      = mr.nc_getinfo(ncfil,lonlat_file=lonlat_file)
-   po,bmap  = nci.plot_var('fice',HYCOMreg='beau',show=False)
+   print(' - contains:')
+   print(nci.variables)
+   po,bmap  = nci.plot_var(vbl,HYCOMreg=HYCOMreg,show=False,time_index=time_index,date_label=dlabel,clabel=vbl)
 
    # plot new selection
    xyVerts  = []
