@@ -121,15 +121,21 @@ inline std::string current_time_UTC()
     return posix_time::to_simple_string(today_utc);
 }
 
-inline std::string time_spent( const std::string& value )
+inline std::string time_spent( const std::string& datestr )
 {
-    posix_time::ptime epoch = posix_time::time_from_string( value );
+    std::string date_time_str = datestr;
+    if (date_time_str.find(" ") == std::string::npos)
+    {
+        date_time_str += " 00:00:00";
+    }
+
+    posix_time::ptime epoch = posix_time::time_from_string( date_time_str );
     posix_time::ptime today_local(gregorian::day_clock::local_day(), posix_time::second_clock::local_time().time_of_day());
     posix_time::time_duration diff = today_local - epoch;
     return posix_time::to_simple_string(diff);
 }
 
-inline std::string ptime( const std::string& value, double time_in_seconds = 0)
+inline std::string ptime( const std::string& datestr, double time_in_seconds = 0)
 {
     // boost::posix_time::time_duration td(0,0,9300);
 
@@ -137,7 +143,13 @@ inline std::string ptime( const std::string& value, double time_in_seconds = 0)
     // std::cout<<"minutes = " << td.minutes() <<"\n";
     // std::cout<<"seconds = "<< td.seconds() <<"\n";
 
-    boost::posix_time::ptime posixtime = boost::posix_time::time_from_string( value );
+    std::string date_time_str = datestr;
+    if (date_time_str.find(" ") == std::string::npos)
+    {
+        date_time_str += " 00:00:00";
+    }
+
+    boost::posix_time::ptime posixtime = boost::posix_time::time_from_string( date_time_str );
     posixtime += boost::posix_time::time_duration(0,0,time_in_seconds);
     return to_iso_string(posixtime) + "Z";
 }
