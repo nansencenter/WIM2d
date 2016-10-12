@@ -5,15 +5,22 @@ if nargin~=2
 end
 
 w2d   = getenv('WIM2D_PATH');
+wgd   = getenv('WIMGRIDPATH');
 if OPT==1
    gdir  = [w2d,'/fortran/run/Inputs'];
    gfil  = [gdir,'/wim_grid.a']
 elseif OPT==2
-   gdir  = [w2d,'/neXtSIMcoupling/grid_setup/ONR_big'];
+   gdir  = wgd;
    gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_2km_big.a']
 elseif OPT==3
-   gdir  = [w2d,'/neXtSIMcoupling/grid_setup/ONR_small'];
+   gdir  = wgd;
    gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_2km_small.a']
+elseif OPT==4
+   gdir  = wgd;
+   gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_4km_big.a']
+elseif OPT==5
+   gdir  = wgd;
+   gfil  = [gdir,'/wim_grid_full_FS_Dec2015_4km_big.a']
 end
 
 % test reading of file (plot land-mask)
@@ -38,6 +45,7 @@ else
    figure;
    fn_fullscreen;
    fn_pcolor(x,y,fields.LANDMASK);
+   title('Land Mask');
 end
 
 meshfile = Myconvert_arctic_mesh(gfil,output_type);
