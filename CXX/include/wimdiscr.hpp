@@ -99,6 +99,7 @@ public:
     void gridProcessing();
     void saveGrid();
     void readGridFromFile();
+    void readFromBinary(std::fstream &in, array2_type& in_array, int off = 0, std::ios_base::seekdir direction = std::ios::beg);
     void readDataFromFile(std::string const& filein);
     void exportResults(std::string const& output_type, value_type const& t_out) const;
     void saveLog(value_type const& t_out) const;
