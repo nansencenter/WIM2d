@@ -114,6 +114,13 @@ if 1
             simul_in.wim.init.Tmax  = 1/.4;
          end
       end
+
+      %% diagnostics
+      simul_in.wim.params_mex.itest          = 25;
+      simul_in.wim.params_mex.jtest          = 5;
+      simul_in.wim.params_mex.DO_CHECK_INIT  = 1;
+      simul_in.wim.params_mex.DO_CHECK_PROG  = 1;
+      simul_in.wim.params_mex.DO_CHECK_FINAL = 1;
    end
 
    simul_in = check_simul_in_wim(simul_in);%% set dependant parameters (params_mex)

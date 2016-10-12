@@ -1,13 +1,29 @@
 import os,sys
 import fns_get_data  as Fdat
+from getopt import getopt
 
 # run from root results directory eg out, out_io
-outdir   = os.getcwd()
-results  = Fdat.wim_results(outdir=outdir)
-
+outdir      = os.getcwd()
 PLOT_INIT   = 1
 PLOT_FINAL  = 1
 PLOT_PROG   = 1
+
+# =======================================================================
+# command line inputs
+opts,args   = getopt(sys.argv[1:],"",["outdir=","init=","final=","prog="])
+for opt,arg in opts:
+   if opt=='--outdir':
+      outdir   = arg 
+   if opt=='--init':
+      PLOT_INIT  = int(arg)
+   if opt=='--final':
+      PLOT_FINAL  = int(arg)
+   if opt=='--prog':
+      PLOT_PROG  = int(arg)
+# =======================================================================
+
+results  = Fdat.wim_results(outdir=outdir)
+
 
 
 ##########################################################################

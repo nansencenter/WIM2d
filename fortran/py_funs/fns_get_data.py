@@ -325,9 +325,159 @@ def fn_check_prog(outdir,cts):
    return out_fields
 ##############################################################
 
-# def file_list: #TODO implement this
-#    def __init__(self,directory,pattern):
-#    return
+class file_list:
+   def __init__(self,directory,pattern):
+      self.dir       = directory
+      self.pattern   = pattern
+      all_files      = os.listdir(self.dir)
+
+      # find the .a files
+      alist    = []
+      steplist = []
+      for pf in all_files:
+         if (pattern in pf) and ('.a'==pf[-2:]):
+            alist.append(pf)
+            stepno   = pf.strip(pattern).strip('.a') # step no eg 001 or date yyyymmddThhmmssZ
+            if ('T' in stepno) and ('Z' in stepno):
+               # date
+               steplist.append(
+                     dtm.datetime.strptime(stepno,'%Y%m%dT%H%M%SZ'))
+            else:
+               # integer step no
+               steplist.append(int(stepno))
+
+      # sort according to steplist:
+      slist       = sorted([(e,i) for i,e in enumerate(steplist)])
+      self.times  = [e for e,i in slist]
+      self.files  = [alist[i] for e,i in slist]
+      self.Nfiles = len(alist)
+
+      if self.Nfiles>0:
+         bfile                = self.files[0].replace('.a','.b')
+         info,self.variables  = fn_bfile_info(self.dir+'/'+bfile)
+
+      return
+
+   def plot_steps(self,grid_prams,figdir3):
+      pdir        = self.dir
+
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+
+      # =============================================================
+      # determine the plotting limits
+      if 0:
+         # set colorbar axes manually
+         zlims  = {'icec'  :[0,1],      \
+                   'iceh'  :[0,5],      \
+                   'Dmax'  :[0,300],    \
+                   'tau_x' :[-.5,.5],  \
+                   'tau_y' :[-.05,.05],\
+                   'Hs'    :[0,4],        \
+                   'Tp'    :[10,20],      \
+                   'mwd'   :[-180,180]}
+
+      elif 0:
+         # let python choose
+         # - different for each time step,
+         #   so not good for a movie for example
+         zlims  = {'icec'  :None,\
+                   'iceh'  :None,\
+                   'Dmax'  :None,\
+                   'tau_x' :None,\
+                   'tau_y' :None,\
+                   'Hs'    :None,\
+                   'Tp'    :None,\
+                   'mwd'   :None}
+
+      else:
+         # set colorbar axes automatically
+         zdef  = [1.e30,-1.e30]
+         zlims  = {'icec' :1*zdef,\
+                   'iceh' :1*zdef,\
+                   'Dmax' :1*zdef,\
+                   'tau_x':1*zdef,\
+                   'tau_y':1*zdef,\
+                   'Hs'   :1*zdef,\
+                   'Tp'   :1*zdef,\
+                   'mwd'  :1*zdef}
+
+         # =============================================================
+         # determine the plotting limits
+         # by checking the arrays
+         alist = self.files
+         tlist = []
+         for pf in alist:
+            afile = pdir+'/'+pf
+            #
+            fields,info = fn_read_general_binary(afile)
+            for key in fields.keys():
+               if key in zlims.keys():
+                  zmin  = fields[key].min()
+                  zmax  = fields[key].max()
+                  if zmin<zlims[key][0]:
+                     zlims[key][0]  = zmin
+                  if zmax>zlims[key][1]:
+                     zlims[key][1]  = zmax
+            #
+            afile = pdir+'/'+pf
+            #
+            fields,info = fn_read_general_binary(afile)
+            for key in fields.keys():
+               if key in zlims.keys():
+                  zmin  = fields[key].min()
+                  zmax  = fields[key].max()
+                  if zmin<zlims[key][0]:
+                     zlims[key][0]  = zmin
+                  if zmax>zlims[key][1]:
+                     zlims[key][1]  = zmax
+
+            tlist.append('_'+pf[4:-2])
+            afile = pdir+'/'+pf
+            #
+            fields,info = fn_read_general_binary(afile)
+            for key in fields.keys():
+               if key in zlims.keys():
+                  zmin  = fields[key].min()
+                  zmax  = fields[key].max()
+                  if zmin<zlims[key][0]:
+                     zlims[key][0]  = zmin
+                  if zmax>zlims[key][1]:
+                     zlims[key][1]  = zmax
+         # =============================================================
+
+      # =============================================================
+
+
+      # =============================================================
+      # do the plots
+      flds  = fields.keys()
+      Flds  = []
+
+      # Do interesting plots first
+      for vbl in ['Hs','Dmax']:
+         if vbl in flds:
+            Flds.append(vbl)
+            flds.remove(vbl)
+
+      Flds.extend(flds)
+      for vbl in Flds:
+         print('\n')
+         print('Plotting results for '+vbl)
+         print('\n')
+
+         figdir3B    = figdir3+'/'+vbl
+         if not os.path.exists(figdir3B):
+            os.mkdir(figdir3B)
+
+         for i,pf in enumerate(alist):
+            print(self.times[i])
+            afile       = pdir+'/'+pf
+            fields,info = fn_read_general_binary(afile)
+            Fplt.fn_plot_gen(grid_prams,fields,figdir3B,\
+                  zlims_in=zlims,text=tlist[i],vlist=[vbl])
+      # =============================================================
+      return
 
 ############################################################################
 class wim_results:
@@ -379,80 +529,45 @@ class wim_results:
       # =====================================================================
       # check for initial conditions
       binlist        = os.listdir(self.bindir)
-      self.init_file = None
+      self.init_list = file_list(self.bindir,'wim_init')
 
-      for f in binlist:
-         if ('wim_init' in f) and ('.a' in f):
-            self.init_file = f
-            break
+      if self.init_list.Nfiles==0:
+         # try again in binaries/init
+         print("try again in binaries/init")
+         self.init_list = file_list(self.bindir+'/init','wim_init')
 
-      if self.init_file is not None:
-         bfile = self.init_file.replace('.a','.b')
-         info,self.variables_init   = fn_bfile_info(self.bindir+'/'+bfile)
-         self.start_time  = info['t_out']
+      if self.init_list.Nfiles>0:
+         self.start_time   = self.init_list.times[0]
       # =====================================================================
-      # print(self.init_file)
-      # print(self.start_time)
-      # print(self.variables_init)
-      # sys.exit()
 
 
       # =====================================================================
       # check for final conditions
-      self.out_file = None
-      for f in binlist:
-         if ('wim_out' in f) and ('.a' in f):
-            self.out_file = f
-            break
+      binlist        = os.listdir(self.bindir)
+      self.out_list = file_list(self.bindir,'wim_out')
 
-      if self.out_file is not None:
-         bfile = self.out_file.replace('.a','.b')
-         info,self.variables_out  = fn_bfile_info(self.bindir+'/'+bfile)
-         self.finish_time  = info['t_out']
+      if self.out_list.Nfiles==0:
+         # try again in binaries/out
+         print("try again in binaries/final")
+         self.out_list = file_list(self.bindir+'/final','wim_out')
+
+      if self.out_list.Nfiles>0:
+         self.finish_time  = self.out_list.times[-1]
       # =====================================================================
-      # print(self.out_file)
-      # print(self.finish_time)
-      # print(self.variables_out)
-      # sys.exit()
 
 
       # =====================================================================
       # Check for progress files
       self.prog_dir  = self.bindir+'/prog'
-      prog_files     = os.listdir(self.prog_dir)
-
-      # find the .a files
-      alist    = []
-      steplist = []
-      for pf in prog_files:
-         if ('wim_prog' in pf) and ('.a'==pf[-2:]):
-            alist.append(pf)
-            stepno   = pf.strip('wim_prog').strip('.a') # step no eg 001 or date yyyymmddThhmmssZ
-            if ('T' in stepno) and ('Z' in stepno):
-               # date
-               steplist.append(
-                     dtm.datetime.strptime(stepno,'%Y%m%dT%H%M%SZ'))
-            else:
-               # integer step no
-               steplist.append(int(stepno))
-
-      # sort according to steplist:
-      slist = sorted([(e,i) for i,e in enumerate(steplist)])
-      self.prog_times   = [steplist[i] for e,i in slist]
-      self.prog_files   = [alist[i] for e,i in slist]
-      self.Nprog_files  = len(alist)
+      self.prog_list = file_list(self.prog_dir,'wim_prog')
       # =====================================================================
-      # print(self.prog_dir)
-      # print(self.prog_files)
-      # print(self.prog_times)
-      # sys.exit()
 
 
       # =====================================================================
       # final checks
-      if (self.init_file is None) and\
-         (self.out_file is None)  and\
-         (self.Nprog_files ==0 ):
+      if (self.init_list.Nfiles==0) and\
+         (self.out_list.Nfiles==0)  and\
+         (self.prog_list.Nfiles==0):
          raise ValueError('No results in ' + outdir)
 
       # where to save figures
@@ -470,23 +585,23 @@ class wim_results:
 
 
    ##########################################################################
-   def initial_fields(self):
+   def initial_fields(self,time_index=0):
 
-      if self.init_file is None:
-         raise ValueError('Initial conditions not outputted: wim_init*.[a,b]')
+      if self.init_list.Nfiles==0:
+         raise ValueError('Initial files not outputted: wim_init*.[a,b]')
       else:
-         afile = self.bindir+'/'+self.init_file
+         afile = self.init_list.dir+'/'+self.init_list.files[time_index]
          return fn_read_general_binary(afile)
    ##########################################################################
 
 
    ##########################################################################
-   def out_fields(self):
+   def out_fields(self,time_index):
 
-      if self.out_file is None:
-         raise ValueError('Final conditions not outputted: wim_out*.[a,b]')
+      if self.out_list.Nfiles==0:
+         raise ValueError('Final files not outputted: wim_out*.[a,b]')
       else:
-         afile = self.bindir+'/'+self.out_file
+         afile = self.out_list.dir+'/'+self.out_list.files[time_index]
          return fn_read_general_binary(afile)
    ##########################################################################
 
@@ -494,10 +609,10 @@ class wim_results:
    ##########################################################################
    def prog_fields(self,time_index=0):
 
-      if self.Nprog_files==0:
+      if self.prog_list.Nfiles==0:
          raise ValueError('Progress files not outputted: wim_prog*.[a,b]')
       else:
-         afile = self.prog_dir+'/'+self.prog_files[time_index]
+         afile = self.prog_list.dir+'/'+self.prog_list.files[time_index]
          return fn_read_general_binary(afile)
    ##########################################################################
 
@@ -506,25 +621,30 @@ class wim_results:
    def plot_initial(self):
       # Look at initial fields:
 
-      if self.init_file is None:
-         print('Initial conditions not outputted: wim_init*.[a,b]')
-         print('- not plotting')
+      # =============================================================
+      # Plot progress files (if they exist)
+      # if self.Nprog_files==0:
+      if self.init_list.Nfiles==0:
+         print('No initial files wim*init.[a,b] in '+
+               self.init_list.dir)
+         print('Not plotting')
+         return
       else:
-         print("Plotting initial conditions...")
-         if not os.path.exists(self.figdir):
-            os.mkdir(self.figdir)
+         print('\nPLOTTING INITIAL FILES...\n')
+      # =============================================================
 
-         figdir1  = self.figdir+'/init/'
-         if not os.path.exists(figdir1):
-            os.mkdir(figdir1)
 
-         grid_prams  = self.get_grid()
-         afile       = self.bindir+'/'+self.init_file
-         fields,info = fn_read_general_binary(afile)
-         Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot initial conditions
+      grid_prams  = self.get_grid()
 
-         print("Plots in "+figdir1)
-         print(" ")
+      figdir3  = self.figdir
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+      figdir3  = self.figdir+'/init'
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+
+      self.init_list.plot_steps(grid_prams,figdir3)
+      print('\nPlots in '+figdir3+'\n')
       return
    ##########################################################################
 
@@ -533,25 +653,30 @@ class wim_results:
    def plot_final(self):
       # Look at final fields:
 
-      if self.out_file is None:
-         print('Initial conditions not outputted: wim_out*.[a,b]')
-         print('- not plotting')
+      # =============================================================
+      # Plot progress files (if they exist)
+      # if self.Nprog_files==0:
+      if self.out_list.Nfiles==0:
+         print('No final files wim*out.[a,b] in '+
+               self.out_list.dir)
+         print('Not plotting')
+         return
       else:
-         print("Plotting final conditions...")
-         if not os.path.exists(self.figdir):
-            os.mkdir(self.figdir)
+         print('\nPLOTTING FINAL FILES...\n')
+      # =============================================================
 
-         figdir1  = self.figdir+'/final/'
-         if not os.path.exists(figdir1):
-            os.mkdir(figdir1)
 
-         grid_prams  = self.get_grid()
-         afile       = self.bindir+'/'+self.out_file
-         fields,info = fn_read_general_binary(afile)
-         Fplt.fn_plot_gen(grid_prams,fields,figdir1)    # plot final conditions
+      grid_prams  = self.get_grid()
 
-         print("Plots in "+figdir1)
-         print(" ")
+      figdir3  = self.figdir
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+      figdir3  = self.figdir+'/final'
+      if not os.path.exists(figdir3):
+         os.mkdir(figdir3)
+
+      self.out_list.plot_steps(grid_prams,figdir3)
+      print('\nPlots in '+figdir3+'\n')
       return
    ##########################################################################
 
@@ -561,19 +686,18 @@ class wim_results:
 
       # =============================================================
       # Plot progress files (if they exist)
-      if self.Nprog_files==0:
+      # if self.Nprog_files==0:
+      if self.prog_list.Nfiles==0:
          print('No progress files wim*prog.[a,b] in '+
-               self.bindir+'/prog')
+               self.prog_list.dir)
          print('Not plotting')
          return
       else:
-         print('\nPlotting progress files...\n')
+         print('\nPLOTTING PROGRESS FILES...\n')
       # =============================================================
 
 
       grid_prams  = self.get_grid()
-      pdir        = self.prog_dir
-      prog_files  = os.listdir(pdir)
 
       figdir3  = self.figdir
       if not os.path.exists(figdir3):
@@ -582,121 +706,8 @@ class wim_results:
       if not os.path.exists(figdir3):
          os.mkdir(figdir3)
 
-      # =============================================================
-      # determine the plotting limits
-      if 0:
-         # set colorbar axes manually
-         zlims  = {'icec'  :[0,1],      \
-                   'iceh'  :[0,5],      \
-                   'Dmax'  :[0,300],    \
-                   'tau_x' :[-.5,.5],  \
-                   'tau_y' :[-.05,.05],\
-                   'Hs'    :[0,4],        \
-                   'Tp'    :[10,20],      \
-                   'mwd'   :[-180,180]}
-
-      elif 0:
-         # let python choose
-         # - different for each time step,
-         #   so not good for a movie for example
-         zlims  = {'icec'  :None,\
-                   'iceh'  :None,\
-                   'Dmax'  :None,\
-                   'tau_x' :None,\
-                   'tau_y' :None,\
-                   'Hs'    :None,\
-                   'Tp'    :None,\
-                   'mwd'   :None}
-
-      else:
-         # set colorbar axes automatically
-         zdef  = [1.e30,-1.e30]
-         zlims  = {'icec' :1*zdef,\
-                   'iceh' :1*zdef,\
-                   'Dmax' :1*zdef,\
-                   'tau_x':1*zdef,\
-                   'tau_y':1*zdef,\
-                   'Hs'   :1*zdef,\
-                   'Tp'   :1*zdef,\
-                   'mwd'  :1*zdef}
-
-         # =============================================================
-         # determine the plotting limits
-         # by checking the arrays
-         alist = self.prog_files
-         tlist = []
-         for pf in self.prog_files:
-            afile = pdir+'/'+pf
-            #
-            fields,info = fn_read_general_binary(afile)
-            for key in fields.keys():
-               if key in zlims.keys():
-                  zmin  = fields[key].min()
-                  zmax  = fields[key].max()
-                  if zmin<zlims[key][0]:
-                     zlims[key][0]  = zmin
-                  if zmax>zlims[key][1]:
-                     zlims[key][1]  = zmax
-            #
-            afile = pdir+'/'+pf
-            #
-            fields,info = fn_read_general_binary(afile)
-            for key in fields.keys():
-               if key in zlims.keys():
-                  zmin  = fields[key].min()
-                  zmax  = fields[key].max()
-                  if zmin<zlims[key][0]:
-                     zlims[key][0]  = zmin
-                  if zmax>zlims[key][1]:
-                     zlims[key][1]  = zmax
-
-            stepno   = pf.strip('wim_prog').strip('.a') # step no eg 001 or date yyyymmddThhmmssZ
-            tlist.append(stepno)
-            #
-            afile = pdir+'/'+pf
-            #
-            fields,info = fn_read_general_binary(afile)
-            for key in fields.keys():
-               if key in zlims.keys():
-                  zmin  = fields[key].min()
-                  zmax  = fields[key].max()
-                  if zmin<zlims[key][0]:
-                     zlims[key][0]  = zmin
-                  if zmax>zlims[key][1]:
-                     zlims[key][1]  = zmax
-         # =============================================================
-
-      # =============================================================
-
-
-      # =============================================================
-      # do the plots
-      flds  = fields.keys()
-      Flds  = []
-
-      # Do interesting plots first
-      for vbl in ['Hs','Dmax']:
-         if vbl in flds:
-            Flds.append(vbl)
-            flds.remove(vbl)
-
-      Flds.extend(flds)
-      for vbl in Flds:
-         print('\n')
-         print('Plotting results for '+vbl)
-         print('\n')
-
-         figdir3B    = figdir3+'/'+vbl
-         if not os.path.exists(figdir3B):
-            os.mkdir(figdir3B)
-
-         for i,pf in enumerate(alist):
-            print(self.prog_times[i])
-            afile       = pdir+'/'+pf
-            fields,info = fn_read_general_binary(afile)
-            Fplt.fn_plot_gen(grid_prams,fields,figdir3B,\
-                  zlims_in=zlims,text=tlist[i],vlist=[vbl])
-      # =============================================================
-
+      self.prog_list.plot_steps(grid_prams,figdir3)
+      print('\nPlots in '+figdir3+'\n')
       return
+
    # =============================================================
