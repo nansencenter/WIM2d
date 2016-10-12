@@ -38,7 +38,7 @@ fi
 # (if they exist)
 cd $outdir
 outdir=`pwd` # change to full path
-bindir=$outdir/binaries/prog --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL
+bindir=$outdir/binaries/prog
 
 afiles=($bindir/wim_prog*.a)
 if [ ${#afiles[@]} -eq 0 ]
@@ -49,8 +49,8 @@ fi
 
 echo In `pwd`:
 rm -rf figs/prog/*
-echo python $tools/plot_prog.py
-python $tools/plot_prog.py
+echo python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL
+python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL
 
 if [ $MKMOV -eq 1 ]
 then
