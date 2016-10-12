@@ -8,20 +8,44 @@ import numpy as np
 import pyproj
 import struct
 from matplotlib import pyplot as plt
+from getopt import getopt
+
+
+# =======================================================================
+# command line inputs
+grid     = None
+opts,args   = getopt(sys.argv[1:],"",["grid="])
+for opt,arg in opts:
+   if opt=='--grid':
+      grid  = arg
+
+if grid is None:
+   raise ValueError("Specify grid name with option --grid=")
+else:
+   outdir   = grid
+   if not os.path.exists(outdir):
+      os.mkdir(outdir)
+# =======================================================================
+
 
 # ===============================================================
 # set up projection
 nsd      = os.getenv('NEXTSIMDIR')+'/data'
 # nsd      = '.'
-mppfile  = nsd+'/NpsNextsim.mpp'
+USE_MPROJ   = 0
+if not USE_MPROJ:
+   mppfile  = nsd+'/NpsNextsim.mpp'
+else:
+   mppfile  = nsd+'/NpsMproj.mpp'
+
 mf       = open(mppfile)
 lines    = mf.readlines()
 mf.close()
 
-TEST_PLOT   = 0
+TEST_PLOT   = 1
 USE_LL      = 1
 TEST_PROJ   = 0 # test projection against mapxy and exit
-LARGE_GRID  = 0
+LARGE_GRID  = 1
 
 # shape of earth
 ecc   = float(lines[-1].split()[0])
@@ -40,6 +64,7 @@ print(a,b,ecc)
 print(rotation,lat0,lat_ts)
 mapx  = pyproj.Proj(proj='stere',a=a,b=b,\
                lon_0=rotation,lat_0=lat0,lat_ts=lat_ts)
+geod  = pyproj.Geod(a=a,b=b)
 
 if TEST_PROJ:
    # test projection against mapll/mapxy
@@ -61,19 +86,39 @@ if TEST_PROJ:
 # get limits of grid
 # - NB outer cells only used for boundary conditions
 # (fixed or free)
-res      = 2e3;# resolution in m
 vertices = []
-if not LARGE_GRID:
-   # too small?
-   figname  = "test_grid_small"
+ddir     = 'OSI-SAF'
+if grid=='ONR_2km_small':
+   res      = 2e3# resolution in m
    gridname = "wim_grid_full_ONR_Oct2015_%ikm_small" %(int(res/1.e3))
+   if TEST_PLOT:
+      ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+      lonlat_file = None
+      figname     = outdir+"/test_"+grid+"_OSISAF.png"
    vertices.append(( -153.7   ,71.5 ))
    vertices.append(( -157     ,74.1 ))
    vertices.append(( -149.4   ,74.8 ))
    vertices.append(( -147.2   ,72   ))
-else:
-   figname  = "test_grid_big"
+
+elif grid=='ONR_2km_big':
+   res      = 2e3# resolution in m
    gridname = "wim_grid_full_ONR_Oct2015_%ikm_big" %(int(res/1.e3))
+   if TEST_PLOT:
+      ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+      lonlat_file = None
+      figname     = outdir+"/test_"+grid+"_OSISAF.png"
+   vertices.append(( -160  ,72.5 ))
+   vertices.append(( -160  ,77 ))
+   vertices.append(( -143  ,77 ))
+   vertices.append(( -143  ,72.5 ))
+
+elif grid=='ONR_4km_big':
+   res      = 4e3# resolution in m
+   gridname = "wim_grid_full_ONR_Oct2015_%ikm_big" %(int(res/1.e3))
+   if TEST_PLOT:
+      ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+      lonlat_file = None
+      figname     = outdir+"/test_"+grid+"_OSISAF.png"
    vertices.append(( -160  ,72.5 ))
    vertices.append(( -160  ,77 ))
    vertices.append(( -143  ,77 ))
@@ -121,6 +166,8 @@ def sav2bin(aid,arr,fields,nbytes=8):
 
    X     = arr[key]
    nX    = X.size
+
+   print("Range of "+key,X.min(),X.max())
 
    if nbytes==8:
       ss = nX*'d'
@@ -172,7 +219,7 @@ def write_bfile(bid,fields,nx,ny,nbytes=8):
    
 # ===============================================================
 # write to binary
-aid      = open(gridname+'.a','wb')
+aid      = open(outdir+'/'+gridname+'.a','wb')
 fields   = [] # list of variable names
 
 # corners: (nx+1)*(ny+1)
@@ -222,12 +269,32 @@ else:
 
 # ================================================
 # grid cell sizes
-# TODO should these be distance on the sphere?
-scuy     = np.zeros((nx,ny))+res
-sav2bin(aid,{'scuy':scuy},fields)
+scuy  = np.zeros((nx+1,ny))+res
+scvx  = np.zeros((nx,ny+1))+res
+scpy  = np.zeros((nx,ny))+res
+scpx  = np.zeros((nx,ny))+res
 
-scvx     = np.zeros((nx,ny))+res
+if USE_LL:
+   # CHANGE TO DISTANCES ON THE ELLIPSOID
+
+   # uy,py:
+   # y increases in j dirn, so get distance between cols
+   for j in range(ny):
+      # loop over cols
+      scuy[:,j]   = geod.inv(qlon[:,j+1],qlat[:,j+1],qlon[:,j],qlat[:,j])[2]
+      scpy[:,j]   = geod.inv(vlon[:,j+1],vlat[:,j+1],vlon[:,j],vlat[:,j])[2]
+
+   # vx:
+   # x increases in i dirn, so get distance between rows
+   for i in range(nx):
+      # loop over rows
+      scvx[i,:]   = geod.inv(qlon[i+1,:],qlat[i+1,:],qlon[i,:],qlat[i,:])[2]
+      scpx[i,:]   = geod.inv(ulon[i+1,:],ulat[i+1,:],ulon[i,:],ulat[i,:])[2]
+
+scp2  = scpx*scpy
+sav2bin(aid,{'scuy':scuy},fields)
 sav2bin(aid,{'scvx':scvx},fields)
+sav2bin(aid,{'scp2':scp2},fields)
 # ================================================
 
 # land mask
@@ -237,7 +304,7 @@ sav2bin(aid,{'LANDMASK':landmask},fields)
 
 aid.close()
 
-bid   = open(gridname+'.b','w')
+bid   = open(outdir+'/'+gridname+'.b','w')
 write_bfile(bid,fields,nx,ny)
 bid.close()
 print("\n grid-files "+gridname+'.[a,b] saved\n')
@@ -251,19 +318,8 @@ if TEST_PLOT:
    import mod_reading as mr
    wmsc  = '/work/shared/nersc/msc'
    bmap  = None
-   if 0:
-      figname += '_AMSR2.png'
-      ddir     = wmsc+'/AMSR2_3125'
-      ncfil    = ddir+'/Arc_2015/Arc_20151012_res3.125_pyres.nc'
-      nci      = mr.nc_getinfo(ncfil,lonlat_file=ddir+'/LongitudeLatitudeGrid_3.125km_Arctic.nc')
-      po,bmap  = nci.plot_var('fice',HYCOMreg='beau',show=False)
-   elif 1:
-      figname += '_OSISAF.png'
-      #ddir     = wmsc+'/OSI-SAF/2015_nh_polstere'
-      ddir     = 'OSI-SAF'
-      ncfil    = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
-      nci      = mr.nc_getinfo(ncfil)
-      po,bmap  = nci.plot_var('fice',HYCOMreg='beau',show=False)
+   nci      = mr.nc_getinfo(ncfil,lonlat_file=lonlat_file)
+   po,bmap  = nci.plot_var('fice',HYCOMreg='beau',show=False)
 
    # plot new selection
    xyVerts  = []
