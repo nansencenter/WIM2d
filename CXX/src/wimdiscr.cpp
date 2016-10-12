@@ -40,8 +40,8 @@ void WimDiscr<T>::gridProcessing()
 
         X_array.resize(boost::extents[nx][ny]);
         Y_array.resize(boost::extents[nx][ny]);
-        SCUY_array.resize(boost::extents[nx][ny]);
-        SCVX_array.resize(boost::extents[nx][ny]);
+        SCUY_array.resize(boost::extents[nx+1][ny]);
+        SCVX_array.resize(boost::extents[nx][ny+1]);
         SCP2_array.resize(boost::extents[nx][ny]);
         SCP2I_array.resize(boost::extents[nx][ny]);
         LANDMASK_array.resize(boost::extents[nx][ny]);
@@ -67,8 +67,6 @@ void WimDiscr<T>::gridProcessing()
             {
                 X_array[i][j] = x0 + i*dx+.5*dx;
                 Y_array[i][j] = y0 + j*dy+.5*dy;
-                SCUY_array[i][j] = dy;
-                SCVX_array[i][j] = dx;
                 SCP2_array[i][j] = dx*dy;
                 SCP2I_array[i][j] = 1./(dx*dy);
 
@@ -86,6 +84,22 @@ void WimDiscr<T>::gridProcessing()
                    }
                 }
 
+            }
+        }
+
+        for (int i = 0; i < nx+1; i++)
+        {
+            for (int j = 0; j < ny; j++)
+            {
+                SCUY_array[i][j] = dy;
+            }
+        }
+
+        for (int i = 0; i < nx; i++)
+        {
+            for (int j = 0; j < ny+1; j++)
+            {
+                SCVX_array[i][j] = dx;
             }
         }
 
@@ -281,8 +295,8 @@ void WimDiscr<T>::readGridFromFile()
     //array2_type X_array(boost::extents[nx][ny],boost::fortran_storage_order());
     X_array.resize(boost::extents[nx][ny]);
     Y_array.resize(boost::extents[nx][ny]);
-    SCUY_array.resize(boost::extents[nx][ny]);
-    SCVX_array.resize(boost::extents[nx][ny]);
+    SCUY_array.resize(boost::extents[nx+1][ny]);
+    SCVX_array.resize(boost::extents[nx][ny+1]);
     SCP2_array.resize(boost::extents[nx][ny]);
     SCP2I_array.resize(boost::extents[nx][ny]);
     LANDMASK_array.resize(boost::extents[nx][ny]);
@@ -322,12 +336,16 @@ void WimDiscr<T>::readGridFromFile()
             in.seekg(off, std::ios::cur); // skip from the current position of the cursor
 
             for (int j = 0; j < ny; j++)
-                for (int i = 0; i < nx; i++)
+                for (int i = 0; i < nx+1; i++)
                     in.read((char *)&SCUY_array[i][j], sizeof(value_type));
+
+            for (int j = 0; j < ny+1; j++)
+                for (int i = 0; i < nx; i++)
+                    in.read((char *)&SCVX_array[i][j], sizeof(value_type));
 
             for (int j = 0; j < ny; j++)
                 for (int i = 0; i < nx; i++)
-                    in.read((char *)&SCVX_array[i][j], sizeof(value_type));
+                    in.read((char *)&SCP2_array[i][j], sizeof(value_type));
 
             for (int j = 0; j < ny; j++)
                 for (int i = 0; i < nx; i++)
@@ -335,8 +353,39 @@ void WimDiscr<T>::readGridFromFile()
         }
         else
         {
-            std::cout<< "the grid binary file should be in column-major\n";
-            throw std::logic_error("the grid binary file should be in column-major");
+            //std::cout<< "the grid binary file should be in column-major\n";
+            //throw std::logic_error("the grid binary file should be in column-major");
+            int off = (nx+1)*(ny+1)*nbytes*2/* skip qlon and qlat*/;
+            in.seekg(off, std::ios::beg); // skip from the beginning of the file
+
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < ny; j++)
+                    in.read((char *)&PLon_array[i][j], sizeof(value_type));
+
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < ny; j++)
+                    in.read((char *)&PLat_array[i][j], sizeof(value_type));
+
+
+            off = (nx+1)*(ny)*nbytes*2/* skip ulon and ulat*/;
+            off += (nx)*(ny+1)*nbytes*2/* skip vlon and vlat*/;
+            in.seekg(off, std::ios::cur); // skip from the current position of the cursor
+
+            for (int i = 0; i < nx+1; i++)
+                for (int j = 0; j < ny; j++)
+                    in.read((char *)&SCUY_array[i][j], sizeof(value_type));
+
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < ny+1; j++)
+                    in.read((char *)&SCVX_array[i][j], sizeof(value_type));
+
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < ny; j++)
+                    in.read((char *)&SCP2_array[i][j], sizeof(value_type));
+
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < ny; j++)
+                    in.read((char *)&LANDMASK_array[i][j], sizeof(value_type));
         }
 
         std::cout<<"current pos= "<< in.tellg() <<"\n";
@@ -370,6 +419,7 @@ void WimDiscr<T>::readGridFromFile()
 
             X_array[i][j] = x;
             Y_array[i][j] = y;
+            SCP2I_array[i][j] = 1./SCP2_array[i][j];
         }
     }
 
@@ -398,25 +448,6 @@ void WimDiscr<T>::readGridFromFile()
 #endif
 
     close_mapx(map);
-
-    // SCP2_array = SCVX_array*SCUY_array;
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            SCP2_array[i][j] = SCVX_array[i][j]*SCUY_array[i][j];
-        }
-    }
-
-    // SCP2I_array = 1./(SCVX_array*SCUY_array);
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            SCP2I_array[i][j] = 1./(SCVX_array[i][j]*SCUY_array[i][j]);
-        }
-    }
-
 
     std::cout<<"Reading grid done...\n";
 }
@@ -1747,7 +1778,7 @@ void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_ty
     }
 
     if (vm["wim.checkfinal"].template as<bool>())
-       exportResults("out",t_in+nt*dt);
+       exportResults("final",t_in+nt*dt);
 
     // save diagnostic file
     if (vm["wim.savelog"].template as<bool>())
@@ -2737,9 +2768,9 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
        path   /= "binaries/prog";
        fileout = (boost::format( "%1%/wim_prog%2%" ) % path.string() % timestpstr).str();
     }
-    else if ( output_type == "out" )
+    else if ( output_type == "final" )
     {
-       path   /= "binaries/out";
+       path   /= "binaries/final";
        fileout = (boost::format( "%1%/wim_out%2%" ) % path.string() % timestpstr).str();
     }
     else if ( output_type == "init" )
