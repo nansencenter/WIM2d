@@ -157,7 +157,7 @@ public:
           array2_type const& scuy, array2_type const& scvx,
           array2_type const& scp2i, array2_type const& scp2,
           array2_type& saoout);
-    void padVar(array2_type const& u, array2_type& upad);
+    void padVar(array2_type const& u, array2_type& upad,std::string const& advopt_);
     //===========================================================================
 
 

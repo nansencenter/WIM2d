@@ -1648,11 +1648,19 @@ void WimDiscr<T>::timeStep(bool step)
     //     for (int j = 0; j < ny; j++)
     //         std::cout << "Dmax[" << i << "," << j << "]= " << dfloe[i][j] <<"\n";
 
+    // double Hs_max=0;
     // for (int i = 0; i < nx; i++)
-    //     for (int j = 0; j < ny; j++)
-    //         std::cout<<"Hs["<< i << "," << j << "]= "<< Hs[i][j] <<"\n";
+    //     for (int j = ny-1; j < ny; j++)
+    //         Hs_max  = max(Hs_max,Hs[i][j]);
+    // std::cout<<"Hs_max, j=ny = "<< Hs_max <<"\n";
 
-    // std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
+    // Hs_max=0;
+    // for (int i = 0; i < nx; i++)
+    //     for (int j = 0; j < 1; j++)
+    //         Hs_max  = max(Hs_max,Hs[i][j]);
+    // std::cout<<"Hs_max, j=0 = "<< Hs_max <<"\n";
+
+    std::cout<<"Hs_max= "<< *std::max_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
     // std::cout<<"Hs_min= "<< *std::min_element(Hs.data(), Hs.data()+Hs.num_elements()) <<"\n";
 
     double taux_min  = *std::min_element(tau_x.begin(), tau_x.end());
@@ -2244,13 +2252,13 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
     array2_type hp_temp;
     hp_temp.resize(boost::extents[nx][ny]);
 
-    padVar(u, u_pad);
-    padVar(v, v_pad);
-    padVar(SCP2_array, scp2_pad);
-    padVar(SCP2I_array, scp2i_pad);
-    padVar(SCUY_array, scuy_pad);
-    padVar(SCVX_array, scvx_pad);
-    padVar(h, h_pad);
+    padVar(u, u_pad, "xy-periodic");
+    padVar(v, v_pad,"xy-periodic");
+    padVar(SCP2_array, scp2_pad,"xy-periodic");
+    padVar(SCP2I_array, scp2i_pad,"xy-periodic");
+    padVar(SCUY_array, scuy_pad,"xy-periodic");
+    padVar(SCVX_array, scvx_pad,"xy-periodic");
+    padVar(h, h_pad,advopt);
       // TODO in fortran/matlab code,
       // h is treated differently from u,v etc
       // - they are always doubly periodic BC's
@@ -2275,7 +2283,7 @@ void WimDiscr<T>::waveAdvWeno(array2_type& h, array2_type const& u, array2_type 
            }
        }
 
-       padVar(hp_temp,hp);//apply boundary conditions
+       padVar(hp_temp,hp,advopt);//apply boundary conditions
     }
     else if (nghost>3)
     {
@@ -2498,7 +2506,7 @@ void WimDiscr<T>::weno3pdV2(array2_type const& gin, array2_type const& u, array2
 }
 
 template<typename T>
-void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
+void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad, std::string const & advopt_)
 {
     upad.resize(boost::extents[nxext][nyext]);
 
@@ -2517,7 +2525,7 @@ void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
 
             if (advdim == 1)
             {
-                if (advopt != "notperiodic")
+                if (advopt_ != "notperiodic")
                 {
                    // make periodic in i
                    if ((i < nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
@@ -2533,60 +2541,50 @@ void WimDiscr<T>::padVar(array2_type const& u, array2_type& upad)
             }
             else if (advdim == 2)
             {
-                if (advopt != "notperiodic")
+                if (advopt_ != "notperiodic")
                 {
                     // make periodic in j
-                    // if ((j < nbdy) && (nbdx-1 < i) && (i < nx+nbdx))
-                    //     upad[i][j] = u[i-nbdx][ny-nbdy+j];
+                    // - lower cells
+                    bool i_inner = ((nbdx-1 < i) && (i < nx+nbdx));
+                    if ((j < nbdy) && i_inner)
+                        upad[i][j] = u[i-nbdy][ny-nbdy+j];
 
-                    if ((j < nbdy) && (nbdx-1 < i) && (i < nx+nbdx))
-                        upad[i][j] = u[i-nbdx][ny-nbdy+j-1];
-
-                    if ((ny+nbdy-1 < j) && (nbdx-1 < i) && (i < nx+nbdx))
+                    // - upper cells
+                    if ((ny+nbdy-1 < j) && i_inner)
                         upad[i][j] = u[i-nbdx][j-ny-nbdy];
                 }
 
-                if (advopt == "xy-periodic")
+                if (advopt_ == "xy-periodic")
                 {
                     // make periodic in i
-                    if ((i < nbdx) && (nbdy-1 < j) && (j < ny+nbdy))
+                    // - far-left cells
+                    bool j_inner = ((nbdy-1 < j) && (j < ny+nbdy));
+                    if ((i < nbdx) && j_inner )
                         upad[i][j] = u[nx-nbdx+i][j-nbdy];
 
-
-                    if ((nx+nbdx-1 < i) && (nbdy-1 < j) && (j < ny+nbdy))
+                    // - far-right cells
+                    if ((nx+nbdx-1 < i) && j_inner )
                         upad[i][j] = u[i-nx-nbdx][j-nbdy];
 
-
-                    // // make periodic in j
-                    // if ((j < nbdy) && (nbdy-1 < i) && (i < nx+nbdy))
-                    //     upad[i][j] = u[i-nbdy][ny-nbdy+j];
-
-
-                    if ((ny+nbdy-1 < j) && (nbdx-1 < i) && (i < nx+nbdx))
-                        upad[i][j] = u[i-nbdx][j-ny-nbdy];
-
-
-                    // BR, TL
+                    // TR
                     if ((nx+nbdx-1 < i) && (ny+nbdy-1 < j))
                         upad[i][j] = u[i-nx-nbdx][j-ny-nbdy];
 
-
+                    // BL
                     if ((i < nbdx) && (j < nbdy))
                         upad[i][j] = u[i+nx-nbdx][j];
 
-
-                    // BL, TR
+                    // BR
                     if ((nx+nbdx-1 < i) && (j < nbdy))
                         upad[i][j] = u[i-nx-nbdx][ny-nbdy+j];
 
-
+                    // TL
                     if ((i < nbdx) && (ny+nbdy-1 < j))
                         upad[i][j] = u[i+nx-nbdx][j-ny-nbdy];
-
-                }
-            }
-        }
-    }
+                }//advopt_=="xy-periodic"
+            }//advdim==2
+        }//j
+    }//i
 }
 
 template<typename T>
