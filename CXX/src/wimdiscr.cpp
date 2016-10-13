@@ -282,122 +282,41 @@ void WimDiscr<T>::readGridFromFile()
     }
 
     bool column_major = record[1];
+    //nx = vm["wim.gridremoveouter"].template as<bool>() ? record[2]-2 : record[2];
+    //ny = vm["wim.gridremoveouter"].template as<bool>() ? record[3]-2 : record[3];
     nx = record[2];
     ny = record[3];
     std::cout<<"nx= "<< nx <<"\n";
     std::cout<<"ny= "<< ny <<"\n";
     int nbytes = record[4];
+    std::cout<<"nbytes= "<< nbytes <<"\n";
 
     array2_type PLat_array, PLon_array;
-    PLat_array.resize(boost::extents[nx][ny]);
-    PLon_array.resize(boost::extents[nx][ny]);
-
-    //array2_type X_array(boost::extents[nx][ny],boost::fortran_storage_order());
-    X_array.resize(boost::extents[nx][ny]);
-    Y_array.resize(boost::extents[nx][ny]);
-    SCUY_array.resize(boost::extents[nx+1][ny]);
-    SCVX_array.resize(boost::extents[nx][ny+1]);
-    SCP2_array.resize(boost::extents[nx][ny]);
-    SCP2I_array.resize(boost::extents[nx][ny]);
-    LANDMASK_array.resize(boost::extents[nx][ny]);
-
-    //filename = (boost::format("%1%/%2%")
-    //            % path.string()
-    //            % vm["wim.gridfilename"].template as<std::string>()).str();
 
     std::fstream in( afilename, std::ios::binary | std::ios::in);
 
-    if (in.is_open())
+    int off = (nx+1)*(ny+1)*nbytes*2/* skip qlon and qlat*/;
+
+    this->readFromBinary(in, PLon_array, off, std::ios::beg);
+    this->readFromBinary(in, PLat_array);
+
+    off = (nx+1)*(ny)*nbytes*2/* skip ulon and ulat*/;
+    off += (nx)*(ny+1)*nbytes*2/* skip vlon and vlat*/;
+
+    this->readFromBinary(in, SCUY_array, off, std::ios::cur, 1, 0);
+    this->readFromBinary(in, SCVX_array, 0, std::ios::cur, 0, 1);
+    this->readFromBinary(in, SCP2_array);
+    this->readFromBinary(in, LANDMASK_array);
+
+    if (vm["wim.gridremoveouter"].template as<bool>())
     {
-        if (column_major)
-        {
-#if 0
-            // get length of file:
-            in.seekg (0, in.end);
-            int length = in.tellg();
-            std::cout<<"length= "<< length <<"\n";
-            in.seekg (0, in.beg);
-#endif
-
-            int off = (nx+1)*(ny+1)*nbytes*2/* skip qlon and qlat*/;
-            in.seekg(off, std::ios::beg); // skip from the beginning of the file
-
-            for (int j = 0; j < ny; j++)
-                for (int i = 0; i < nx; i++)
-                    in.read((char *)&PLon_array[i][j], sizeof(value_type));
-
-            for (int j = 0; j < ny; j++)
-                for (int i = 0; i < nx; i++)
-                    in.read((char *)&PLat_array[i][j], sizeof(value_type));
-
-
-            off = (nx+1)*(ny)*nbytes*2/* skip ulon and ulat*/;
-            off += (nx)*(ny+1)*nbytes*2/* skip vlon and vlat*/;
-            in.seekg(off, std::ios::cur); // skip from the current position of the cursor
-
-            for (int j = 0; j < ny; j++)
-                for (int i = 0; i < nx+1; i++)
-                    in.read((char *)&SCUY_array[i][j], sizeof(value_type));
-
-            for (int j = 0; j < ny+1; j++)
-                for (int i = 0; i < nx; i++)
-                    in.read((char *)&SCVX_array[i][j], sizeof(value_type));
-
-            for (int j = 0; j < ny; j++)
-                for (int i = 0; i < nx; i++)
-                    in.read((char *)&SCP2_array[i][j], sizeof(value_type));
-
-            for (int j = 0; j < ny; j++)
-                for (int i = 0; i < nx; i++)
-                    in.read((char *)&LANDMASK_array[i][j], sizeof(value_type));
-        }
-        else
-        {
-            //std::cout<< "the grid binary file should be in column-major\n";
-            //throw std::logic_error("the grid binary file should be in column-major");
-            int off = (nx+1)*(ny+1)*nbytes*2/* skip qlon and qlat*/;
-            in.seekg(off, std::ios::beg); // skip from the beginning of the file
-
-            for (int i = 0; i < nx; i++)
-                for (int j = 0; j < ny; j++)
-                    in.read((char *)&PLon_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < nx; i++)
-                for (int j = 0; j < ny; j++)
-                    in.read((char *)&PLat_array[i][j], sizeof(value_type));
-
-
-            off = (nx+1)*(ny)*nbytes*2/* skip ulon and ulat*/;
-            off += (nx)*(ny+1)*nbytes*2/* skip vlon and vlat*/;
-            in.seekg(off, std::ios::cur); // skip from the current position of the cursor
-
-            for (int i = 0; i < nx+1; i++)
-                for (int j = 0; j < ny; j++)
-                    in.read((char *)&SCUY_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < nx; i++)
-                for (int j = 0; j < ny+1; j++)
-                    in.read((char *)&SCVX_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < nx; i++)
-                for (int j = 0; j < ny; j++)
-                    in.read((char *)&SCP2_array[i][j], sizeof(value_type));
-
-            for (int i = 0; i < nx; i++)
-                for (int j = 0; j < ny; j++)
-                    in.read((char *)&LANDMASK_array[i][j], sizeof(value_type));
-        }
-
-        std::cout<<"current pos= "<< in.tellg() <<"\n";
-
-        in.close();
+        nx -= 2;
+        ny -= 2;
     }
-    else
-    {
-        std::cout << "Cannot open " << afilename << "\n";
-        std::cerr << "error: open file " << afilename << " for input failed!" <<"\n";
-        std::abort();
-    }
+
+    X_array.resize(boost::extents[nx][ny]);
+    Y_array.resize(boost::extents[nx][ny]);
+    SCP2I_array.resize(boost::extents[nx][ny]);
 
 
     // polar stereographic projection
@@ -419,6 +338,8 @@ void WimDiscr<T>::readGridFromFile()
 
             X_array[i][j] = x;
             Y_array[i][j] = y;
+
+            // SCP2I_array = 1./(SCP2_array[i][j]);
             SCP2I_array[i][j] = 1./SCP2_array[i][j];
         }
     }
@@ -428,6 +349,8 @@ void WimDiscr<T>::readGridFromFile()
 
     std::cout<<"dx= "<< dx <<"\n";
     std::cout<<"dy= "<< dy <<"\n";
+
+    close_mapx(map);
 
 #if 0
     for (int i = 0; i < nx; i++)
@@ -442,14 +365,65 @@ void WimDiscr<T>::readGridFromFile()
 
             //std::cout<<"SCUY_array["<< i <<"]["<< j <<"]= "<< SCUY_array[i][j] <<"\n";
             //std::cout<<"SCVX_array["<< i <<"]["<< j <<"]= "<< SCVX_array[i][j] <<"\n";
+            //std::cout<<"SCP2_array["<< i <<"]["<< j <<"]= "<< SCP2_array[i][j] <<"\n";
+            //std::cout<<"SCP2I_array["<< i <<"]["<< j <<"]= "<< SCP2I_array[i][j] <<"\n";
             //std::cout<<"LANDMASK_array["<< i <<"]["<< j <<"]= "<< LANDMASK_array[i][j] <<"\n";
         }
     }
 #endif
 
-    close_mapx(map);
-
     std::cout<<"Reading grid done...\n";
+}
+
+template<typename T>
+void WimDiscr<T>::readFromBinary(std::fstream &in, array2_type& in_array, int off, std::ios_base::seekdir direction, int addx, int addy)
+{
+    if (off && (in.is_open()))
+    {
+        in.seekg(off, direction); // skip from the direction (beginning/current/end) position of the file
+    }
+
+    bool remove_outer = vm["wim.gridremoveouter"].template as<bool>();
+
+    if (remove_outer)
+    {
+        in_array.resize(boost::extents[nx-2+addx][ny-2+addy]);
+    }
+    else
+    {
+        in_array.resize(boost::extents[nx+addx][ny+addy]);
+    }
+
+    int _nx = nx + addx;
+    int _ny = ny + addy;
+
+    if (in.is_open())
+    {
+        for (int j = 0; j < _ny; j++)
+        {
+            for (int i = 0; i < _nx; i++)
+            {
+                int ii = remove_outer ? i-1 : i;
+                int jj = remove_outer ? j-1 : j;
+
+                bool is_outer = ((i==0) || (j==0) || (i==_nx-1) || (j==_ny-1));
+
+                value_type value;
+                in.read((char *)&value, sizeof(value_type));
+
+                if (remove_outer && is_outer)
+                    continue;
+
+                in_array[ii][jj] = value;
+            }
+        }
+    }
+    else
+    {
+        std::cout << "Cannot open " << in << "\n";
+        std::cerr << "error: open file " << in << " for input failed!" <<"\n";
+        std::abort();
+    }
 }
 
 template<typename T>
