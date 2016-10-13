@@ -90,6 +90,8 @@ namespace Wim
                   "Do/don't dump intermediate states to binary files (true/false)")
             ("wim.checkfinal", po::value<bool>()->default_value( true ),
                   "Do/don't dump final states after each call to WIM.run() to binary files (true/false)")
+            ("wim.checkincwaves", po::value<bool>()->default_value( true ),
+                  "Do/don't dump input wave fields after each call to WIM.run() to binary files (true/false)")
             ("wim.savelog", po::value<bool>()->default_value( true ),
                   "Do/don't save diagnostic file after each call to WIM.run() to text file (true/false)")
             ("wim.dumpfreq", po::value<int>()->default_value( 10 ),

@@ -167,7 +167,7 @@ public:
     //void getWimCenters(value_type& x,value_type& y,value_type const& rotangle);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
-    value_type thetaInRange(value_type const& th_, value_type const& th1);
+    value_type thetaInRange(value_type const& th_, value_type const& th1, bool const& close_on_right=false);
 
     array2_type getX() const { return X_array; }
     array2_type getY() const { return Y_array; }
@@ -208,7 +208,8 @@ private:
     std::string wim_gridfile;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
 
-    array2_type steady_mask, wave_mask, ice_mask, wtr_mask, icec, iceh,
+    array2_type steady_mask, wave_mask, ice_mask, wtr_mask,
+                icec, iceh, swh_in_array,mwp_in_array,mwd_in_array,
                 dave, atten_dim, damp_dim, ag2d_eff_temp, mwd, Hs, Tp;
     array3_type ag_eff, ap_eff, wlng_ice, atten_nond, damping, disp_ratio, sdf3d_dir_temp;
     array4_type sdf_dir, sdf_inc;

@@ -29,8 +29,8 @@ DEPS=$(CXXSRC:$(CXXSRCDIR)/%.cpp=$(DEPENDDIR)/%.d)
 
 CXX = g++
 #CXXFLAGS += -std=c++0x -std=c++11 -ftemplate-depth-256 -Wno-inline
-CXXFLAGS += -std=c++11 -pedantic -ftemplate-depth-256 -Wno-inline -fPIC -O3 -pthread -v
-CXXFLAGS += -fPIC -O3 -pthread -fopenmp -pedantic  -v # -MMD -MP -lm #-Wall
+CXXFLAGS += -std=c++11 -ftemplate-depth-256 -Wno-inline -fPIC -O3 -pthread -v#-pedantic
+CXXFLAGS += -fPIC -O3 -pthread -fopenmp  -v # -MMD -MP -lm #-Wall#-pedantic
 CXXFLAGS += -I . -I $(BOOST_DIR)/include -I $(OPENMPI_INCLUDE_DIR)/ -I $(WIM2D_CXX)/include
 CXXFLAGS += -I $(NEXTSIMDIR)/contrib/mapx/include -I $(NEXTSIMDIR)/contrib/bamg/include
 # ========================================================
@@ -44,7 +44,7 @@ CCOBJS:=$(CCSRC:$(CCSRCDIR)/%.c=$(OBJECTDIR)/%.o)
 CCDEPS:=$(CCSRC:$(CCSRCDIR)/%.c=$(DEPENDDIR)/%.d)
 
 CC = gcc
-CFLAGS += -pedantic -Wno-inline -fPIC -O3 #-v # -MMD -MP -lm #-Wall
+CFLAGS += -Wno-inline -fPIC -O3 #-v # -MMD -MP -lm #-Wall -pedantic
 CFLAGS += -I $(CCSRCDIR) -I . -I $(WIM2D_CXX)/include
 # ========================================================
 
