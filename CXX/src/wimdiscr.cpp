@@ -1317,10 +1317,10 @@ void WimDiscr<T>::timeStep(bool step)
             for (int j = 0; j < ny; j++)
             {
                 tmp1[i][j] = rhowtr*gravity*taux_om[i][j]/ap_eff[i][j][fq];
-                tau_x[ny*i+j] += wt_om[fq]*tmp1[i][j];
+                tau_x[ny*i+j] += wt_om[fq]*tmp1[i][j];//row-major order (C)
 
                 tmp1[i][j] = rhowtr*gravity*tauy_om[i][j]/ap_eff[i][j][fq];
-                tau_y[ny*i+j] += wt_om[fq]*tmp1[i][j];
+                tau_y[ny*i+j] += wt_om[fq]*tmp1[i][j];//row-major order (C)
 
                 //std::cout<<"tau_x["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
             }

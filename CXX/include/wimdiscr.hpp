@@ -218,7 +218,7 @@ private:
     array2_type hp;
     array2_type Fdmax, Ftaux, Ftauy, Fhs, Ftp;
 
-    std::vector<value_type> dfloe, nfloes, tau_x, tau_y;
+    std::vector<value_type> dfloe, nfloes, tau_x, tau_y;//row-major order (C)
     std::vector<value_type> mesh_x, mesh_y, mesh_conc, mesh_thick, mesh_dfloe, broken;
 
     boost::mpi::timer chrono;
