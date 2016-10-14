@@ -37,6 +37,22 @@ void WimDiscr<T>::gridProcessing()
     else
     {
         std::cout<<"Generating WIM grid manually...\n";
+        nx = vm["wim.nx"].template as<int>();
+        ny = vm["wim.ny"].template as<int>();
+
+        dx = vm["wim.dx"].template as<double>();
+        dy = vm["wim.dy"].template as<double>();
+
+        x0 = vm["wim.xmin"].template as<double>();
+        y0 = vm["wim.ymin"].template as<double>();
+        
+        if ( vm["wim.gridremoveouter"].template as<bool>() )
+        {
+            nx -= 2;
+            ny -= 2;
+            x0 += dx;
+            y0 += dy;
+        }
 
         X_array.resize(boost::extents[nx][ny]);
         Y_array.resize(boost::extents[nx][ny]);
@@ -46,11 +62,6 @@ void WimDiscr<T>::gridProcessing()
         SCP2I_array.resize(boost::extents[nx][ny]);
         LANDMASK_array.resize(boost::extents[nx][ny]);
 
-        dx = vm["wim.dx"].template as<double>();
-        dy = vm["wim.dy"].template as<double>();
-
-        x0 = vm["wim.xmin"].template as<double>();
-        y0 = vm["wim.ymin"].template as<double>();
 
         // int thread_id;
         // int total_threads;
@@ -106,42 +117,16 @@ void WimDiscr<T>::gridProcessing()
         std::cout<<"grid generation done in "<< chrono.elapsed() <<"s\n";
     }
 
-    bool critter = (vm["wim.checkprog"].template as<bool>())
-               || (vm["wim.checkinit"].template as<bool>())
-               || (vm["wim.checkfinal"].template as<bool>())
-               || (vm["nextwim.exportresults"].template as<bool>());
+    bool DoSaveGrid = (vm["wim.checkprog"].template as<bool>())
+                   || (vm["wim.checkinit"].template as<bool>())
+                   || (vm["wim.checkfinal"].template as<bool>())
+                   || (vm["nextwim.exportresults"].template as<bool>());
 
     //std::cout<<" ---before saving\n";
-    if (critter)
+    if (DoSaveGrid)
        this->saveGrid(); //save grid to binary
     //std::cout<<" ---after saving\n";
 
-    // ==========================================
-    // define wim_grid as structure
-    // - can be output to nextsim with main grid info
-    std::vector<value_type> X(nx*ny);
-    std::vector<value_type> Y(nx*ny);
-
-    for (int i = 0; i < nx; i++)
-    {
-        for (int j = 0; j < ny; j++)
-        {
-            X[ny*i+j] = X_array[i][j];
-            Y[ny*i+j] = Y_array[i][j];
-        }
-    }
-
-    // define wim_grid as structure
-    wim_grid = (WimGrid)
-    {
-        nx,
-        ny,
-        dx,
-        dy,
-        X,
-        Y
-    };
-    // ==========================================
 }
 
 template<typename T>
@@ -702,7 +687,8 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c,
                 else
                 {
                     ice_mask[i][j] = 1.;
-                    iceh[i][j] = ice_h[ny*i+j]/icec[i][j];
+                    //iceh[i][j] = ice_h[ny*i+j]/icec[i][j];
+                    iceh[i][j] = ice_h[ny*i+j];//pass in true thickness
                     dfloe[ny*i+j] = std::sqrt(icec[i][j]/nfloes[ny*i+j]);
                 }
 
@@ -2693,6 +2679,39 @@ WimDiscr<T>::thetaInRange(value_type const& th_, value_type const& th1, bool con
         th = th2;
 
     return th;
+}
+
+
+//typedef typename WimGrid WimDiscr<T>::wimGrid(std::string const& units)
+template<typename T> 
+typename WimDiscr<T>::WimGrid WimDiscr<T>::wimGrid(std::string const& units)
+{
+    value_type fac = 1.;
+    if (units == "km")
+        fac = 1.e-3;
+
+    std::vector<value_type> X(nx*ny);
+    std::vector<value_type> Y(nx*ny);
+    for (int i=0;i<nx;i++)
+    {
+        for (int j=0;j<ny;j++)
+        {
+            X[i*ny+j]  = fac*X_array[i][j];
+            Y[i*ny+j]  = fac*Y_array[i][j];
+        }
+    }
+
+    WimGrid wim_grid =
+    {
+        nx : nx,
+        ny : ny,
+        dx : fac*dx,
+        dy : fac*dy,
+        X:X,
+        Y:Y
+    };
+
+    return wim_grid;
 }
 
 template<typename T>

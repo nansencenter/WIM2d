@@ -115,14 +115,13 @@ public:
 
     void timeStep(bool step = false);
 
-    //void doBreaking(value_type const& mom0, value_type const& mom2, value_type const& var_strain);
     void doBreaking(BreakInfo const& breakinfo);
 
     void setMesh(std::vector<value_type> const& m_rx, std::vector<value_type> const& m_ry,
                  std::vector<value_type> const& m_conc, std::vector<value_type> const& m_thick, std::vector<value_type> const& m_dfloe);
     void clearMesh();
 
-    WimGrid wimGrid() const { return wim_grid; }
+    WimGrid wimGrid(std::string const& units="m");
 
     void test(value_type* toto);
 
@@ -219,11 +218,8 @@ private:
     array2_type hp;
     array2_type Fdmax, Ftaux, Ftauy, Fhs, Ftp;
 
-    //array2_type dfloe, nfloes, tau_x, tau_y;
     std::vector<value_type> dfloe, nfloes, tau_x, tau_y;
     std::vector<value_type> mesh_x, mesh_y, mesh_conc, mesh_thick, mesh_dfloe, broken;
-
-    WimGrid wim_grid;
 
     boost::mpi::timer chrono;
     std::string init_time_str;
