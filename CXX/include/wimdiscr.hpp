@@ -77,6 +77,8 @@ public:
         value_type dy;
         std::vector<value_type> X;
         std::vector<value_type> Y;
+        std::vector<value_type> x;
+        std::vector<value_type> y;
     } WimGrid;
 
 

@@ -2687,17 +2687,27 @@ template<typename T>
 typename WimDiscr<T>::WimGrid WimDiscr<T>::wimGrid(std::string const& units)
 {
     value_type fac = 1.;
-    if (units == "km")
+    if (units == "m")
+        fac = 1.;
+    else if (units == "km")
         fac = 1.e-3;
+    else
+    {
+        std::cout<<"Units <<"<<units<<">> not implemented\n";
+    }
 
     std::vector<value_type> X(nx*ny);
     std::vector<value_type> Y(nx*ny);
+    std::vector<value_type> x(nx);
+    std::vector<value_type> y(ny);
     for (int i=0;i<nx;i++)
     {
         for (int j=0;j<ny;j++)
         {
-            X[i*ny+j]  = fac*X_array[i][j];
-            Y[i*ny+j]  = fac*Y_array[i][j];
+            X[i*ny+j]  = fac*X_array[i][j];//row major (C)
+            Y[i*ny+j]  = fac*Y_array[i][j];//row major (C)
+            x[i]       = fac*X_array[i][0];
+            y[j]       = fac*Y_array[0][j];
         }
     }
 
@@ -2707,8 +2717,10 @@ typename WimDiscr<T>::WimGrid WimDiscr<T>::wimGrid(std::string const& units)
         ny : ny,
         dx : fac*dx,
         dy : fac*dy,
-        X:X,
-        Y:Y
+        X  : X,
+        Y  : Y,
+        x  : x,
+        y  : y
     };
 
     return wim_grid;
