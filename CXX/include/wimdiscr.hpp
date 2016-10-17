@@ -48,6 +48,7 @@ namespace fs = boost::filesystem;
 template<typename T=float> class WimDiscr
 {
 	typedef T value_type;
+    typedef typename std::vector<value_type> vector_value_type;
     typedef size_t size_type;
 	typedef boost::multi_array<value_type, 2> array2_type;
     typedef boost::multi_array<value_type, 3> array3_type;
@@ -119,13 +120,27 @@ public:
 
     void doBreaking(BreakInfo const& breakinfo);
 
-    void setMesh(std::vector<value_type> const& m_rx, std::vector<value_type> const& m_ry,
-                 std::vector<value_type> const& m_conc, std::vector<value_type> const& m_thick, std::vector<value_type> const& m_dfloe);
+    void setMesh(std::vector<value_type> const& m_rx,
+            std::vector<value_type> const& m_ry,
+                 std::vector<value_type> const& m_conc,
+                 std::vector<value_type> const& m_thick,
+                 std::vector<value_type> const& m_nfloes,
+                 std::string const& units="km");
+
+    std::vector<value_type> nfloesToDfloe(
+                 std::vector<value_type> const& m_nfloes,
+                 std::vector<value_type> const& m_conc);
+    
+    std::vector<value_type> dfloeToNfloes(
+                 std::vector<value_type> const& m_dfloe,
+                 std::vector<value_type> const& m_conc);
+
+    std::vector<bool> getBrokenMesh() const {return mesh_broken;}
+    std::vector<value_type> getNfloesMesh();
+
     void clearMesh();
 
     WimGrid wimGrid(std::string const& units="m");
-
-    void test(value_type* toto);
 
     void run(std::vector<value_type> const& ice_c = std::vector<value_type>(),
              std::vector<value_type> const& ice_h = std::vector<value_type>(),
@@ -184,7 +199,7 @@ public:
 
     std::vector<value_type> getTaux() const { return tau_x; }
     std::vector<value_type> getTauy() const { return tau_y; }
-    std::vector<value_type> getNFloes() const { return nfloes; }
+    std::vector<value_type> getNfloes() const { return nfloes; }
 
 
 private:
@@ -194,6 +209,7 @@ private:
     int wim_itest, wim_jtest;
     array2_type X_array, Y_array, SCUY_array, SCVX_array,
                 SCP2_array, SCP2I_array, LANDMASK_array;
+    std::vector<value_type> x_col,y_row;
 
     value_type cfl, dom, guess, Hs_inc, Tp_inc, mwd_inc, Tmin, Tmax, gravity, om;
     value_type xmax, ym, x0, y0, dx, dy, x_edge, unifc, unifh,
@@ -221,7 +237,10 @@ private:
     array2_type Fdmax, Ftaux, Ftauy, Fhs, Ftp;
 
     std::vector<value_type> dfloe, nfloes, tau_x, tau_y;//row-major order (C)
-    std::vector<value_type> mesh_x, mesh_y, mesh_conc, mesh_thick, mesh_dfloe, broken;
+    std::vector<value_type> mesh_x, mesh_y, mesh_conc, mesh_thick, mesh_dfloe;
+    std::vector<bool> mesh_broken;
+    bool break_on_mesh;
+    int mesh_num_elements;
 
     boost::mpi::timer chrono;
     std::string init_time_str;

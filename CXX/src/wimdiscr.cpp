@@ -127,6 +127,19 @@ void WimDiscr<T>::gridProcessing()
        this->saveGrid(); //save grid to binary
     //std::cout<<" ---after saving\n";
 
+
+    //for use in wim_grid
+    x_col.resize(nx);
+    y_row.resize(ny);
+    for (int i = 0; i < nx; i++)
+    {
+        x_col[i] = X_array[i][0];
+    }
+    for (int j = 0; j < ny; j++)
+    {
+        y_row[j] = Y_array[0][j];
+    }
+
 }
 
 template<typename T>
@@ -490,6 +503,8 @@ void WimDiscr<T>::init()
 
        //get initial time from wim.initialtime
        init_time_str = vm["wim.initialtime"].as<std::string>();
+
+        break_on_mesh   =  false;
     }
     else
     {
@@ -499,6 +514,8 @@ void WimDiscr<T>::init()
 
        //get initial time from simul.time_init
        init_time_str  = vm["simul.time_init"].template as<std::string>();
+
+        break_on_mesh   =  ( vm["nextwim.coupling-option"].template as<std::string>() == "breaking_on_mesh");
     }
 
 }//end ::init()
@@ -549,7 +566,6 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c,
     iceh.resize(boost::extents[nx][ny]);
     dfloe.resize(nx*ny);
     nfloes.resize(nx*ny);
-    broken.resize(nx*ny);
 
     dave.resize(boost::extents[nx][ny]);
     atten_dim.resize(boost::extents[nx][ny]);
@@ -1485,13 +1501,13 @@ void WimDiscr<T>::timeStep(bool step)
             {
                 BreakInfo breakinfo =
                 {
-                    /*conc:*/icec[i][j],
-                    /*thick:*/iceh[i][j],
-                    /*mom0:*/mom0[i][j],
-                    /*mom2:*/mom2[i][j],
-                    /*var_strain:*/var_strain[i][j],
-                    /*dfloe:*/dfloe[ny*i+j],
-                    /*broken:*/false
+                    conc:       icec[i][j],
+                    thick:      iceh[i][j],
+                    mom0:       mom0[i][j],
+                    mom2:       mom2[i][j],
+                    var_strain: var_strain[i][j],
+                    dfloe:      dfloe[ny*i+j],
+                    broken:     false
                 };
 
                 this->doBreaking(breakinfo);
@@ -1564,8 +1580,11 @@ void WimDiscr<T>::timeStep(bool step)
     }//end spatial loop i
 
 
-    if (0) // breaking on nextsim mesh
+    if (break_on_mesh) // breaking on nextsim mesh
     {
+
+        // ======================================================
+        // Interpolate mom0, mom2 and var_strain onto mesh
         int nb_var=3;
         std::vector<value_type> interp_in(nb_var*nx*ny, 0.);
         value_type* interp_out;
@@ -1574,32 +1593,56 @@ void WimDiscr<T>::timeStep(bool step)
         {
             for (int j = 0; j < ny; j++)
             {
-                interp_in[nb_var*(ny*i+j)] = mom0[i][j];
-                interp_in[nb_var*(ny*i+j)+1] = mom2[i][j];
-                interp_in[nb_var*(ny*i+j)+2] = var_strain[i][j];
+                int k   = ny*i+j;//row major
+                interp_in[nb_var*k]   = mom0[i][j];
+                interp_in[nb_var*k+1] = mom2[i][j];
+                interp_in[nb_var*k+2] = var_strain[i][j];
             }
         }
 
         int interptype = BilinearInterpEnum;
 
-        InterpFromGridToMeshx(interp_out,
-                              &X_array[0][0], nx,
-                              &Y_array[0][0], ny,
-                              &interp_in[0],
-                              ny, nx,
-                              nb_var,
-                              &mesh_x[0], &mesh_y[0], (int)mesh_x.size(),0.,interptype,true);
+        InterpFromGridToMeshx(interp_out,           //data (out)
+                              &x_col[0], nx,        //x vector (source), length of x vector
+                              &y_row[0], ny,        //y vector (source), length of y vector
+                              &interp_in[0],        //data (in)
+                              ny, nx,               //M,N: no of grid cells in y,x directions
+                                                    //(to determine if corners or centers of grid have been input)
+                              nb_var,               //no of variables
+                              &mesh_x[0],           // x vector (target)
+                              &mesh_y[0],           // y vector (target)
+                              mesh_num_elements,0., //target_size,default value
+                              interptype,           //interpolation type
+                              true                  //row_major (false = fortran/matlab order)         
+                              );
+        // ======================================================
 
-        // //assign taux,tauy
-        // for (int i=0; i<M_num_nodes; ++i)
-        // {
-        //     // tau
-        //     M_tau[i] = interp_out[nb_var*i];
-        //     M_tau[i+M_num_nodes] = interp_out[nb_var*i+1];
-        // }
+
+        for (int i=0; i<mesh_num_elements; ++i)
+        {
+            // set inputs to doBreaking
+            BreakInfo breakinfo =
+            {
+                conc:       mesh_conc[i],
+                thick:      mesh_thick[i],
+                mom0:       interp_out[nb_var*i],
+                mom2:       interp_out[nb_var*i+1],
+                var_strain: interp_out[nb_var*i+2],
+                dfloe:      mesh_dfloe[i],
+                broken:     false
+            };
+
+            //do breaking
+            this->doBreaking(breakinfo);
+
+            //update mesh vectors
+            mesh_dfloe[i]   = breakinfo.dfloe;
+            mesh_broken[i]  = breakinfo.broken;
+
+        }//finish loop over elements
 
         xDelete<value_type>(interp_out);
-    }
+    }//finish breaking on mesh
 
 
 
@@ -1636,15 +1679,46 @@ void WimDiscr<T>::timeStep(bool step)
 }
 
 template<typename T>
-void WimDiscr<T>::setMesh(std::vector<value_type> const& m_rx, std::vector<value_type> const& m_ry,
-                          std::vector<value_type> const& m_conc, std::vector<value_type> const& m_thick, std::vector<value_type> const& m_dfloe)
+void WimDiscr<T>::setMesh(std::vector<value_type> const& m_rx,
+                          std::vector<value_type> const& m_ry,
+                          std::vector<value_type> const& m_conc,
+                          std::vector<value_type> const& m_thick,
+                          std::vector<value_type> const& m_nfloes,
+                          std::string const& units)
 {
-    mesh_x = m_rx;
-    mesh_y = m_ry;
-    mesh_conc = m_conc;
-    mesh_thick = m_thick;
-    mesh_dfloe = m_dfloe;
-}
+    mesh_num_elements   = m_rx.size();
+
+    value_type fac;
+    if ( units == "km" )
+        fac = 1.e3;
+    else if ( units == "m" )
+        fac = 1.;
+    else
+    {
+        std::cout<<"Units "<<units<<" not implemented yet\n";
+        std::abort();
+    }
+
+
+    // gets returned to nextsim
+    mesh_broken.resize(mesh_num_elements);
+    std::fill(mesh_broken.begin(),mesh_broken.end(),false);
+
+    // set positions of mesh centres
+    mesh_x.resize(mesh_num_elements);
+    mesh_y.resize(mesh_num_elements);
+    for (int i=0;i<mesh_num_elements;i++)
+    {
+        //convert grid points to metres
+        mesh_x[i] = fac*m_rx[i];
+        mesh_y[i] = fac*m_ry[i];
+    }
+
+    mesh_conc   = m_conc;
+    mesh_thick  = m_thick;
+    mesh_dfloe  = this->nfloesToDfloe(m_nfloes,mesh_conc);
+}//setMesh
+
 
 template<typename T>
 void WimDiscr<T>::clearMesh()
@@ -1654,14 +1728,7 @@ void WimDiscr<T>::clearMesh()
     mesh_conc.resize(0);
     mesh_thick.resize(0);
     mesh_dfloe.resize(0);
-}
-
-template<typename T>
-void WimDiscr<T>::test(value_type* toto)
-{
-    for (int i=0; i<nx; ++i)
-        for (int j=0; j<ny; ++j)
-            std::cout<<"toto["<< ny*i+j<<"]= "<< toto[ny*i+j] <<"\n";
+    mesh_broken.resize(0);
 }
 
 template<typename T>
@@ -1696,6 +1763,50 @@ void WimDiscr<T>::doBreaking(BreakInfo const& breakinfo)
         }
     }
 }
+
+
+template<typename T>
+typename WimDiscr<T>::vector_value_type
+WimDiscr<T>::dfloeToNfloes(std::vector<value_type> const& dfloe_in,
+                           std::vector<value_type> const& conc_in)
+{
+    int N   = conc_in.size();
+    std::vector<value_type> nfloes_out(N);
+
+    for (int i=0;i<N;i++)
+    {
+        if (dfloe[i]>0)
+            nfloes_out[i]   = conc_in[i]/std::pow(dfloe_in[i],2.);
+    }
+    return nfloes_out;
+}
+
+
+template<typename T>
+typename WimDiscr<T>::vector_value_type
+WimDiscr<T>::nfloesToDfloe(std::vector<value_type> const& nfloes_in,
+                           std::vector<value_type> const& conc_in)
+{
+    int N   = conc_in.size();
+    std::vector<value_type> dfloe_out(N);
+
+    for (int i=0;i<N;i++)
+    {
+        if (nfloes_in[i]>0)
+            dfloe_out[i]   = std::sqrt(conc_in[i]/nfloes_in[i]);
+    }
+    std::cout<<"hi 3\n";
+    return dfloe_out;
+}
+
+
+template<typename T>
+typename WimDiscr<T>::vector_value_type
+WimDiscr<T>::getNfloesMesh()
+{
+    return this->dfloeToNfloes(mesh_dfloe,mesh_conc);
+}
+
 
 template<typename T>
 void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes,
@@ -2682,7 +2793,6 @@ WimDiscr<T>::thetaInRange(value_type const& th_, value_type const& th1, bool con
 }
 
 
-//typedef typename WimGrid WimDiscr<T>::wimGrid(std::string const& units)
 template<typename T> 
 typename WimDiscr<T>::WimGrid WimDiscr<T>::wimGrid(std::string const& units)
 {
@@ -2706,8 +2816,8 @@ typename WimDiscr<T>::WimGrid WimDiscr<T>::wimGrid(std::string const& units)
         {
             X[i*ny+j]  = fac*X_array[i][j];//row major (C)
             Y[i*ny+j]  = fac*Y_array[i][j];//row major (C)
-            x[i]       = fac*X_array[i][0];
-            y[j]       = fac*Y_array[0][j];
+            x[i]       = fac*x_col[i];
+            y[j]       = fac*y_row[j];
         }
     }
 

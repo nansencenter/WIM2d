@@ -124,6 +124,8 @@ namespace Wim
                   "Export results in coupled mode")
             ("nextwim.couplingfreq", po::value<int>()->default_value( 20 ),
                   "Coupling frequency between neXtSIM and WIM (# neXtSIM time-steps)")
+            ("nextwim.coupling-option", po::value<std::string>()->default_value( "naive" ),
+                  "Coupling option: naive->interp nfloes onto mesh after exiting WIM; breaking_on_mesh->import mesh and do breaking on mesh in parallel")
             ;
         return desc;
     }
