@@ -105,6 +105,11 @@ public:
     void readFromBinary(std::fstream &in, array2_type& in_array, int off = 0, std::ios_base::seekdir direction = std::ios::beg, int addx = 0, int addy = 0);
     void readDataFromFile(std::string const& filein);
     void exportResults(std::string const& output_type, value_type const& t_out) const;
+    void testInterp(std::string const& output_type,
+                    value_type const& t_out,
+                    std::vector<std::vector<value_type>> const& vectors,
+                    std::vector<std::string> const& names
+                    ) const;
     void saveLog(value_type const& t_out) const;
     void init();
 

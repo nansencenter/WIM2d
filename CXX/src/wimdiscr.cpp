@@ -1107,13 +1107,12 @@ void WimDiscr<T>::timeStep(bool step)
     std::fill( tau_x.begin(), tau_x.end(), 0. );
     std::fill( tau_y.begin(), tau_y.end(), 0. );
 
-    array2_type tmp1, mom0, mom2, var_strain, mom0w, mom2w;
-    tmp1.resize(boost::extents[nx][ny]);
-    mom0.resize(boost::extents[nx][ny]);
-    mom2.resize(boost::extents[nx][ny]);
-    var_strain.resize(boost::extents[nx][ny]);
-    mom0w.resize(boost::extents[nx][ny]);
-    mom2w.resize(boost::extents[nx][ny]);
+    std::vector<value_type> mom0, mom2, var_strain, mom0w, mom2w;
+    mom0      .resize(nx*ny);
+    mom2      .resize(nx*ny);
+    var_strain.resize(nx*ny);
+    mom0w     .resize(nx*ny);
+    mom2w     .resize(nx*ny);
 
     value_type E_tot, sig_strain, Pstrain, P_crit, wlng_crest, Dc;
     value_type adv_dir, F, kicel, om, ommin, ommax, om1, lam1, lam2, dom, c1d, tmp;
@@ -1332,11 +1331,11 @@ void WimDiscr<T>::timeStep(bool step)
         {
             for (int j = 0; j < ny; j++)
             {
-                tmp1[i][j] = rhowtr*gravity*taux_om[i][j]/ap_eff[i][j][fq];
-                tau_x[ny*i+j] += wt_om[fq]*tmp1[i][j];//row-major order (C)
+                value_type tmp1 = rhowtr*gravity*taux_om[i][j]/ap_eff[i][j][fq];
+                tau_x[ny*i+j] += wt_om[fq]*tmp1;//row-major order (C)
 
-                tmp1[i][j] = rhowtr*gravity*tauy_om[i][j]/ap_eff[i][j][fq];
-                tau_y[ny*i+j] += wt_om[fq]*tmp1[i][j];//row-major order (C)
+                tmp1 = rhowtr*gravity*tauy_om[i][j]/ap_eff[i][j][fq];
+                tau_y[ny*i+j] += wt_om[fq]*tmp1;//row-major order (C)
 
                 //std::cout<<"tau_x["<< i << "," << j << "]= "<< taux_om[i][j] <<"\n";
             }
@@ -1358,17 +1357,17 @@ void WimDiscr<T>::timeStep(bool step)
                 tmp = wt_om[fq]*S_freq[i][j];
 
                 // variance of displacement (water)
-                mom0w[i][j] += std::abs(tmp);
+                mom0w[i*ny+j] += std::abs(tmp);
 
                 // variance of displacement (ice)
-                mom0[i][j] += std::abs(tmp*std::pow(F,2.));
+                mom0[i*ny+j] += std::abs(tmp*std::pow(F,2.));
                 tmp = wt_om[fq]*std::pow(om,2.)*S_freq[i][j];
 
                 // variance of speed (water)
-                mom2w[i][j] += std::abs(tmp);
+                mom2w[i*ny+j] += std::abs(tmp);
 
                 // variance of speed (ice)
-                mom2[i][j] += std::abs(tmp*std::pow(F,2.));
+                mom2[i*ny+j] += std::abs(tmp*std::pow(F,2.));
 
                 // variance of strain
                 if (ice_mask[i][j] == 1.)
@@ -1378,7 +1377,7 @@ void WimDiscr<T>::timeStep(bool step)
 
                     // strain density
                     tmp = wt_om[fq]*S_freq[i][j]*std::pow(tmp,2.);
-                    var_strain[i][j] += std::abs(tmp);
+                    var_strain[i*ny+j] += std::abs(tmp);
                 }
             }
         }
@@ -1398,36 +1397,27 @@ void WimDiscr<T>::timeStep(bool step)
 
     if (ref_Hs_ice)
     {
-        Hs = mom0;
-        std::for_each(Hs.data(), Hs.data()+Hs.num_elements(), [&](value_type& f){ f = 4*std::sqrt(f); });
-        // std::fill( Tp.data(), Tp.data() + Tp.num_elements(), 0. );
-
 #pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
             {
-                if (mom2[i][j] > 0.)
-                    Tp[i][j] = 2*PI*std::sqrt(mom0[i][j]/mom2[i][j]);
+                Hs[i][j] = 4*std::sqrt(mom0[i*ny+j]);
+                if (mom2[i*ny+j] > 0.)
+                    Tp[i][j] = 2*PI*std::sqrt(mom0[i*ny+j]/mom2[i*ny+j]);
             }
         }
     }
     else
     {
-        Hs = mom0w;
-        std::for_each(Hs.data(), Hs.data()+Hs.num_elements(), [&](value_type& f){ f = 4*std::sqrt(f); });
-
-        // std::fill( Tp.data(), Tp.data() + Tp.num_elements(), 0. );
-        //std::fill( Hs.data(), Hs.data() + Hs.num_elements(), 0. );
-
 #pragma omp parallel for num_threads(max_threads) collapse(2)
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
             {
-                //Hs[i][j] = 4*std::sqrt(mom0w[i][j]);
-                if (mom2w[i][j] > 0.)
-                    Tp[i][j] = 2*PI*std::sqrt(mom0w[i][j]/mom2w[i][j]);
+                Hs[i][j] = 4*std::sqrt(mom0w[i*ny+j]);
+                if (mom2w[i*ny+j] > 0.)
+                    Tp[i][j] = 2*PI*std::sqrt(mom0w[i*ny+j]/mom2w[i*ny+j]);
             }
         }
     }
@@ -1442,13 +1432,13 @@ void WimDiscr<T>::timeStep(bool step)
        std::fstream diagID(diagfile, std::ios::out | std::ios::app);
 
        diagID << std::setw(16) << std::left
-          << mom0w[i][j] << " # mom0w, m^2\n";
+          << mom0w[i*ny+j] << " # mom0w, m^2\n";
        diagID << std::setw(16) << std::left
-          << mom2w[i][j] <<" # mom2w, m^2/s^2\n";
+          << mom2w[i*ny+j] <<" # mom2w, m^2/s^2\n";
        diagID << std::setw(16) << std::left
-          << mom0[i][j] <<" # mom0, m^2\n";
+          << mom0[i*ny+j] <<" # mom0, m^2\n";
        diagID << std::setw(16) << std::left
-          << mom2[i][j] <<" # mom2, m^2/s^2\n";
+          << mom2[i*ny+j] <<" # mom2, m^2/s^2\n";
        diagID << std::setw(16) << std::left
           << Hs[i][j] <<" # Hs, m\n";
        diagID << std::setw(16) << std::left
@@ -1492,20 +1482,20 @@ void WimDiscr<T>::timeStep(bool step)
             int jcrest;
             bool break_criterion;
 
-            //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i][j]  <<"\n";
+            //std::cout << "MASK[" << i << "," << j << "]= " << ice_mask[i][j] << " and "<< mom0[i*ny+j]  <<"\n";
 
             Pstrain      = 0.;
             P_crit       = std::exp(-1.0);
 
-            if ((ice_mask[i][j] == 1.) && (mom0[i][j] >= 0.))
+            if ((ice_mask[i][j] == 1.) && (mom0[i*ny+j] >= 0.))
             {
                 BreakInfo breakinfo =
                 {
                     conc:       icec[i][j],
                     thick:      iceh[i][j],
-                    mom0:       mom0[i][j],
-                    mom2:       mom2[i][j],
-                    var_strain: var_strain[i][j],
+                    mom0:       mom0[i*ny+j],
+                    mom2:       mom2[i*ny+j],
+                    var_strain: var_strain[i*ny+j],
                     dfloe:      dfloe[ny*i+j],
                     broken:     false
                 };
@@ -1513,42 +1503,7 @@ void WimDiscr<T>::timeStep(bool step)
                 this->doBreaking(breakinfo);
 
                 dfloe[ny*i+j] = breakinfo.dfloe;
-#if 0
-                // significant strain amp
-                sig_strain = 2*std::sqrt(var_strain[i][j]);
 
-                // probability of critical strain
-                // being exceeded from Rayleigh distribution
-                Pstrain = std::exp( -std::pow(epsc,2.)/(2*var_strain[i][j]) );
-
-                break_criterion = (Pstrain >= P_crit) && breaking;
-
-                if (break_criterion)
-                {
-                    //std::cout << "TP[" << i << "," << j << "]= " << Tp[i][j] <<"\n";
-                    om    = 2*PI/Tp[i][j];
-                    ommin = 2*PI*freq_vec[0];
-                    ommax = 2*PI*freq_vec[nwavefreq-1];
-
-                    if (om <= ommin)
-                        wlng_crest = wlng_ice[i][j][0];
-                    else if (om >= ommax)
-                        wlng_crest = wlng_ice[i][j][nwavefreq-1];
-                    else
-                    {
-                        jcrest = std::floor((om-ommin+dom)/dom);
-                        // std::cout<<"jrest= "<< jcrest <<"\n";
-                        om1 = 2*PI*freq_vec[jcrest-1];
-                        lam1 = wlng_ice[i][j][jcrest-1];
-                        lam2 = wlng_ice[i][j][jcrest];
-                        wlng_crest = lam1+(om-om1)*(lam2-lam1)/dom;
-                    }
-
-                    Dc = std::max<value_type>(dmin,wlng_crest/2.0);
-                    dfloe[ny*i+j] = std::min<value_type>(Dc,dfloe[ny*i+j]);
-                    //std::cout<<"DMAX= std::MAX("<< Dc << "," << dfloe[ny*i+j] <<")\n";
-                }
-#endif
             }//end test for ice and waves
             else if (wtr_mask[i][j] == 1.)
             {
@@ -1589,14 +1544,35 @@ void WimDiscr<T>::timeStep(bool step)
         std::vector<value_type> interp_in(nb_var*nx*ny, 0.);
         value_type* interp_out;
 
+        bool TEST_INTERP_MESH   = false;//set to true if want to save mesh quantities inside WIM
+        std::vector<value_type> mesh_dfloe_old;
+        if (TEST_INTERP_MESH)
+        {
+            mesh_dfloe_old = mesh_dfloe;//copy before breaking
+
+            value_type t_out = dt*cpt;
+            std::vector<std::vector<value_type>> vectors;
+            std::vector<std::string> names;
+            vectors.resize(nb_var);
+            names.resize(nb_var);
+            vectors[0]  = mom0;
+            vectors[1]  = mom2;
+            vectors[2]  = var_strain;
+            names[0]    = "mom0";
+            names[1]    = "mom2";
+            names[2]    = "var_strain";
+            this->testInterp("grid",t_out,vectors,names);
+            vectors.resize(0);
+            names.resize(0);
+        }
+
         for (int i = 0; i < nx; i++)
         {
             for (int j = 0; j < ny; j++)
             {
-                int k   = ny*i+j;//row major
-                interp_in[nb_var*k]   = mom0[i][j];
-                interp_in[nb_var*k+1] = mom2[i][j];
-                interp_in[nb_var*k+2] = var_strain[i][j];
+                interp_in[nb_var*(i*ny+j)  ] = mom0      [i*ny+j];
+                interp_in[nb_var*(i*ny+j)+1] = mom2      [i*ny+j];
+                interp_in[nb_var*(i*ny+j)+2] = var_strain[i*ny+j];
             }
         }
 
@@ -1616,7 +1592,6 @@ void WimDiscr<T>::timeStep(bool step)
                               true                  //row_major (false = fortran/matlab order)         
                               );
         // ======================================================
-
 
         for (int i=0; i<mesh_num_elements; ++i)
         {
@@ -1640,6 +1615,48 @@ void WimDiscr<T>::timeStep(bool step)
             mesh_broken[i]  = breakinfo.broken;
 
         }//finish loop over elements
+
+
+        if (TEST_INTERP_MESH)
+        {   
+            value_type t_out = dt*cpt;
+            std::vector<std::vector<value_type>> vectors;
+            std::vector<std::string> names;
+            int nbvar=7;
+            vectors.resize(nbvar);
+            names.resize(nbvar);
+            std::vector<value_type> mom0_mesh,mom2_mesh,var_strain_mesh;
+            mom0_mesh      .resize(mesh_num_elements);
+            mom2_mesh      .resize(mesh_num_elements);
+            var_strain_mesh.resize(mesh_num_elements);
+            for (int i=0; i<mesh_num_elements; ++i)
+            {
+                mom0_mesh      [i] = interp_out[nb_var*i];
+                mom2_mesh      [i] = interp_out[nb_var*i+1];
+                var_strain_mesh[i] = interp_out[nb_var*i+2];
+            }
+            vectors[0]  = mesh_conc;
+            vectors[1]  = mesh_thick;
+            vectors[2]  = mesh_dfloe;
+            vectors[3]  = mom0_mesh;
+            vectors[4]  = mom2_mesh;
+            vectors[5]  = var_strain_mesh;
+            vectors[6]  = mesh_dfloe_old;
+            names[0]    = "Concentration";
+            names[1]    = "Thickness";
+            names[2]    = "Dfloe";
+            names[3]    = "Mom0";
+            names[4]    = "Mom2";
+            names[5]    = "Var_strain";
+            names[6]    = "Dfloe_old";
+            this->testInterp("mesh",t_out,vectors,names);
+            vectors        .resize(0);
+            names          .resize(0);
+            mom0_mesh      .resize(0);
+            mom2_mesh      .resize(0);
+            var_strain_mesh.resize(0);
+            mesh_dfloe_old.resize(0);
+        }
 
         xDelete<value_type>(interp_out);
     }//finish breaking on mesh
@@ -1775,7 +1792,7 @@ WimDiscr<T>::dfloeToNfloes(std::vector<value_type> const& dfloe_in,
 
     for (int i=0;i<N;i++)
     {
-        if (dfloe[i]>0)
+        if (dfloe_in[i]>0)
             nfloes_out[i]   = conc_in[i]/std::pow(dfloe_in[i],2.);
     }
     return nfloes_out;
@@ -3181,6 +3198,157 @@ void WimDiscr<T>::exportResults(std::string const& output_type,
 
     out.close();
     outb.close();
+}
+
+template<typename T>
+void WimDiscr<T>::testInterp(std::string const& output_type,
+                             value_type const& t_out,
+                             std::vector<std::vector<value_type>> const& vectors,
+                             std::vector<std::string> const& names
+                             ) const
+{
+
+    int Nrecs     = vectors.size();
+    int Nelements = vectors[0].size();
+    int recno;
+
+    std::string str = vm["wim.outparentdir"].template as<std::string>();
+
+    std::string init_time  = ptime(init_time_str);
+    std::string timestpstr = ptime(init_time_str, t_out);
+
+    if (output_type == "grid")
+    {
+        fs::path path(str);
+        path   /= "binaries/test_interp_grid";
+        std::string fileout,fileoutb;
+
+        fileout     = (boost::format( "%1%/wim_test_interp_grid%2%" ) % path.string() % timestpstr).str();
+        fileoutb   = fileout+".b";
+        fileout    = fileout+".a";
+        if ( !fs::exists(path) )
+            fs::create_directories(path);
+
+        std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+        {
+           std::cout << "Cannot open " << fileout  << "\n";
+           std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
+           std::abort();
+        }
+
+        // export the txt file for grid field information
+        std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
+        if (!outb.is_open())
+        {
+            std::cout << "Cannot open " << fileoutb  << "\n";
+            std::cerr << "error: open file " << fileoutb << " for output failed!" <<"\n";
+            std::abort();
+        }
+
+        // ==================================================================================================
+        //.b file header
+        std::string rstr   = std::string(2-std::to_string(Nrecs).length(),'0')
+                              + std::to_string(Nrecs);
+        outb << std::setw(15) << std::left << rstr  << "    Nrecs    # "<< "Number of records" <<"\n";
+        outb << std::setw(15) << std::left << "0"   << "    Norder   # "
+             << "Storage order [column-major (F/matlab) = 1; row-major (C) = 0]" <<"\n";
+        outb << std::setw(15) << std::left << nx    << "    nx       # "<< "Record length in x direction (elements)" <<"\n";
+        outb << std::setw(15) << std::left << ny    << "    ny       # "<< "Record length in y direction (elements)" <<"\n";
+
+        outb <<"\n";
+        outb << std::left << init_time << "    t_start    # "<< "Model time of WIM call" <<"\n";
+        outb << std::left << timestpstr << "    t_out    # "<< "Model time of output" <<"\n";
+
+        outb <<"\n";
+        outb << "Record number and name:" <<"\n";
+        // ==================================================================================================
+
+        // =================================================================
+        //loop over vectors & names
+        for (int recno=0;recno<Nrecs;recno++)
+        {
+            for (int i = 0; i < Nelements; i++)
+            {
+                out.write((char *)&vectors[recno][i], sizeof(value_type));
+            }
+
+            int r   = recno+1;
+            rstr   = std::string(2-std::to_string(r).length(),'0')
+               + std::to_string(r);
+            outb << std::setw(9) << rstr << names[recno] <<"\n";
+        }//finish writing to files
+        // =================================================================
+
+        out.close();
+        outb.close();
+    }//export on grid
+    else
+    {
+        //export on mesh
+        fs::path path(str);
+        path   /= "binaries/test_interp_mesh";
+        std::string fileout,fileoutb;
+
+        fileout     = (boost::format( "%1%/field_%2%" ) % path.string() % timestpstr).str();
+        fileoutb   = fileout+".dat";
+        fileout    = fileout+".bin";
+        if ( !fs::exists(path) )
+            fs::create_directories(path);
+
+        std::fstream out(fileout, std::ios::binary | std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+        {
+           std::cout << "Cannot open " << fileout  << "\n";
+           std::cerr << "error: open file " << fileout << " for output failed!" <<"\n";
+           std::abort();
+        }
+
+        // export the txt file for grid field information
+        std::fstream outb(fileoutb, std::ios::out | std::ios::trunc);
+        if (!outb.is_open())
+        {
+            std::cout << "Cannot open " << fileoutb  << "\n";
+            std::cerr << "error: open file " << fileoutb << " for output failed!" <<"\n";
+            std::abort();
+        }
+
+        // =================================================================
+        //loop over vectors & names
+        for (int recno=0;recno<Nrecs;recno++)
+        {
+            std::string prec;
+            if (sizeof(value_type)==8)
+                prec    = "double";
+            else
+                prec    = "float";
+
+            out.write((char*) &Nelements, sizeof(Nelements));
+            for (int i = 0; i < Nelements; i++)
+            {
+                out.write((char *)&vectors[recno][i], sizeof(value_type));
+            }
+
+            outb << names[recno] << " " << prec <<"\n";
+        }//finish writing to files
+        // =================================================================
+
+        out.close();
+        outb.close();
+
+        //get mesh file & copy to correct location:
+        std::string meshdir   = vm["simul.output_directory"].template as<std::string>();
+        std::string meshfile  = meshdir+"/mesh_1001.bin";
+        std::string meshfile2 = meshdir+"/mesh_1001.dat";
+        fileout     = (boost::format( "%1%/mesh_%2%" ) % path.string() % timestpstr).str();
+        fileoutb    = fileout+".dat";
+        fileout     = fileout+".bin";
+
+        //cp meshfile fileout;
+        //cp meshfile2 fileoutb;
+        fs::copy_file(fs::path(meshfile),fs::path(fileout),fs::copy_option::overwrite_if_exists);
+        fs::copy_file(fs::path(meshfile2),fs::path(fileoutb),fs::copy_option::overwrite_if_exists);
+    }//export on grid
 }
 
 template<typename T>
