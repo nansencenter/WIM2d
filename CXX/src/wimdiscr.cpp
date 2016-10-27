@@ -1544,7 +1544,7 @@ void WimDiscr<T>::timeStep(bool step)
         std::vector<value_type> interp_in(nb_var*nx*ny, 0.);
         value_type* interp_out;
 
-        bool TEST_INTERP_MESH   = false;//set to true if want to save mesh quantities inside WIM
+        bool TEST_INTERP_MESH   = false;//set to true if want to save mesh quantities inside WIM for testing
         std::vector<value_type> mesh_dfloe_old;
         if (TEST_INTERP_MESH)
         {

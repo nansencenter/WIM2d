@@ -126,6 +126,10 @@ namespace Wim
                   "Coupling frequency between neXtSIM and WIM (# neXtSIM time-steps)")
             ("nextwim.coupling-option", po::value<std::string>()->default_value( "naive" ),
                   "Coupling option: naive->interp nfloes onto mesh after exiting WIM; breaking_on_mesh->import mesh and do breaking on mesh in parallel")
+            ("nextwim.wim_damage_mesh", po::value<bool>()->default_value( true ),
+                  "If ice is broken by waves, increase damage to nextwim.wim_damage_value (if nextwim_coupling_option=breaking_on_mesh)")
+            ("nextwim.wim_damage_value", po::value<double>()->default_value( 0.999 ),
+                  "If ice is broken by waves, increase damage to this value (if wim_damage_mesh=true)")
             ;
         return desc;
     }
