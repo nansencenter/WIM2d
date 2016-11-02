@@ -48,7 +48,7 @@ namespace fs = boost::filesystem;
 template<typename T=float> class WimDiscr
 {
 	typedef T value_type;
-    typedef typename std::vector<value_type> vector_value_type;
+    typedef typename std::vector<value_type> value_type_vec;
     typedef size_t size_type;
 	typedef boost::multi_array<value_type, 2> array2_type;
     typedef boost::multi_array<value_type, 3> array3_type;
@@ -184,8 +184,12 @@ public:
 
 
     void calcMWD();
-    void idealWaveFields(array2_type& wave_mask,value_type const xfac);
-    void idealIceFields(array2_type& ice_mask,value_type const xfac);
+    void idealWaveFields(value_type const xfac);
+    void idealIceFields (value_type const xfac);
+    void inputWaveFields(value_type_vec const& swh_in,
+            value_type_vec const& mwp_in,
+            value_type_vec const& mwd_in);
+    //void inputIceFields (value_type const xfac);
     //void getWimCenters(value_type& x,value_type& y,value_type const& rotangle);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);
@@ -230,10 +234,11 @@ private:
     std::string scatmod, advopt, fsdopt;
     std::string wim_gridfile;
     std::vector<value_type> wavedir, wt_simp, wt_om, freq_vec, vec_period, wlng, ag, ap;
+    std::vector<value_type> Hs,Tp,mwd,wave_mask;
 
-    array2_type steady_mask, wave_mask, ice_mask, wtr_mask,
+    array2_type steady_mask, ice_mask, wtr_mask,
                 icec, iceh, swh_in_array,mwp_in_array,mwd_in_array,
-                dave, atten_dim, damp_dim, ag2d_eff_temp, mwd, Hs, Tp;
+                dave, atten_dim, damp_dim, ag2d_eff_temp;
     array3_type ag_eff, ap_eff, wlng_ice, atten_nond, damping, disp_ratio, sdf3d_dir_temp;
     array4_type sdf_dir, sdf_inc;
 
