@@ -113,9 +113,9 @@ public:
     void saveLog(value_type const& t_out) const;
     void init();
 
-    void assign(std::vector<value_type> const& ice_c = std::vector<value_type>(),
-                std::vector<value_type> const& ice_h = std::vector<value_type>(),
-                std::vector<value_type> const& n_floes = std::vector<value_type>(),
+    void assign(std::vector<value_type> const& icec_in = std::vector<value_type>(),
+                std::vector<value_type> const& iceh_in = std::vector<value_type>(),
+                std::vector<value_type> const& nfloes_in = std::vector<value_type>(),
                 std::vector<value_type> const& swh_in = std::vector<value_type>(),
                 std::vector<value_type> const& mwp_in = std::vector<value_type>(),
                 std::vector<value_type> const& mwd_in = std::vector<value_type>(),
@@ -147,9 +147,9 @@ public:
 
     WimGrid wimGrid(std::string const& units="m");
 
-    void run(std::vector<value_type> const& ice_c = std::vector<value_type>(),
-             std::vector<value_type> const& ice_h = std::vector<value_type>(),
-             std::vector<value_type> const& n_floes = std::vector<value_type>(),
+    void run(std::vector<value_type> const& icec_in = std::vector<value_type>(),
+             std::vector<value_type> const& iceh_in = std::vector<value_type>(),
+             std::vector<value_type> const& nfloes_in = std::vector<value_type>(),
              std::vector<value_type> const& swh_in = std::vector<value_type>(),
              std::vector<value_type> const& mwp_in = std::vector<value_type>(),
              std::vector<value_type> const& mwd_in = std::vector<value_type>(),
@@ -189,7 +189,9 @@ public:
     void inputWaveFields(value_type_vec const& swh_in,
             value_type_vec const& mwp_in,
             value_type_vec const& mwd_in);
-    //void inputIceFields (value_type const xfac);
+    void inputIceFields(value_type_vec const& icec_in,
+            value_type_vec const& iceh_in,
+            value_type_vec const& nfloes_in);
     //void getWimCenters(value_type& x,value_type& y,value_type const& rotangle);
 
     value_type thetaDirFrac(value_type const& th1_, value_type const& dtheta_, value_type const& mwd_);

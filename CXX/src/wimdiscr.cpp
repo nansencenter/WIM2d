@@ -522,9 +522,9 @@ void WimDiscr<T>::init()
 }//end ::init()
 
 template<typename T>
-void WimDiscr<T>::assign(std::vector<value_type> const& ice_c,
-        std::vector<value_type> const& ice_h,
-        std::vector<value_type> const& n_floes,
+void WimDiscr<T>::assign(std::vector<value_type> const& icec_in,
+        std::vector<value_type> const& iceh_in,
+        std::vector<value_type> const& nfloes_in,
         std::vector<value_type> const& swh_in,
         std::vector<value_type> const& mwp_in,
         std::vector<value_type> const& mwd_in,
@@ -675,60 +675,18 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c,
     //====================================================
     //set ice conditions
     int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
-    if (ice_c.size() == 0)
-    {
-       //ideal ice conditions
+    if (icec_in.size() == 0)
        this->idealIceFields(0.7);
-    }
     else
-    {
-       // =====================================================================
-       // non-ideal ice inputs
-#pragma omp parallel for num_threads(max_threads) collapse(2)
-       for (int i = 0; i < nx; i++)
-       {
-           for (int j = 0; j < ny; j++)
-           {
-                icec[i][j] = ice_c[ny*i+j];
-                nfloes[ny*i+j] = n_floes[ny*i+j];
+       this->inputIceFields(icec_in,iceh_in,nfloes_in);
+    // ===================================================
 
-                dfloe[ny*i+j] = 0.;
-
-                if (icec[i][j] < vm["wim.cicemin"].template as<double>())
-                {
-                    ice_mask[i][j] = 0.;
-                    icec[i][j] = 0.;
-                    iceh[i][j] = 0.;
-                    nfloes[ny*i+j] = 0.;
-                }
-                else
-                {
-                    ice_mask[i][j] = 1.;
-                    //iceh[i][j] = ice_h[ny*i+j]/icec[i][j];
-                    iceh[i][j] = ice_h[ny*i+j];//pass in true thickness
-                    dfloe[ny*i+j] = std::sqrt(icec[i][j]/nfloes[ny*i+j]);
-                }
-
-                if (dfloe[ny*i+j] > dfloe_pack_thresh)
-                    dfloe[ny*i+j] = dfloe_pack_init;
-
-                //std::cout<<"----------------------complex case\n";
-           }//j loop
-       }//i loop
-
-       // end of non-ideal ice inputs
-       // =====================================================================
-    }
 
     //====================================================
     // wave fields
     // - set Hs,Tp,mwd,wave_mask
-    std::cout<<"assign wave fields\n";
     if (swh_in.size()==0)
-    {
-        std::cout<<"assign wave fields 1\n";
         this->idealWaveFields(.8);
-    }
     else
 #if 1
         this->inputWaveFields(swh_in,mwp_in,mwd_in);
@@ -869,9 +827,9 @@ void WimDiscr<T>::assign(std::vector<value_type> const& ice_c,
 
     std::cout<<"--------------------------------------------------------\n";
 
-    std::cout<<"nfloes_max= "<< *std::max_element(n_floes.begin(), n_floes.end()) <<"\n";
-    std::cout<<"nfloes_min= "<< *std::min_element(n_floes.begin(), n_floes.end()) <<"\n";
-    std::cout<<"nfloes_acc= "<< std::accumulate(n_floes.begin(), n_floes.end(),0.) <<"\n";
+    std::cout<<"nfloes_max= "<< *std::max_element(nfloes_in.begin(), nfloes_in.end()) <<"\n";
+    std::cout<<"nfloes_min= "<< *std::min_element(nfloes_in.begin(), nfloes_in.end()) <<"\n";
+    std::cout<<"nfloes_acc= "<< std::accumulate(nfloes_in.begin(), nfloes_in.end(),0.) <<"\n";
 #endif
 
     //std::cout<<"attenuation loop starts (big loop)\n";
@@ -1139,6 +1097,44 @@ void WimDiscr<T>::idealIceFields(value_type const xfac)
       }
    }
 }
+
+
+template<typename T>
+void WimDiscr<T>::inputIceFields(value_type_vec const& icec_in,
+                                 value_type_vec const& iceh_in,
+                                 value_type_vec const& nfloes_in)
+{
+
+    int max_threads = omp_get_max_threads(); /*8 by default on MACOSX (2,5 GHz Intel Core i7)*/
+#pragma omp parallel for num_threads(max_threads) collapse(2)
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            icec[i][j] = icec_in[ny*i+j];
+            nfloes[ny*i+j] = nfloes_in[ny*i+j];
+            dfloe[ny*i+j] = 0.;
+
+            if (icec[i][j] < vm["wim.cicemin"].template as<double>())
+            {
+                ice_mask[i][j] = 0.;
+                icec[i][j] = 0.;
+                iceh[i][j] = 0.;
+                nfloes[ny*i+j] = 0.;
+            }
+            else
+            {
+                ice_mask[i][j] = 1.;
+                iceh[i][j] = iceh_in[ny*i+j];//pass in true thickness
+                dfloe[ny*i+j] = std::sqrt(icec[i][j]/nfloes[ny*i+j]);
+            }
+
+            if (dfloe[ny*i+j] > dfloe_pack_thresh)
+                dfloe[ny*i+j] = dfloe_pack_init;
+        }
+    }
+}
+
 
 #if 0
 template<typename T>
@@ -1892,11 +1888,15 @@ WimDiscr<T>::getNfloesMesh()
 
 
 template<typename T>
-void WimDiscr<T>::run(std::vector<value_type> const& ice_c, std::vector<value_type> const& ice_h, std::vector<value_type> const& n_floes,
-      std::vector<value_type> const& swh_in, std::vector<value_type> const& mwp_in, std::vector<value_type> const& mwd_in,
-      bool step)
+void WimDiscr<T>::run(std::vector<value_type> const& icec_in,
+        std::vector<value_type> const& iceh_in,
+        std::vector<value_type> const& nfloes_in,
+        std::vector<value_type> const& swh_in,
+        std::vector<value_type> const& mwp_in,
+        std::vector<value_type> const& mwd_in,
+        bool step)
 {
-    this->assign(ice_c,ice_h,n_floes,swh_in,mwp_in,mwd_in,step);
+    this->assign(icec_in,iceh_in,nfloes_in,swh_in,mwp_in,mwd_in,step);
 
     bool critter;
 
