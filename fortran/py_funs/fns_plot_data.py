@@ -197,12 +197,15 @@ def cmap_3d(x,y,z,labs,pobj=None,zlims=None):
 #######################################################################
 
 #######################################################################
-def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None,text='',vlist=None):
+def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
+      text='',vlist=None,hold=True):
 
    from matplotlib import pyplot as plt
 
-   if not os.path.exists(figdir):
-      os.mkdir(figdir)
+   DO_SAVE  = (figdir is not None)
+   if DO_SAVE:
+      if not os.path.exists(figdir):
+         os.mkdir(figdir)
 
    nx = grid_prams['nx']
    ny = grid_prams['ny']
@@ -275,7 +278,6 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None,text='',vlist=None):
       vlist = fields.keys()
 
    for key in vlist:
-      fig   = figdir+'/'+figs[key]
       zlim  = zlims[key]
       if ny>1:
          f,ax  = cmap_3d(x,y,fields[key].transpose(),\
@@ -287,8 +289,16 @@ def fn_plot_gen(grid_prams,fields,figdir,zlims_in=None,text='',vlist=None):
             F  = F[:,0]
          f,ax,line  = plot_1d(x,F,labs=['$x$, km',labs[key]])
          ax.set_ylim(zlim)
-      f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
-      plt.close(f)
+
+      if DO_SAVE:
+         fig   = figdir+'/'+figs[key]
+         f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+         plt.close(f)
+      elif hold and key==vlist[-1]:
+         plt.show(f)
+      else:
+         f.show()
+
    return
 ############################################################################
 

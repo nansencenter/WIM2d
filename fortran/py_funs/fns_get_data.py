@@ -455,7 +455,7 @@ class file_list:
       Flds  = []
 
       # Do interesting plots first
-      for vbl in ['Hs','Dmax']:
+      for vbl in ['tau_x','Dmax','Hs']:
          if vbl in flds:
             Flds.append(vbl)
             flds.remove(vbl)
@@ -474,8 +474,73 @@ class file_list:
             print(self.times[i])
             afile       = pdir+'/'+pf
             fields,info = fn_read_general_binary(afile)
-            Fplt.fn_plot_gen(grid_prams,fields,figdir3B,\
+            Fplt.fn_plot_gen(grid_prams,fields,figdir=figdir3B,\
                   zlims_in=zlims,text=tlist[i],vlist=[vbl])
+      # =============================================================
+      return
+
+   def plot_step(self,grid_prams,figdir3=None,time_index=0,**kwargs):
+
+      pf    = self.files[time_index]
+      afile = self.dir+'/'+pf
+      tstr  = pf[4:-2]
+
+      DO_SAVE  = (figdir3 is not None)
+      if DO_SAVE:
+         if not os.path.exists(figdir3):
+            os.mkdir(figdir3)
+
+      # =============================================================
+      # determine the plotting limits
+      if 0:
+         # set colorbar axes manually
+         zlims  = {'icec'  :[0,1],      \
+                   'iceh'  :[0,5],      \
+                   'Dmax'  :[0,300],    \
+                   'tau_x' :[-.5,.5],  \
+                   'tau_y' :[-.05,.05],\
+                   'Hs'    :[0,4],        \
+                   'Tp'    :[10,20],      \
+                   'mwd'   :[-180,180]}
+
+      elif 1:
+         # let python choose
+         # - different for each time step,
+         #   so not good for a movie for example
+         zlims  = {'icec'  :None,\
+                   'iceh'  :None,\
+                   'Dmax'  :None,\
+                   'tau_x' :None,\
+                   'tau_y' :None,\
+                   'Hs'    :None,\
+                   'Tp'    :None,\
+                   'mwd'   :None}
+      # =============================================================
+
+
+      # =============================================================
+      # do the plot
+      fields,info = fn_read_general_binary(afile)
+      flds  = fields.keys()
+      Flds  = []
+
+      # Do interesting plots first
+      for vbl in ['tau_x','Dmax','Hs']:
+         if vbl in flds:
+            Flds.append(vbl)
+            flds.remove(vbl)
+
+      Flds.extend(flds)
+
+      if DO_SAVE:
+         figdir3B = figdir3+'/'+vbl
+         if not os.path.exists(figdir3B):
+            os.mkdir(figdir3B)
+      else:
+         figdir3B = None
+
+      Fplt.fn_plot_gen(grid_prams,fields,figdir=figdir3B,\
+          zlims_in=zlims,text=tstr,vlist=Flds,**kwargs)
       # =============================================================
       return
 
@@ -585,129 +650,127 @@ class wim_results:
 
 
    ##########################################################################
+   def get_fields(self,field_type,time_index=0):
+
+      # =============================================================
+      if field_type=="initial":
+         file_list   = self.init_list
+         short       = "init"
+      elif field_type=="progress":
+         file_list   = self.prog_list
+         short       = "prog"
+      elif field_type=="final":
+         file_list   = self.out_list
+         short       = "out"
+      else:
+         raise ValueError("unknown field_type: "+field_type)
+      # =============================================================
+
+      if file_list.Nfiles==0:
+         Start = field_type[0].upper + field_type[1:]
+         raise ValueError(Start+' files not outputted: wim_'+short+'*.[a,b]')
+
+      afile = file_list.dir+'/'+file_list.files[time_index]
+      return fn_read_general_binary(afile)
+   ##########################################################################
+
+
+   ##########################################################################
    def initial_fields(self,time_index=0):
-
-      if self.init_list.Nfiles==0:
-         raise ValueError('Initial files not outputted: wim_init*.[a,b]')
-      else:
-         afile = self.init_list.dir+'/'+self.init_list.files[time_index]
-         return fn_read_general_binary(afile)
+      return self.get_fields("initial",time_index=time_index)
    ##########################################################################
 
 
    ##########################################################################
-   def out_fields(self,time_index):
-
-      if self.out_list.Nfiles==0:
-         raise ValueError('Final files not outputted: wim_out*.[a,b]')
-      else:
-         afile = self.out_list.dir+'/'+self.out_list.files[time_index]
-         return fn_read_general_binary(afile)
+   def out_fields(self,time_index=0):
+      return self.get_fields("final",time_index=time_index)
    ##########################################################################
 
 
    ##########################################################################
-   def prog_fields(self,time_index=0):
-
-      if self.prog_list.Nfiles==0:
-         raise ValueError('Progress files not outputted: wim_prog*.[a,b]')
-      else:
-         afile = self.prog_list.dir+'/'+self.prog_list.files[time_index]
-         return fn_read_general_binary(afile)
+   def progfields(self,time_index=0):
+      return self.get_fields("progress",time_index=time_index)
    ##########################################################################
 
 
    ##########################################################################
-   def plot_initial(self):
-      # Look at initial fields:
+   def plot(self,time_index=None,show=False,field_type="initial"):
 
       # =============================================================
-      # Plot progress files (if they exist)
-      # if self.Nprog_files==0:
-      if self.init_list.Nfiles==0:
-         print('No initial files wim*init.[a,b] in '+
-               self.init_list.dir)
+      if field_type=="initial":
+         file_list   = self.init_list
+         short       = "init"
+         outdir      = "init"
+      elif field_type=="progress":
+         file_list   = self.prog_list
+         short       = "prog"
+         outdir      = "prog"
+      elif field_type=="final":
+         file_list   = self.out_list
+         short       = "out"
+         outdir      = "final"
+      else:
+         raise ValueError("unknown field_type: "+field_type)
+      # =============================================================
+
+
+      # =============================================================
+      if file_list.Nfiles==0:
+         print('No '+field_type+' files wim*'+short+'*.[a,b] in '+
+               file_list.dir)
          print('Not plotting')
          return
-      else:
-         print('\nPLOTTING INITIAL FILES...\n')
       # =============================================================
 
 
-      grid_prams  = self.get_grid()
+      # =============================================================
+      print('\nPLOTTING '+field_type.upper()+' FILES...\n')
+
 
       figdir3  = self.figdir
       if not os.path.exists(figdir3):
          os.mkdir(figdir3)
-      figdir3  = self.figdir+'/init'
+      figdir3  = self.figdir+'/'+outdir
       if not os.path.exists(figdir3):
          os.mkdir(figdir3)
 
-      self.init_list.plot_steps(grid_prams,figdir3)
-      print('\nPlots in '+figdir3+'\n')
+
+      grid_prams  = self.get_grid()
+      if time_index is None:
+         #plot all
+         file_list.plot_steps(grid_prams,figdir3=figdir3)
+         print('\nPlots in '+figdir3+'\n')
+      elif show:
+         #plot step (show)
+         file_list.plot_step(grid_prams,time_index=time_index,figdir3=None)
+      else:
+         #plot step (& save fig)
+         file_list.plot_step(grid_prams,time_index=time_index,figdir3=figdir3)
+
       return
    ##########################################################################
 
 
    ##########################################################################
-   def plot_final(self):
-      # Look at final fields:
-
-      # =============================================================
-      # Plot progress files (if they exist)
-      # if self.Nprog_files==0:
-      if self.out_list.Nfiles==0:
-         print('No final files wim*out.[a,b] in '+
-               self.out_list.dir)
-         print('Not plotting')
-         return
-      else:
-         print('\nPLOTTING FINAL FILES...\n')
-      # =============================================================
-
-
-      grid_prams  = self.get_grid()
-
-      figdir3  = self.figdir
-      if not os.path.exists(figdir3):
-         os.mkdir(figdir3)
-      figdir3  = self.figdir+'/final'
-      if not os.path.exists(figdir3):
-         os.mkdir(figdir3)
-
-      self.out_list.plot_steps(grid_prams,figdir3)
-      print('\nPlots in '+figdir3+'\n')
+   def plot_initial(self,time_index=None,show=False,**kwargs):
+      self.plot(time_index=None,show=False,field_type="initial",**kwargs)
       return
    ##########################################################################
 
 
-   ################################################################
-   def plot_prog(self):
-
-      # =============================================================
-      # Plot progress files (if they exist)
-      # if self.Nprog_files==0:
-      if self.prog_list.Nfiles==0:
-         print('No progress files wim*prog.[a,b] in '+
-               self.prog_list.dir)
-         print('Not plotting')
-         return
-      else:
-         print('\nPLOTTING PROGRESS FILES...\n')
-      # =============================================================
-
-
-      grid_prams  = self.get_grid()
-
-      figdir3  = self.figdir
-      if not os.path.exists(figdir3):
-         os.mkdir(figdir3)
-      figdir3  = self.figdir+'/prog'
-      if not os.path.exists(figdir3):
-         os.mkdir(figdir3)
-
-      self.prog_list.plot_steps(grid_prams,figdir3)
-      print('\nPlots in '+figdir3+'\n')
+   ##########################################################################
+   def plot_prog(self,time_index=None,show=False,**kwargs):
+      self.plot(time_index=None,show=False,field_type="progress",**kwargs)
       return
+   ##########################################################################
+
+
+   ##########################################################################
+   def plot_final(self,time_index=None,show=False,**kwargs):
+      self.plot(time_index=None,show=False,field_type="final",**kwargs)
+      return
+   ##########################################################################
+
+
 
    # =============================================================
