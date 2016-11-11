@@ -18,7 +18,6 @@
 
       integer,optional,intent(in)   :: YOUNG_OPT
 
-      real :: alpha,sig_N
       real  :: vb,salt,temp
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -62,21 +61,17 @@
       if ((BRK_OPT.eq.0).or.(BRK_OPT.eq.1)) then !!beam test
          !! not used if BRK_OPT==0 (no breaking)
          wim_info%epsc     = wim_info%sigma_c/wim_info%young
-         wim_info%stress_c = wim_info%young
-     &                        *wim_info%epsc/(1-wim_info%poisson**2)
+         call fn_cohesion(1)
+
       elseif (BRK_OPT.eq.2) then!!Marchenko's stress criterion (plate)
          !! - convert to strain criterion
          wim_info%stress_c = 2.6*wim_info%sigma_c!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
-         wim_info%epsc     = (1-wim_info%poisson**2)
-     &                           *wim_info%stress_c/wim_info%young
+         call fn_cohesion(BRK_OPT)
+
       elseif (BRK_OPT.eq.3) then!!Mohr-Coulomb criterion (plate)
          !! - convert to strain criterion
-         alpha    = (1+wim_info%poisson)/(1-wim_info%poisson)
-         sig_N    = wim_info%cohesion/(alpha+wim_info%friction)
-            !compressive stress  = .5*(sig_11+sig_22) = .5*(1-poisson)*sig11 at breaking point
-         wim_info%stress_c = 2*sig_N/(1-wim_info%poisson)!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
-         wim_info%epsc     = (1-wim_info%poisson**2)
-     &               *wim_info%stress_c/wim_info%young
+         call fn_cohesion(BRK_OPT)
+
       else
          print*,'Unknown value for BRK_OPT: ',BRK_OPT
          stop
@@ -101,6 +96,37 @@
 
       end subroutine set_wim_prams
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      subroutine fn_cohesion(BRK_OPT)
+
+      !!make epsc,stress_c and cohesion consistent
+      implicit none
+      integer, intent(in)  :: BRK_OPT
+      real                 :: alpha,sig_N
+
+      alpha    = (1+wim_info%poisson)/(1-wim_info%poisson)
+      if (BRK_OPT.eq.1) then
+         wim_info%stress_c = wim_info%young
+     &                        *wim_info%epsc/(1-wim_info%poisson**2)
+         sig_N             = (1-wim_info%poisson)/2.*wim_info%stress_c
+         wim_info%cohesion = (alpha+wim_info%friction)*sig_N
+         
+      elseif (BRK_OPT.eq.2) then
+         wim_info%epsc     = (1-wim_info%poisson**2)
+     &                           *wim_info%stress_c/wim_info%young
+         sig_N             = (1-wim_info%poisson)/2.*wim_info%stress_c
+         wim_info%cohesion = (alpha+wim_info%friction)*sig_N
+
+      elseif (BRK_OPT.eq.3) then
+         sig_N    = wim_info%cohesion/(alpha+wim_info%friction)
+            !compressive stress  = .5*(sig_11+sig_22) = .5*(1-poisson)*sig11 at breaking point
+         wim_info%stress_c = 2*sig_N/(1-wim_info%poisson)!!=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
+         wim_info%epsc     = (1-wim_info%poisson**2)
+     &               *wim_info%stress_c/wim_info%young
+      end if
+
+      end subroutine fn_cohesion
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

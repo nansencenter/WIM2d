@@ -1,10 +1,10 @@
-03  # infile version
+04  # infile version
 
 # int_prams - all fortran format '(i2.2)'
 00  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
 02  # ADV_DIM        : dimension of advection scheme (1/2)
 02  # ADV_OPT        : 0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-01  # DO_BREAKING    : 1/0, do/don't break ice
+01  # BRK_OPT        : 0, don't break ice; 1, old criteria; 2, Marchenko criteria; 3, Mohr-Coulomb criteria
 01  # STEADY         : 1/0, do/don't top-up incident waves each time-step
 01  # DO_ATTEN       : 1/0, do/don't do attenuation NB this is not implemented in f2py/mex versions of int_prams
 01  # DO_CHECK_FINAL : 1/0, do/don't dump final state to binary file
@@ -15,7 +15,8 @@
 0.549E+10   # Young's modulus (Pa)                       - fortran format '(e10.3)'
 13.00       # Robinson-Palmer drag parameter (Pa/(m/s))  - fortran format '(f5.2)'
 00.00       # Wang-Shen viscosity parameter (m^2/s)      - fortran format '(f5.2)'
-21600.00    # duration of simulation (s)                 - fortran format '(f9.2)'
+0.11E+7     # cohesion (Pa)                              - fortran format '(e10.3)'
+0.70        # friction coefficient                       - fortran format '(f4.2)'
 0.70        # CFL                                        - fortran format '(f4.2)'
 
 # other integer parameters - all fortran format '(i2.2)'
@@ -30,6 +31,8 @@
 0.7   # conc_init       : initial constant value of concentration (used only if no conc field read in)
 1.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
 300.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
+
+21600.00    # duration of simulation (s)                 - fortran format '(f9.2)'
 
 # start date/time
 20150101T000000Z  # YYYYMMDDTHHMMSSZ format

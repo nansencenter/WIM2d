@@ -23,7 +23,7 @@
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
       integer  :: FSD_OPT=1 !TODO make this an input
       integer  :: YOUNG_OPT=1
-      integer,parameter :: n_param_vec   = 28
+      integer,parameter :: n_param_vec   = 30
 
       real     :: x_ext,y_ext,u_ref,duration,CFL
       integer  :: nt
@@ -1322,7 +1322,7 @@
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.3) then
+      if (inf_version.ne.4) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1366,10 +1366,12 @@
       print*,"RP drag: "         ,wim_info%drag_rp
       read(fid,'(f5.2,a)')       ,wim_info%visc_ws,ctmp
       print*,"WS viscosity: "    ,wim_info%visc_ws
-      read(fid,'(f7.2,a)')       ,duration        ,ctmp
-      print*,"Duration (s): "    ,duration
+      read(fid,'(e10.3,a)')      ,wim_info%cohesion,ctmp
+      print*,"cohesion: "        ,wim_info%cohesion
+      read(fid,'(f5.2,a)')       ,wim_info%friction,ctmp
+      print*,"friction: "        ,wim_info%friction
       read(fid,'(f7.2,a)')       ,CFL             ,ctmp
-      print*,"Duration (s): "    ,CFL
+      print*,"CFL: "             ,CFL
       print*,'******************************************************'
       print*,' '
       ! ===================================================
@@ -1412,6 +1414,10 @@
 
       ! ===================================================
       ! time info
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(f7.2,a)')       ,duration        ,ctmp
+      print*,"Duration (s): "    ,duration
+      !!
       print*,' '
       print*,'******************************************************'
       read(fid,'(a)'), ctmp !blank
@@ -1529,15 +1535,23 @@
       i              = i+1
       wim_info%young = real(param_vec(i))
       print*,"Young's modulus: ",wim_info%young
+      !!
       i                 = i+1
       wim_info%drag_rp  = real(param_vec(i))
       print*,"RP drag: ",wim_info%drag_rp
+      !!
       i                 = i+1
       wim_info%visc_ws  = real(param_vec(i))
       print*,"WS viscosity: ",wim_info%visc_ws
-      i        = i+1
-      duration = real(param_vec(i))
-      print*,"Duration (s): ",duration
+      !!
+      i                 = i+1
+      wim_info%cohesion = real(param_vec(i))
+      print*,"cohesion: ",wim_info%cohesion
+      !!
+      i                 = i+1
+      wim_info%friction = real(param_vec(i))
+      print*,"friction: ",wim_info%friction
+      !!
       i     = i+1
       CFL   = real(param_vec(i))
       print*,"CFL: ",CFL
@@ -1580,8 +1594,13 @@
 
       ! ===================================================
       ! time info
+      i        = i+1
+      duration = real(param_vec(i))
+      print*,"Duration (s): ",duration
+      !!
       i              = i+1
       model_day      = int(param_vec(i))
+      !!
       i              = i+1
       model_seconds  = dble(param_vec(i))
       call model_time_to_year_info(model_year_info,
