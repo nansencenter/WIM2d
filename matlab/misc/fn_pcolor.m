@@ -1,4 +1,4 @@
-function H  = fn_pcolor(x,y,z,labs)
+function H  = fn_pcolor(x,y,z,labs,zlim,remove_outer)
 %% fn_pcolor.m
 %% Author: Timothy Williams
 %% Date: 20150820, 13:32:28 CEST
@@ -10,6 +10,10 @@ if nargin==0
    y  = (1:12)';
    z  = z(x,:);
 end
+
+if ~exist('labs','var'); labs  = {'\itx, \rmkm','\ity, \rmkm',[]}; end
+if ~exist('zlim','var'); zlim  = []; end
+if ~exist('remove_outer','var'); remove_outer   = 0; end
 
 if size(x,2)>1
    x  = x';
@@ -36,17 +40,34 @@ else
 end
 
 fontsize = 20;
+if remove_outer
+   xx(1)    = [];
+   xx(end)  = [];
+   yy(1)    = [];
+   yy(end)  = [];
+   Z(1,:)   = [];
+   Z(end,:) = [];
+   Z(:,1)   = [];
+   Z(:,end) = [];
+end
 
 H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
+daspect([1,1,1]);
 set(H,'EdgeColor', 'none');
 
 set(gca,'xlim',[xx(1),xx(end)],'ylim',[yy(1),yy(end)])
-
-if ~exist('labs','var')
-   labs  = {'\itx, \rmkm','\ity, \rmkm',[]};
+if 0%%set ticks manually
+   set(gca,'ytick',[100,200]);
+   %set(gca,'ytick',[100,200],'xtick',[200,400]);
 end
+
 GEN_proc_fig(labs{1},labs{2},fontsize);
-cb = colorbar;
+cb    = colorbar;
+if ~isempty(zlim)
+   caxis(zlim);
+   Ytick_range = [round(zlim(1)),round(mean(zlim)),round(zlim(2))]
+   set(cb,'YTick',Ytick_range,'fontname','Times','fontsize',fontsize);
+end
 GEN_font(gca,fontsize);
 
 if ~isempty(labs{3})
