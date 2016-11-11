@@ -1,4 +1,4 @@
-12     # infile_version_ : infile version number
+13     # infile_version_ : infile version number
 
 # keep version number on 1st line
 # change this if there are significant changes to structure of infile and/or code
@@ -40,14 +40,7 @@
 1.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
 300.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
 
-# other options
-1     # OPT             : ice-water-land configuration
-0     # USE_ICE_VEL     : 0 = approx ice group vel by water group vel
-0     # CHK_ATTEN       : check by running with old attenuation
-0     # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice;
-                        # 0 = give Hs for displacement of the surrounding water
-
-# correspond to "int_prams" in fortran code 
+# integer options
 0     # SCATMOD         : Scattering model: 0 = old way; 1 = scatter E isotropically
 2     # ADV_DIM         : Dimension of advection (1/2)
 2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
@@ -62,12 +55,31 @@
 1     # DO_ATTEN        : 0 = just advect waves without attenuation
 1     # FSD_OPT         : 0: RG; 1: smooth power law
 
-# correspond to "real_prams" in fortran code 
+# other options
+1     # OPT             : ice-water-land configuration
+0     # USE_ICE_VEL     : 0 = approx ice group vel by water group vel
+0     # CHK_ATTEN       : check by running with old attenuation
+0     # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice;
+                        # 0 = give Hs for displacement of the surrounding water
+
+# ice parameters
 5.49e9   # young           : Young's modulus [Pa]
 13.0     # drag_rp         : Robinson-Palmer drag coefficient [Pa.s/m]
 0.0      # visc_ws         : Wang-Shen viscosity [m^2/s]
+270e3    # cohesion        : cohesion for Mohr-Coulomb envelope (BRK_OPT=3)
+0.7      # friction        : friction coefficient for Mohr-Coulomb envelope (BRK_OPT=3)
+
+# simulation parameters
 6        # duration_hours  : length of simulation [h]
                            # (NB convert to seconds before inputting to mex functions)
+
+# start date/time
+2015  # start_year
+01    # start_month
+01    # start_day
+00    # start_hour
+00    # start_minute
+00    # start_second
 
 # diagnostic options
 0     # PLOT_INIT
@@ -83,13 +95,6 @@
 0     # check_symmetry     : check y-dependance (eg for 1d geometries)
 0     # check_E_partition  : split energy into fwd/back
 
-# start date/time
-2015  # start_year
-01    # start_month
-01    # start_day
-00    # start_hour
-00    # start_minute
-00    # start_second
 
 # local diagnostics (used if both itest,jtest>0)
 -1      # itest

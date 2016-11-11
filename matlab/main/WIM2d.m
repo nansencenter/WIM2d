@@ -223,8 +223,10 @@ end
 if ~isnan(params_in.visc_ws)
    ice_prams.visc_ws  = params_in.visc_ws;
 end
-ice_prams.BRK_OPT = params_in.BRK_OPT;
-ice_prams         = fn_fill_iceprams(ice_prams);
+ice_prams.BRK_OPT    = params_in.BRK_OPT;
+ice_prams.cohesion   = params_in.cohesion;
+ice_prams.friction   = params_in.friction;
+ice_prams            = fn_fill_iceprams(ice_prams);
 %% ice_prams = structure eg:
 %%               c: 0.750000000000000
 %%               h: 2
@@ -245,6 +247,10 @@ ice_prams         = fn_fill_iceprams(ice_prams);
 %%            Dmin: 20                          % minimum floe size              [m]
 %%              xi: 2                           % no of pieces floes break into
 %%       fragility: 0.900000000000000           % probability that floes break
+if params_in.DO_DISP
+   disp('Ice parameters');
+   disp(ice_prams);
+end
 
 if 0
    figure,fn_fullscreen;
@@ -265,6 +271,8 @@ if params_in.SV_LOG
    fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
    fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
    fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
+   fprintf(logid,'%s%10.3f\n','Cohesion (Pa):              ' ,ice_prams.cohesion);
+   fprintf(logid,'%s%10.3f\n','Friction coefficient:       ' ,ice_prams.friction);
    fprintf(logid,'%s%5.2f\n','Drag RP (Pa.s/m):            ' ,ice_prams.drag_rp);
    fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.visc_ws);
    fprintf(logid,'%s\n','***********************************************');

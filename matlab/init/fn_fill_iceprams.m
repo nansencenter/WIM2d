@@ -60,29 +60,23 @@ end
 % Flexural strength (Timco and O'Brien 1994)
 s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
 
+
 %%Breaking criterion option
 if ~isfield(s1,'BRK_OPT');
    s1.BRK_OPT = 0;
 end
+
 if s1.BRK_OPT==0|s1.BRK_OPT==1%%beam test
    %%not used if BRK_OPT==0
    s1.strain_c = s1.sigma_c/s1.young;
-   s1.stress_c = s1.young/(1-s1.poisson^2)*s1.strain_c; %%convert to plate breaking stress
+   s1          = fn_cohesion(s1,'strain');
 elseif s1.BRK_OPT==2%% Marchenko's stress criterion
     %% - convert to strain criterion
    s1.stress_c = 2.6*s1.sigma_c;
-      %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
-   s1.strain_c = (1-s1.poisson^2)*s1.stress_c/s1.young;
+   s1          = fn_cohesion(s1,'stress');
 elseif s1.BRK_OPT==3%% Mohr-Coulomb stress criterion
    %% - convert to strain criterion
-   cohesion    = 1e6;%Pa - lab scale cohesion (single piece of ice = 1MPa, Schulson, 2009)
-   friction    = 0.7;
-   alpha       = (1+s1.poisson)/(1-s1.poisson);
-   sig_N       = cohesion/(alpha+friction);
-      %compressive stress  = .5*(sig_11+sig_22) = .5*(1-poisson)*sig11 at breaking point
-   s1.stress_c = 2*sig_N/(1-s1.poisson);
-      %%=E/(1-nu^2)*strain_c = thin plate (plane stress: \sigma_33=0)
-   s1.strain_c = (1-s1.poisson^2)*s1.stress_c/s1.young;
+   s1 = fn_cohesion(s1,'cohesion');
 end
 
 %% flex rigidity = s1.flex_rig_coeff*h^3
