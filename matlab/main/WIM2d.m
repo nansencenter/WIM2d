@@ -88,9 +88,13 @@ date_vector    = [params_in.start_year,...
                   params_in.start_hour,...
                   params_in.start_minute,...
                   params_in.start_second];
-year_info      = datevec2year_info(date_vector)
+year_info      = datevec2year_info(date_vector);
 model_day      = year_info.model_day;
 model_seconds  = year_info.model_seconds;
+if params_in.DO_DISP
+   disp('year_info=');
+   disp(year_info);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
