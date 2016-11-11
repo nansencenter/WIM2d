@@ -1,10 +1,19 @@
 function [Dave,FSD] = floe_scaling(Dmax,prams,moment)
-% This function computes the average floe size within a grid cell as a
-% function of the maximum floe size using a bounded fractal renormalization
-% groud method.
-
-% We suggest to use Dmin >= 20. Below that value, there is no scattering
-% by the floes for periods larger than 6 s (it's probably viscous however).
+%% CALL [Dave,FSD] = floe_scaling(Dmax,prams,moment)
+%% This function computes the average floe size within a grid cell as a
+%% function of the maximum floe size using a bounded fractal renormalization
+%% group method.
+%%
+%% We suggest using Dmin >= 20. Below that value, there is no scattering
+%% by the floes for periods larger than 6 s (it's probably viscous however).
+%%
+%% Dave  = average floe size
+%% Dmax  = max floe size
+%% prams = [structure] 
+%%            xi: 2
+%%     fragility: 0.900000000000000
+%%          Dmin: 20
+%% moment=1,2 -> <D> or <D^2>
 
 if ~exist('moment','var')
    moment   = 1;

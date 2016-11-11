@@ -1,10 +1,21 @@
 function out = floe_scaling_smooth(Dmax,prams,mom,inverse)
-% This function computes the average floe size within a grid cell as a
-% function of the maximum floe size using a bounded fractal renormalization
-% groud method.
-
-% We suggest to use Dmin >= 20. Below that value, there is no scattering
-% by the floes for periods larger than 6 s (it's probably viscous however).
+%% This function computes the average floe size within a grid cell as a
+%% function of the maximum floe size using a pdf
+%% P(d>D)   = (D_min/D)^fsd_exp, D<=Dmax
+%% P(d>D)   = 0                , D>Dmax
+%%
+%% fsd_exp  = 2+log(fragility)/log(xi)
+%%
+%% We suggest to use Dmin >= 20. Below that value, there is no scattering
+%% by the floes for periods larger than 6 s (it's probably viscous however).
+%%
+%% Dave  = average floe size
+%% Dmax  = max floe size
+%% prams = [structure] 
+%%            xi: 2
+%%     fragility: 0.900000000000000
+%%          Dmin: 20
+%% moment=1,2 -> <D> or <D^2>
 
 DO_TEST  = 0;
 prams0   = struct('f',.9,...
