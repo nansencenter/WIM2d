@@ -25,10 +25,11 @@
       !!variables
       integer,intent(in)                  :: nx,ny,nr
       real*8,intent(in)                   :: param_vec(nr)
-      real*8,dimension(nx,ny,6),intent(in)  :: in_arrays!!c,h,Dmax,Hs,Tp,mwd
-      real*8,dimension(nx,ny,6),intent(out) :: out_arrays!!Dmax,Hs,Tp,taux,tauy,mwd
+      real*8,dimension(nx,ny,6),intent(in)  :: in_arrays 
+      real*8,dimension(nx,ny,6),intent(out) :: out_arrays
 !f2py intent(hide)   :: nx,ny,nr
-
+      !!in_arrays:  c,h,Dmax,Hs,Tp,mwd
+      !!out_arrays: Dmax,Hs,Tp,taux,tauy,mwd
       print*,param_vec
 
       call wim2d_run_io(in_arrays,out_arrays,param_vec,nx,ny)
@@ -53,13 +54,18 @@
 !f2py intent(hide)   :: nx,ny,nr
 
       !!inputs
-      real*8,dimension(nr),intent(in)              :: param_vec  !! parameters
-      real*8,dimension(nx,ny,3),intent(in)         :: ice_arrays !! pass in  icec,iceh,dfloe
-      real*8,dimension(nx*ny*ndir*nw),intent(in)   :: Sdir_in    !! pass in/out directional spec
+      real*8,dimension(nr),intent(in)              :: param_vec
+      real*8,dimension(nx,ny,3),intent(in)         :: ice_arrays
+      real*8,dimension(nx*ny*ndir*nw),intent(in)   :: Sdir_in
+      !! param_vec  : parameters
+      !! ice_arrays : pass in  icec,iceh,dfloe
+      !! Sdir_in    : pass in/out directional spec
 
       !!outputs
-      real*8,dimension(nx,ny,6),intent(out)       :: out_arrays  !! pass out Dmax,Hs,Tp,taux,tauy,mwd
-      real*8,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_out    !! pass in/out directional spec
+      real*8,dimension(nx,ny,6),intent(out)       :: out_arrays
+      real*8,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_out
+      !! out_arrays : pass out Dmax,Hs,Tp,taux,tauy,mwd
+      !! Sdir_out   : pass in/out directional spec
 
       !!check sizes
       if ((nx.ne.ii).or.(ny.ne.jj)) then
@@ -106,17 +112,22 @@
 !f2py intent(hide)   :: nx,ny,nr
 
       !!arrays
-      real*8,dimension(nx,ny,3),intent(in)        :: ice_arrays   !! pass in  icec,iceh,dfloe
-      real*8,dimension(nx,ny,6),intent(out)       :: out_arrays   !! pass out Dmax,Hs,Tp,taux,tauy,mwd
-      real*8,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_in      !! pass in directional spec
-      real*8,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_out     !! pass out directional spec
+      real*8,dimension(nx,ny,3),intent(in)        :: ice_arrays
+      real*8,dimension(nx,ny,6),intent(out)       :: out_arrays
+      real*8,dimension(nx*ny*ndir*nw),intent(in)  :: Sdir_in
+      real*8,dimension(nx*ny*ndir*nw),intent(out) :: Sdir_out
+      !! ice_arrays : pass in  icec,iceh,dfloe
+      !! out_arrays : pass out Dmax,Hs,Tp,taux,tauy,mwd
+      !! Sdir_in    : pass in directional spec
+      !! Sdir_out   : pass out directional spec
 
       integer,parameter    :: nmesh_vars = 6
-      real*8,dimension(nmesh_e*nmesh_vars),intent(in)
-     &   :: mesh_in                                        !! pass in mesh_in
-      real*8,dimension(nmesh_e*nmesh_vars),intent(out)
-     &   :: mesh_out                                       !! pass out mesh_out
-      real*8,dimension(nmesh_e,nmesh_vars)  :: mesh_e_dummy  !! reshaped mesh_e
+      real*8,dimension(nmesh_e*nmesh_vars),intent(in)    :: mesh_in
+      real*8,dimension(nmesh_e*nmesh_vars),intent(out)   :: mesh_out
+      real*8,dimension(nmesh_e,nmesh_vars)  :: mesh_e_dummy
+         !! pass in mesh_in
+         !! pass out mesh_out
+         !! mesh_e_dummy : reshaped mesh_in/out
 
       !! parameters
       real*8,intent(in) :: param_vec(nr)
@@ -234,10 +245,11 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine atten_youngs(outputs,inputs)
-      use mod_common_wim, only: wim_info
 
-      real*8,intent(in)   :: inputs(4)  !(/h,om,young,drag_rp/)
-      real*8,intent(out)  :: outputs(8) !(/damping,kice,kwtr,int_adm,ac,modT,argR,argT/)
+      real*8,intent(in)   :: inputs(5)
+      real*8,intent(out)  :: outputs(8)
+         !inputs  : (/h,om,young,drag_rp,visc_ws/)
+         !outputs : (/damping,kice,kwtr,int_adm,ac,modT,argR,argT/)
 
       call atten_youngs_f2py(outputs,inputs)
 

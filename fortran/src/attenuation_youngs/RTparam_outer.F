@@ -3,16 +3,21 @@
       use mod_common_wim, only: wim_info
       !wrapper for f2py (make sure doubles are changed to reals if necessary)
 
-      real*8,intent(in)   :: inputs(4)  !(/h,om,young,drag_rp/)
+      real*8,intent(in)   :: inputs(5)  !(/h,om,young,drag_rp,visc_ws/)
       real*8,intent(out)  :: outputs(8) !(/damping,kice,kwtr,int_adm,ac,modT,argR,argT/)
 
       real  :: damping,kice,kwtr,int_adm,ac,modT,argR,argT
 
       real  :: guess,om
 
+      !!set some params manually
+      wim_info%poisson  = 0.3
+      wim_info%rhowtr   = 1025.
+      wim_info%gravity  = 9.81
+      om                = real(inputs(2))
       wim_info%young    = real(inputs(3))
       wim_info%drag_rp  = real(inputs(4))
-      om                = real(inputs(2))
+      wim_info%visc_ws  = real(inputs(5))
       guess             = om**2/wim_info%gravity
 
       call RTparam_outer(damping,kice,kwtr,int_adm,
@@ -85,7 +90,6 @@
          
       !!get dissipative attenuation;
       drag_rp_nd  = wim_info%drag_rp/wim_info%rhowtr/om/L !!RP drag
-      vews_nd     = wim_info%drag_rp/wim_info%rhowtr/om/L !!RP drag
       vews_nd     = h**3*rho*wim_info%visc_ws/
      &               (6.*(1.+wim_info%poisson)*om*L**5)
       damping_nd  = -coeff_del*drag_rp_nd -coeff_D*vews_nd
