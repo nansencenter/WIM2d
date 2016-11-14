@@ -387,7 +387,7 @@
 
       call waves_init_dir()
       mwd_diff = abs(wavdir(1)-init_cons(3))
-      if ((ndir.eq.1).and.(mwd_diff.gt.init_cons(3)*1.e-5) ) then
+      if ((ndir.eq.1).and.(mwd_diff.gt.abs(init_cons(3))*1.e-5) ) then
          print*,"Inconsistent values of parameter mwd_init"//
      &            " and array mwd"
          print*,init_cons(3)

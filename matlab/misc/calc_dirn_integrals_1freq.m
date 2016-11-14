@@ -37,7 +37,11 @@ end
 
 %% integrate over directions (splitting fwd/back):
 th_vec   = -pi/180*(wavdir+90);%%-90 deg (from W) -> 0 radians; 0 deg (from N) -> -pi/2 radians
-dth      = th_vec(2)-th_vec(1);
+if ndir>1
+   dth   = th_vec(2)-th_vec(1);
+else
+   dth   = 1;
+end
 %%
 Mom0  = zeros(nx,ny);
 mom0  = zeros(nx,ny);
@@ -50,8 +54,18 @@ MomCp = zeros(nx,ny);
 MomSm = zeros(nx,ny);
 MomCm = zeros(nx,ny);
 for wth=1:ndir
-   fwd   = (cos(th_vec(wth))>=0);
-   rev   = (cos(th_vec(wth))<=0);
+
+   if ndir>1
+      fwd   = (cos(th_vec(wth))>=0);
+      rev   = (cos(th_vec(wth))<=0);
+      SIN   = sin(th_vec(wth));
+      COS   = cos(th_vec(wth));
+   else
+      fwd   = 1;
+      rev   = 0;
+      SIN   = 0;
+      COS   = 1;
+   end
 
    %% energy
    mom0  = mom0  +     dth*Sdir(:,:,wth);
@@ -59,12 +73,12 @@ for wth=1:ndir
    mom0m = mom0m + rev*dth*Sdir(:,:,wth);
 
    %% mwd & directional wave spreading
-   MomS  = MomS  +     dth*Sdir(:,:,wth)*sin(th_vec(wth));
-   MomC  = MomC  +     dth*Sdir(:,:,wth)*cos(th_vec(wth));
-   MomSp = MomSp + fwd*dth*Sdir(:,:,wth)*sin(th_vec(wth));
-   MomCp = MomCp + fwd*dth*Sdir(:,:,wth)*cos(th_vec(wth));
-   MomSm = MomSm + rev*dth*Sdir(:,:,wth)*sin(th_vec(wth));
-   MomCm = MomCm + rev*dth*Sdir(:,:,wth)*cos(th_vec(wth));
+   MomS  = MomS  +     dth*Sdir(:,:,wth)*SIN;
+   MomC  = MomC  +     dth*Sdir(:,:,wth)*COS;
+   MomSp = MomSp + fwd*dth*Sdir(:,:,wth)*SIN;
+   MomCp = MomCp + fwd*dth*Sdir(:,:,wth)*COS;
+   MomSm = MomSm + rev*dth*Sdir(:,:,wth)*SIN;
+   MomCm = MomCm + rev*dth*Sdir(:,:,wth)*COS;
 end
 
 %% mwd (Hauser et al., 2005)
