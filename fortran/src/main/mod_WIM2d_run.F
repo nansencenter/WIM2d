@@ -1211,9 +1211,13 @@
      &                           ,wim_info%stress_c
       write(fid,'(a,e10.3)'),'Breaking strain:            '
      &                           ,wim_info%epsc
+      write(fid,'(a,e10.3)'),'Cohesion (Pa):              '
+     &                           ,wim_info%cohesion
+      write(fid,'(a,e10.3)'),'Friction coefficient:       '
+     &                           ,wim_info%friction
       write(fid,'(a,f5.2)'), 'RP drag (Pa.s/m):           '
      &                           ,wim_info%drag_rp
-      write(fid,'(a,f5.2)'), 'WS viscosity (Pa.s/m):      '
+      write(fid,'(a,f5.2)'), 'WS viscosity (m^2/s):       '
      &                           ,wim_info%visc_ws
       write(fid,'(a)'),'***********************************************'
 

@@ -176,10 +176,28 @@ if params_in.SV_LOG
    fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',params_in.ADV_DIM);
    fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',params_in.ADV_OPT);
    fprintf(logid,'%s%2.2d\n','BRK_OPT:                          ',params_in.BRK_OPT);
+   switch params_in.BRK_OPT
+   case 0
+      fprintf(logid,'%s\n','(No breaking)');
+   case 1
+      fprintf(logid,'%s\n','(Williams et al, 2013, Oc Mod)');
+   case 2
+      fprintf(logid,'%s\n','(Marchenko)');
+   case 3
+      fprintf(logid,'%s\n','(Mohr-Coulomb)');
+   end
    fprintf(logid,'%s%2.2d\n','STEADY:                           ',params_in.STEADY);
    fprintf(logid,'%s%2.2d\n','DO_ATTEN:                         ',params_in.DO_ATTEN);
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n',' ');
+
+   %%other params
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','Other integer parameters:');
+   fprintf(logid,'%s%2.2d\n','FSD_OPT:                          ',params_in.FSD_OPT);
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n',' ');
+
    fclose(logid);
 end
 
@@ -274,13 +292,12 @@ if params_in.SV_LOG
    fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
    fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
    fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
-   fprintf(logid,'%s%10.3f\n','Breaking strain:            ' ,ice_prams.strain_c);
-   fprintf(logid,'%s%10.3f\n','Cohesion (Pa):              ' ,ice_prams.cohesion);
+   fprintf(logid,'%s%10.3e\n','Breaking strain:            ' ,ice_prams.strain_c);
+   fprintf(logid,'%s%10.3e\n','Cohesion (Pa):              ' ,ice_prams.cohesion);
    fprintf(logid,'%s%10.3f\n','Friction coefficient:       ' ,ice_prams.friction);
-   fprintf(logid,'%s%5.2f\n','Drag RP (Pa.s/m):            ' ,ice_prams.drag_rp);
-   fprintf(logid,'%s%5.2f\n','Viscoelastic WS (m^2/s):     ' ,ice_prams.visc_ws);
+   fprintf(logid,'%s%5.2f\n','RP drag (Pa.s/m):            ' ,ice_prams.drag_rp);
+   fprintf(logid,'%s%5.2f\n','WS viscosity (m^2/s):        ' ,ice_prams.visc_ws);
    fprintf(logid,'%s\n','***********************************************');
-   fprintf(logid,'%s\n','');
    fclose(logid);
 end
 
@@ -1725,8 +1742,8 @@ if (params_in.OPT==1)|(params_in.OPT==3)
    %%
    diagnostics.MIZ_width   = Wmiz;
    %%
-   Dmax_min = min(Dmax_j);
-   Dmax_max = max(Dmax_j);
+   Dmax_min = min(Dmax_j(jmiz));
+   Dmax_max = max(Dmax_j(jmiz));
    %%
    if params_in.DO_DISP; disp(' ');
    disp(['MIZ width = ',num2str(Wmiz/1e3),' km']); end
@@ -1750,7 +1767,7 @@ if params_in.SV_LOG
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','Diagnostics:');
    if (params_in.OPT==1)|(params_in.OPT==3)
-      fprintf(logid,'%s%9.4f\n','MIZ width (km): ',Wmiz);
+      fprintf(logid,'%s%9.4f\n','MIZ width (km): ',Wmiz/1e3);
       fprintf(logid,'%s%9.4f%s%9.4f\n','Dmax range in MIZ (m): ',...
          Dmax_min,' ',Dmax_max);
    end
@@ -2225,6 +2242,8 @@ function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
 %%              young: 5.490000000000000e+09
 %%            drag_rp: 13
 %%            visc_ws: 0
+%%           friction: 0
+%%           cohesion: 0
 %%           duration: 21600
 %%                CFL: 0.700000000000000
 %%            FSD_OPT: 1
@@ -2378,15 +2397,13 @@ fields(end+1:end+n)  = {...
 
 %% old real_prams (mostly in ice_prams):
 n  = 5;
-ice_prams.duration   = duration;
-ice_prams.CFL        = params.CFL;
 structs(end+1:end+n) = {'ice_prams'};
 fields(end+1:end+n)  = {...
             'young',...
             'drag_rp',...
             'visc_ws',...
-            'duration',...
-            'CFL'};
+            'cohesion',...
+            'friction'};
 
 
 %% other integer parameters (in params):
@@ -2408,6 +2425,15 @@ fields(end+1:end+n)  = {...
             'conc_init',...
             'h_init',...
             'Dmax_init'};
+
+%% duration/CFL
+tmp.duration   = duration;
+tmp.CFL        = params.CFL;
+n  = 2;
+structs(end+1:end+n) = {'tmp'};
+fields(end+1:end+n)  = {...
+            'duration',...
+            'CFL'};
 
 
 %% start time (in year_info):
