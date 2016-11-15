@@ -75,7 +75,7 @@ ALLDIRS{end+1} = [ss3,'/AMD/MATLAB/'];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% add wim2d paths
 ALLDIRS{end+1} = 'bin';%mex functions
-ALLDIRS{end+1} = [w2d_path,'/neXtSIMcoupling/run'];%scripts to launch function
+%ALLDIRS{end+1} = [w2d_path,'/neXtSIMcoupling/run'];%scripts to launch function
 ALLDIRS{end+1} = [w2d_path,'/neXtSIMcoupling/grid_setup'];%scripts to launch function
 ALLDIRS{end+1} = [w2d_path,'/neXtSIMcoupling/tools'];%scripts to launch function
 ALLDIRS{end+1} = [w2d_path,'/matlab/main'];%%interface to mex funs

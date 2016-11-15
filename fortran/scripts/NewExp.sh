@@ -59,8 +59,6 @@ done
 # for pure fortran
 cd $P
 cp $WIM2D_PATH/fortran/scripts/infiles/infile_nonIO.txt .
-ln -s $WIM2D_PATH/fortran/scripts/run_WIM2d.sh
-
 
 echo " "
 echo "*******************************************************"
@@ -69,9 +67,11 @@ echo "edit options in infile_nonIO.txt"
 echo "and run with"
 echo "$tdir/run_WIM2D.sh"
 echo " "
+# ========================================================
 
-# to enable matlab (mex functions)
-ln -s $WIM2D_PATH/fortran/scripts/startup_local.m .
+
+# ========================================================
+# to enable matlab (pure/mex functions)
 cp $WIM2D_PATH/matlab/main/infiles/infile_matlab.txt .
 
 echo "To use mex functions, edit infile_matlab.txt"
@@ -79,3 +79,4 @@ echo "and (in matlab) type run('$WIM2D_PATH/matlab/run_WIM2d.m');"
 echo "for pure matlab set MEX_OPT=0."
 echo "*******************************************************"
 echo " "
+# ========================================================
