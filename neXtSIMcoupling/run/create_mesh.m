@@ -1,13 +1,21 @@
 function meshfile = create_mesh(OPT,output_type)
+%% CALL: meshfile = create_mesh(OPT,output_type)
+%% OPT=1: ideal WIM grid
+%% OPT=2: ONR grid: 2km,small
+%% OPT=3: ONR grid: 2km,big
+%% OPT=4: ONR grid: 4km,big
+%% OPT=5: FS: 4km
+%% output_type = 'msh' or 'mat'
+
 
 if nargin~=2
    error('create_mesh(OPT,output_type) eg OPT=2, output_type=''msh'' or ''mat''')
 end
 
-w2d   = getenv('WIM2D_PATH');
 wgd   = getenv('WIMGRIDPATH');
+
 if OPT==1
-   gdir  = [w2d,'/fortran/run/Inputs'];
+   gdir  = [pwd,'/grid'];
    gfil  = [gdir,'/wim_grid.a']
 elseif OPT==2
    gdir  = wgd;
@@ -31,10 +39,16 @@ if OPT==1
    y  = gp.Y(1,:)/1e3;
    LM = gp.LANDMASK;
 
+   disp('range of land mask');
+   disp([min(LM(:)),max(LM(:))]);
+   disp(' ');
+
+
    %%plot original grid
    figure;
    fn_fullscreen;
    fn_pcolor(x,y,LM);
+   title('WIM grid land mask');
 else
    [fields,info]  = fn_read_nextwim_binary(gfil)
    [X,Y]          = mapll(fields.qlat,fields.qlon,60,-45,'N');%km
@@ -89,4 +103,3 @@ elseif 0
    disp(['Moving mesh file to ',final_dir]);
    eval(['!mv ',meshfile,' ',final_dir]);
 end
-
