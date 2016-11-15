@@ -96,8 +96,10 @@ for n=0:N0
       if ~(exist(fig_full)&~OVER_WRITE)
          eval(['!cp ',saved_simul_out0,' ',saved_simul_out]);
          %%
+         fig_full
          plot_param_grid(vbl,saved_simul_out,domain,cmap,lim,[],file_format);
          eval(['!mkdir -p ',figdir,'/',vbl]);
+         eval(['!ls ',figdir,'/',vbl]);
          eval(['!mv ',figname0,' ',fig_full]);
          disp(['saved to ',fig_full]);
          close;

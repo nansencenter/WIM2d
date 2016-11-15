@@ -75,7 +75,7 @@ lims  = lims(jkeep);
 Nv = length(vbls);
 %% ==================================================
 
-domain   = '';
+domain   = 'wim_ideal';
 for n=0:N0
    saved_simul_out   = [f0,num2str(n),'.mat'];
    saved_simul_out0  = [outdir,'/',saved_simul_out];
