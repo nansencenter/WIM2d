@@ -426,6 +426,7 @@
       end subroutine SDF_Bretschneider
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%!!!!!!!!!!!!!!
 
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       real function theta_dirfrac(th1_,dtheta_,mwd_)
       !! chi=pi/180*(theta-mwd) 
@@ -441,25 +442,46 @@
       implicit none
       
       real, intent(in) :: th1_,dtheta_,mwd_
-      real             :: th1,th2,mwd
-      real             :: chi1,chi2
+      real             :: th2_,integral
+      real             :: chi1,chi2,phi1,phi2,L1,L2
       real, parameter  :: pi  = 3.1415927
 
-      mwd   = theta_in_range(mwd_,th1_)   !th1_<=mwd<th1_+360
-      th2   = th1_+dtheta_
-      if ((mwd.gt.th2).and.((mwd-th2).gt.abs(mwd-360-th1_))) then
-         mwd   = mwd-360.
+      !!get mwd\pm90 inside [th1_,th1_+360)
+      phi1  = theta_in_range(mwd_-90,th1_)!>=th1_
+      phi2  = theta_in_range(mwd_+90,th1_)!>=th1_
+      th2_  = th1_+dtheta_
+
+      integral     = 0.
+      if (phi2.gt.phi1) then
+         !! th1_,phi1,phi2, and th2_
+         L1       = max(th1_,phi1)
+         L2       = min(th2_,phi2)
+         L2       = max(L1,L2)         !make L2>=L1
+         chi1     = pi*(L1-mwd_)/180.
+         chi2     = pi*(L2-mwd_)/180.
+         integral = integral
+     &      + 2*(chi2-chi1)+sin(2*chi2)-sin(2*chi1)
+      else
+         !! th1_,phi2,phi1, and th2_
+         !! 1st consider (th1_,phi2) interval
+         L1       = th1_
+         L2       = min(th2_,phi2)
+         chi1     = pi*(L1-mwd_)/180.
+         chi2     = pi*(L2-mwd_)/180.
+         integral = integral
+     &      + 2*(chi2-chi1)+sin(2*chi2)-sin(2*chi1)
+      
+         !! 2nd consider (phi1,th2_) interval
+         L1       = phi1
+         L2       = max(L1,th2_)       !make L2>=L1
+         chi1     = pi*(L1-mwd_)/180.
+         chi2     = pi*(L2-mwd_)/180.
+         integral = integral
+     &      + 2*(chi2-chi1)+sin(2*chi2)-sin(2*chi1)
       end if
-      th1   = max(mwd-90.,th1_)
-      th2   = min(mwd+90.,th2)
-      th2   = max(th1,th2)!make th2>=th1
 
-      chi1  = pi*(th1-mwd)/180.
-      chi2  = pi*(th2-mwd)/180.
-
-      theta_dirfrac  = 2*(chi2-chi1)+sin(2*chi2)-sin(2*chi1)
-      theta_dirfrac  = theta_dirfrac/2/pi
-      end function
+      theta_dirfrac  = integral/(2.*pi)
+      end function theta_dirfrac
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
