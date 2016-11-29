@@ -141,7 +141,7 @@ if TEST_PROJ:
 
 #for test plots
 HYCOMregions   = {}
-HYCOMregions.update({'wim_grid_FS_7km':'gre'})
+HYCOMregions.update({'wim_grid_FS_8km':'gre'})
 HYCOMregions.update({'wim_grid_FS_4km':'gre'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_big':'beau'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_4km_big':'beau'})
@@ -351,6 +351,13 @@ if USE_BATHY:
 else:
    landmask = np.zeros((nx,ny))
 
+if 1:
+   # add closed boundaries
+   landmask[0,:]  = 1.
+   # landmask[:,0]  = 1.
+   landmask[:,-1] = 1.
+   # landmask[-1,:] = 1.
+
 # landmask[:,-1] = 1 # uncomment for testing
 sav2bin(aid,{'LANDMASK':landmask},fields)
 
@@ -418,10 +425,10 @@ if TEST_PLOT>0:
 
       for vbl in ['depth','landmask']:
          if vbl=='depth':
-            PC    = bmap.pcolor(plon,plat,depth,latlon=True,ax=po.ax)
+            PC    = bmap.pcolor(qlon,qlat,depth,latlon=True,ax=po.ax)
             cols  = ['b']
          else:
-            PC    = bmap.pcolor(plon,plat,landmask,latlon=True,ax=po.ax)
+            PC    = bmap.pcolor(qlon,qlat,landmask,latlon=True,ax=po.ax)
             cols  = ['c']
 
          cb = po.fig.colorbar(mappable=PC,cax=cax)
