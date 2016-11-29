@@ -10,21 +10,80 @@ import struct
 from matplotlib import pyplot as plt
 from getopt import getopt
 
+# =======================================================================
+def read_grid_info_file(filename):
+   f     = open(filename)
+   lines = f.readlines()
+   f.close()
+   res      = float(lines[1].split()[0])
+   gridname = lines[0].split()[0]
+   vertices = []
+   for lin in lines[2:]:
+      lon   = float(lin.split()[0])
+      lat   = float(lin.split()[1])
+      vertices.append((lon,lat))
+   return gridname,res,vertices
+# =======================================================================
+
+
+# =======================================================================
+def get_depth_mask(plon,plat,**kwargs):
+   # ncfil = 'ETOPO/ETOPO_Arctic_10arcmin.nc' # ~20km
+   ncfil = 'ETOPO/ETOPO_Arctic_5arcmin.nc'  # ~10km
+   # ncfil = 'ETOPO/ETOPO_Arctic_2arcmin.nc'  # ~4km
+   # ncfil = 'ETOPO/ETOPO_Arctic_1arcmin.nc'  # ~2km
+
+   #interp depth to plon,plat (centres of wim grid cells)
+   import mod_reading as mr
+   nci      = mr.nc_getinfo(ncfil)
+   depth    = nci.interp2points('z', (plon,plat),**kwargs) # masked array
+   landmask = np.ones(depth.shape)
+   good     = np.logical_not(depth.mask)
+   data     = depth.data[good]
+   lmgood   = landmask[good] 
+
+   lmgood[data<0.]   = 0. # z<0 is water
+   landmask[good]    = lmgood
+
+   return depth,landmask
+# =======================================================================
+
 
 # =======================================================================
 # command line inputs
-grid     = None
-opts,args   = getopt(sys.argv[1:],"",["grid="])
+opts,args      = getopt(sys.argv[1:],"",["TEST_PLOT=","grid_info_file="])
+grid_info_file = None
+TEST_PLOT      = 1 #TODO get HYCOMreg automatically from vertices
 for opt,arg in opts:
-   if opt=='--grid':
-      grid  = arg
+   if opt=='--grid_info_file':
+      grid_info_file  = arg
+   if opt=='--TEST_PLOT':
+      TEST_PLOT   = int(arg)
 
-if grid is None:
-   raise ValueError("Specify grid name with option --grid=")
+if grid_info_file is not None:
+   # get gridname, resolution (m) and 4 vertices (lon/lat) from grid info file
+   gridname,res,vertices   = read_grid_info_file(grid_info_file)
+   print('Grid file name : '+gridname)
+   print('Resolution     : %0.1fkm' %(res/1.e3))
+   print('Vertices       :')
+   for v in vertices:
+      print(v)
+   print('\n')
 else:
-   outdir   = grid
-   if not os.path.exists(outdir):
-      os.mkdir(outdir)
+   raise ValueError('please specify input file with --grid_info_file=')
+# =======================================================================
+
+
+# =======================================================================
+# determine where to save output files
+tmp   = grid_info_file.split('/')
+Nlev  = len(tmp)-1 # no of directory levels
+if len(tmp)==0:
+   outdir   = '.'
+else:
+   outdir   = ''
+   for j in range(Nlev):
+      outdir   = outdir+tmp[j]+'/'
 # =======================================================================
 
 
@@ -42,10 +101,8 @@ mf       = open(mppfile)
 lines    = mf.readlines()
 mf.close()
 
-TEST_PLOT   = 1
 USE_LL      = 1
 TEST_PROJ   = 0 # test projection against mapxy and exit
-LARGE_GRID  = 1
 
 # shape of earth
 ecc   = float(lines[-1].split()[0])
@@ -82,78 +139,35 @@ if TEST_PROJ:
 # ===============================================================
 
 
+#for test plots
+HYCOMregions   = {}
+HYCOMregions.update({'wim_grid_FS_7km':'gre'})
+HYCOMregions.update({'wim_grid_FS_4km':'gre'})
+HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_big':'beau'})
+HYCOMregions.update({'wim_grid_full_ONR_Oct2015_4km_big':'beau'})
+HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_small':'beau'})
+HYCOMreg = HYCOMregions[gridname]
+
+
 # ===============================================================
-# get limits of grid
-# - NB outer cells only used for boundary conditions
-# (fixed or free)
-vertices = []
-if grid=='ONR_2km_small':
-   res      = 2e3# resolution in m
-   gridname = "wim_grid_full_ONR_Oct2015_%ikm_small" %(int(res/1.e3))
-   if TEST_PLOT:
-      ddir        = 'OSI-SAF'
-      ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
-      vbl         = 'fice'
-      HYCOMreg    = 'beau'
-      lonlat_file = None
-      time_index  = 0
-      dlabel      = 1
-      figname     = outdir+"/test_"+grid+"_OSISAF.png"
-   vertices.append(( -153.7   ,71.5 ))
-   vertices.append(( -157     ,74.1 ))
-   vertices.append(( -149.4   ,74.8 ))
-   vertices.append(( -147.2   ,72   ))
+if TEST_PLOT==1:
+   ddir        = 'OSI-SAF'
+   ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
+   vbl         = 'fice'
+   lonlat_file = None
+   time_index  = 0
+   dlabel      = 1
+   figname     = outdir+"/test_"+gridname+"_OSISAF.png"
 
-elif grid=='ONR_2km_big':
-   res      = 2e3# resolution in m
-   gridname = "wim_grid_full_ONR_Oct2015_%ikm_big" %(int(res/1.e3))
-   if TEST_PLOT:
-      ddir        = 'OSI-SAF'
-      ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
-      vbl         = 'fice'
-      HYCOMreg    = 'beau'
-      time_index  = 0
-      dlabel      = 1
-      lonlat_file = None
-      figname     = outdir+"/test_"+grid+"_OSISAF.png"
-   vertices.append(( -160  ,72.5 ))
-   vertices.append(( -160  ,77 ))
-   vertices.append(( -143  ,77 ))
-   vertices.append(( -143  ,72.5 ))
-
-elif grid=='ONR_4km_big':
-   res      = 4e3# resolution in m
-   gridname = "wim_grid_full_ONR_Oct2015_%ikm_big" %(int(res/1.e3))
-   if TEST_PLOT:
-      ddir        = 'OSI-SAF'
-      ncfil       = ddir+'/ice_conc_nh_polstere-100_multi_201510121200.nc'
-      vbl         = 'fice'
-      HYCOMreg    = 'beau'
-      time_index  = 0
-      dlabel      = 1
-      lonlat_file = None
-      figname     = outdir+"/test_"+grid+"_OSISAF.png"
-   vertices.append(( -160  ,72.5 ))
-   vertices.append(( -160  ,77 ))
-   vertices.append(( -143  ,77 ))
-   vertices.append(( -143  ,72.5 ))
-
-elif grid=='FS_4km':
-   res      = 4e3# resolution in m
-   gridname = "wim_grid_full_FS_Dec2015_%ikm_big" %(int(res/1.e3))
-   if TEST_PLOT:
+elif TEST_PLOT==2:
       ddir        = os.getenv('NEXTSIMDIR')+'/data'
       ncfil       = ddir+'/SWARP_WW3_ARCTIC-12K_20151217.nc'
       vbl         = 'swh'
-      HYCOMreg    = 'gre'
       time_index  = 6
       dlabel      = 2
       lonlat_file = None
-      figname     = outdir+"/test_"+grid+"_WW3.png"
-   vertices.append(( -20  ,72.5 ))
-   vertices.append(( -10  ,77 ))
-   vertices.append(( 12  ,77 ))
-   vertices.append(( 12  ,72.5 ))
+      figname     = outdir+"/test_"+gridname+"_WW3.png"
+# ===============================================================
 
 xc = []
 yc = []
@@ -329,7 +343,14 @@ sav2bin(aid,{'scp2':scp2},fields)
 # ================================================
 
 # land mask
-landmask = np.zeros((nx,ny))
+USE_BATHY   = 1
+if USE_BATHY:
+   # use bathymetry
+   # where depth is "missing", it is land
+   depth,landmask = get_depth_mask(plon,plat,mapping=mapx)
+else:
+   landmask = np.zeros((nx,ny))
+
 # landmask[:,-1] = 1 # uncomment for testing
 sav2bin(aid,{'LANDMASK':landmask},fields)
 
@@ -342,18 +363,16 @@ print("\n grid-files "+outdir+'/'+gridname+'.[a,b] saved\n')
 # ===============================================================
 
 # ===============================================================
-
-if TEST_PLOT:
-   # plot grid outline on AMSR2 conc data
-   from mpl_toolkits.basemap import Basemap
+if TEST_PLOT>0:
+   # plot grid outline on top of data from netcdf file
    import mod_reading as mr
-   wmsc  = '/work/shared/nersc/msc'
-   bmap  = None
+   import fns_plotting as Fplt
+   bmap  = Fplt.start_HYCOM_map(HYCOMreg)
    print('Using '+ncfil)
    nci      = mr.nc_getinfo(ncfil,lonlat_file=lonlat_file)
    print(' - contains:')
    print(nci.variables)
-   po,bmap  = nci.plot_var(vbl,HYCOMreg=HYCOMreg,show=False,time_index=time_index,date_label=dlabel,clabel=vbl)
+   po,bmap  = nci.plot_var(vbl,bmap=bmap,show=False,time_index=time_index,date_label=dlabel,clabel=vbl)
 
    # plot new selection
    xyVerts  = []
@@ -376,7 +395,7 @@ if TEST_PLOT:
    print(Verts)
    Vlon,Vlat   = np.array(Verts).transpose()
 
-   if bmap is not None:
+   if 1:
       # plot original selection
       vertices.append(vertices[0])
       vlon,vlat   = np.array(vertices).transpose()
@@ -387,5 +406,42 @@ if TEST_PLOT:
       # buoy coord:
       bmap.plot(-150.6,72.76,'^r',ax=po.ax,latlon=True)
 
-      po.fig.savefig(figname)
-      # plt.show(po.fig)
+   print('\nSaving '+figname+'\n')
+   po.fig.savefig(figname)
+   po.ax.cla()
+
+
+   if USE_BATHY:
+      # plot LANDMASK & depth
+      from mpl_toolkits.axes_grid1 import make_axes_locatable
+      cax   = po.cbar.ax
+
+      for vbl in ['depth','landmask']:
+         if vbl=='depth':
+            PC    = bmap.pcolor(plon,plat,depth,latlon=True,ax=po.ax)
+            cols  = ['b']
+         else:
+            PC    = bmap.pcolor(plon,plat,landmask,latlon=True,ax=po.ax)
+            cols  = ['c']
+
+         cb = po.fig.colorbar(mappable=PC,cax=cax)
+
+         # plot original selection
+         vertices.append(vertices[0])
+         vlon,vlat   = np.array(vertices).transpose()
+         bmap.plot(vlon,vlat,'m',linewidth=4,ax=po.ax,latlon=True)
+
+         if 0:
+            # finish with coast etc
+            Fplt.finish_map(bmap,ax=po.ax)
+
+         # depth=0 contour
+         bmap.contour(plon,plat,depth,colors=cols,linewidth=4,latlon=True,ax=po.ax,levels=[0.])
+         
+         # save fig
+         figname  = outdir+"/test_"+gridname+"_"+vbl+".png"
+         print('\nSaving '+figname+'\n')
+         po.fig.savefig(figname)
+         po.ax.cla()
+
+   plt.close(po.fig)

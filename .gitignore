@@ -69,6 +69,7 @@ neXtSIMcoupling/local_data/MATLAB/*
 !neXtSIMcoupling/run/infiles
 neXtSIMcoupling/tutorial/out/*
 neXtSIMcoupling/local_data/*
+neXtSIMcoupling/grid_setup/wim_grids/*
 
 CXX/out_cpp
 CXX/lib
@@ -78,3 +79,4 @@ fortran/grid_setup/infile_waves.txt
 
 fortran/Build/*.h
 fortran/grid/*
+
