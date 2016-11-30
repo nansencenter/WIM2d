@@ -1027,7 +1027,7 @@ void WimDiscr<T>::idealWaveFields(value_type const xfac)
    {
       for (int j = 0; j < ny; j++)
       {
-         if (X_array[i][j] < x_edge)
+         if ((X_array[i][j] < x_edge) && (LANDMASK_array[i][j]<1.))
          {
             wave_mask[i*ny+j] = 1.;
             Hs [i*ny+j] = Hs_inc;
