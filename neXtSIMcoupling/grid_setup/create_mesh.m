@@ -29,6 +29,9 @@ elseif OPT==4
 elseif OPT==5
    gdir  = wgd;
    gfil  = [gdir,'/wim_grid_full_FS_Dec2015_4km_big.a']
+elseif OPT==6
+   gdir  = wgd;
+   gfil  = [gdir,'/wim_grid_FS_8km.a']
 end
 
 % test reading of file (plot land-mask)

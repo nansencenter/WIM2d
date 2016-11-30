@@ -28,8 +28,8 @@ def read_grid_info_file(filename):
 
 # =======================================================================
 def get_depth_mask(plon,plat,**kwargs):
-   # ncfil = 'ETOPO/ETOPO_Arctic_10arcmin.nc' # ~20km
-   ncfil = 'ETOPO/ETOPO_Arctic_5arcmin.nc'  # ~10km
+   ncfil = 'ETOPO/ETOPO_Arctic_10arcmin.nc' # ~20km
+   # ncfil = 'ETOPO/ETOPO_Arctic_5arcmin.nc'  # ~10km
    # ncfil = 'ETOPO/ETOPO_Arctic_2arcmin.nc'  # ~4km
    # ncfil = 'ETOPO/ETOPO_Arctic_1arcmin.nc'  # ~2km
 
