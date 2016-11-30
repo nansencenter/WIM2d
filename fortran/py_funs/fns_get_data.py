@@ -752,22 +752,22 @@ class wim_results:
 
 
    ##########################################################################
-   def plot_initial(self,time_index=None,show=False,**kwargs):
-      self.plot(time_index=None,show=False,field_type="initial",**kwargs)
+   def plot_initial(self,**kwargs):
+      self.plot(field_type="initial",**kwargs)
       return
    ##########################################################################
 
 
    ##########################################################################
-   def plot_prog(self,time_index=None,show=False,**kwargs):
-      self.plot(time_index=None,show=False,field_type="progress",**kwargs)
+   def plot_prog(self,**kwargs):
+      self.plot(field_type="progress",**kwargs)
       return
    ##########################################################################
 
 
    ##########################################################################
-   def plot_final(self,time_index=None,show=False,**kwargs):
-      self.plot(time_index=None,show=False,field_type="final",**kwargs)
+   def plot_final(self,**kwargs):
+      self.plot(field_type="final",**kwargs)
       return
    ##########################################################################
 
