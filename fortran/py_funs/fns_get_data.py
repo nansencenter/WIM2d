@@ -482,18 +482,20 @@ class file_list:
 
 
       # =============================================================
-      # do the plot
+      # do the plots
       fields   = fn_read_general_binary(afile,vlist=vlist)[0]
 
-      if DO_SAVE:
-         figdir3B = figdir3+'/'+vbl
-         if not os.path.exists(figdir3B):
-            os.mkdir(figdir3B)
-      else:
-         figdir3B = None
+      print(DO_SAVE)
+      for vbl in fields.keys():
+         if DO_SAVE:
+            figdir3B = figdir3+'/'+vbl
+            if not os.path.exists(figdir3B):
+               os.mkdir(figdir3B)
+         else:
+            figdir3B = None
 
       Fplt.fn_plot_gen(grid_prams,fields,figdir=figdir3B,\
-          zlims_in=zlims,text=tstr,vlist=Flds,**kwargs)
+          zlims_in=zlims,text=tstr,**kwargs)
       # =============================================================
       return
 
@@ -551,7 +553,7 @@ class wim_results:
 
       if self.init_list.Nfiles==0:
          # try again in binaries/init
-         print("try again in binaries/init")
+         # print("try again in binaries/init")
          self.init_list = file_list(self.bindir+'/init','wim_init')
 
       if self.init_list.Nfiles>0:
@@ -566,7 +568,7 @@ class wim_results:
 
       if self.out_list.Nfiles==0:
          # try again in binaries/out
-         print("try again in binaries/final")
+         # print("try again in binaries/final")
          self.out_list = file_list(self.bindir+'/final','wim_out')
 
       if self.out_list.Nfiles>0:
@@ -578,6 +580,13 @@ class wim_results:
       # Check for progress files
       self.prog_dir  = self.bindir+'/prog'
       self.prog_list = file_list(self.prog_dir,'wim_prog')
+      # =====================================================================
+
+
+      # =====================================================================
+      # Check for incident wave files
+      self.inc_dir  = self.bindir+'/incwaves'
+      self.inc_list = file_list(self.inc_dir,'wim_inc')
       # =====================================================================
 
 
@@ -615,6 +624,9 @@ class wim_results:
       elif field_type=="final":
          file_list   = self.out_list
          short       = "out"
+      elif field_type=="inc":
+         file_list   = self.inc_list
+         short       = "inc"
       else:
          raise ValueError("unknown field_type: "+field_type)
       # =============================================================
@@ -647,6 +659,12 @@ class wim_results:
 
 
    ##########################################################################
+   def incfields(self,**kwargs):
+      return self.get_fields("inc",**kwargs)
+   ##########################################################################
+
+
+   ##########################################################################
    def plot(self,time_index=None,show=False,field_type="initial",vlist=None):
 
       # =============================================================
@@ -662,6 +680,10 @@ class wim_results:
          file_list   = self.out_list
          short       = "out"
          outdir      = "final"
+      elif field_type=="inc":
+         file_list   = self.inc_list
+         short       = "inc"
+         outdir      = "incwaves"
       else:
          raise ValueError("unknown field_type: "+field_type)
       # =============================================================
@@ -721,6 +743,13 @@ class wim_results:
    ##########################################################################
    def plot_final(self,**kwargs):
       self.plot(field_type="final",**kwargs)
+      return
+   ##########################################################################
+
+
+   ##########################################################################
+   def plot_incwaves(self,**kwargs):
+      self.plot(field_type="inc",**kwargs)
       return
    ##########################################################################
 
