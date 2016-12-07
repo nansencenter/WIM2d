@@ -4,6 +4,183 @@ import struct
 import fns_plot_data as Fplt
 import datetime as dtm
 
+
+##############################################################
+def fn_bfile_info(bfile):
+   # routine to get output fields from binary files:
+
+   ###########################################################
+   # get info like dimensions and variable names from .b file
+   bid   = open(bfile,'r')
+   lines = bid.readlines()
+   bid.close()
+
+   int_list = ['nx','ny','Nrecs','Norder'] # these are integers not floats
+   binfo    = {'recnos':{}}  # dictionary with info about fields in corresponding .a file
+
+   do_vlist = 0
+   count    = 0
+   for lin in lines:
+      ls = lin.split()
+      if ls != []:
+         # skip blank lines
+
+         # if not at "Record number and name"
+         if not(ls[0]=='Record' and ls[1]=='number'):
+            val   = ls[0]
+            key   = ls[1]
+            if not do_vlist:
+               if key in int_list:
+                  val   = int(val)
+               elif ("T" in val) and ("Z" in val):
+                  import datetime as dtm
+                  val   = dtm.datetime.strptime(val,"%Y%m%dT%H%M%SZ")
+               else:
+                  val   = float(val)
+               binfo.update({key:val})
+            else:
+               binfo['recnos'].update({key:count})
+               count   += 1
+         else:
+            # have got down to list of variables
+            do_vlist = 1
+
+   if binfo['Nrecs']!=len(binfo['recnos']):
+      raise ValueError('Inconsistent number of records in file: '+bfile)
+
+   return binfo
+##############################################################
+
+
+##############################################################
+def get_array(fid,recno,nx,ny,fmt_size=4,order='F'):
+   # routine to get the array from the .a (binary) file
+   # * fmt_size = size in bytes of each entry)
+   #   > default = 4 (real*4/single precision)
+   recs     = nx*ny
+   rec_size = recs*fmt_size
+   fid.seek(recno*rec_size,0) # relative to start of file
+   #
+   if fmt_size==4:
+      fmt_py   = 'f' # python string for single
+   else:
+      fmt_py   = 'd' # python string for double
+
+   data  = fid.read(rec_size) # no of bytes to read
+   fld   = struct.unpack(recs*fmt_py,data)
+   fld   = np.array(fld)
+   fld   = fld.reshape((nx,ny),order=order)
+
+   return fld
+##############################################################
+
+
+###########################################################
+def check_names(vname,variables,stop=True):
+
+   if vname in variables:
+      return vname
+
+   lists = []
+
+   # ice conc alt names
+   List   = ['ficem','fice','ice_conc','icec','cice','area',\
+                  'concentration','sea_ice_concentration']
+   if vname in List:
+      for v in variables:
+         if v in List:
+            return v
+
+   # ice thick alt names
+   List  = ['hicem','hice','ice_thick','icetk','iceh',\
+            'sea_ice_thickness','thickness']
+   if vname in List:
+      for v in variables:
+         if v in List:
+            return v
+
+   # floe size alt names
+   List  = ['dfloe','dmax','Dfloe','Dmax']
+   if vname in List:
+      for v in variables:
+         if v in List:
+            return v
+
+   # wave stress: x component
+   List  = ['taux','tau_x','taux_waves']
+   if vname in List:
+      for v in variables:
+         if v in List:
+            return v
+
+   # wave stress: y component
+   List  = ['tauy','tau_y','tauy_waves']
+   if vname in List:
+      for v in variables:
+         if v in List:
+            return v
+
+   # swh
+   List  = ['Hs','hs','swh','significant_wave_height']
+   if vname in List:
+      for v in variables:
+         if v in List:
+            return v
+
+   if stop:
+      raise ValueError(vname+'not in variable list')
+   else:
+      return ''
+###########################################################
+
+
+##############################################################
+def fn_read_general_binary(afile,vlist=None):
+   # routine to get output fields from binary files:
+
+   ###########################################################
+   # get dimensions and variable names from .b file
+   bfile = afile[:-2]+'.b'
+   binfo = fn_bfile_info(bfile)
+
+   if vlist is None:
+      # get all fields in binary files
+      recnos   = binfo['recnos']
+   else:
+      # check vbls are in binary files
+      recnos   = {}
+      for vbl in vlist:
+         vname = check_names(vbl,binfo['recnos'].keys())
+         recnos.update({vbl:binfo['recnos'][vname]})
+
+   nv = binfo['Nrecs']
+   nx = binfo['nx']
+   ny = binfo['ny']
+   if binfo['Norder']==1:
+      order = 'fortran'
+   else:
+      order = 'C'
+   ###########################################################
+
+   ###########################################################
+   # can now read data from .a file
+   import os
+   sz       = os.path.getsize(afile)
+   fmt_size = int(sz/float(nv*nx*ny)) # 4 for single, 8 for double
+   aid      = open(afile,'rb')
+
+   out   = {}
+   for vbl in recnos:
+      out.update({vbl:get_array(aid,recnos[vbl],nx,ny,order=order,fmt_size=fmt_size)})
+
+   aid.close()
+   ###########################################################
+
+   # outputs
+   return out,binfo
+##############################################################
+
+
 #####################################################
 class var_info:
    # simple object
@@ -32,44 +209,6 @@ class var_info:
       return
 #####################################################
 
-##############################################################
-def key_aliases(inverse=False):
-   if not inverse:
-      aliases  = {'Dmax'   :'dfloe' ,\
-                  'cice'   :'icec'  ,\
-                  'hice'   :'iceh'  ,\
-                  'tau_x'  :'taux'  ,\
-                  'tau_y'  :'tauy'  }
-   else:
-      aliases  = {'dfloe'  :'Dmax'  ,\
-                  'icec'   :'cice'  ,\
-                  'iceh'   :'hice'  ,\
-                  'taux'   :'tau_x' ,\
-                  'tauy'   :'tau_y' }
-   return aliases
-##############################################################
-
-##############################################################
-def get_array(fid,nx,ny,fmt_size=4,order='F'):
-   # routine to get the array from the .a (binary) file
-   # * fmt_size = size in bytes of each entry)
-   #   > default = 4 (real*4/single precision)
-   recs     = nx*ny
-   rec_size = recs*fmt_size
-   #
-   if fmt_size==4:
-      fmt_py   = 'f' # python string for single
-   else:
-      fmt_py   = 'd' # python string for double
-
-
-   data  = fid.read(rec_size) # no of bytes to read
-   fld   = struct.unpack(recs*fmt_py,data)
-   fld   = np.array(fld)
-   fld   = fld.reshape((nx,ny),order=order)
-
-   return fld
-##############################################################
 
 ##############################################################
 def fn_check_grid(outdir):
@@ -78,18 +217,8 @@ def fn_check_grid(outdir):
 
    ###########################################################
    afile       = outdir+'/wim_grid.a'
-   bfile       = outdir+'/wim_grid.b'
-   fields,info = fn_read_general_binary(afile)
-   aliases     = key_aliases(inverse=True)
 
-   grid_prams  = {}
-   keys        = ['X','Y','scuy','scvx','scp2','scp2i','LANDMASK']
-   for key in keys:
-      if key in fields.keys():
-         key2  = key
-      else:
-         key2  = aliases[key]
-      grid_prams.update({key:fields[key2]})
+   grid_prams,info  = fn_read_general_binary(afile)
    ###########################################################
 
    ###########################################################
@@ -117,136 +246,33 @@ def fn_check_init(outdir):
       if 'wim_init' in f and '.a' in f:
          afile = outdir+'/'+f
          break
-   bfile       = afile.replace('.a','.b')
-   fields,info = fn_read_general_binary(afile)
-   aliases     = key_aliases(inverse=True)
 
    ###########################################################
    ## ice fields
-   keys        = ['icec','iceh','dfloe']
-   ice_fields  = {}
-   for key in keys:
-      if key in fields.keys():
-         key2  = key
-      else:
-         key2  = aliases[key]
-      ice_fields.update({key:fields[key2]})
+   ice_fields  = fn_read_general_binary(afile,vlist=['icec','iceh','dfloe'])[0]
 
    # ice mask
    ice_fields.update({'ICE_MASK':0*ice_fields['icec']})
    ice_fields['ICE_MASK'][ice_fields['icec']>0.05] = 1.0
    ###########################################################
 
+
    ###########################################################
    ## wave fields
-   keys        = ['Hs','Tp','mwd']
-   wave_fields = {}
-   for key in keys:
-      if key in fields.keys():
-         key2  = key
-      else:
-         key2  = aliases[key]
-      wave_fields.update({key:fields[key]})
+   wave_fields = fn_read_general_binary(afile,vlist=['Hs','Tp','mwd'])[0]
 
    # wave mask
    wave_fields.update({'WAVE_MASK':0*wave_fields['Hs']})
    wave_fields['WAVE_MASK'][wave_fields['Hs']>0.0] = 1.0
    ###########################################################
 
-   # outputs
+
    return ice_fields,wave_fields
 ##############################################################
 
-##############################################################
-def fn_bfile_info(bfile):
-   # routine to get output fields from binary files:
-
-   ###########################################################
-   # get info like dimensions and variable names from .b file
-   bid   = open(bfile,'r')
-   lines = bid.readlines()
-   bid.close()
-
-   int_list = ['nx','ny','Nrecs','Norder'] # these are integers not floats
-   binfo = {}  # dictionary with info about fields in corresponding .a file
-   vlist = []  # list of variable names in corresponding .a file (in order)
-
-   do_vlist = 0
-   for lin in lines:
-      ls = lin.split()
-      if ls != []:
-         # skip blank lines
-
-         # if not at "Record number and name"
-         if not(ls[0]=='Record' and ls[1]=='number'):
-            val   = ls[0]
-            key   = ls[1]
-            if not do_vlist:
-               if key in int_list:
-                  val   = int(val)
-               elif ("T" in val) and ("Z" in val):
-                  import datetime as dtm
-                  val   = dtm.datetime.strptime(val,"%Y%m%dT%H%M%SZ")
-               else:
-                  val   = float(val)
-               binfo.update({key:val})
-            else:
-               vlist.append(key)
-         else:
-            # have got down to list of variables
-            do_vlist = 1
-
-   if binfo['Nrecs']!=len(vlist):
-      raise ValueError('Inconsistent number of records in file: '+bfile)
-
-   return binfo,vlist
-##############################################################
 
 ##############################################################
-def fn_read_general_binary(afile):
-   # routine to get output fields from binary files:
-
-   ###########################################################
-   # get dimensions and variable names from .b file
-   bfile       = afile[:-2]+'.b'
-   binfo,vlist = fn_bfile_info(bfile)
-
-   nx    = binfo['nx']
-   ny    = binfo['ny']
-   if binfo['Norder']==1:
-      order = 'fortran'
-   else:
-      order = 'C'
-   ###########################################################
-
-   ###########################################################
-   # can now read data from .a file
-   import os
-   sz=os.path.getsize(afile)
-   nv=len(vlist)
-   fmt_size=int(sz/float(nv*nx*ny)) # 4 for single, 8 for double
-
-   # print(afile,vlist)
-   # print(sz,4*nx*ny*nv,8*nx*ny*nv)
-   # print(fmt_size,nx,ny,nv)
-
-   aid   = open(afile,'rb')
-
-   out   = {}
-   for key in vlist:
-      out.update({key:get_array(aid,nx,ny,order=order,fmt_size=fmt_size)})
-      # print(key)
-      # print(out[key].min(),out[key].max())
-
-   aid.close()
-   ###########################################################
-
-   # outputs
-   return out,binfo
-##############################################################
-
-##############################################################
-def fn_check_out_bin(outdir):
+def fn_check_out_bin(outdir,**kwargs):
    # routine to get output fields from binary files:
    lst   = os.listdir(outdir)
    afile = None
@@ -254,24 +280,8 @@ def fn_check_out_bin(outdir):
       if 'wim_out' in f and '.a' in f:
          afile = outdir+'/'+f
          break
-   bfile       = afile.replace('.a','.b')
-   fields,info = fn_read_general_binary(afile)
-   aliases     = key_aliases(inverse=True)
 
-   ###########################################################
-   ## out fields
-   keys        = ['dfloe','taux','tauy','Hs','Tp']
-   out_fields  = {}
-   for key in keys:
-      if key in fields.keys():
-         key2  = key
-      else:
-         key2  = aliases[key]
-      out_fields.update({key:fields[key2]})
-   ###########################################################
-
-   # outputs
-   return out_fields
+   return fn_read_general_binary(afile,vlist=['dfloe','taux','tauy','Hs','Tp','mwd'])[0]
 ##############################################################
 
 ##############################################################
@@ -286,6 +296,7 @@ def fn_check_out_arr(out_arrays):
    # outputs
    return out_fields
 ##############################################################
+
 
 ##############################################################
 def fn_check_prog(outdir,cts):
@@ -304,25 +315,8 @@ def fn_check_prog(outdir,cts):
       cts   = fmt %(cts)
       print(cts0,cts)
 
-   afile       = outdir+'/binaries/prog/wim_prog'+cts+'.a'
-   bfile       = outdir+'/binaries/prog/wim_prog'+cts+'.b'
-   fields,info = fn_read_general_binary(afile)
-   aliases     = key_aliases(inverse=True)
-
-   ###########################################################
-   ## out fields
-   keys        = ['dfloe','taux','tauy','Hs','Tp']
-   out_fields  = {}
-   for key in keys:
-      if key in fields.keys():
-         key2  = key
-      else:
-         key2  = aliases[key]
-      out_fields.update({key:fields[key2]})
-   ###########################################################
-
-   # outputs
-   return out_fields
+   afile = outdir+'/binaries/prog/wim_prog'+cts+'.a'
+   return fn_read_general_binary(afile,vlist=['dfloe','taux','tauy','Hs','Tp','mwd'])[0]
 ##############################################################
 
 class file_list:
@@ -353,12 +347,13 @@ class file_list:
       self.Nfiles = len(alist)
 
       if self.Nfiles>0:
-         bfile                = self.files[0].replace('.a','.b')
-         info,self.variables  = fn_bfile_info(self.dir+'/'+bfile)
+         bfile          = self.files[0].replace('.a','.b')
+         info           = fn_bfile_info(self.dir+'/'+bfile)
+         self.variables = info['recnos'].keys()
 
       return
 
-   def plot_steps(self,grid_prams,figdir3):
+   def plot_steps(self,grid_prams,figdir3,**kwargs):
       pdir        = self.dir
 
       if not os.path.exists(figdir3):
@@ -410,40 +405,18 @@ class file_list:
          for pf in alist:
             afile = pdir+'/'+pf
             #
-            fields,info = fn_read_general_binary(afile)
+            fields   = fn_read_general_binary(afile,**kwargs)[0]
             for key in fields.keys():
-               if key in zlims.keys():
+               key2  = check_names(key,zlims.keys())
+               if key2!="":
                   zmin  = fields[key].min()
                   zmax  = fields[key].max()
-                  if zmin<zlims[key][0]:
-                     zlims[key][0]  = zmin
-                  if zmax>zlims[key][1]:
-                     zlims[key][1]  = zmax
+                  if zmin<zlims[key2][0]:
+                     zlims[key2][0] = zmin
+                  if zmax>zlims[key2][1]:
+                     zlims[key2][1] = zmax
             #
-            afile = pdir+'/'+pf
-            #
-            fields,info = fn_read_general_binary(afile)
-            for key in fields.keys():
-               if key in zlims.keys():
-                  zmin  = fields[key].min()
-                  zmax  = fields[key].max()
-                  if zmin<zlims[key][0]:
-                     zlims[key][0]  = zmin
-                  if zmax>zlims[key][1]:
-                     zlims[key][1]  = zmax
-
             tlist.append('_'+pf[4:-2])
-            afile = pdir+'/'+pf
-            #
-            fields,info = fn_read_general_binary(afile)
-            for key in fields.keys():
-               if key in zlims.keys():
-                  zmin  = fields[key].min()
-                  zmax  = fields[key].max()
-                  if zmin<zlims[key][0]:
-                     zlims[key][0]  = zmin
-                  if zmax>zlims[key][1]:
-                     zlims[key][1]  = zmax
          # =============================================================
 
       # =============================================================
@@ -451,17 +424,7 @@ class file_list:
 
       # =============================================================
       # do the plots
-      flds  = fields.keys()
-      Flds  = []
-
-      # Do interesting plots first
-      for vbl in ['tau_x','Dmax','Hs']:
-         if vbl in flds:
-            Flds.append(vbl)
-            flds.remove(vbl)
-
-      Flds.extend(flds)
-      for vbl in Flds:
+      for vbl in fields.keys():
          print('\n')
          print('Plotting results for '+vbl)
          print('\n')
@@ -472,14 +435,14 @@ class file_list:
 
          for i,pf in enumerate(alist):
             print(self.times[i])
-            afile       = pdir+'/'+pf
-            fields,info = fn_read_general_binary(afile)
+            afile    = pdir+'/'+pf
+            fields   = fn_read_general_binary(afile)[0]
             Fplt.fn_plot_gen(grid_prams,fields,figdir=figdir3B,\
                   zlims_in=zlims,text=tlist[i],vlist=[vbl])
       # =============================================================
       return
 
-   def plot_step(self,grid_prams,figdir3=None,time_index=0,**kwargs):
+   def plot_step(self,grid_prams,figdir3=None,time_index=0,vlist=None,**kwargs):
 
       pf    = self.files[time_index]
       afile = self.dir+'/'+pf
@@ -520,17 +483,7 @@ class file_list:
 
       # =============================================================
       # do the plot
-      fields,info = fn_read_general_binary(afile)
-      flds  = fields.keys()
-      Flds  = []
-
-      # Do interesting plots first
-      for vbl in ['tau_x','Dmax','Hs']:
-         if vbl in flds:
-            Flds.append(vbl)
-            flds.remove(vbl)
-
-      Flds.extend(flds)
+      fields   = fn_read_general_binary(afile,vlist=vlist)[0]
 
       if DO_SAVE:
          figdir3B = figdir3+'/'+vbl
@@ -650,7 +603,7 @@ class wim_results:
 
 
    ##########################################################################
-   def get_fields(self,field_type,time_index=0):
+   def get_fields(self,field_type,time_index=0,**kwargs):
 
       # =============================================================
       if field_type=="initial":
@@ -671,30 +624,30 @@ class wim_results:
          raise ValueError(Start+' files not outputted: wim_'+short+'*.[a,b]')
 
       afile = file_list.dir+'/'+file_list.files[time_index]
-      return fn_read_general_binary(afile)
+      return fn_read_general_binary(afile,**kwargs)
    ##########################################################################
 
 
    ##########################################################################
-   def initial_fields(self,time_index=0):
-      return self.get_fields("initial",time_index=time_index)
+   def initial_fields(self,**kwargs):
+      return self.get_fields("initial",**kwargs)
    ##########################################################################
 
 
    ##########################################################################
-   def out_fields(self,time_index=0):
-      return self.get_fields("final",time_index=time_index)
+   def out_fields(self,**kwargs):
+      return self.get_fields("final",**kwargs)
    ##########################################################################
 
 
    ##########################################################################
-   def progfields(self,time_index=0):
-      return self.get_fields("progress",time_index=time_index)
+   def progfields(self,**kwargs):
+      return self.get_fields("progress",**kwargs)
    ##########################################################################
 
 
    ##########################################################################
-   def plot(self,time_index=None,show=False,field_type="initial"):
+   def plot(self,time_index=None,show=False,field_type="initial",vlist=None):
 
       # =============================================================
       if field_type=="initial":
@@ -737,15 +690,15 @@ class wim_results:
 
       grid_prams  = self.get_grid()
       if time_index is None:
-         #plot all
-         file_list.plot_steps(grid_prams,figdir3=figdir3)
+         # plot all
+         file_list.plot_steps(grid_prams,figdir3=figdir3,vlist=vlist)
          print('\nPlots in '+figdir3+'\n')
-      elif show:
-         #plot step (show)
-         file_list.plot_step(grid_prams,time_index=time_index,figdir3=None)
       else:
-         #plot step (& save fig)
-         file_list.plot_step(grid_prams,time_index=time_index,figdir3=figdir3)
+         if show:
+            figdir3  = None
+            # plot step & show
+            # - otherwise plot step & save fig
+         file_list.plot_step(grid_prams,time_index=time_index,figdir3=figdir3,vlist=vlist)
 
       return
    ##########################################################################

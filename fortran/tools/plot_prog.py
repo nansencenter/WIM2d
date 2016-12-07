@@ -1,4 +1,6 @@
 import os,sys
+import matplotlib
+matplotlib.use('Agg')
 import fns_get_data  as Fdat
 from getopt import getopt
 
@@ -20,6 +22,11 @@ for opt,arg in opts:
       PLOT_FINAL  = int(arg)
    if opt=='--prog':
       PLOT_PROG  = int(arg)
+
+if len(args)==0:
+   vlist = None
+else:
+   vlist = args #list of variables to plot
 # =======================================================================
 
 results  = Fdat.wim_results(outdir=outdir)
@@ -28,19 +35,19 @@ results  = Fdat.wim_results(outdir=outdir)
 
 ##########################################################################
 if PLOT_INIT:
-   results.plot_initial()
+   results.plot_initial(vlist=vlist)
 ##########################################################################
 
 
 ################################################################
 if PLOT_FINAL:
-   results.plot_final()
+   results.plot_final(vlist=vlist)
 ################################################################
 
 
 ################################################################
 if PLOT_PROG:
-   results.plot_prog()
+   results.plot_prog(vlist=vlist)
 
 
    ################################################################

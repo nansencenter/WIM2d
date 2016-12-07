@@ -13,26 +13,35 @@ fi
 
 MKMOV=$1
 outdir=$2
-if [ $# -ge 3 ]
-then
-   PLOT_PROG=$3
-else
-   PLOT_PROG=1
-fi
+PLOT_PROG=1
+PLOT_INIT=1
+PLOT_FINAL=1
 
-if [ $# -ge 4 ]
-then
-   PLOT_INIT=$4
-else
-   PLOT_INIT=1
-fi
-
-if [ $# -ge 5 ]
-then
-   PLOT_FINAL=$5
-else
-   PLOT_FINAL=1
-fi
+n=0
+vlist=""
+nvbl=0
+for var in "$@"
+do
+   n=$((n+1))
+   # echo $n $var
+   if [ $n -lt 3 ]
+   then
+      continue
+   elif [ $n -eq 3 ]
+   then
+      PLOT_PROG=$var
+   elif [ $n -eq 4 ]
+   then
+      PLOT_INIT=$var
+   elif [ $n -eq 5 ]
+   then
+      PLOT_FINAL=$var
+   else
+      vlist="$vlist $var"
+      vbls[$nvbl]=$var
+      nvbl=$((nvbl+1))
+   fi
+done
 
 # make png files from progress files
 # (if they exist)
@@ -49,8 +58,8 @@ fi
 
 echo In `pwd`:
 rm -rf figs/prog/*
-echo python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL
-python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL
+echo python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL $vlist
+python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL $vlist
 
 if [ $MKMOV -eq 1 ]
 then
@@ -61,8 +70,24 @@ then
 
    for vbl in $vbl_list
    do
-      echo $tools/prog2mp4.sh $vbl
-      $tools/prog2mp4.sh $vbl
+      ok=1
+      if [ $nvbl -gt 0 ]
+      then
+         ok=0
+         for v in ${vbls[@]}
+         do
+            if [ $v == $vbl ]
+            then
+               ok=1
+               break
+            fi
+         done
+      fi
+      if [ $ok -eq 1 ]
+      then
+         echo $tools/prog2mp4.sh $vbl
+         $tools/prog2mp4.sh $vbl
+      fi
    done
 else
    echo To make movie

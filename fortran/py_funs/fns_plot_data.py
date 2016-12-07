@@ -261,38 +261,48 @@ def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
              'LANDMASK' : None}
 
    # allow for other variations of key names
-   aliases  = Fdat.key_aliases()
-
-   for key in aliases.keys():
-      key2  = aliases[key]
-      figs.update ({key:figs [key2]})
-      labs.update ({key:labs [key2]})
-      zlims.update({key:zlims[key2]})
-
+   znames   = zlims.keys()
    if zlims_in is not None:
       for key in zlims_in.keys():
-         zlims[key]  = zlims_in[key]
+         key2  = Fdat.check_names(key,znames)
+         if key2!="":
+            zlims[key2]  = zlims_in[key]
 
    # make plots
    if vlist is None:
       vlist = fields.keys()
 
    for key in vlist:
-      zlim  = zlims[key]
+      key3     = Fdat.check_names(key,fields.keys())
+
+      key2     = Fdat.check_names(key,znames)
+      zlim     = None
+      lab      = key
+      figname  = key+text+".png"
+      if key2!="":
+         zlim     = zlims[key2]
+         lab      = labs[key2]
+         figname  = figs[key2]
+      else:
+         key2_ = Fdat.check_names(key,zlims_in.keys())
+         if key2_!="":
+            zlim  = zlims_in[key2_]
+
+      F  = fields[key3]
       if ny>1:
-         f,ax  = cmap_3d(x,y,fields[key].transpose(),\
-                         labs=['$x$, km','$y$, km',labs[key]],\
+         f,ax  = cmap_3d(x,y,F.transpose(),\
+                         labs=['$x$, km','$y$, km',lab],\
                          zlims=zlim)
       else:
-         F  = fields[key]
          if F.ndim==2:
             F  = F[:,0]
-         f,ax,line  = plot_1d(x,F,labs=['$x$, km',labs[key]])
+         f,ax,line  = plot_1d(x,F,labs=['$x$, km',lab])
          ax.set_ylim(zlim)
 
       if DO_SAVE:
-         fig   = figdir+'/'+figs[key]
-         f.savefig(fig,bbox_inches='tight',pad_inches=0.05)
+         Figname  = figdir+'/'+figname
+         # print('Saving '+Figname)
+         f.savefig(Figname,bbox_inches='tight',pad_inches=0.05)
          plt.close(f)
       elif hold and key==vlist[-1]:
          plt.show(f)
