@@ -221,7 +221,7 @@
 
       real,dimension(nmesh_e,nmesh_vars),intent(inout),optional         &
      &   :: mesh_e
-         ! this is [x_e,y_e,conc_e,thick_e,Dmax_var_e,broken_e]
+         ! this is [x_e,y_e,conc_e,thick_e,dmax_e,broken_e]
          ! -1st 4 are unchanged; last 2 get updated
 
 !     integer  :: SCATMOD,ADV_DIM,ADV_OPT                               &
@@ -253,8 +253,8 @@
       real                    :: wim_break_damage,Tp_e,lam_e
       real,dimension(nmesh_e) :: x_e,y_e                    !centres of elements
       real,dimension(nmesh_e) :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
-      real,dimension(nmesh_e) :: conc_e,thick_e,Dmax_var_e
-     &                              ,broken_e,dmax_e
+      real,dimension(nmesh_e) :: conc_e,thick_e
+     &                          ,broken_e,dmax_e
       real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(2)
       character(len=800) :: diag_filename
       !
@@ -281,18 +281,6 @@
          write(fid_diag,'(f3.1,a)'),ICE_MASK(itest,jtest),' # ICE_MASK'
          write(fid_diag,'(a)'),' '
       end if
-
-
-      !wim_step_prams   = (/
-      !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
-      !/)
-!     SCATMOD  = wim_step_prams(1)
-!     ADV_DIM  = wim_step_prams(2)
-!     ADV_OPT  = wim_step_prams(3)
-!     BRK_OPT  = wim_step_prams(4)
-!     STEADY   = wim_step_prams(5)
-!     DO_ATTEN = wim_step_prams(6)
-!     FSD_OPT  = wim_step_prams(7)
 
       PI    = 4*atan(1.0)
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
@@ -618,12 +606,12 @@
 
 
       if ((INTERP_MESH).and.(BRK_OPT>0)) then
-         x_e         = mesh_e(:,1)
-         y_e         = mesh_e(:,2)
-         conc_e      = mesh_e(:,3)
-         thick_e     = mesh_e(:,4)
-         Dmax_var_e  = mesh_e(:,5)
-         broken_e    = mesh_e(:,6)
+         x_e      = mesh_e(:,1)
+         y_e      = mesh_e(:,2)
+         conc_e   = mesh_e(:,3)
+         thick_e  = mesh_e(:,4)
+         dmax_e   = mesh_e(:,5)
+         broken_e = mesh_e(:,6)
 
          call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
      &      ,nmesh_e,x_e,y_e,mom0_e)
@@ -632,20 +620,6 @@
          call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain
      &      ,nmesh_e,x_e,y_e,var_strain_e)
 
-         dmax_e   = 0.
-         if (Dmax_varname == 'Nfloes') then
-            !Dmax stored as Nfloes = c/Dmax^2
-            where (Dmax_var_e.gt.0)
-               dmax_e   = sqrt(conc_e/Dmax_var_e)
-            end where
-         elseif (Dmax_varname == 'cDmax') then
-            !Dmax stored as cDmax = c*Dmax
-            where (conc_e.gt.0)
-               dmax_e   = Dmax_var_e/conc_e
-            end where
-         else
-            stop('Dmax_varname should be Nfloes or cDmax')
-         end if
 
          ibrk  = 0
          do i=1,nmesh_e
@@ -669,22 +643,7 @@
             end if
          end do
 
-         Dmax_var_e  = 0.
-         if (Dmax_varname == 'Nfloes') then
-            !Dmax stored as Nfloes = c/Dmax^2
-            where (dmax_e.gt.0.)
-               Dmax_var_e  = conc_e/dmax_e**2
-            end where
-            !if (ibrk.gt.0) then
-            !   print*,'TWbrk2',dmax_e(ibrk),Dmax_var_e(ibrk)
-            !end if
-         elseif (Dmax_varname == 'cDmax') then
-            !Dmax stored as cDmax = c*Dmax
-            Dmax_var_e  = conc_e*dmax_e
-         else
-            stop('Dmax_varname should be Nfloes or cDmax')
-         end if
-         mesh_e(:,5) = Dmax_var_e
+         mesh_e(:,5) = dmax_e
          mesh_e(:,6) = broken_e
          !print*,maxval(broken_e)
 

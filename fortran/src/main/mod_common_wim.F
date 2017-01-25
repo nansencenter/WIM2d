@@ -36,10 +36,6 @@
       integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
 
-      character(len=*),parameter :: Dmax_varname = 'Nfloes'!'cDmax'
-         !TODO create input DMAX_VAR_OPT to determine this?
-         !or just pass in/out Dmax (for breaking on mesh)
-
       real     :: CFL
 
 

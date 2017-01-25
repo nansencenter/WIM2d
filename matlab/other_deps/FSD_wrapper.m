@@ -5,9 +5,8 @@ function output = FSD_wrapper(inputs,params,output_type)
 
 DO_TEST  = 0;
 if nargin==0
-   inputs.Dmax       = (0:10:300)';
-   inputs.c          = .9+0*inputs.Dmax;
-   inputs.c(1)       = 0;
+   inputs.Dmax = [0;(10:10:300)'];
+   inputs.c    = [0;.9+0*inputs.Dmax];
    %%
    params         = set_FSD_params();
    params.FSD_OPT = 1;
@@ -29,18 +28,10 @@ elseif isfield(inputs,'Nfloes')&isfield(inputs,'c')
    jpos        = find(inputs.Nfloes>0);
    Dmax(jpos)  = sqrt(inputs.c(jpos)./inputs.Nfloes(jpos));
 
-   %% check Dmax hasn't got too big on grid:
-   jbig        = find(Dmax>params.Dmax_pack_thresh);
-   Dmax(jbig)  = params.Dmax_pack;
-
-   %% if conc too low set Dmax=0
-   jlow        = find(inputs.c<params.cice_min);
-   Dmax(jlow)  = 0;
-
 elseif isfield(inputs,'cDmax')&isfield(inputs,'c')
    Dmax        = 0*inputs.cDmax;
    jpos        = find(inputs.c>0);
-   Dmax(jpos)  = inputs.cDmax(jpos)/inputs.c(jpos);
+   Dmax(jpos)  = inputs.cDmax(jpos)./inputs.c(jpos);
 
 elseif isfield(inputs,'Dmean')
    inverse  = 1;
@@ -50,6 +41,16 @@ elseif isfield(inputs,'Dmean')
       error('<D> -> D_max mapping not available for FSD_OPT==0 (RG method)')
    end
 end
+
+
+%% check Dmax hasn't got too big on grid:
+jbig        = find(Dmax>params.Dmax_pack_thresh);
+Dmax(jbig)  = params.Dmax_pack;
+
+%% if conc too low set Dmax=0
+jlow        = find(inputs.c<params.cice_min);
+Dmax(jlow)  = 0;
+
 
 if strcmp(output_type,'Dmax')
    output   = Dmax;
@@ -67,6 +68,26 @@ if strcmp(output_type,'Dmean')
    else
       output   = floe_scaling(Dmax,params,1);
    end
+
+   if DO_TEST
+      plot(Dmax,output);
+   end
+
+   return
+end
+
+if strcmp(output_type,'Nfloes')
+   output         = 0*inputs.c;
+   output(Dmax>0) = inputs.c(Dmax>0)./(Dmax(Dmax>0).^2);
+
+   if DO_TEST
+      plot(Dmax,output);
+   end
+
+   return
+end
+if strcmp(output_type,'cDmax')
+   output   = inputs.c.*Dmax;
 
    if DO_TEST
       plot(Dmax,output);
