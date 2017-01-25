@@ -15,6 +15,13 @@ odir  = [outdir,'/simul_in'];
 eval(['!mkdir -p ',odir]);
 cmd   = ['!',op,' *','simul_in*.mat ',odir];
 eval(cmd);
+
+%%put restart file in with simul_in file
+rfile = dir('simul_out_restart*.mat');
+if length(rfile)==1
+   cmd   = ['!',op,' ',rfile(1).name,' ',odir];
+   eval(cmd);
+end
 %%
 odir  = [outdir,'/simul_out_steps_mat'];
 eval(['!mkdir -p ',odir]);
