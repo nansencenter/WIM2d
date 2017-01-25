@@ -66,7 +66,9 @@ cb    = colorbar;
 if ~isempty(zlim)
    caxis(zlim);
    Ytick_range = [round(zlim(1)),round(mean(zlim)),round(zlim(2))]
-   set(cb,'YTick',Ytick_range,'fontname','Times','fontsize',fontsize);
+   if length(unique(Ytick_range))==3
+      set(cb,'YTick',Ytick_range,'fontname','Times','fontsize',fontsize);
+   end
 end
 GEN_font(gca,fontsize);
 
