@@ -23,7 +23,7 @@ figdir   = [figdir,'/simul_out_steps_grid'];
 eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
-twlim = .25*[-1 1];%%tau_x range
+twlim = [-2 0];%.25*[-1 1];%%tau_x range
 vbls  = {'Dmax' ,'Hs' ,'Tp'  ,'taux_waves','tauy_waves','cice'    ,'hice','Nfloes'};
 cmaps = {'jet'  ,'jet','jet' ,'jet'       ,'jet'       ,'rev_gris','jet' ,'jet'   };
 lims  = {[0,300],[0 6],[0 20],twlim       ,.1*twlim    ,[0 1]     ,[0 2] ,[0,250] };

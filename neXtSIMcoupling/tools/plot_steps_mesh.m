@@ -23,7 +23,7 @@ figdir   = [figdir,'/simul_out_steps_mesh'];
 eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
-twlim = .5*[-1 1];%%tau_x range
+twlim = [-2 0];%.5*[-1 1];%%tau_x range
 vbls  = {'Dmax' ,'taux_waves','tauy_waves','c'       ,'h'  ,'log1md','Nfloes'};
 cmaps = {'jet'  ,'jet'       ,'jet'       ,'rev_gris','jet','jet'   ,'jet'   };
 lims  = {[0,300],twlim       ,.2*twlim    ,[0,1]     ,[0 2],[-3.7 0],[0,250] };
@@ -46,18 +46,15 @@ eval(cmd);
 %% ==================================================
 %% shorten list of var's
 %% check simul_in to see if waves are present
-shorten  = 1;
 jkeep    = 1:7;
 simul_in = load(saved_simul_in);
 simul_in = simul_in.simul_in;
 if isfield(simul_in,'wim')
    if simul_in.wim.use_wim==0
       jkeep    = [4,5,6];
-      shorten  = 0;
    else
-      jkeep    = [1,4,5,6,7];
+      jkeep    = [1,2,4,5,6,7];
       %jkeep    = [1,7];
-      shorten  = 0;
    end
 else
    jkeep    = [4,5,6];
@@ -65,10 +62,6 @@ else
 end
 clear simul_in;
 
-if shorten==1
-   %%shorten more manually
-   jkeep = [1,4,5,6];
-end
 vbls  = vbls(jkeep);
 cmaps = cmaps(jkeep);
 lims  = lims(jkeep);

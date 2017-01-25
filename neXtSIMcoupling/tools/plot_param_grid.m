@@ -29,7 +29,8 @@ box_bound=[];
 date_flag=1; %Set to 1 to plot the date, 0 to disable Phil
 plot_coastline  =   1; %0: A coarse Arctic mesh is plotted which is loaded from artic_coasts_light.mat
                        %1: The actual domain boundaries are plotted, black for closed and white for open
-visible      = 1;
+visible     = 1;
+textstring  = '';
 box on;
 
 remove_outer   = 0;
@@ -66,11 +67,11 @@ Y  = simul_out.wim.gridprams.Y(1,:)/1.e3;%km
 % for param == 'speed' we plot the speed in km/day
 tstr  = param;
 if strcmp(param,'taux_waves')
-   Z  = simul_out.wim.waves_for_nodes.tau_x;
-   tstr  = '{\it\tau_x}, Pa';
+   Z  = log10(simul_out.wim.waves_for_nodes.tau_x);
+   tstr  = 'log_{10}({\it\tau_x}), Pa';
 elseif strcmp(param,'tauy_waves')
-   Z  = simul_out.wim.waves_for_nodes.tau_y;
-   tstr  = '{\it\tau_y}, Pa';
+   Z     = log10(simul_out.wim.waves_for_nodes.tau_y);
+   tstr  = 'log_{10}({\it\tau_y}), Pa';
 elseif strcmp(param,'Hs')
    Z     = simul_out.wim.wave_fields.Hs;
    tstr  = '{\itH}_{s}, m';
@@ -104,13 +105,13 @@ elseif strcmp(param,'Nfloes')
    tstr  = '{\itN}_{floes}, km^{-2}';
 end
 
-if 0
+if 1
    labs  = {'\itx, \rmkm','\ity, \rmkm',tstr};
 else
    labs  = {'\itx, \rmkm','\ity, \rmkm',[]};
 end
 P  = fn_pcolor(X,Y,Z,labs,manual_axis_range,remove_outer);
-%colormap(colormap_name);
+colormap(colormap_name);
 
 
 
