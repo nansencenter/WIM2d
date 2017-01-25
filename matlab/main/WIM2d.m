@@ -344,9 +344,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Water wavelength and wave speed
 %% is a function only of wave period
-wlng     = ice_prams.g.*T.^2./(2.*pi);
-ap       = sqrt(ice_prams.g.*wlng./(2.*pi)); % Phase speed
-ag       = ap./2;                  % Group speed
+wlng  = ice_prams.g.*T.^2./(2.*pi);
+ap    = sqrt(ice_prams.g.*wlng./(2.*pi)); % Phase speed
+ag    = ap./2;                  % Group speed
 
 diagnostics.phase_speed = ap;
 diagnostics.group_speed = ag;
@@ -797,31 +797,27 @@ end
 
 if params_in.DO_DISP; disp('BEGINNING MAIN INTEGRATION...'); end
 
-%% =========================================================================
-%% Different versions of mex functions
-if params_in.MEX_OPT==1
+if params_in.MEX_OPT>0
 
+   %% =========================================================================
+   %% Different versions of mex functions
    params_mex  = get_params_mex(params_in,duration,ice_prams,year_info);
-   out_fields  = WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields);
 
-elseif params_in.MEX_OPT==2
+   if params_in.MEX_OPT==1
+      out_fields  = WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields);
 
-   params_mex  = get_params_mex(params_in,duration,ice_prams,year_info);
-   %%
-   [out_fields,wave_stuff ]   =...
-      WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
-                  wave_stuff);
+   elseif params_in.MEX_OPT==2
+      [out_fields,wave_stuff ]   =...
+         WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
+                     wave_stuff);
 
-elseif params_in.MEX_OPT==3
-
-   params_mex  = get_params_mex(params_in,duration,ice_prams,year_info);
-   %%
-   [out_fields,wave_stuff,mesh_e]   =...
-      WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
-                  wave_stuff,mesh_e);
-
-%% end of options for mex functions
-%% =========================================================================
+   elseif params_in.MEX_OPT==3
+      [out_fields,wave_stuff,mesh_e]   =...
+         WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,...
+                     wave_stuff,mesh_e);
+   end
+   %% end of options for mex functions
+   %% =========================================================================
 
 else
 
