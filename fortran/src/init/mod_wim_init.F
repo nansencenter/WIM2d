@@ -8,15 +8,14 @@
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine set_wim_prams(BRK_OPT,YOUNG_OPT)
+      subroutine set_wim_prams()
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
 
-      integer,intent(in)   :: BRK_OPT
+      !integer,intent(in)   :: BRK_OPT
       !real,optional,intent(in)   :: wim_prams_in(2)
-
-      integer,optional,intent(in)   :: YOUNG_OPT
+      !integer,optional,intent(in)   :: YOUNG_OPT
 
       real  :: vb,salt,temp
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -40,19 +39,19 @@
          wim_info%vbf   = vb/1.0d3                         ! brine volume fraction 
       end if
 
-      if (present(YOUNG_OPT)) then
-         !!Robinson-Palmer viscosity parameter
-         wim_info%drag_rp  = 13.
+!     if (present(YOUNG_OPT)) then
+!        !!Robinson-Palmer viscosity parameter
+!        wim_info%drag_rp  = 13.
 
-         !!Young's modulus
-         if (YOUNG_OPT.eq.1) then
-            !!just set Young's modulus
-            wim_info%young = 2.0e9     !!lower ~ Marchenko
-            !wim_info%young = 5.49e9    !!higher ~ Vernon
-         else
-            wim_info%young = 10.0e9*(1-3.51*wim_info%vbf)-1.0e9   ! Young's modulus [Pa]
-         end if
-      end if
+!        !!Young's modulus
+!        if (YOUNG_OPT.eq.1) then
+!           !!just set Young's modulus
+!           wim_info%young = 2.0e9     !!lower ~ Marchenko
+!           !wim_info%young = 5.49e9    !!higher ~ Vernon
+!        else
+!           wim_info%young = 10.0e9*(1-3.51*wim_info%vbf)-1.0e9   ! Young's modulus [Pa]
+!        end if
+!     end if
 
       !!Flexural strength (Timco and O'Brien 1994)
       wim_info%sigma_c  = 1.76d6*exp(-5.88*sqrt(wim_info%vbf)) ! [Pa]

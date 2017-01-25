@@ -14,18 +14,18 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-      integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
-      integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
-      integer  :: BRK_OPT  !breaking criterion to use
-                           ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb
-      integer  :: DO_ATTEN !can turn off attenuation to test advection
-      !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
-                           ! 0: RG (Dumont et al, 2011);1: smooth FSD
-      integer  :: FSD_OPT=1 !TODO make this an input
+!     integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
+!     integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
+!     integer  :: BRK_OPT  !breaking criterion to use
+!                          ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb
+!     integer  :: DO_ATTEN !can turn off attenuation to test advection
+!     !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
+!                          ! 0: RG (Dumont et al, 2011);1: smooth FSD
+!     integer  :: FSD_OPT=1 !TODO make this an input
       integer  :: YOUNG_OPT=1
       integer,parameter :: n_param_vec   = 30
 
-      real     :: x_ext,y_ext,u_ref,duration,CFL
+      real     :: x_ext,y_ext,u_ref,duration!,CFL
       integer  :: nt
       integer  :: dumpfreq = 10!frequency of dumping (every 10 time steps dump binary file)
 
@@ -136,23 +136,24 @@
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
-         call set_wim_prams(BRK_OPT) ! - ice properties like breaking strain
+         call set_wim_prams() ! - ice properties like breaking strain
       else
-         SCATMOD     = 0
-         ADV_DIM     = 2
-         ADV_OPT     = 2
-            !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-         BRK_OPT     = 1
-         STEADY      = 1
-         DO_ATTEN    = 1
+         stop(infile//' not present')
+!        SCATMOD     = 0
+!        ADV_DIM     = 2
+!        ADV_OPT     = 2
+!           !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
+!        BRK_OPT     = 1
+!        STEADY      = 1
+!        DO_ATTEN    = 1
 
-         DO_CHECK_PROG  = 1
-         DO_CHECK_INIT  = 1
-         DO_CHECK_FINAL = 1
+!        DO_CHECK_PROG  = 1
+!        DO_CHECK_INIT  = 1
+!        DO_CHECK_FINAL = 1
 
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!initialisation of grid, ice con's
-         call set_wim_prams(BRK_OPT,YOUNG_OPT) ! - ice properties like Young's modulus
+!        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        !!initialisation of grid, ice con's
+!        call set_wim_prams(YOUNG_OPT) ! - ice properties like Young's modulus
 
       end if
 
@@ -183,7 +184,8 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN,CFL)
+      !call wim_init(STEADY,DO_ATTEN,CFL)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -347,7 +349,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(BRK_OPT)   ! - ice properties like Young's modulus
+      call set_wim_prams()   ! - ice properties like breaking strain
       call get_grid_file(indir)     ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
@@ -404,7 +406,8 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN,CFL)
+      !call wim_init(STEADY,DO_ATTEN,CFL)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if ((DO_CHECK_INIT.eq.1).or.
@@ -583,7 +586,7 @@
       !print*,freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(BRK_OPT) ! - ice properties like breaking strain
+      call set_wim_prams() ! - ice properties like breaking strain
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
@@ -606,7 +609,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN,CFL)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -692,8 +695,8 @@
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
       integer  :: nMIZ,ndays_fwd
-      integer,parameter                   :: n_wim_step_prams  = 7
-      integer,dimension(n_wim_step_prams) :: wim_step_prams
+      !integer,parameter                   :: n_wim_step_prams  = 7
+      !integer,dimension(n_wim_step_prams) :: wim_step_prams
 
       !!TODO remove from wim2d_run_io between **
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
@@ -733,12 +736,12 @@
          DUMP_DIAG   = (WANT_DIAG).and.(mod(n-1,dumpfreq).eq.0)
 
          print*,'n/nt',n,nt
-         wim_step_prams = (/SCATMOD,ADV_DIM,ADV_OPT                     &
-     &                     ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT/)
+!        wim_step_prams = (/SCATMOD,ADV_DIM,ADV_OPT                     &
+!    &                     ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT/)
          if (.not.present(mesh_e)) then
-            call wim_step(wim_step_prams,nmesh_e)
+            call wim_step(nmesh_e)
          else
-            call wim_step(wim_step_prams,nmesh_e,mesh_e)
+            call wim_step(nmesh_e,mesh_e)
          end if
 
          if (.true.) then

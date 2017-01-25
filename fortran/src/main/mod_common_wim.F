@@ -28,11 +28,27 @@
 
       character(len=80) :: outdir
 
+      integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
+      integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
+      integer  :: BRK_OPT  !breaking criterion to use
+                           ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb
+      integer  :: DO_ATTEN !can turn off attenuation to test advection
+      integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
+                           ! 0: RG (Dumont et al, 2011);1: smooth FSD
+
+      character(len=*),parameter :: Dmax_varname = 'Nfloes'!'cDmax'
+         !TODO create input DMAX_VAR_OPT to determine this?
+         !or just pass in/out Dmax (for breaking on mesh)
+
+      real     :: CFL
+
+
       type wim_params
          ! Model parameters
-         real :: young             ! Young's modulus
-         real :: drag_rp           ! Robinson-Palmer drag coefficient
-         real :: visc_ws  = 0.     ! viscosity for Mosig et al viscoelastic rheology
+         real :: young             ! Young's modulus [Pa]
+         real :: drag_rp           ! Robinson-Palmer drag coefficient [Pa.s/m]
+         real :: visc_ws  = 0.     ! viscosity for Wang & Shen (2010) viscoelastic rheology
+                                   ! (Mosig et al, 2016, approximation) [Pa.s]
          real :: rhowtr   = 1025   ! Ice density      [kg/m^3]
          real :: rhoice   = 922.5  ! Ice density      [kg/m^3]
          real :: gravity  = 9.81   ! Gravity          [m/s^2]

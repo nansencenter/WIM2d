@@ -53,7 +53,8 @@
 
       contains
 
-      subroutine wim_init(STEADY,DO_ATTEN,CFL)
+      !subroutine wim_init(STEADY,DO_ATTEN,CFL)
+      subroutine wim_init()
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
@@ -63,8 +64,8 @@
 
       implicit none
 
-      integer, intent(in) :: STEADY,DO_ATTEN
-      real,    intent(in) :: CFL
+!     integer, intent(in) :: STEADY,DO_ATTEN
+!     real,    intent(in) :: CFL
       !!
       real     :: PI,tmp
       real     :: kwtr,kice,modT,int_adm,argT,argR
@@ -202,7 +203,7 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(wim_step_prams,nmesh_e,mesh_e)
+      subroutine wim_step(nmesh_e,mesh_e)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
@@ -213,24 +214,24 @@
       implicit none
 
       type(break_info)  :: brk_info
-      integer,parameter :: n_wim_step_prams  = 7
-      integer,dimension(n_wim_step_prams),intent(in) :: wim_step_prams  &
+      !integer,parameter :: n_wim_step_prams  = 7
+      !integer,dimension(n_wim_step_prams),intent(in) :: wim_step_prams  &
          !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
       integer,intent(in)   :: nmesh_e
 
       real,dimension(nmesh_e,nmesh_vars),intent(inout),optional         &
      &   :: mesh_e
-         ! this is [x_e,y_e,conc_e,thick_e,Nfloes_e,broken_e]
+         ! this is [x_e,y_e,conc_e,thick_e,Dmax_var_e,broken_e]
          ! -1st 4 are unchanged; last 2 get updated
 
-      integer  :: SCATMOD,ADV_DIM,ADV_OPT                               &
-     &            ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
+!     integer  :: SCATMOD,ADV_DIM,ADV_OPT                               &
+!    &            ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
      &   ,taux_om,tauy_om,tmp1                                          &
      &   ,mom0w,mom2w
-      integer  :: i,j,w
+      integer  :: i,j,w,ibrk
 
       !!to top up waves
       integer  :: wth
@@ -252,7 +253,7 @@
       real                    :: wim_break_damage,Tp_e,lam_e
       real,dimension(nmesh_e) :: x_e,y_e                    !centres of elements
       real,dimension(nmesh_e) :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
-      real,dimension(nmesh_e) :: conc_e,thick_e,Nfloes_e
+      real,dimension(nmesh_e) :: conc_e,thick_e,Dmax_var_e
      &                              ,broken_e,dmax_e
       real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(2)
       character(len=800) :: diag_filename
@@ -285,13 +286,13 @@
       !wim_step_prams   = (/
       !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
       !/)
-      SCATMOD  = wim_step_prams(1)
-      ADV_DIM  = wim_step_prams(2)
-      ADV_OPT  = wim_step_prams(3)
-      BRK_OPT  = wim_step_prams(4)
-      STEADY   = wim_step_prams(5)
-      DO_ATTEN = wim_step_prams(6)
-      FSD_OPT  = wim_step_prams(7)
+!     SCATMOD  = wim_step_prams(1)
+!     ADV_DIM  = wim_step_prams(2)
+!     ADV_OPT  = wim_step_prams(3)
+!     BRK_OPT  = wim_step_prams(4)
+!     STEADY   = wim_step_prams(5)
+!     DO_ATTEN = wim_step_prams(6)
+!     FSD_OPT  = wim_step_prams(7)
 
       PI    = 4*atan(1.0)
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
@@ -617,12 +618,12 @@
 
 
       if ((INTERP_MESH).and.(BRK_OPT>0)) then
-         x_e      = mesh_e(:,1)
-         y_e      = mesh_e(:,2)
-         conc_e   = mesh_e(:,3)
-         thick_e  = mesh_e(:,4)
-         Nfloes_e = mesh_e(:,5)
-         broken_e = mesh_e(:,6)
+         x_e         = mesh_e(:,1)
+         y_e         = mesh_e(:,2)
+         conc_e      = mesh_e(:,3)
+         thick_e     = mesh_e(:,4)
+         Dmax_var_e  = mesh_e(:,5)
+         broken_e    = mesh_e(:,6)
 
          call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
      &      ,nmesh_e,x_e,y_e,mom0_e)
@@ -632,10 +633,21 @@
      &      ,nmesh_e,x_e,y_e,var_strain_e)
 
          dmax_e   = 0.
-         where (Nfloes_e.gt.0)
-            dmax_e   = sqrt(conc_e/Nfloes_e)
-         end where
+         if (Dmax_varname == 'Nfloes') then
+            !Dmax stored as Nfloes = c/Dmax^2
+            where (Dmax_var_e.gt.0)
+               dmax_e   = sqrt(conc_e/Dmax_var_e)
+            end where
+         elseif (Dmax_varname == 'cDmax') then
+            !Dmax stored as cDmax = c*Dmax
+            where (conc_e.gt.0)
+               dmax_e   = Dmax_var_e/conc_e
+            end where
+         else
+            stop('Dmax_varname should be Nfloes or cDmax')
+         end if
 
+         ibrk  = 0
          do i=1,nmesh_e
             if (mom0_e(i).gt.0.) then
                brk_info%conc        = conc_e(i)
@@ -649,14 +661,30 @@
                call do_breaking(brk_info)
                
                broken_e(i) = brk_info%broken
+               !if (broken_e(i).gt..5) then
+               !   ibrk  = i
+               !   print*,'TWbrk',i,dmax_e(i),brk_info%dmax
+               !end if
                dmax_e(i)   = brk_info%dmax
             end if
          end do
 
-         where (dmax_e.gt.0.)
-            Nfloes_e   = conc_e/dmax_e**2
-         end where
-         mesh_e(:,5) = Nfloes_e
+         Dmax_var_e  = 0.
+         if (Dmax_varname == 'Nfloes') then
+            !Dmax stored as Nfloes = c/Dmax^2
+            where (dmax_e.gt.0.)
+               Dmax_var_e  = conc_e/dmax_e**2
+            end where
+            !if (ibrk.gt.0) then
+            !   print*,'TWbrk2',dmax_e(ibrk),Dmax_var_e(ibrk)
+            !end if
+         elseif (Dmax_varname == 'cDmax') then
+            !Dmax stored as cDmax = c*Dmax
+            Dmax_var_e  = conc_e*dmax_e
+         else
+            stop('Dmax_varname should be Nfloes or cDmax')
+         end if
+         mesh_e(:,5) = Dmax_var_e
          mesh_e(:,6) = broken_e
          !print*,maxval(broken_e)
 
