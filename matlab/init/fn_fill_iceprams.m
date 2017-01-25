@@ -83,6 +83,8 @@ end
 s1.flex_rig_coeff = s1.young/12/(1-s1.poisson^2);
 
 % Parameters for the floe size distribution
-s1.Dmin        = 20;  % min floe size [m]
-s1.xi          = 2;   % [-]
-s1.fragility   = 0.9; % [-]
+fsd_params     = set_FSD_params();
+s1.Dmin        = fsd_params.Dmax_min;  % min floe size [m]
+s1.xi          = fsd_params.xi;        % [-]
+s1.fragility   = fsd_params.fragility; % [-]
+%s1.Dthresh     = fsd_params.Dthresh;   % change from power law to uniform FSD here [m]
