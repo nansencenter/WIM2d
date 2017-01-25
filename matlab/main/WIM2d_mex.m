@@ -64,6 +64,16 @@ function [out_fields,wave_stuff,mesh_e] =...
 %%          c: [760x1 double]
 %%      thick: [760x1 double]
 %%     Nfloes: [760x1 double]
+%%     broken: [760x1 double]
+%%
+%% or:
+%% mesh_e = structure eg
+%%         xe: [760x1 double]
+%%         ye: [760x1 double]
+%%          c: [760x1 double]
+%%      thick: [760x1 double]
+%%      cDmax: [760x1 double]
+%%     broken: [760x1 double]
 %% ============================================================
 
 % %%check params_in has the needed fields
@@ -230,9 +240,19 @@ elseif params_in.MEX_OPT==3
    %% =============================================================================
 
    %% get mesh variables
+   if isfield(mesh_e,'Nfloes')
+      Dmax_var       = mesh_e.Nfloes;
+      Dmax_varname   = 'Nfloes';
+   elseif isfield(mesh_e,'cDmax')
+      Dmax_var       = mesh_e.cDmax;
+      Dmax_varname   = 'cDmax';
+   else
+      error('mesh_e needs to have either Nfloes or cDmax fields')
+   end
    nmesh_e     = length(mesh_e.xe);
    nmesh_vars  = length(fieldnames(mesh_e));
-   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.thick,mesh_e.Nfloes,mesh_e.broken];
+   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.thick,Dmax_var,mesh_e.broken];
+   clear Dmax_var;
    %mesh0 = mesh_arr;
 
    %% make the call!
@@ -262,8 +282,9 @@ elseif params_in.MEX_OPT==3
    %save mesh mesh_e mesh0 mesh_arr out_fields;
 
    %% recreate mesh_e
-   mesh_e.Nfloes  = mesh_arr(:,5);
-   mesh_e.broken  = mesh_arr(:,6);
+   %mesh_e.Nfloes  = mesh_arr(:,5);
+   mesh_e.(Dmax_varname)   = mesh_arr(:,5);
+   mesh_e.broken           = mesh_arr(:,6);
 
    if 0
       %look at Nfloes where ice is
