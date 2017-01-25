@@ -2074,7 +2074,7 @@ void WimDiscr<T>::floeScalingSmooth(
 {
     value_type fsd_exp,b,A;
 
-    fsd_exp = 2+log(fragility)/log(xi);//power law exponent: P(d>D)=(D_min/D)^fsd_exp;
+    fsd_exp = 2+log(fragility)/log(xi);//power law exponent: P(d>D)=(D_min/D)^{fsd_exp};
     b       = moment-fsd_exp;
 
     // calculate <D^moment> from Dmax
