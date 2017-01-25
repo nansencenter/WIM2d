@@ -11,10 +11,11 @@ function out = floe_scaling_smooth(Dmax,prams,mom,inverse)
 %%
 %% Dave  = average floe size
 %% Dmax  = max floe size
-%% prams = [structure] 
+%% prams = [structure] eg
 %%            xi: 2
 %%     fragility: 0.900000000000000
-%%          Dmin: 20
+%%      Dmax_min: 20
+%%       Dthresh: 200 (optional)
 %% moment=1,2 -> <D> or <D^2>
 
 DO_TEST  = 0;
@@ -38,15 +39,18 @@ end
 
 f        = prams.fragility;
 xi       = prams.xi;
-Dmin     = prams.Dmin;
+Dmin     = prams.Dmax_min;
 fsd_exp  = 2+log(f)/log(xi);%%power law exponent: P(d>D)=(D_min/D)^fsd_exp;
 
 
 n  = mom;%need to calc <D^n> or invert it to get Dmax
 b  = n-fsd_exp;
 
-
-Dthresh  = 200;
+if isfield(prams,'Dthresh')
+   Dthresh  = prams.Dthresh;
+else
+   Dthresh  = 200;
+end
 
 if inverse==0
    %%calculate <D^n> from Dmax
@@ -57,7 +61,7 @@ if inverse==0
    out(jm)  = Dmin.^n;%%assume uniform for small Dmax
 
    %% bigger floes
-   jp       = find((Dmax>Dmin)&(Dmax<Dthresh));
+   jp       = find((Dmax>Dmin)&(Dmax<=Dthresh));
    out(jp)  = do_int(Dmax(jp),Dmin,fsd_exp,n,0);
 else
    %%calculate Dmax from <D^n>
@@ -71,7 +75,7 @@ else
    out(jm)  = Dmin;
 
    %% bigger floes
-   jp = find((Dave>Dc)&(Dave<Dthresh));
+   jp = find((Dave>Dc)&(Dave<=Dthresh));
    Dp = Dave(jp);
    for j=1:length(jp)
       target   = Dp(j);
