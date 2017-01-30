@@ -293,7 +293,7 @@
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
 
-      real,parameter    :: min_conc = 0.05
+      !real,parameter    :: min_conc = 0.05
 
       !real  :: Tmean,Tvar,Tstdev
 
@@ -357,7 +357,7 @@
       iceh     = real(in_arrays(:,:,2))
       dfloe    = real(in_arrays(:,:,3))
       ICE_MASK = 0.0
-      where (icec.gt.min_conc)
+      where (icec.gt.wim_info%cice_min)
          ICE_MASK = 1.0
       end where
 
@@ -524,7 +524,7 @@
       logical,parameter :: SET_WAVES   = .false.
       integer           :: w,wth
 
-      real,parameter    :: min_conc = 0.05
+      !real,parameter    :: min_conc = 0.05
 
       real  :: Tmean,Tvar,Tstdev
 
@@ -592,7 +592,7 @@
       !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
       !! > icec,iceh,dfloe
       ICE_MASK = 0.0
-      where (icec.gt.min_conc)
+      where (icec.gt.wim_info%cice_min)
          ICE_MASK = 1.0
       end where
 
@@ -820,7 +820,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!inputs
       real*8,dimension(ii*jj*n_wavdir*n_wave_freq)
-     &   ,intent(in) :: Sdir_in                                         !! pass in directional spec
+     &   ,intent(in) :: Sdir_in                                        !! pass in directional spec
       real*8,dimension(ii,jj,3),intent(in)  :: ice_arrays              !! pass in  icec,iceh,dfloe
       real*8,intent(in)                     :: param_vec(n_param_vec)  !! parameters
 

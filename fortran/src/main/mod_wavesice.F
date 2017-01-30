@@ -356,7 +356,10 @@
 
             !! get expected no of floes met per unit
             !!  distance if travelling in a line;
-            if (dfloe(i,j).le.200.0) then
+            if (dfloe(i,j).le.wim_info%Dthresh) then
+               !! NB ".le." is important - needs to be consistent with
+               !! floe_scaling_smooth() below,
+               !! and also matlab code (floe_scaling_smooth.m)
                if (FSD_OPT.eq.0) then
                   !! renormalisation group method (Dumont et al, 2011)
                   call floe_scaling(Dave(i,j),dfloe(i,j),1)
@@ -993,52 +996,62 @@
       integer              :: m,mm 
       real                 :: nm,nm1,dm,nsum,ndsum,r,ffac
 
-      Dave  = max(dmax**moment,wim_info%dmin**moment)
-      ffac  = wim_info%fragility*wim_info%xi**2
+      !this works for D<=Dmin and D>Dthresh
+      !- otherwise go into if clause below
+      Dave  = max(dmax**moment,wim_info%Dmin**moment)
 
-      !! determine no of breaks
-      r     = dmax/wim_info%dmin
-      mm    = 0  
-      do while ( r .ge. wim_info%xi ) 
-         !! if r<xi,no more breaking
-         !! - don't change Dave
-         r  = r/wim_info%xi 
-         mm = mm+1 
-      end do
+      if ((dmax.gt.wim_info%Dmin).and.(dmax.le.wim_info%Dthresh)) then
+         !! bigger floes
+         !! NB ".le." is important - needs to be consistent with
+         !! matlab code (floe_scaling_smooth.m)
+         ffac  = wim_info%fragility*wim_info%xi**2
 
-      if ( mm .gt. 0 ) then 
-         nm1   = 1.
-         dm    = dmax   !floe length
-         nsum  = 0      !eventually \sum_m=0^mm.n_m
-         ndsum = 0      !eventually \sum_m=0^mm.n_m.d_m^moment
-
-         do m = 0,mm-1
-            nm    = (1.-wim_info%fragility)*nm1     !no of floes at dm
-            nsum  = nsum +nm
-            ndsum = ndsum+nm*dm**moment
-            !!
-            nm1   = nm1*ffac
-            dm    = dm/wim_info%xi
+         !! determine no of breaks
+         r     = dmax/wim_info%Dmin
+         mm    = 0  
+         do while ( r .ge. wim_info%xi ) 
+            !! if r<xi,no more breaking
+            !! - don't change Dave
+            r  = r/wim_info%xi 
+            mm = mm+1 
          end do
 
-         !m=M
-         nsum  = nsum+nm1
-         ndsum = ndsum+nm1*dm**moment
-         
+         if ( mm .gt. 0 ) then 
+            nm1   = 1.
+            dm    = dmax   !floe length
+            nsum  = 0      !eventually \sum_m=0^mm.n_m
+            ndsum = 0      !eventually \sum_m=0^mm.n_m.d_m^moment
 
-         Dave  = ndsum/nsum
+            do m = 0,mm-1
+               nm    = (1.-wim_info%fragility)*nm1     !no of floes at dm
+               nsum  = nsum +nm
+               ndsum = ndsum+nm*dm**moment
+               !!
+               nm1   = nm1*ffac
+               dm    = dm/wim_info%xi
+            end do
+
+            !m=M
+            nsum  = nsum+nm1
+            ndsum = ndsum+nm1*dm**moment
+            
+
+            Dave  = ndsum/nsum
+         end if
       end if
 
-!     !test subroutine (NB this will crash after 1st call, since status='new')
-!     print*,'in floe_scaling'
-!     open(unit=999,file='fsd_test_old.txt',                            &
-!    &     action='write',status='new')
-!     write(999,*) Dave
-!     write(999,*) Dmax
-!     write(999,*) fragility
-!     write(999,*) xi
-!     write(999,*) Dmin
-!     close(999)
+#if 0
+      !test subroutine (NB this will crash after 1st call, since status='new')
+      print*,'in floe_scaling'
+      open(unit=999,file='fsd_test_old.txt',                         &
+     &     action='write',status='new')
+      write(999,*) Dave
+      write(999,*) Dmax
+      write(999,*) fragility
+      write(999,*) xi
+      write(999,*) Dmin
+      close(999)
+#endif
 
       end subroutine floe_scaling
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1052,12 +1065,11 @@
       real,    intent(in)  :: dmax
       integer, intent(in)  :: mom
       integer              :: n
-      real                 :: b,Dthresh,fsd_exp,A
+      real                 :: b,fsd_exp,A
 
       n        = mom
       fsd_exp  = 2+log(wim_info%fragility)/log(wim_info%xi)!!power law exponent: P(d>D)=(D_min/D)^fsd_exp;
       b        = n-fsd_exp
-      Dthresh  = 200.
 
       !! calculate <D^n> from Dmax
       !! - uniform dist for larger floes
@@ -1066,25 +1078,29 @@
       !! small floes
       if (Dmax.le.wim_info%Dmin) then
          Dave  = wim_info%Dmin**n
-      elseif (Dmax.le.Dthresh) then
+      elseif (Dmax.le.wim_info%Dthresh) then
          !! bigger floes
+         !! NB ".le." is important - needs to be consistent with
+         !! matlab code (floe_scaling_smooth.m)
          A     = (fsd_exp*exp(fsd_exp*(log(wim_info%Dmin)+log(Dmax))))
          A     = A/( exp(fsd_exp*log(Dmax))
      &               -exp(fsd_exp*log(wim_info%Dmin)) )
          Dave  = -(A/b)*(exp(b*log(wim_info%Dmin))-exp(b*log(Dmax)))
       end if
 
-!!     !test subroutine (NB this will crash after 1st call, since status='new')
-!      print*,'in floe_scaling_smooth'
-!      open(unit=999,file='fsd_test_smooth.txt',                         &
-!     &     action='write',status='new')
-!      write(999,*) Dave
-!      write(999,*) Dmax
-!      write(999,*) mom
-!      write(999,*) fragility
-!      write(999,*) xi
-!      write(999,*) Dmin
-!      close(999)
+#if 0
+      !test subroutine (NB this will crash after 1st call, since status='new')
+      print*,'in floe_scaling_smooth'
+      open(unit=999,file='fsd_test_smooth.txt',                      &
+     &     action='write',status='new')
+      write(999,*) Dave
+      write(999,*) Dmax
+      write(999,*) mom
+      write(999,*) fragility
+      write(999,*) xi
+      write(999,*) Dmin
+      close(999)
+#endif
 
       end subroutine floe_scaling_smooth
 

@@ -64,9 +64,13 @@
             !! critical stress (for Marchenko criterion)
 
          ! Parameters for the floe size distribution
+         ! TODO add to infile_nonIO.txt and param_vec (input from mex
+         ! function)
          real  :: Dmin        = 20   ! min floe size [m]
          real  :: xi          = 2    ! [-]
          real  :: fragility   = 0.9  ! [-]
+         real  :: Dthresh     = 200. ! [m]
+         real  :: cice_min    = 0.05 ! used to set ICE_MASK (=1 if cice>cice_min)
       end type wim_params
 
       type(wim_params) :: wim_info
