@@ -105,6 +105,9 @@ elseif strcmp(param,'Nfloes')
    tstr  = '{\itN}_{floes}, km^{-2}';
 end
 
+%%make sure things are 0 on land
+Z  = Z.*(1-simul_out.wim.gridprams.LANDMASK);
+
 if 1
    labs  = {'\itx, \rmkm','\ity, \rmkm',tstr};
 else
