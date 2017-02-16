@@ -261,7 +261,7 @@ ice_prams            = fn_fill_iceprams(ice_prams);
 %%         sigma_c: 2.741429878818372e+05       % breaking stress                [Pa] 
 %%        strain_c: 1.370714939409186e-04       % breaking strain                [-] 
 %%  flex_rig_coeff: 1.831501831501831e+08
-%%            Dmin: 20                          % minimum floe size              [m]
+%%        Dmax_min: 20                          % minimum floe size              [m]
 %%              xi: 2                           % no of pieces floes break into
 %%       fragility: 0.900000000000000           % probability that floes break
 %%       Dthresh: 200                           % change from power law to uniform FSD here [m]
@@ -301,6 +301,15 @@ if params_in.SV_LOG
    fprintf(logid,'%s%10.3f\n','Friction coefficient:       ' ,ice_prams.friction);
    fprintf(logid,'%s%5.2f\n','RP drag (Pa.s/m):            ' ,ice_prams.drag_rp);
    fprintf(logid,'%s%5.2f\n','WS viscosity (m^2/s):        ' ,ice_prams.visc_ws);
+   fprintf(logid,'%s\n\n','***********************************************');
+   %%
+   fprintf(logid,'%s\n','***********************************************');
+   fprintf(logid,'%s\n','FSD parameters:');
+   fprintf(logid,'%s%4.2f\n','Dmin (m):         ' ,ice_prams.Dmax_min);
+   fprintf(logid,'%s%10.3e\n','xi:              ' ,ice_prams.xi);
+   fprintf(logid,'%s%10.3e\n','fragility:       ' ,ice_prams.fragility);
+   fprintf(logid,'%s%4.2f\n','Dthresh (m):      ' ,ice_prams.Dthresh);
+   fprintf(logid,'%s%4.2f\n','cice_min:         ' ,ice_prams.cice_min);
    fprintf(logid,'%s\n','***********************************************');
    fclose(logid);
 end
@@ -499,7 +508,7 @@ Info  = { '------------------------------------';
          ['FSD_OPT            = '  num2str(params_in.FSD_OPT)];
          ['BRK_OPT            = '  num2str(params_in.BRK_OPT)];
          [' '];
-         ['Dmin               = '  num2str(ice_prams.Dmin)];
+         ['Dmin               = '  num2str(ice_prams.Dmax_min)];
          ['xi                 = '  num2str(ice_prams.xi)];
          ['fragility          = '  num2str(ice_prams.fragility)];
          ['Dthresh            = '  num2str(ice_prams.Dthresh)];
@@ -1305,7 +1314,7 @@ else
                   end
                end
 
-               Dc                   = max(ice_prams.Dmin,wlng_crest/2);
+               Dc                   = max(ice_prams.Dmax_min,wlng_crest/2);
                out_fields.Dmax(i,j) = min(Dc,out_fields.Dmax(i,j));
                
             end%% end breaking action;
@@ -1395,7 +1404,7 @@ else
                   GEN_get_ice_wavelength(thick_e(loop_j),Tp_e(loop_j),Inf,ice_prams.young);
                %%
                Dmax              = sqrt(mesh_e.c(jl)/mesh_e.Nfloes(jl));
-               Dmax              = max(ice_prams.Dmin,min(Dmax,wlng_crest/2));
+               Dmax              = max(ice_prams.Dmax_min,min(Dmax,wlng_crest/2));
                mesh_e.Nfloes(jl) = mesh_e.c(jl)/Dmax^2;
                if mesh_e.DAMAGE_OPT==1
                   mesh_e.broken(jl) = 1;
@@ -2359,7 +2368,7 @@ function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
 %%           strain_c: 4.993497047028000e-05
 %%           stress_c: 3.012560306393816e+05
 %%     flex_rig_coeff: 5.027472527472527e+08
-%%               Dmin: 20
+%%           Dmax_min: 20
 %%                 xi: 2
 %%          fragility: 0.900000000000000
 %%            Dthresh: 200
@@ -2443,7 +2452,7 @@ fields(end+1:end+n)  = {...
 n  = 5;
 structs(end+1:end+n) = {'ice_prams'};
 fields(end+1:end+n)  = {...
-            'Dmin',...
+            'Dmax_min',...
             'xi',...
             'fragility',...
             'Dthresh',...
@@ -2483,6 +2492,9 @@ for j=1:length(fields);
    eval(cmd);
 end
 %% ================================================
+
+params_mex.Dmin   = params_mex.Dmax_min;
+params_mex        = rmfield(params_mex,'Dmax_min');
 
 
 %% ===============================================
