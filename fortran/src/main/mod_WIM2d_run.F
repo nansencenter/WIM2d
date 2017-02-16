@@ -23,7 +23,7 @@
 !                          ! 0: RG (Dumont et al, 2011);1: smooth FSD
 !     integer  :: FSD_OPT=1 !TODO make this an input
       integer  :: YOUNG_OPT=1
-      integer,parameter :: n_param_vec   = 30
+      integer,parameter :: n_param_vec   = 35
 
       real     :: x_ext,y_ext,u_ref,duration!,CFL
       integer  :: nt
@@ -1226,6 +1226,21 @@
 
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'FSD params'
+      write(fid,'(a,f5.2)'),'Dmin (m):          '
+     &                           ,wim_info%Dmin
+      write(fid,'(a,f5.2)'),'xi:                '
+     &                           ,wim_info%xi
+      write(fid,'(a,f5.2)'),'fragility:         '
+     &                           ,wim_info%fragility
+      write(fid,'(a,f6.2)'), 'Dthresh (m):      '
+     &                           ,wim_info%Dthresh
+      write(fid,'(a,f5.2)'), 'cice_min:         '
+     &                           ,wim_info%cice_min
+      write(fid,'(a)'),'***********************************************'
+
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'Other Parameters:'
       write(fid,'(a,f9.4)'),'Time step (s):                    ' ,dt
       write(fid,'(a,f4.3)'),'CFL number:                       ' ,CFL
@@ -1329,7 +1344,7 @@
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.4) then
+      if (inf_version.ne.5) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1417,6 +1432,27 @@
       read(fid,'(f5.2,a)'), init_cons(6),ctmp !Dmax_init 
       print*,"Dmax_init: ",init_cons(6)
       print*,'******************************************************'
+      ! ===================================================
+
+
+      ! ===================================================
+      ! FSD params
+      print*,' '
+      print*,'******************************************************'
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
+      read(fid,'(f5.2,a)'), wim_info%Dmin,ctmp
+      print*,"Dmin (m): ",wim_info%Dmin
+      read(fid,'(f5.2,a)'), wim_info%xi,ctmp
+      print*,"xi: ",wim_info%xi
+      read(fid,'(f5.2,a)'), wim_info%fragility,ctmp
+      print*,"fragility: ",wim_info%fragility
+      read(fid,'(f5.2,a)'), wim_info%Dthresh,ctmp
+      print*,"Dthresh: ",wim_info%Dthresh
+      read(fid,'(f5.2,a)'), wim_info%cice_min,ctmp
+      print*,"cice_min: ",wim_info%cice_min
+      print*,'******************************************************'
+      print*,' '
       ! ===================================================
 
       ! ===================================================
@@ -1597,6 +1633,31 @@
       print*,"h_init: "          ,init_cons(5)
       print*,"Dmax_init: "       ,init_cons(6)
       print*,'******************************************************'
+      ! ===================================================
+
+
+      ! ===================================================
+      ! FSD info
+      !  real  :: Dmin
+      !  real  :: xi
+      !  real  :: fragility
+      !  real  :: Dthresh
+      !  real  :: cice_min
+      i              = i+1
+      wim_info%Dmin  = real(param_vec(i))
+      print*,'Dmin: ',wim_info%Dmin
+      i           = i+1
+      wim_info%xi = real(param_vec(i))
+      print*,'xi: ',wim_info%xi
+      i                    = i+1
+      wim_info%fragility   = real(param_vec(i))
+      print*,'fragility: ',wim_info%fragility
+      i                 = i+1
+      wim_info%Dthresh  = real(param_vec(i))
+      print*,'Dthresh: ',wim_info%Dthresh
+      i                 = i+1
+      wim_info%cice_min = real(param_vec(i))
+      print*,'cice_min: ',wim_info%cice_min
       ! ===================================================
 
       ! ===================================================

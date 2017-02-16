@@ -87,4 +87,5 @@ fsd_params     = set_FSD_params();
 s1.Dmin        = fsd_params.Dmax_min;  % min floe size [m]
 s1.xi          = fsd_params.xi;        % [-]
 s1.fragility   = fsd_params.fragility; % [-]
-%s1.Dthresh     = fsd_params.Dthresh;   % change from power law to uniform FSD here [m]
+s1.Dthresh     = fsd_params.Dthresh;   % change from power law to uniform FSD here [m]
+s1.cice_min    = fsd_params.cice_min;  % min conc where atten happens

@@ -381,6 +381,11 @@ function params_vec = get_param_vec(params_mex)
 %%          conc_init: 0.700000000000000
 %%             h_init: 1
 %%          Dmax_init: 300
+%%               Dmin: 20
+%%                 xi: 2
+%%          fragility: .9
+%%            Dthresh: 200
+%%           cice_min: 0.05
 %%          model_day: 42003
 %%      model_seconds: 0
 %%              itest: 25
@@ -449,6 +454,18 @@ fields(end+1:end+n)  = {...
 
 
 %% ================================================
+%% FSD info (in params):
+n  = 5;
+fields(end+1:end+n)  = {...
+            'Dmin',...
+            'xi',...
+            'fragility',...
+            'Dthresh',...
+            'cice_min'};
+%% ================================================
+
+
+%% ================================================
 %% duration & start time:
 n  = 3;
 fields(end+1:end+n)  = {...
@@ -467,8 +484,8 @@ fields(end+1:end+n)  = {...
             'dumpfreq'};
 %% ================================================
 
-Ni = length(fields);
-params_vec   = zeros(Ni,1);
+Ni          = length(fields);
+params_vec  = zeros(Ni,1);
 for j=1:Ni
    cmd   = ['params_vec(',num2str(j),') = params_mex.',fields{j},';'];
    eval(cmd);

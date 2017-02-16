@@ -205,11 +205,6 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if params_in.DO_DISP; disp('Initialization'); end
 
-cmin     = 0;
-ICE_MASK = zeros(size(ice_fields.cice));
-ICE_MASK(ice_fields.cice>cmin)   = 1;
-WTR_MASK = (1-ICE_MASK).*(1-gridprams.LANDMASK);
-
 %% add wave stress computation
 out_fields.tau_x  = 0*ice_fields.cice;
 out_fields.tau_y  = 0*ice_fields.cice;
@@ -269,10 +264,19 @@ ice_prams            = fn_fill_iceprams(ice_prams);
 %%            Dmin: 20                          % minimum floe size              [m]
 %%              xi: 2                           % no of pieces floes break into
 %%       fragility: 0.900000000000000           % probability that floes break
+%%       Dthresh: 200                           % change from power law to uniform FSD here [m]
+%%       cice_min: 0.05                         % min conc where atten happens
 if params_in.DO_DISP
    disp('Ice parameters');
    disp(ice_prams);
 end
+
+
+%masks
+ICE_MASK = zeros(size(ice_fields.cice));
+ICE_MASK(ice_fields.cice>ice_prams.cice_min)   = 1;
+WTR_MASK = (1-ICE_MASK).*(1-gridprams.LANDMASK);
+
 
 if 0
    figure,fn_fullscreen;
@@ -481,7 +485,6 @@ diagnostics.wave_travel_dist = duration*ag;
 Info  = { '------------------------------------';
          ['Young''s modulus    = ' num2str(ice_prams.young,'%5.5e') ' Pa'];
          ['sigma_c            = '  num2str(ice_prams.sigma_c,'%5.5e') ' Pa'];
-         ['fragility          = '  num2str(ice_prams.fragility)];
          ['strain_c           = '  num2str(ice_prams.strain_c,'%5.5e')];
          ['h                  = '  num2str(h_av) ' m const'];
          ['c                  = '  num2str(c_av) ' const'];
@@ -495,6 +498,12 @@ Info  = { '------------------------------------';
          [' '];
          ['FSD_OPT            = '  num2str(params_in.FSD_OPT)];
          ['BRK_OPT            = '  num2str(params_in.BRK_OPT)];
+         [' '];
+         ['Dmin               = '  num2str(ice_prams.Dmin)];
+         ['xi                 = '  num2str(ice_prams.xi)];
+         ['fragility          = '  num2str(ice_prams.fragility)];
+         ['Dthresh            = '  num2str(ice_prams.Dthresh)];
+         ['cice_min           = '  num2str(ice_prams.cice_min)];
          [' '];
          ['CFL                = '  num2str(params_in.CFL)];
          ['dt                 = '  num2str(dt,'%1.1f') ' s'];
@@ -2251,6 +2260,11 @@ function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
 %%          conc_init: 0.700000000000000
 %%             h_init: 1
 %%          Dmax_init: 300
+%%               Dmin: 20
+%%                 xi: 2
+%%          fragility: .9
+%%            Dthresh: 200
+%%           cice_min: 0.05
 %%          model_day: 42003
 %%      model_seconds: 0
 %%              itest: 25
@@ -2348,6 +2362,8 @@ function params_mex  = get_params_mex(params,duration,ice_prams,year_info)
 %%               Dmin: 20
 %%                 xi: 2
 %%          fragility: 0.900000000000000
+%%            Dthresh: 200
+%%           cice_min: 0.05
 %% 
 %% year_info (only need model_day, model_seconds)
 %%
@@ -2421,6 +2437,18 @@ fields(end+1:end+n)  = {...
             'conc_init',...
             'h_init',...
             'Dmax_init'};
+
+
+%% FSD info (in ice_prams):
+n  = 5;
+structs(end+1:end+n) = {'ice_prams'};
+fields(end+1:end+n)  = {...
+            'Dmin',...
+            'xi',...
+            'fragility',...
+            'Dthresh',...
+            'cice_min'};
+
 
 %% duration/CFL
 tmp.duration   = duration;
