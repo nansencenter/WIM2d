@@ -1,4 +1,4 @@
-function h  = waveadv_weno(h,u,v,grid_prams,dt,adv_options)
+function h  = iceadv_weno(h,u,v,grid_prams,masks,dt,nbdy)
 %% advection_weno.m
 %% Author: Timothy Williams
 %% Date:   20140821, 05:40:03 CEST
@@ -37,8 +37,6 @@ if sum(abs(h(:)))==0
    return;
 end
 
-ADV_OPT  = adv_options.ADV_OPT;
-
 ii       = grid_prams.nx;
 jj       = grid_prams.ny;
 scuy     = grid_prams.scuy;
@@ -67,54 +65,58 @@ TEST_PLOT   = 0;
 %%assign values in ghost cells
 %%-do this beforehand in case want to parallelise??
 
-%%make all these periodic in both i,j (x,y)
-u     = pad_var(u    ,1,nbdy);
-v     = pad_var(v    ,1,nbdy);
-scvx  = pad_var(scvx ,1,nbdy);
-scuy  = pad_var(scuy ,1,nbdy);
-scp2  = pad_var(scp2 ,1,nbdy);
-scp2i = pad_var(scp2i,1,nbdy);
+adv_opt_uv     = 0;%not periodic
+adv_opt_grid   = 1;%x-y periodic
+
+u     = pad_var(u     ,adv_opt_uv   ,nbdy);
+v     = pad_var(v     ,adv_opt_uv   ,nbdy);
+scvx  = pad_var(scvx  ,adv_opt_grid ,nbdy);
+scuy  = pad_var(scuy  ,adv_opt_grid ,nbdy);
+scp2  = pad_var(scp2  ,adv_opt_grid ,nbdy);
+scp2i = pad_var(scp2i ,adv_opt_grid ,nbdy);
 
 %%ADV_OPT determines how h is extended to ghost cells:
 %% 0: zeros in ghost cells
 %% 1: periodic in i,j
 %% 2: periodic in j only (zeros in ghost cells i<0,i>ii)
-h  = pad_var(h,ADV_OPT,nbdy);
+ADV_OPT  = 0;
+h        = pad_var(h,ADV_OPT,nbdy);
 %jtst  = (ii+2*nbdy)+(-12:0);
 %tst2d = h(jtst,4),pause
 %pcolor(h),colorbar,GEN_pause
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Prediction step
-sao      = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
+sao   = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
 %tst2d = sao(jtst,4),pause
 
 if nbdy>=4
    %% no need to enforce periodicity between prediction and correction steps
    %% - loop over all cells (including ghost cells)
    hp = 0*h;
-   for i_ = 1-nbdy:ii+nbdy
    for j_ = 1-nbdy:jj+nbdy
-      i  = i_+nbdy;%%1-nbdy->1
       j  = j_+nbdy;%%1-nbdy->1
-
-      hp(i,j)  = h(i,j)+dt*sao(i,j);
-   end%j
-   end%i
-elseif nbdy==3
-   %% enforce periodicity between prediction and correction steps
-   %% - only loop over non-ghost cells
-   hp = zeros(ii,jj);
-   for i_ = 1:ii
-   for j_ = 1:jj
-      i           = i_+nbdy;%%1-nbdy->1
-      j           = j_+nbdy;%%1-nbdy->1
-      hp(i_,j_)   = h(i,j)+dt*sao(i,j);
-   end%j
-   end%i
-   hp = pad_var(hp,ADV_OPT,nbdy);
+      for l=1:masks.isp(j)
+         for i_=max(1-nbdy,masks.ifp(j,l)):min(ii+nbdy,masks.ilp(j,l))
+            i  = i_+nbdy;%%1-nbdy->1
+            hp(i,j)  = h(i,j)+dt*sao(i,j);
+         end%i - rows
+      end%l - sections
+   end%j - columns
+%elseif nbdy==3
+%   %% enforce periodicity between prediction and correction steps
+%   %% - only loop over non-ghost cells
+%   hp = zeros(ii,jj);
+%   for i_ = 1:ii
+%   for j_ = 1:jj
+%      i           = i_+nbdy;%%1-nbdy->1
+%      j           = j_+nbdy;%%1-nbdy->1
+%      hp(i_,j_)   = h(i,j)+dt*sao(i,j);
+%   end%j
+%   end%i
+%   hp = pad_var(hp,ADV_OPT,nbdy);
 else
-   error('nbdy should be >=3');
+   error('nbdy should be >=4');
 end
 
 if TEST_PLOT
@@ -124,7 +126,7 @@ if TEST_PLOT
 end
 
 % --- Correction step
-sao   = weno3pd_v2(hp,u,v,scuy,scvx,scp2i,scp2,dt,nbdy);
+sao   = weno3pd_v2(hp,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
 
 %%set waves on land to 0
 if TEST_PLOT
@@ -138,13 +140,15 @@ if TEST_PLOT
    end%i
    imshow_array(h,nbdy,'h (corrected)');pause;
 else
-   for i_ = 1:ii
    for j_ = 1:jj
-      i        = i_+nbdy;%%1-nbdy->1
-      j        = j_+nbdy;%%1-nbdy->1
-      h(i,j)   = .5*(h(i,j)+hp(i,j)+dt*sao(i,j));
-   end
-   end
+      j  = j_+nbdy;%%1-nbdy->1
+      for l=1:masks.isp(j)
+         for i_=max(1-nbdy,masks.ifp(j,l)):min(ii+nbdy,masks.ilp(j,l))
+            i        = i_+nbdy;%%1-nbdy->1
+            h(i,j)   = .5*(h(i,j)+hp(i,j)+dt*sao(i,j));
+         end%i-rows
+      end%l-sections
+   end%j-columns
 end
 h  = h(ireal,jreal).*(1-LANDMASK);
 
@@ -205,7 +209,7 @@ elseif (OPT==2)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy)
+function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks)
 %
 % --- ------------------------------------------------------------------
 % --- By a weighted essentially non-oscillatory scheme with up to 3th
@@ -244,118 +248,129 @@ jtst  = idm+2*nbdy+(-12:0)';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% fluxes in x dirn
-for i_ = 1-nbdy+2:ii+nbdy-1
 for j_ = 1-nbdy:jj+nbdy
-   i  = i_+nbdy;
    j  = j_+nbdy;
-   %%
-   im1   = i-1;
- 
-   if (u(i,j)>0.)
-      im2   = im1-1;%i-2
- 
-      q0 = cq00*g(im2,j)+cq01*g(im1,j);
-      q1 = cq10*g(im1,j)+cq11*g(i  ,j);
+   for l=1:masks.isu(j)
+      for i_ = max(1-nbdy+2,masks.ifu(j,l)):min(ii+nbdy-1,masks.ilu(j,l))
+         i     = i_+nbdy;
+         im1   = i-1;
+       
+         if (u(i,j)>0.)
+            im2   = im1-masks.umask(im1,j);%i-2
+       
+            q0 = cq00*g(im2,j)+cq01*g(im1,j);
+            q1 = cq10*g(im1,j)+cq11*g(i  ,j);
 
-      a0 = ca0;
-      a1 = ca1*(abs(g(im2,j)-g(im1,j))+eps)/(abs(g(im1,j)-g(i  ,j))+eps);
+            a0 = ca0;
+            a1 = ca1*(abs(g(im2,j)-g(im1,j))+eps)/(abs(g(im1,j)-g(i  ,j))+eps);
 
-      ful(i,j) = u(i,j)*g(im1,j)*scuy(i,j);
+            ful(i,j) = u(i,j)*g(im1,j)*scuy(i,j);
 
-    else
-       ip1  = i+1;
- 
-       q0   = cq11*g(im1,j)+cq10*g(i  ,j);
-       q1   = cq01*g(i  ,j)+cq00*g(ip1,j);
- 
-       a0   = ca1;
-       a1   = ca0*(abs(g(im1,j)-g(i  ,j))+eps)/(abs(g(i  ,j)-g(ip1,j))+eps);
- 
-       ful(i,j)   = u(i,j)*g(i  ,j)*scuy(i,j);
-    end
+          else
+             ip1  = i+masks.umask(i+1,j);
+       
+             q0   = cq11*g(im1,j)+cq10*g(i  ,j);
+             q1   = cq01*g(i  ,j)+cq00*g(ip1,j);
+       
+             a0   = ca1;
+             a1   = ca0*(abs(g(im1,j)-g(i  ,j))+eps)/(abs(g(i  ,j)-g(ip1,j))+eps);
+       
+             ful(i,j)   = u(i,j)*g(i  ,j)*scuy(i,j);
+          end
 
-    fuh(i,j)   = u(i,j)*(a0*q0+a1*q1)/(a0+a1)*scuy(i,j)-ful(i,j);
+          fuh(i,j)   = u(i,j)*(a0*q0+a1*q1)/(a0+a1)*scuy(i,j)-ful(i,j);
 
-end%j
-end%i
+      end%i-rows
+   end%l-sections
+end%j-columns
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%fluxes in y dirn:
-for i_ = 1-nbdy:ii+nbdy
 for j_ = 1-nbdy+2:jj+nbdy-1
-   i     = i_+nbdy;
-   j     = j_+nbdy;
-   jm1   = j-1;
+   j  = j_+nbdy;
+   for l=1:masks.isv(j);
+      for i_ = max(1-nbdy,masks.ifv(j,l)):min(ii+nbdy,masks.ilv(j,l))
+         i     = i_+nbdy;
+         jm1   = j-1;
 
-   if (v(i,j)>0.)
-      jm2   = jm1-1;
+         if (v(i,j)>0.)
+            jm2   = jm1-masks.vmask(i,jm1);%j-2
 
-      q0 = cq00*g(i,jm2)+cq01*g(i,jm1);
-      q1 = cq10*g(i,jm1)+cq11*g(i,j  );
+            q0 = cq00*g(i,jm2)+cq01*g(i,jm1);
+            q1 = cq10*g(i,jm1)+cq11*g(i,j  );
 
-      a0 = ca0;
-      a1 = ca1*(abs(g(i,jm2)-g(i,jm1))+eps)/(abs(g(i,jm1)-g(i,j  ))+eps);
+            a0 = ca0;
+            a1 = ca1*(abs(g(i,jm2)-g(i,jm1))+eps)/(abs(g(i,jm1)-g(i,j  ))+eps);
 
-      fvl(i,j) = v(i,j)*g(i,jm1)*scvx(i,j);
+            fvl(i,j) = v(i,j)*g(i,jm1)*scvx(i,j);
 
-   else
-      jp1   = j+1;
+         else
+            jp1   = jm1+masks.vmask(i,j+1);%j+1
 
-      q0 = cq11*g(i,jm1)+cq10*g(i,j  );
-      q1 = cq01*g(i,j  )+cq00*g(i,jp1);
+            q0 = cq11*g(i,jm1)+cq10*g(i,j  );
+            q1 = cq01*g(i,j  )+cq00*g(i,jp1);
 
-      a0 = ca1;
-      a1 = ca0*(abs(g(i,jm1)-g(i,j  ))+eps)/(abs(g(i,j  )-g(i,jp1))+eps);
+            a0 = ca1;
+            a1 = ca0*(abs(g(i,jm1)-g(i,j  ))+eps)/(abs(g(i,j  )-g(i,jp1))+eps);
 
-      fvl(i,j) = v(i,j)*g(i,j  )*scvx(i,j);
-   end
+            fvl(i,j) = v(i,j)*g(i,j  )*scvx(i,j);
+         end
 
-   fvh(i,j) = v(i,j)*(a0*q0+a1*q1)/(a0+a1)*scvx(i,j)-fvl(i,j);
-end%j
-end%i
+         fvh(i,j) = v(i,j)*(a0*q0+a1*q1)/(a0+a1)*scvx(i,j)-fvl(i,j);
+      end%i-rows
+   end%l-sections
+end%j-columns
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Update field with low order fluxes.
-for i_ = 1-nbdy:ii+nbdy-1
 for j_ = 1-nbdy:jj+nbdy-1
-   i        = i_+nbdy;
-   j        = j_+nbdy;
-   gt(i,j)  = g(i,j)-dt*(ful(i+1,j)-ful(i,j) +fvl(i,j+1)-fvl(i,j))*scp2i(i,j);
-end%j
-end%i
+   j  = j_+nbdy;
+   for l=1:masks.isp(j)
+      for i_ = max(1-nbdy,masks.ifp(j,l)):min(ii+nbdy-1,masks.ilp(j,l))
+         i        = i_+nbdy;
+         gt(i,j)  = g(i,j)-dt*(ful(i+1,j)-ful(i,j) +fvl(i,j+1)-fvl(i,j))*scp2i(i,j);
+      end%i-rows
+   end%l-sections
+end%j-columns
 %tst2d = gt(jtst,4),pause
 
 % --- Obtain fluxes with limited high order correction fluxes.
 q  = .25/dt;
-for i_ = 1-nbdy+1:ii+nbdy
 for j_ = 1-nbdy:jj+nbdy
-   i        = i_+nbdy;
-   j        = j_+nbdy;
-   fuh(i,j) = ful(i,j)+max(   -q*gt(i  ,j)*scp2(i  ,j),...
-                              min( q*gt(i-1,j)*scp2(i-1,j),...
-                                    fuh(i,j))   );
-end%j
-end%i
+   j  = j_+nbdy;
+   for l=1:masks.isu(j)
+      for i_ = max(1-nbdy+1,masks.ifu(j,l)):min(ii+nbdy,masks.ilu(j,l))
+         i        = i_+nbdy;
+         fuh(i,j) = ful(i,j)+max(   -q*gt(i  ,j)*scp2(i  ,j),...
+                                    min( q*gt(i-1,j)*scp2(i-1,j),...
+                                          fuh(i,j))   );
+      end%i-rows
+   end%l-sections
+end%j-columns
 
-for i_ = 1-nbdy:ii+nbdy
 for j_ = 1-nbdy+1:jj+nbdy
-   i        = i_+nbdy;
-   j        = j_+nbdy;
-   fvh(i,j) = fvl(i,j)+max(   -q*gt(i,j  )*scp2(i,j  ),...
-                              min( q*gt(i,j-1)*scp2(i,j-1),...
-                                   fvh(i,j)) );
-end%j
-end%i
+   j  = j_+nbdy;
+   for l=1:masks.isv(j)
+      for i_ = max(1-nbdy,masks.ifv(j,l)):min(ii+nbdy,masks.ilv(j,l))
+         i        = i_+nbdy;
+         fvh(i,j) = fvl(i,j)+max(   -q*gt(i,j  )*scp2(i,j  ),...
+                                    min( q*gt(i,j-1)*scp2(i,j-1),...
+                                         fvh(i,j)) );
+      end%i-rows
+   end%l-sections
+end%j-columns
 
 % --- Compute the spatial advective operator.
-for i_ = 1-nbdy:ii+nbdy-1
 for j_ = 1-nbdy:jj+nbdy-1
-   i        = i_+nbdy;
-   j        = j_+nbdy;
-   sao(i,j) = -(fuh(i+1,j)-fuh(i,j)+fvh(i,j+1)-fvh(i,j))*scp2i(i,j);
-end%j
-end%i
+   j  = j_+nbdy;
+   for l=1:masks.isp(j)
+      for i_ = max(1-nbdy,masks.ifp(j,l)):min(ii+nbdy-1,masks.ilp(j,l))
+         i        = i_+nbdy;
+         sao(i,j) = -(fuh(i+1,j)-fuh(i,j)+fvh(i,j+1)-fvh(i,j))*scp2i(i,j);
+      end%i-rows
+   end%l-sections
+end%j-columns
 
 return
 
