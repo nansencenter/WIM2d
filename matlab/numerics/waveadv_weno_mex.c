@@ -19,7 +19,7 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
 
     double cq00=-1./2 ,cq01=3./2, cq10=1./2, cq11=1./2, ca0=1./3, ca1=2./3, eps=1e-12;
     double q0, q1, a0, a1, q;
-    int im1, im2, ip1, jm1, jm2, jp1, ymargin;
+    int im1, im2, ip1, jm1, jm2, jp1;
     int nxext,nyext;
     
     nxext = nx+2*nbdy;
@@ -36,9 +36,6 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
     {
         for (int j = 0; j < nyext; j++)
         {
-            double q0, q1, a0, a1, q;
-            int im1, im2, ip1, jm1, jm2, jp1, ymargin;
-
             im1 = i-1;
 
             if (u[i*nyext+j] > 0.)
@@ -120,7 +117,7 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
 
     q = 0.25/dt;
 
-    /* obtain fluxes with limited high order correction fluxes*/
+    /* obtain fluxes in x direction with limited high order correction fluxes*/
     for (int i = 1; i < nxext; i++)
     {
         for (int j = 0; j < nyext; j++)
@@ -131,7 +128,7 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
         }
     }
 
-    /* obtain fluxes with limited high order correction fluxes*/
+    /* obtain fluxes in y direction with limited high order correction fluxes*/
     for (int i = 0; i < nxext; i++)
     {
         for (int j = 1; j < nyext; j++)
@@ -331,8 +328,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
          double dt, int nx, int ny, int nbdy,int adv_opt)
 
     matlab call is:
-    h_new = waveadv_weno_mex(h, u, v,LANDMASK, scp2, scp2i, scuy, scvx,
-               dt, nx, ny, nbdy,advopt)
+    h_new = waveadv_weno_mex(nx,ny,dt,advopt,h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)
 */
 
     /*---------------------------------------------------------------------------------------------*/
