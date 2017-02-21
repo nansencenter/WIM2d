@@ -2,6 +2,7 @@
 #include "math.h"
 #include "string.h"
 
+/*#define TEST*/
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -21,8 +22,8 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
     int im1, im2, ip1, jm1, jm2, jp1, ymargin;
     int nxext,nyext;
     
-    nxext = nx+nbdy;
-    nyext = ny+nbdy;
+    nxext = nx+2*nbdy;
+    nyext = ny+2*nbdy;
     double *ful   = calloc(nxext*nyext,sizeof(double));
     double *fuh   = calloc(nxext*nyext,sizeof(double));
     double *fvl   = calloc(nxext*nyext,sizeof(double));
@@ -163,8 +164,8 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
 void padVar(double* u, double* upad, int advopt_, int nx, int ny, int nbdy)
 {
 
-   int nxext   = nx+nbdy;
-   int nyext   = ny+nbdy;
+   int nxext   = nx+2*nbdy;
+   int nyext   = ny+2*nbdy;
 
     for (int i = 0; i < nxext; i++)
     {
@@ -173,75 +174,88 @@ void padVar(double* u, double* upad, int advopt_, int nx, int ny, int nbdy)
 
             if ((nbdy-1 < i) && (i < nx+nbdy) && (nbdy-1 < j) && (j < ny+nbdy))
             {
-                upad[i*nyext+j] = u[(i-nbdy)*ny+j-nbdy];
+                /*NB change from matlab to C ordering*/
+                upad[i*nyext+j] = u[(i-nbdy)+nx*(j-nbdy)];
             }
 
             if (advopt_ != 0)/*either y-periodic or xy-periodic*/
             {
+                /*NB change from matlab to C ordering*/
                 /* make periodic in j
                    - lower cells*/
                 bool i_inner = ((nbdy-1 < i) && (i < nx+nbdy));
                 if ((j < nbdy) && i_inner)
-                    upad[i*nyext+j] = u[(i-nbdy)*ny+ny-nbdy+j];
+                    upad[i*nyext+j] = u[(i-nbdy)+nx*(ny-nbdy+j)];
 
                 /* - upper cells */
                 if ((ny+nbdy-1 < j) && i_inner)
-                    upad[i*nyext+j] = u[(i-nbdy)*ny+j-ny-nbdy];
+                    upad[i*nyext+j] = u[(i-nbdy)+nx*(j-ny-nbdy)];
             }
 
             if (advopt_ == 1)/*xy-periodic*/
             {
+                /*NB change from matlab to C ordering*/
                 /* make periodic in i
                    - far-left cells */
                 bool j_inner = ((nbdy-1 < j) && (j < ny+nbdy));
                 if ((i < nbdy) && j_inner )
-                    upad[i*nyext+j] = u[(nx-nbdy+i)*ny+j-nbdy];
+                    upad[i*nyext+j] = u[(nx-nbdy+i)+nx*(j-nbdy)];
 
                 /* - far-right cells */
                 if ((nx+nbdy-1 < i) && j_inner )
-                    upad[i*nyext+j] = u[(i-nx-nbdy)*ny+j-nbdy];
+                    upad[i*nyext+j] = u[(i-nx-nbdy)+nx*(j-nbdy)];
 
                 /* TR */
                 if ((nx+nbdy-1 < i) && (ny+nbdy-1 < j))
-                    upad[i*nyext+j] = u[(i-nx-nbdy)*ny+j-ny-nbdy];
+                    upad[i*nyext+j] = u[(i-nx-nbdy)+nx*(j-ny-nbdy)];
 
                 /* BL */
                 if ((i < nbdy) && (j < nbdy))
-                    upad[i*nyext+j] = u[(i+nx-nbdy)*ny+j];
+                    upad[i*nyext+j] = u[(i+nx-nbdy)+nx*j];
 
                 /* BR */
                 if ((nx+nbdy-1 < i) && (j < nbdy))
-                    upad[i*nyext+j] = u[(i-nx-nbdy)*ny+ny-nbdy+j];
+                    upad[i*nyext+j] = u[(i-nx-nbdy)+nx*(ny-nbdy+j)];
 
                 /* TL */
                 if ((i < nbdy) && (ny+nbdy-1 < j))
-                    upad[i*nyext+j] = u[(i+nx-nbdy)*ny+j-ny-nbdy];
+                    upad[i*nyext+j] = u[(i+nx-nbdy)+nx*(j-ny-nbdy)];
             }/*"xy-periodic" */
         }/*j*/
     }/*i*/
 }
 
 
-void waveAdvWeno(double* h, double* u, double* v,double* LANDMASK,
-      double* scp2, double* scp2i, double* scuy, double* scvx,
+#if !defined(TEST)
+void waveAdvWeno(double *h, double *u, double *v,double *LANDMASK,
+      double *scp2, double *scp2i, double *scuy, double *scvx,
       double dt, int nx, int ny, int nbdy,int advopt)
+#else
+void waveAdvWeno(double *h, double *u, double *v,double *LANDMASK,
+      double *scp2, double *scp2i, double *scuy, double *scvx,
+      double dt, int nx, int ny, int nbdy,int advopt,double *test_array)
+#endif
 {
-    int nxext = nx+nbdy;
-    int nyext = ny+nbdy;
+    int nxext = nx+2*nbdy;
+    int nyext = ny+2*nbdy;
 
     /*allocate memory of temp arrays*/
-    double *sao        = calloc(nxext*nyext,sizeof(double));
-    double *u_pad      = calloc(nxext*nyext,sizeof(double));
-    double *v_pad      = calloc(nxext*nyext,sizeof(double));
-    double *h_pad      = calloc(nxext*nyext,sizeof(double));
-    double *scp2_pad   = calloc(nxext*nyext,sizeof(double));
-    double *scp2i_pad  = calloc(nxext*nyext,sizeof(double));
-    double *scuy_pad   = calloc(nxext*nyext,sizeof(double));
-    double *scvx_pad   = calloc(nxext*nyext,sizeof(double));
-    double *hp         = calloc(nxext*nyext,sizeof(double));
+    /*-declare pointers*/
+    double *sao,*u_pad,*v_pad,*h_pad,*scp2_pad,*scp2i_pad,*scuy_pad,*scvx_pad,*hp;
+    sao         = malloc(nxext*nyext*sizeof(double));/*result of malloc is a pointer*/
+    u_pad       = malloc(nxext*nyext*sizeof(double));
+    v_pad       = malloc(nxext*nyext*sizeof(double));
+    h_pad       = malloc(nxext*nyext*sizeof(double));
+    scp2_pad    = malloc(nxext*nyext*sizeof(double));
+    scp2i_pad   = malloc(nxext*nyext*sizeof(double));
+    scuy_pad    = malloc(nxext*nyext*sizeof(double));
+    scvx_pad    = malloc(nxext*nyext*sizeof(double));
+    hp          = malloc(nxext*nyext*sizeof(double));
 
 
     /*boundary conditions*/
+    /*NB padVar changes from matlab to C ordering
+     * (takes the transpose)*/
     int advopt_uv    = 1;/*xy-periodic*/
     int advopt_grid  = 1;/*xy-periodic*/
     padVar(u, u_pad, advopt_uv,nx,ny,nbdy);
@@ -251,6 +265,12 @@ void waveAdvWeno(double* h, double* u, double* v,double* LANDMASK,
     padVar(scuy, scuy_pad,advopt_grid,nx,ny,nbdy);
     padVar(scvx, scvx_pad,advopt_grid,nx,ny,nbdy);
     padVar(h, h_pad,advopt,nx,ny,nbdy);/*this field uses the variable boundary condition advopt*/
+#if defined(TEST)
+    /*get array to test, but take transpose*/
+    for (int i = 0; i < nxext; i++)
+        for (int j = 0; j < nyext; j++)
+            test_array[i+nxext*j]   = h_pad[i*nyext+j];
+#endif
 
     /* prediction step*/
     weno3pdV2(h_pad, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad,
@@ -258,17 +278,9 @@ void waveAdvWeno(double* h, double* u, double* v,double* LANDMASK,
 
     if (nbdy>3)
     {
-       /* if using nghost>3, don't need to apply boundary conditions
-           before correction step,
-           but need to loop over full padded domain*/
-
-       for (int i = 0; i < nxext; i++)
-       {
-           for (int j = 0; j < nyext; j++)
-           {
-               hp[i*nyext+j] = h_pad[i*nyext+j]+dt*sao[i*nyext+j];
-           }
-       }
+       /* need to loop over full padded domain*/
+       for (int i = 0; i < nxext*nyext; i++)
+           hp[i] = h_pad[i]+dt*sao[i];
     }
     else
     {
@@ -285,12 +297,17 @@ void waveAdvWeno(double* h, double* u, double* v,double* LANDMASK,
     {
         for (int j = 0; j < ny; j++)
         {
-            h[i*ny+j] = 0.5*(h_pad[(i+nbdy)*nyext+j+nbdy]+hp[(i+nbdy)*nyext+j+nbdy]+dt*sao[(i+nbdy)*nyext+j+nbdy]);
+            double tmp = 0.5*(h_pad[(i+nbdy)*nyext+j+nbdy]
+                              +hp[(i+nbdy)*nyext+j+nbdy]+dt*sao[(i+nbdy)*nyext+j+nbdy]);
 
             /*mask land cells*/
-            h[i*ny+j] *= 1-LANDMASK[i*ny+j];
+            /*NB h has matlab ordering, while everything else has C ordering*/
+            h[i+nx*j]   = tmp*(1-LANDMASK[i+nx*j]);
+
         }
     }
+
+
 
     /*deallocate memory of temp arrays*/
     free(sao);
@@ -314,78 +331,88 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
          double dt, int nx, int ny, int nbdy,int adv_opt)
 
     matlab call is:
-    h_new = waveAdvWeno(h, u, v,LANDMASK, scp2, scp2i, scuy, scvx,
+    h_new = waveadv_weno_mex(h, u, v,LANDMASK, scp2, scp2i, scuy, scvx,
                dt, nx, ny, nbdy,advopt)
 */
 
-    /*---------- Input ----------*/
-    /* pointers to input arrays - want to change to vectors*/
-    double **prhs0 = (double **) mxGetPr(prhs[0]);
-    double **prhs1 = (double **) mxGetPr(prhs[1]);
-    double **prhs2 = (double **) mxGetPr(prhs[2]);
-    double **prhs3 = (double **) mxGetPr(prhs[3]);
-    double **prhs4 = (double **) mxGetPr(prhs[4]);
-    double **prhs5 = (double **) mxGetPr(prhs[5]);
-    double **prhs6 = (double **) mxGetPr(prhs[6]);
-    double **prhs7 = (double **) mxGetPr(prhs[7]);
+    /*---------------------------------------------------------------------------------------------*/
+    /*check no of arguments*/
+#if !defined (TEST)
+    if ( nlhs != 1 )
+    {
+        mexErrMsgIdAndTxt("waveadv_weno_mex:Outputs",
+              "no of output arguments should be 1.\nexample matlab call:\nh_new = waveadv_weno_mex(nx,ny,dt,advopt,\n   h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)\n");
+    }
+#else/*add a test output for debugging*/
+    if ( nlhs != 2 )
+    {
+        mexErrMsgIdAndTxt("waveadv_weno_mex:Outputs",
+              "no of output arguments should be 2.\nexample matlab call:\n[h_new,test] = waveadv_weno_mex(nx,ny,dt,advopt,\n   h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)\n");
+    }
+#endif
 
+    if ( nrhs != 12 )
+    {
+        mexErrMsgIdAndTxt("waveadv_weno_mex:Inputs",
+              "no of input arguments should be 12.\nexample matlab call:\nh_new = waveadv_weno_mex(nx,ny,dt,advopt,\n   h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)\n");
+    }
+    /*---------------------------------------------------------------------------------------------*/
+
+    int nbdy = 4;  /* number of ghost cells to use*/
+
+    /*---------- Input ----------*/
     /*scalar inputs*/
-    double dt        = (double)   mxGetScalar(prhs[8]);   /* timestep*/
-    mwSize nx        = (mwSize)   mxGetScalar(prhs[9]);   /* grid size in x dirn*/
-    mwSize ny        = (mwSize)   mxGetScalar(prhs[10]);  /* grid size in y dirn*/
-    mwSize nbdy      = (mwSize)   mxGetScalar(prhs[11]);  /* number of ghost cells to use*/
-    int    advopt    = (int)      mxGetScalar(prhs[12]);  /* periodicity option:
+    mwSize nx        = (mwSize)   mxGetScalar(prhs[0]);   /* grid size in x dirn*/
+    mwSize ny        = (mwSize)   mxGetScalar(prhs[1]);  /* grid size in y dirn*/
+    double dt        = (double)   mxGetScalar(prhs[2]);   /* timestep*/
+    int    advopt    = (int)      mxGetScalar(prhs[3]);  /* periodicity option:
                                                              0=not periodic; 1=x-y-periodic; 2=y-periodic*/
 
-    /*convert to vectors*/
-    double *h        = calloc(nx*ny,sizeof(double));
-    double *u        = calloc(nx*ny,sizeof(double));
-    double *v        = calloc(nx*ny,sizeof(double));
-    double *LANDMASK = calloc(nx*ny,sizeof(double));
-    double *scp2     = calloc(nx*ny,sizeof(double));
-    double *scp2i    = calloc(nx*ny,sizeof(double));
-    double *scuy     = calloc(nx*ny,sizeof(double));
-    double *scvx     = calloc(nx*ny,sizeof(double));
-
-    mwIndex i,j;
-    for (i=0;i<nx;i++)
+    /*check size of input arays*/
+    for (int j=4;j<12;j++)
     {
-        for (j=0;j<ny;j++)
+        mwSize M   = mxGetM(prhs[j]);
+        mwSize N   = mxGetN(prhs[j]);
+        if ( (M!=nx) | (N!=ny) )
         {
-            /*TODO check ordering - matlab vs c*/
-            h        [i*ny+j] = prhs0[i][j]; /* field to be advected*/
-            u        [i*ny+j] = prhs1[i][j]; /* u velocity field*/
-            v        [i*ny+j] = prhs2[i][j]; /* v velocity field*/
-            LANDMASK [i*ny+j] = prhs3[i][j]; /* 1 on land, 0 else*/
-            scp2     [i*ny+j] = prhs4[i][j]; /* area of grid cell (scpx*scpy)*/
-            scp2i    [i*ny+j] = prhs5[i][j]; /* 1/scp2*/
-            scuy     [i*ny+j] = prhs6[i][j]; /* dy at u points*/
-            scvx     [i*ny+j] = prhs7[i][j]; /* dx at v points*/
+            mexErrMsgIdAndTxt("waveadv_weno_mex:Inputs",
+              "incorrect size of input argument");
         }
     }
 
 
-    /*do advection
-     * h is a pointer that is modified by waveAdvWeno
-     * - this is now the output */
-    waveAdvWeno(h, u, v,LANDMASK, scp2, scp2i, scuy, scvx,
-      dt, (int) nx, (int) ny, (int) nbdy,advopt);
+    /*pointers to input arrays*/
+    /*NB all in matlab ordering*/
+    double *h        = (double *) mxGetPr(prhs[4]);
+    double *u        = (double *) mxGetPr(prhs[5]);
+    double *v        = (double *) mxGetPr(prhs[6]);
+    double *LANDMASK = (double *) mxGetPr(prhs[7]);
+    double *scp2     = (double *) mxGetPr(prhs[8]);
+    double *scp2i    = (double *) mxGetPr(prhs[9]);
+    double *scuy     = (double *) mxGetPr(prhs[10]);
+    double *scvx     = (double *) mxGetPr(prhs[11]);
 
-    /*define and set output array*/
-    plhs[0]          = mxCreateDoubleMatrix(nx, ny, mxREAL);
-    double **h_new   = (double **) mxGetPr(plhs[0]);
-    for (i=0;i<nx;i++)
-       for (j=0;j<ny;j++)
-          h_new[i][j]   = h[i*ny+j];
-        
-    /*deallocate memory in arrays*/
-    free(h);
-    free(u);
-    free(v);
-    free(LANDMASK);
-    free(scp2);
-    free(scp2i);
-    free(scuy);
-    free(scvx);
+
+    /*define output array*/
+    plhs[0] = mxCreateDoubleMatrix(nx, ny, mxREAL);/*pointer to output array*/
+    double *h_new   = (double *) mxGetPr(plhs[0]);
+    for (mwIndex i=0;i<nx*ny;i++)
+        h_new[i]    = h[i];/*initialise to h*/
+#if defined(TEST)
+    plhs[1] = mxCreateDoubleMatrix(nx+2*nbdy, ny+2*nbdy, mxREAL);/*pointer to output array*/
+    double *test_array   = (double *) mxGetPr(plhs[1]);
+#endif
+
+    /*do advection
+     * h_new is a pointer that is modified by waveAdvWeno
+     * - this is also the output */
+#if !defined(TEST)
+    waveAdvWeno(h_new, u, v,LANDMASK, scp2, scp2i, scuy, scvx,
+        dt, (int) nx, (int) ny, nbdy,advopt);
+#else
+    waveAdvWeno(h_new, u, v,LANDMASK, scp2, scp2i, scuy, scvx,
+        dt, (int) nx, (int) ny, nbdy,advopt,test_array);
+#endif
+
     return;
 }

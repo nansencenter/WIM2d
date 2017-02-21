@@ -3,6 +3,8 @@
 %% Date:   20170217
 clear;
 
+CFL   = .7;
+
 %%testing:
 if 0
    OPT   = 1;
@@ -51,7 +53,6 @@ clear s1;
 
 nbdy  = 4;
 masks = make_masks_puv(1-grid_prams.LANDMASK,nbdy);
-CFL   = .7;
 
 if OPT==1
    uc      = 30;%const speed m/s
