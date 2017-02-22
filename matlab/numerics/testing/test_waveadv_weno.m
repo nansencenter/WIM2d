@@ -205,7 +205,7 @@ for n = 1:nt
          ax = pcolor(test_array.');
          set(ax, 'EdgeColor', 'none');
          colorbar;
-         error('hey!');
+         return;
       elseif 0
          h1 = waveadv_weno(h,u,v,grid_prams,dt,adv_options);
          %[h2,test_array]   =...
@@ -219,7 +219,7 @@ for n = 1:nt
          ax = pcolor(tst.');
          set(ax, 'EdgeColor', 'none');
          colorbar;
-         error('hey!');
+         return;
       end
    end
    hmax  = max(h(:))

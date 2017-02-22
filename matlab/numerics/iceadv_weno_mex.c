@@ -2,7 +2,7 @@
 #include "math.h"
 #include "string.h"
 
-/*#define TEST*/
+#define TEST
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -12,20 +12,53 @@
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
 
+
+#if 0
+void write_status_file()
+{
+    FILE *f = fopen("status.txt", "w");
+    if (f == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+
+    /* print some text */
+    fprintf(f, "%s\n", "Made it to here");
+    fclose(f);
+}
+#endif
+
+#if 1
+void write_status_file(int i0, int i1, int i2)
+{
+    FILE *f = fopen("status.txt", "w");
+    if (f == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+
+    /* print some text */
+    /*fprintf(f, "%s\n", "Made it to here");*/
+    fprintf(f, "%d   %d   %d\n",i0,i1,i2);
+    fclose(f);
+}
+#endif
+
 void weno3pd(double *gin, double *u, double *v, double *scuy,
              double *scvx,double *scp2i,double *scp2,
-             int *pmask,int *umask,int *vmask,int *isp,int *isu,int *isv,
-             int *ifp,int *ifu,int *ifv,int *ilp,int *ilu,int *ilv,
+             double *pmask,double *umask,double *vmask,double *isp,double *isu,double *isv,
+             double *ifp,double *ifu,double *ifv,double *ilp,double *ilu,double *ilv,
              double *saoout, double dt, int nx, int ny, int nbdy)
 {
 
     double cq00=-1./2 ,cq01=3./2, cq10=1./2, cq11=1./2, ca0=1./3, ca1=2./3, eps=1e-12;
     double q0, q1, a0, a1, q;
     int im1, im2, ip1, jm1, jm2, jp1;
-    int nxext,nyext;
     
-    nxext = nx+2*nbdy;
-    nyext = ny+2*nbdy;
+    int     nxext = nx+2*nbdy;
+    int     nyext = ny+2*nbdy;
     double *ful   = calloc(nxext*nyext,sizeof(double));
     double *fuh   = calloc(nxext*nyext,sizeof(double));
     double *fvl   = calloc(nxext*nyext,sizeof(double));
@@ -35,15 +68,16 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
 
     /*fluxes in x direction*/
     for (int j = 0; j < nyext; j++)
-        for (int l = 0; l < isu[j]; l++)
-            for (int i = max(2,ifu[j+l*nyext]+nbdy-1); i < max(nxext-1,ilu[j+l*nyext]+nbdy-1); i++)
+        for (int l = 0; l < (int) isu[j]; l++)
+            for (int i = max(2,(int) ifu[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilu[j+l*nyext]+nbdy-1); i++)
             {
+                /*write_status_file(j,l,i);*/
                 im1 = i-1;
 
                 if (u[i*nyext+j] > 0.)
                 {
                     /*coefficents to calc higher-order fluxes*/
-                    im2 = im1-1;
+                    im2 = im1-(int) umask[im1*nyext+j];
                     q0 = cq00*gin[im2*nyext+j]+cq01*gin[im1*nyext+j];
                     q1 = cq10*gin[im1*nyext+j]+cq11*gin[i*nyext+j];
                     a0 = ca0;
@@ -56,7 +90,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
                 else
                 {
                     /*coefficents to calc higher-order fluxes*/
-                    ip1 = i+1;
+                    ip1 = i+(int) umask[(i+1)*nyext+j];
                     q0 = cq11*gin[im1*nyext+j]+cq10*gin[i*nyext+j];
                     q1 = cq01*gin[i*nyext+j]+cq00*gin[ip1*nyext+j];
                     a0 = ca1;
@@ -70,16 +104,17 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
                 fuh[i*nyext+j] = (u[i*nyext+j]*(a0*q0+a1*q1)*scuy[i*nyext+j]/(a0+a1))-ful[i*nyext+j];
             }
 
+
     /*fluxes in y direction*/
     for (int j = 2; j < nyext-1; j++)
-        for (int l = 0; l < isv[j]; l++)
-            for (int i = max(0,ifv[j+l*nyext]+nbdy-1); i < max(nxext,ilv[j+l*nyext]+nbdy-1); i++)
+        for (int l = 0; l < (int) isv[j]; l++)
+            for (int i = max(0,(int) ifv[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilv[j+l*nyext]+nbdy-1); i++)
             {
                 jm1 = j-1;
 
                 if (v[i*nyext+j] > 0.)
                 {
-                    jm2 = jm1-1;
+                    jm2 = jm1-(int) vmask[i*nyext+jm1];
                     q0 = cq00*gin[i*nyext+jm2]+cq01*gin[i*nyext+jm1];
                     q1 = cq10*gin[i*nyext+jm1]+cq11*gin[i*nyext+j];
                     a0 = ca0;
@@ -89,7 +124,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
                 }
                 else
                 {
-                    jp1 = j+1;
+                    jp1 = j+(int) vmask[i*nyext+j+1];
                     q0 = cq11*gin[i*nyext+jm1]+cq10*gin[i*nyext+j];
                     q1 = cq01*gin[i*nyext+j]+cq00*gin[i*nyext+jp1];
                     a0 = ca1;
@@ -104,8 +139,8 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
 
     /* update field with low order fluxes*/
     for (int j = 0; j < nyext; j++)
-        for (int l = 0; l < isp[j]; l++)
-            for (int i = max(0,ifp[j+l*nyext]+nbdy-1); i < max(nxext-1,ilp[j+l*nyext]+nbdy-1); i++)
+        for (int l = 0; l < (int) isp[j]; l++)
+            for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilp[j+l*nyext]+nbdy-1); i++)
                 gt[i*nyext+j] = gin[i*nyext+j]-dt*(ful[(i+1)*nyext+j]
                       -ful[i*nyext+j]+fvl[i*nyext+j+1]-fvl[i*nyext+j])*scp2i[i*nyext+j];
 
@@ -113,16 +148,16 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
 
     /* obtain fluxes in x direction with limited high order correction fluxes*/
     for (int j = 0; j < nyext; j++)
-        for (int l = 0; l < isu[j]; l++)
-            for (int i = max(1,ifu[j+l*nyext]+nbdy-1); i < max(nxext,ilu[j+l*nyext]+nbdy-1); i++)
+        for (int l = 0; l < (int) isu[j]; l++)
+            for (int i = max(1,(int) ifu[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilu[j+l*nyext]+nbdy-1); i++)
                 fuh[i*nyext+j] = ful[i*nyext+j]+
                    max(-q*gt[i*nyext+j]*scp2[i*nyext+j],
                             min(q*gt[(i-1)*nyext+j]*scp2[(i-1)*nyext+j],fuh[i*nyext+j]));
 
     /* obtain fluxes in y direction with limited high order correction fluxes*/
     for (int j = 1; j < nyext; j++)
-        for (int l = 0; l < isv[j]; l++)
-            for (int i = max(0,ifv[j+l*nyext]+nbdy-1); i < max(nxext,ilv[j+l*nyext]+nbdy-1); i++)
+        for (int l = 0; l < (int) isv[j]; l++)
+            for (int i = max(0,(int) ifv[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilv[j+l*nyext]+nbdy-1); i++)
                 fvh[i*nyext+j]=fvl[i*nyext+j]+
                    max(-q*gt[i*nyext+j]*scp2[i*nyext+j],
                             min(q*gt[i*nyext+j-1]*scp2[i*nyext+j-1],fvh[i*nyext+j]));
@@ -130,8 +165,8 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
 
     /* compute the spatial advective operator*/
     for (int j = 0; j < nyext; j++)
-        for (int l = 0; l < isp[j]; l++)
-            for (int i = max(0,ifp[j+l*nyext]+nbdy-1); i < max(nxext-1,ilp[j+l*nyext]+nbdy-1); i++)
+        for (int l = 0; l < (int) isp[j]; l++)
+            for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilp[j+l*nyext]+nbdy-1); i++)
                 saoout[i*nyext+j] = -(fuh[(i+1)*nyext+j]-fuh[i*nyext+j]+fvh[i*nyext+j+1]
                     -fvh[i*nyext+j])*scp2i[i*nyext+j];
 
@@ -212,14 +247,14 @@ void padVar(double* u, double* upad, int advopt_, int nx, int ny, int nbdy)
 #if !defined(TEST)
 void iceAdvWeno(double *h, double *u, double *v,
       double *scp2, double *scp2i, double *scuy, double *scvx,
-      int *pmask,int *umask,int *vmask,int *isp,int *isu,int *isv,
-      int *ifp,int *ifu,int *ifv,int *ilp,int *ilu,int *ilv,
+      double *pmask,double *umask,double *vmask,double *isp,double *isu,double *isv,
+      double *ifp,double *ifu,double *ifv,double *ilp,double *ilu,double *ilv,
       double dt, int nx, int ny, int nbdy)
 #else
 void iceAdvWeno(double *h, double *u, double *v,
       double *scp2, double *scp2i, double *scuy, double *scvx,
-      int *pmask,int *umask,int *vmask,int *isp,int *isu,int *isv,
-      int *ifp,int *ifu,int *ifv,int *ilp,int *ilu,int *ilv,
+      double *pmask,double *umask,double *vmask,double *isp,double *isu,double *isv,
+      double *ifp,double *ifu,double *ifv,double *ilp,double *ilu,double *ilv,
       double dt, int nx, int ny, int nbdy, double *test_array)
 #endif
 {
@@ -264,6 +299,8 @@ void iceAdvWeno(double *h, double *u, double *v,
             ifp,ifu,ifv,ilp,ilu,ilv,
             sao,dt,nx,ny,nbdy);
 
+    /*write_status_file();*/
+
     if (nbdy>3)
     {
         /* need to loop over full padded domain*/
@@ -273,8 +310,8 @@ void iceAdvWeno(double *h, double *u, double *v,
         /* NB ifp,ilp have matlab ordering*/
         /* NB hp,h_pad have C ordering*/
         for (int j = 0; j < nyext; j++)
-            for (int l = 0; l < isp[j]; l++)
-                for (int i = max(0,ifp[j+l*nyext]+nbdy-1); i < max(nxext,ilp[j+l*nyext]+nbdy-1); i++)
+            for (int l = 0; l < (int) isp[j]; l++)
+                for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilp[j+l*nyext]+nbdy-1); i++)
                     hp[i*nyext+j] = h_pad[i*nyext+j]+dt*sao[i*nyext+j];
     }
     else
@@ -295,8 +332,8 @@ void iceAdvWeno(double *h, double *u, double *v,
      * so i=0 corresponds to ifp=1,
      * so compare i,ifp-1 */
     for (int j = 0; j < ny; j++)
-        for (int l = 0; l < isp[j]; l++)
-            for (int i = max(0,ifp[j+l*nyext]-1); i < max(nx,ilp[j+l*nyext]-1); i++)
+        for (int l = 0; l < (int) isp[j]; l++)
+            for (int i = max(0,(int) ifp[j+l*nyext]-1); i < min(nx,(int) ilp[j+l*nyext]-1); i++)
                 h[i+nx*j]   = 0.5*(h_pad[(i+nbdy)*nyext+j+nbdy]
                                   +hp[(i+nbdy)*nyext+j+nbdy]+dt*sao[(i+nbdy)*nyext+j+nbdy]);
 
@@ -325,7 +362,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           double dt, int nx, int ny, int nbdy)
 
     matlab call is:
-    h_new = iceadv_weno_mex(nx,ny,dt,advopt,nbdy,h, u, v, scp2, scp2i, scuy, scvx,...
+    h_new = iceadv_weno_mex(nx,ny,dt,nbdy,h, u, v, scp2, scp2i, scuy, scvx,...
                             pmask,umask,vmask,isp,isu,isv,ifp,ifu,ifv,ilp,ilu,ilv)
 */
 
@@ -335,20 +372,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if ( nlhs != 1 )
     {
         mexErrMsgIdAndTxt("iceadv_weno_mex:Outputs",
-              "no of output arguments should be 1.\nexample matlab call:\nh_new = iceadv_weno_mex(nx,ny,dt,nbdy,\n   h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)\n");
+              "no of output arguments should be 1.\nexample matlab call:\nh_new = iceadv_weno_mex(nx,ny,dt,nbdy,\n   h, u, v, scp2, scp2i, scuy, scvx)\n");
     }
 #else/*add a test output for debugging*/
     if ( nlhs != 2 )
     {
         mexErrMsgIdAndTxt("iceadv_weno_mex:Outputs",
-              "no of output arguments should be 2.\nexample matlab call:\n[h_new,test] = iceadv_weno_mex(nx,ny,dt,nbdy,\n   h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)\n");
+              "no of output arguments should be 2.\nexample matlab call:\n[h_new,test] = iceadv_weno_mex(nx,ny,dt,nbdy,\n   h, u, v, scp2, scp2i, scuy, scvx)\n");
     }
 #endif
 
     if ( nrhs != 23 )
     {
         mexErrMsgIdAndTxt("iceadv_weno_mex:Inputs",
-              "no of input arguments should be 23.\nexample matlab call:\nh_new = iceadv_weno_mex(nx,ny,dt,nbdy,\n   h, u, v,LANDMASK, scp2, scp2i, scuy, scvx)\n");
+              "no of input arguments should be 23.\nexample matlab call:\nh_new = iceadv_weno_mex(nx,ny,dt,nbdy,\n   h, u, v, scp2, scp2i, scuy, scvx,\n   pmask,umask,vmask,isp,isu,isv,ifp,ifu,ifv,ilp,ilu,ilv");
     }
     /*---------------------------------------------------------------------------------------------*/
 
@@ -437,7 +474,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
               "incorrect size of input argument (18-23)");
     }
 
-
     /*pointers to input arrays*/
     /*NB all in matlab ordering*/
     double *h        = (double *) mxGetPr(prhs[4]);
@@ -447,18 +483,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double *scp2i    = (double *) mxGetPr(prhs[8]);
     double *scuy     = (double *) mxGetPr(prhs[9]);
     double *scvx     = (double *) mxGetPr(prhs[10]);
-    int    *pmask    = (int    *) mxGetPr(prhs[11]);
-    int    *umask    = (int    *) mxGetPr(prhs[12]);
-    int    *vmask    = (int    *) mxGetPr(prhs[13]);
-    int    *isp      = (int    *) mxGetPr(prhs[14]);
-    int    *isu      = (int    *) mxGetPr(prhs[15]);
-    int    *isv      = (int    *) mxGetPr(prhs[16]);
-    int    *ifp      = (int    *) mxGetPr(prhs[17]);
-    int    *ifu      = (int    *) mxGetPr(prhs[18]);
-    int    *ifv      = (int    *) mxGetPr(prhs[19]);
-    int    *ilp      = (int    *) mxGetPr(prhs[20]);
-    int    *ilu      = (int    *) mxGetPr(prhs[21]);
-    int    *ilv      = (int    *) mxGetPr(prhs[22]);
+    double *pmask    = (double *) mxGetPr(prhs[11]);/*should be int but matlab has trouble with non-double arguments*/
+    double *umask    = (double *) mxGetPr(prhs[12]);
+    double *vmask    = (double *) mxGetPr(prhs[13]);
+    double *isp      = (double *) mxGetPr(prhs[14]);
+    double *isu      = (double *) mxGetPr(prhs[15]);
+    double *isv      = (double *) mxGetPr(prhs[16]);
+    double *ifp      = (double *) mxGetPr(prhs[17]);
+    double *ifu      = (double *) mxGetPr(prhs[18]);
+    double *ifv      = (double *) mxGetPr(prhs[19]);
+    double *ilp      = (double *) mxGetPr(prhs[20]);
+    double *ilu      = (double *) mxGetPr(prhs[21]);
+    double *ilv      = (double *) mxGetPr(prhs[22]);
 
 
     /*define output array*/
@@ -467,9 +503,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     for (mwIndex i=0;i<nx*ny;i++)
         h_new[i]    = h[i];/*initialise to h*/
 #if defined(TEST)
-    plhs[1] = mxCreateDoubleMatrix(nxext, nyext, mxREAL);/*pointer to output array*/
+    /*pointer to output array*/
+    plhs[1] = mxCreateDoubleMatrix(nxext, nyext, mxREAL);
+    /*plhs[1] = mxCreateDoubleMatrix(nyext, 1, mxREAL);*/
     double *test_array   = (double *) mxGetPr(plhs[1]);
 #endif
+
+#if 0
+    for (int j=0;j<nyext;j++)
+        test_array[j]   = (double) isu[j];
+    return;
+#else
 
     /*do advection
      * h_new is a pointer that is modified by iceAdvWeno
@@ -484,5 +528,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         dt, (int) nx, (int) ny, (int) nbdy, test_array);
 #endif
 
+
     return;
+#endif
 }

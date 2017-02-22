@@ -3,6 +3,7 @@
 %% Date:   20170217
 clear;
 
+MEX   = 1;
 CFL   = .7;
 
 %%testing:
@@ -103,7 +104,10 @@ elseif OPT==3
    dtheta      = dt*angrot;
 end
 
-if 1%%plot u,v,h
+Diag.hmax   = max(h(:));
+Diag.mass   = sum(h(:))
+
+if 0%%plot u,v,h
    figure(2);
    fn_fullscreen;
    subplot(2,2,1);
@@ -172,13 +176,51 @@ if 1%%plot u,v,h
    GEN_pause;
 end
 
-
+h0 = h;
 for n = 1:nt
    [n,nt]
-   %h     = waveadv_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK);
-   h           = iceadv_weno(h,u,v,grid_prams,masks,dt,nbdy);
-   Diag.hmax   = max(h(:));
-   Diag.mass   = sum(h(:))
+   if MEX==0
+      h  = iceadv_weno(h,u,v,grid_prams,masks,dt,nbdy);
+   else
+      %h  =...
+      [h,test]  =...
+            iceadv_weno_mex(grid_prams.nx,grid_prams.ny,dt,nbdy,h, u, v,...
+               grid_prams.scp2, grid_prams.scp2i, grid_prams.scuy, grid_prams.scvx,...
+               masks.pmask,masks.umask,masks.vmask,masks.isp,masks.isu,masks.isv,...
+               masks.ifp,masks.ifu,masks.ifv,masks.ilp,masks.ilu,masks.ilv);
+
+      Diag.hmax   = max(h(:));
+      Diag.mass   = sum(h(:))
+      if 0
+         test
+         return
+      elseif 1
+         h1       = iceadv_weno(h0,u,v,grid_prams,masks,dt,nbdy);
+         tst      = h1-h;
+         tst_rng  = [min(tst(:)),max(tst(:))]
+         %%
+         figure;
+         fn_fullscreen;
+         if 0
+            ax = pcolor(tst.');
+            set(ax, 'EdgeColor', 'none');
+            colorbar;
+         else
+            subplot(1,2,1)
+            ax = pcolor(h1.');
+            set(ax, 'EdgeColor', 'none');
+            daspect([1 1 1]);
+            colorbar;
+            %%
+            subplot(1,2,2)
+            ax = pcolor(h.');
+            set(ax, 'EdgeColor', 'none');
+            daspect([1 1 1]);
+            colorbar;
+         end
+         return;
+      end
+   end
    %%
    if 0
       if OPT==1
