@@ -57,6 +57,7 @@ matlab/boltzmann/out/*
 matlab/boltzmann/*.mat
 matlab/boltzmann/solve_boltzmann_numeric.m
 matlab/attenuation_robinson_palmer/out/*
+!matlab/numerics/testing/test_waveadv_weno_1d_mex.mat
 #
 neXtSIMcoupling/results/*
 neXtSIMcoupling/run/*

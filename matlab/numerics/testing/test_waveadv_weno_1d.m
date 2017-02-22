@@ -3,6 +3,19 @@
 %% Date:   20150505
 clear;
 
+if 0
+   %% test for mex memory/initialisation problems
+   %% - eg different results each time
+   load test_waveadv_weno_1d_mex;
+   Hmat  = waveadv_weno_1d(h0,u,gridprams,dt,adv_options);
+   for j=1:100
+      Hmex  = waveadv_weno_1d_mex(nx,dt,ADV_OPT,h0,u,LANDMASK,scp2,scp2i,scuy);
+      %[max(Hmat),max(Hmex)],pause
+      disp(max(Hmex))%pause
+   end
+   return;
+end
+
 %%boundary conditions:
 %adv_options.ADV_OPT  = 0;%waves escape domain
 adv_options.ADV_OPT  = 1;%waves periodic in i

@@ -85,7 +85,7 @@ void weno3pdV2(double* gin, double* u, double* scuy,
 }
 
 
-void padVar(double* u, double* upad, int advopt_, int nx, int nbdy)
+void padVar(double *u, double *upad, int advopt_, int nx, int nbdy)
 {
 
    int nxext   = nx+2*nbdy;
@@ -123,16 +123,14 @@ void waveAdvWeno(double *h, double *u,double *LANDMASK,
 {
     int nxext = nx+2*nbdy;
 
-    /*allocate memory of temp arrays*/
-    /*-declare pointers*/
-    double *sao,*u_pad,*h_pad,*scp2_pad,*scp2i_pad,*scuy_pad,*scvx_pad,*hp;
-    sao         = malloc(nxext*sizeof(double));/*result of malloc is a pointer*/
-    u_pad       = malloc(nxext*sizeof(double));
-    h_pad       = malloc(nxext*sizeof(double));
-    scp2_pad    = malloc(nxext*sizeof(double));
-    scp2i_pad   = malloc(nxext*sizeof(double));
-    scuy_pad    = malloc(nxext*sizeof(double));
-    hp          = malloc(nxext*sizeof(double));
+    /*allocate memory of temp arrays (also initialise to 0 everywhere)*/
+    double *sao       = calloc(nxext,sizeof(double));/*result of calloc (sao) is a pointer*/
+    double *u_pad     = calloc(nxext,sizeof(double));
+    double *h_pad     = calloc(nxext,sizeof(double));
+    double *scp2_pad  = calloc(nxext,sizeof(double));
+    double *scp2i_pad = calloc(nxext,sizeof(double));
+    double *scuy_pad  = calloc(nxext,sizeof(double));
+    double *hp        = calloc(nxext,sizeof(double));
 
 
     /*boundary conditions*/
