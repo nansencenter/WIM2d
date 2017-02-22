@@ -87,7 +87,7 @@ h        = pad_var(h,ADV_OPT,nbdy);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Prediction step
-sao   = weno3pd_v2(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
+sao   = weno3pd(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
 %tst2d = sao(jtst,4),pause
 
 if nbdy>=4
@@ -126,7 +126,7 @@ if TEST_PLOT
 end
 
 % --- Correction step
-sao   = weno3pd_v2(hp,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
+sao   = weno3pd(hp,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
 
 %%set waves on land to 0
 if TEST_PLOT
@@ -143,14 +143,14 @@ else
    for j_ = 1:jj
       j  = j_+nbdy;%%1-nbdy->1
       for l=1:masks.isp(j)
-         for i_=max(1-nbdy,masks.ifp(j,l)):min(ii+nbdy,masks.ilp(j,l))
+         for i_=max(1,masks.ifp(j,l)):min(ii,masks.ilp(j,l))
             i        = i_+nbdy;%%1-nbdy->1
             h(i,j)   = .5*(h(i,j)+hp(i,j)+dt*sao(i,j));
          end%i-rows
       end%l-sections
    end%j-columns
 end
-h  = h(ireal,jreal).*(1-LANDMASK);
+h  = h(ireal,jreal);
 
 return
 
@@ -209,7 +209,7 @@ elseif (OPT==2)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function sao = weno3pd_v2(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks)
+function sao = weno3pd(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks)
 %
 % --- ------------------------------------------------------------------
 % --- By a weighted essentially non-oscillatory scheme with up to 3th
@@ -335,7 +335,7 @@ for j_ = 1-nbdy:jj+nbdy-1
 end%j-columns
 %tst2d = gt(jtst,4),pause
 
-% --- Obtain fluxes with limited high order correction fluxes.
+% --- Obtain fluxes in x direction with limited high order correction fluxes.
 q  = .25/dt;
 for j_ = 1-nbdy:jj+nbdy
    j  = j_+nbdy;
@@ -349,6 +349,7 @@ for j_ = 1-nbdy:jj+nbdy
    end%l-sections
 end%j-columns
 
+% --- Obtain fluxes in y direction with limited high order correction fluxes.
 for j_ = 1-nbdy+1:jj+nbdy
    j  = j_+nbdy;
    for l=1:masks.isv(j)

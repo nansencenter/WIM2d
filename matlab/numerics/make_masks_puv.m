@@ -1,5 +1,24 @@
 function masks = make_masks_puv(pmask,nbdy)
 %% trying to copy bigrid.f in HYCOM code, so we can use the advection code in there
+%% INPUTS (eg):
+%% pmask: [70x70 double] - 0 on land, 1 on water
+%% nbdy  = 4 - no of ghost cells
+%% OUTPUTS (eg):
+%% masks = 
+%%     pmask: [78x78 double] - padded with nbdy ghost cells, so size is (nx+2*nbdy)*(ny+2*nbdy)
+%%                           - these are set to land (pmask=0) at the moment
+%%     umask: [78x78 double]
+%%     vmask: [78x78 double]
+%%       isp: [78x1 double]  - no of sections in j-th row (using pmask)
+%%       ifp: [78x2 double]  - size is (ny+2*nbdy)*ms, where ms is the max no of sections;
+%%                             ifp(j,k) gives the first index of the k-th section
+%%       ilp: [78x2 double]  - ilp(j,k) gives the last  index of the k-th section
+%%       isu: [78x1 double]  - no of sections in j-th row (using umask)
+%%       ifu: [78x2 double]
+%%       ilu: [78x2 double]
+%%       isv: [78x1 double]  - no of sections in j-th row (using vmask)
+%%       ifv: [78x2 double]
+%%       ilv: [78x2 double]
 
 %% extend pmask with zeros
 %% TODO: do something different with open boundaries?
