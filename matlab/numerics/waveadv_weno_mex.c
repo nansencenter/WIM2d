@@ -33,7 +33,6 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
 
     /*fluxes in x direction*/
     for (int i = 2; i < nxext-1; i++)
-    {
         for (int j = 0; j < nyext; j++)
         {
             im1 = i-1;
@@ -67,16 +66,11 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
             // higher-order fluxes
             fuh[i*nyext+j] = (u[i*nyext+j]*(a0*q0+a1*q1)*scuy[i*nyext+j]/(a0+a1))-ful[i*nyext+j];
         }
-    }
 
     /*fluxes in y direction*/
     for (int i = 0; i < nxext; i++)
-    {
         for (int j = 2; j < nyext-1; j++)
         {
-            double q0, q1, a0, a1, q;
-            int im1, im2, ip1, jm1, jm2, jp1;
-
             jm1 = j-1;
 
             if (v[i*nyext+j] > 0.)
@@ -102,52 +96,38 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
 
             fvh[i*nyext+j] = (v[i*nyext+j]*(a0*q0+a1*q1)*scvx[i*nyext+j]/(a0+a1))-fvl[i*nyext+j];
         }
-    }
 
 
     /* update field with low order fluxes*/
     for (int i = 0; i < nxext-1; i++)
-    {
         for (int j = 0; j < nyext; j++)
-        {
             gt[i*nyext+j] = gin[i*nyext+j]-dt*(ful[(i+1)*nyext+j]
                   -ful[i*nyext+j]+fvl[i*nyext+j+1]-fvl[i*nyext+j])*scp2i[i*nyext+j];
-        }
-    }
 
     q = 0.25/dt;
 
     /* obtain fluxes in x direction with limited high order correction fluxes*/
     for (int i = 1; i < nxext; i++)
-    {
         for (int j = 0; j < nyext; j++)
-        {
             fuh[i*nyext+j] = ful[i*nyext+j]+
                max(-q*gt[i*nyext+j]*scp2[i*nyext+j],
                         min(q*gt[(i-1)*nyext+j]*scp2[(i-1)*nyext+j],fuh[i*nyext+j]));
-        }
-    }
+
 
     /* obtain fluxes in y direction with limited high order correction fluxes*/
     for (int i = 0; i < nxext; i++)
-    {
         for (int j = 1; j < nyext; j++)
-        {
             fvh[i*nyext+j]=fvl[i*nyext+j]+
                max(-q*gt[i*nyext+j]*scp2[i*nyext+j],
                         min(q*gt[i*nyext+j-1]*scp2[i*nyext+j-1],fvh[i*nyext+j]));
-        }
-    }
+
 
     /* compute the spatial advective operator*/
     for (int i = 0; i < nxext-1; i++)
-    {
         for (int j = 0; j < nyext; j++)
-        {
             saoout[i*nyext+j] = -(fuh[(i+1)*nyext+j]-fuh[i*nyext+j]+fvh[i*nyext+j+1]
                 -fvh[i*nyext+j])*scp2i[i*nyext+j];
-        }
-    }
+
 
     /* deallocate memory for temp arrays*/
     free(ful);
