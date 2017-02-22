@@ -3,7 +3,7 @@ function params   = read_infile_matlab(infile)
 if ~exist('infile','var')
    infile   = 'infile_matlab.txt';
 end
-infile_version = 13;%%latest infile version
+infile_version = 14;%%latest infile version
 
 if ~exist(infile)
    %% now need infile to run code

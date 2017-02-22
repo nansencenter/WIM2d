@@ -69,7 +69,7 @@ check_params_in(params_in);
 
 %% check if we want to do breaking on the mesh also
 INTERP_MESH = 0;
-if exist('mesh_e','var') & params_in.MEX_OPT==0
+if exist('mesh_e','var') & params_in.MEX_OPT<=0
    INTERP_MESH    = 1;
    mesh_e.broken  = 0*mesh_e.c;%0/1 if ice was broken by waves this time
 else
@@ -633,11 +633,6 @@ if params_in.PLOT_INIT
     pause(0.1); 
    end
    %%
-   if ~params_in.DO_VIS
-    h3 = figure('visible','off','name','progress');
-   else
-    h3 = figure(3); clf; fn_fullscreen;
-   end
    Tc    = 12;%check this period
    jchq  = find(abs(T-Tc)==min(abs(T-Tc)));
    jdir  = round(wave_stuff.ndir/2);
@@ -739,11 +734,16 @@ if params_in.PLOT_INIT
 end
 
 if params_in.PLOT_PROG
+   if ~params_in.DO_VIS
+    h3 = figure('visible','off','name','progress');
+   else
+    h3 = figure(3); clf; fn_fullscreen;
+   end
  fig_dir  = [params_in.outdir,'/figs/prog'];
  eval(['!mkdir -p ',fig_dir]);
 end
 
-if SV_BIN & (params_in.MEX_OPT==0)
+if SV_BIN & (params_in.MEX_OPT<=0)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    %% save some fields as binaries to [params_in.outdir]/binaries
    Bdims = [gridprams.nx,gridprams.ny,wave_stuff.nfreq,wave_stuff.ndir];
@@ -841,6 +841,12 @@ else
 
 %% =========================================================================
 %% do time-stepping in matlab
+   if params_in.MEX_OPT==-1&~exist('waveadv_weno_mex')
+      %%if mex functions are not compiled yet, compile them
+      disp('mex advection functions not compiled but MEX_OPT==-1');
+      disp('- compiling now...');
+      compile_mex_advection;
+   end
 
    if params_in.DO_DISP; disp('Running pure matlab code'); end
 
@@ -1035,12 +1041,28 @@ else
                u  = s1.ag_eff*cos(theta(jth));
                v  = s1.ag_eff*sin(theta(jth));
 
-               %% call advection routine
-               s1.Sdir(:,:,jth)  = waveadv_weno(...
-                  s1.Sdir(:,:,jth),u,v,gridprams,dt,adv_options);
-               if USE_EBS == 1
-                  s1.Sdir_scattered(:,:,jth)  = waveadv_weno(...
-                     s1.Sdir_scattered(:,:,jth),u,v,gridprams,dt,adv_options);
+               if params_in.MEX_OPT==0
+                  %% call matlab advection routine
+                  s1.Sdir(:,:,jth)  = waveadv_weno(...
+                     s1.Sdir(:,:,jth),u,v,gridprams,dt,adv_options);
+                  if USE_EBS == 1
+                     s1.Sdir_scattered(:,:,jth)  = waveadv_weno(...
+                        s1.Sdir_scattered(:,:,jth),u,v,gridprams,dt,adv_options);
+                  end
+               else
+                  %% call mex advection routine
+                  s1.Sdir(:,:,jth)  = waveadv_weno_mex(...
+                     gridprams.nx,gridprams.ny,dt,adv_options.ADV_OPT,...
+                     s1.Sdir(:,:,jth), u, v,...
+                     gridprams.LANDMASK, gridprams.scp2, gridprams.scp2i,...
+                     gridprams.scuy, gridprams.scvx);
+                  if USE_EBS == 1
+                     s1.Sdir_scattered(:,:,jth)  = waveadv_weno_mex(...
+                        gridprams.nx,gridprams.ny,dt,adv_options.ADV_OPT,...
+                        s1.Sdir_scattered(:,:,jth), u, v,...
+                        gridprams.LANDMASK, gridprams.scp2, gridprams.scp2i,...
+                        gridprams.scuy, gridprams.scvx);
+                  end
                end
             end
          else
@@ -1050,12 +1072,26 @@ else
                   %% set the velocity
                   u  = s1.ag_eff(:,jy)*cos(theta(jth));
 
-                  %% call advection routine
-                  s1.Sdir(:,jy,jth) = waveadv_weno_1d(...
-                     s1.Sdir(:,jy,jth),u,gridprams,dt,adv_options);
-                  if USE_EBS == 1
-                     s1.Sdir_scattered(:,jy,jth) = waveadv_weno_1d(...
-                        s1.Sdir_scattered(:,jy,jth),u,gridprams,dt,adv_options);
+                  if params_in.MEX_OPT==0
+                     %% call matlab advection routine
+                     s1.Sdir(:,jy,jth) = waveadv_weno_1d(...
+                        s1.Sdir(:,jy,jth),u,gridprams,dt,adv_options);
+                     if USE_EBS == 1
+                        s1.Sdir_scattered(:,jy,jth) = waveadv_weno_1d(...
+                           s1.Sdir_scattered(:,jy,jth),u,gridprams,dt,adv_options);
+                     end
+                  else
+                     %% call mex advection routine
+                     s1.Sdir(:,jy,jth) = waveadv_weno_1d_mex(...
+                        gridprams.nx,dt,adv_options.ADV_OPT,...
+                        s1.Sdir(:,jy,jth), u, gridprams.LANDMASK(:,jy),...
+                        gridprams.scp2(:,jy), gridprams.scp2i(:,jy), gridprams.scuy(:,jy));
+                     if USE_EBS == 1
+                        s1.Sdir_scattered(:,jy,jth) = waveadv_weno_1d_mex(...
+                           gridprams.nx,dt,adv_options.ADV_OPT,...
+                           s1.Sdir_scattered(:,jy,jth), u, gridprams.LANDMASK(:,jy),...
+                           gridprams.scp2(:,jy), gridprams.scp2i(:,jy), gridprams.scuy(:,jy));
+                     end
                   end
                end
             end
@@ -1192,9 +1228,9 @@ else
          end
       else
          %% find nearest
-         tmp3  = zeros(nx,ny,wave_stuff.ndir);
-         for i=1:nx
-         for j=1:ny
+         tmp3  = zeros(gridprams.nx,gridprams.ny,wave_stuff.ndir);
+         for i=1:gridprams.nx
+         for j=1:gridprams.ny
             T_crit   = out_fields.Tp(i,j);
             om       = 2*pi/T_crit;
             om_min   = om_vec(1);
@@ -1725,7 +1761,7 @@ else
       year_info      = model_time_to_year_info(model_day,model_seconds);
 
    end%% end time loop
-end%%params_in.MEX_OPT==0 option
+end%%params_in.MEX_OPT<=0 option
 
 
 if (SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)

@@ -1,4 +1,4 @@
-13     # infile_version_ : infile version number
+14     # infile_version_ : infile version number
 
 # keep version number on 1st line
 # change this if there are significant changes to structure of infile and/or code
@@ -13,6 +13,9 @@
 # mex function to use
 0     # MEX_OPT   : 0 = pure matlab; 1 = mex: pass in Hs,Tp,mwd + ice conditions, get out Hs,Tp,Dmax,momentum fluxes;
                   # 2 = mex: pass in Sdir + ice conditions, get back Sdir + Hs,Tp,Dmax,momentum fluxes
+                  # -1 = same as 0, but only advection is done with mex functions
+                  #     (these are *.c mex functions which are easier to compile than fortran ones;
+                  #      also they are compiled automatically if they are not already)
 
 # numerical parameters
 0.7   # CFL             : CFL number (cg*dt/dx)
@@ -87,11 +90,13 @@
 1     # PLOT_FINAL
 0     # DIAG1d       : do 1-d diagnostics (eg plot profile of Hs)
 1     # DIAG1d_OPT   : options for 1-d diagnostics
-0     # SV_LOG       : save log file
+0     # SV_BIN       : save binary files regularly
 0     # SV_SPEC      : save final spectrum to mat-file
 0     # SV_FIG       : save figures that are plotted
 1     # DO_DISP      : display output during calculations in WIM2d
+
 0     # DO_VIS             : display figures
+0     # SV_LOG             : save log file
 0     # check_symmetry     : check y-dependance (eg for 1d geometries)
 0     # check_E_partition  : split energy into fwd/back
 
