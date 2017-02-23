@@ -8,7 +8,7 @@ CFL      = .7;
 DO_FIG2  = 1;%2x2 plot: landmask,u,v,h
 
 %%testing:
-if 1
+if 0
    %OPT   = 1;
    OPT   = 2;
    ii = 150;
@@ -95,17 +95,17 @@ elseif OPT==3
    jwave    = find((R<Rm)&(X>0)&(abs(Y)>Ym));%%rhs of pacman
    h(jwave) = 1;
    %%
-   angrot   = (1/20)*pi/180;%%radian/s
+   fac      = -.5;
+   angrot   = fac*(1/20)*pi/180;%%radian/s
    u        = 0*X;
    v        = 0*X;
    juv      = find(R<(Rm*1.45));
    u(juv)   = -Y(juv).*angrot;
    v(juv)   =  X(juv).*angrot;
    %%
-   %%
-   max_speed   = Rm*angrot
+   max_speed   = abs(Rm*angrot)
    dt          = CFL*dx/max_speed
-   nt          = round(2*pi/(angrot*dt))
+   nt          = round(2*pi/(abs(angrot)*dt))
    dtheta      = dt*angrot;
 end
 
