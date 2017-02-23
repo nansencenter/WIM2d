@@ -1,4 +1,4 @@
-function h  = iceadv_weno(h,u,v,grid_prams,masks,dt,nbdy)
+function [h,test_array]  = iceadv_weno(h,u,v,grid_prams,masks,dt,nbdy)
 %% advection_weno.m
 %% Author: Timothy Williams
 %% Date:   20140821, 05:40:03 CEST
@@ -31,6 +31,7 @@ function h  = iceadv_weno(h,u,v,grid_prams,masks,dt,nbdy)
 %% in:      scp2, scp2i are grid box area at p points, and its inverse;
 %%!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+test_array  = [];
 if sum(abs(h(:)))==0
    %% h = 0 everywhere
    %% - nothing to do
@@ -87,8 +88,8 @@ h        = pad_var(h,ADV_OPT,nbdy);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Prediction step
-sao   = weno3pd(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
-%tst2d = sao(jtst,4),pause
+[sao,test_array]  = weno3pd(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
+%return
 
 if nbdy>=4
    %% no need to enforce periodicity between prediction and correction steps
@@ -209,7 +210,8 @@ elseif (OPT==2)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function sao = weno3pd(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks)
+function [sao,tst] = weno3pd(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks)
+
 %
 % --- ------------------------------------------------------------------
 % --- By a weighted essentially non-oscillatory scheme with up to 3th
@@ -220,6 +222,7 @@ function sao = weno3pd(g,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks)
 % --- and v-points, respectively.
 % --- ------------------------------------------------------------------
  
+tst   = [];
 ii    = size(g,1)-2*nbdy; 
 jj    = size(g,2)-2*nbdy; 
 idm   = ii;
@@ -373,6 +376,7 @@ for j_ = 1-nbdy:jj+nbdy-1
    end%l-sections
 end%j-columns
 
+%tst   = ful;
 return
 
 function imshow_array(arr,nbdy,ttl)

@@ -20,10 +20,9 @@ void weno3pdV2(double* gin, double* u, double* v, double* scuy,
     double cq00=-1./2 ,cq01=3./2, cq10=1./2, cq11=1./2, ca0=1./3, ca1=2./3, eps=1e-12;
     double q0, q1, a0, a1, q;
     int im1, im2, ip1, jm1, jm2, jp1;
-    int nxext,nyext;
     
-    nxext = nx+2*nbdy;
-    nyext = ny+2*nbdy;
+    int     nxext = nx+2*nbdy;
+    int     nyext = ny+2*nbdy;
     double *ful   = calloc(nxext*nyext,sizeof(double));
     double *fuh   = calloc(nxext*nyext,sizeof(double));
     double *fvl   = calloc(nxext*nyext,sizeof(double));

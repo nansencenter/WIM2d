@@ -2,7 +2,7 @@
 #include "math.h"
 #include "string.h"
 
-#define TEST
+/*#define TEST*/
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -46,11 +46,20 @@ void write_status_file(int i0, int i1, int i2)
 }
 #endif
 
+#if !defined (TEST)
 void weno3pd(double *gin, double *u, double *v, double *scuy,
              double *scvx,double *scp2i,double *scp2,
              double *pmask,double *umask,double *vmask,double *isp,double *isu,double *isv,
              double *ifp,double *ifu,double *ifv,double *ilp,double *ilu,double *ilv,
              double *saoout, double dt, int nx, int ny, int nbdy)
+#else
+void weno3pd(double *gin, double *u, double *v, double *scuy,
+             double *scvx,double *scp2i,double *scp2,
+             double *pmask,double *umask,double *vmask,double *isp,double *isu,double *isv,
+             double *ifp,double *ifu,double *ifv,double *ilp,double *ilu,double *ilv,
+             double *saoout, double dt, int nx, int ny, int nbdy,
+             double *test_array)
+#endif
 {
 
     double cq00=-1./2 ,cq01=3./2, cq10=1./2, cq11=1./2, ca0=1./3, ca1=2./3, eps=1e-12;
@@ -69,7 +78,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
     /*fluxes in x direction*/
     for (int j = 0; j < nyext; j++)
         for (int l = 0; l < (int) isu[j]; l++)
-            for (int i = max(2,(int) ifu[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilu[j+l*nyext]+nbdy-1); i++)
+            for (int i = max(2,(int) ifu[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilu[j+l*nyext]+nbdy); i++)
             {
                 /*write_status_file(j,l,i);*/
                 im1 = i-1;
@@ -77,7 +86,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
                 if (u[i*nyext+j] > 0.)
                 {
                     /*coefficents to calc higher-order fluxes*/
-                    im2 = im1-(int) umask[im1*nyext+j];
+                    im2 = im1-(int) umask[im1+nxext*j];/* NB umask is an original input so has matlab ordering*/
                     q0 = cq00*gin[im2*nyext+j]+cq01*gin[im1*nyext+j];
                     q1 = cq10*gin[im1*nyext+j]+cq11*gin[i*nyext+j];
                     a0 = ca0;
@@ -90,7 +99,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
                 else
                 {
                     /*coefficents to calc higher-order fluxes*/
-                    ip1 = i+(int) umask[(i+1)*nyext+j];
+                    ip1 = i+(int) umask[(i+1)+j*nxext];/* NB umask is an original input so has matlab ordering*/
                     q0 = cq11*gin[im1*nyext+j]+cq10*gin[i*nyext+j];
                     q1 = cq01*gin[i*nyext+j]+cq00*gin[ip1*nyext+j];
                     a0 = ca1;
@@ -108,13 +117,13 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
     /*fluxes in y direction*/
     for (int j = 2; j < nyext-1; j++)
         for (int l = 0; l < (int) isv[j]; l++)
-            for (int i = max(0,(int) ifv[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilv[j+l*nyext]+nbdy-1); i++)
+            for (int i = max(0,(int) ifv[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilv[j+l*nyext]+nbdy); i++)
             {
                 jm1 = j-1;
 
                 if (v[i*nyext+j] > 0.)
                 {
-                    jm2 = jm1-(int) vmask[i*nyext+jm1];
+                    jm2 = jm1-(int) vmask[i+jm1*nxext];/* NB vmask is an original input so has matlab ordering*/
                     q0 = cq00*gin[i*nyext+jm2]+cq01*gin[i*nyext+jm1];
                     q1 = cq10*gin[i*nyext+jm1]+cq11*gin[i*nyext+j];
                     a0 = ca0;
@@ -124,7 +133,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
                 }
                 else
                 {
-                    jp1 = j+(int) vmask[i*nyext+j+1];
+                    jp1 = j+(int) vmask[i+(j+1)*nxext];/* NB vmask is an original input so has matlab ordering*/
                     q0 = cq11*gin[i*nyext+jm1]+cq10*gin[i*nyext+j];
                     q1 = cq01*gin[i*nyext+j]+cq00*gin[i*nyext+jp1];
                     a0 = ca1;
@@ -140,7 +149,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
     /* update field with low order fluxes*/
     for (int j = 0; j < nyext; j++)
         for (int l = 0; l < (int) isp[j]; l++)
-            for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilp[j+l*nyext]+nbdy-1); i++)
+            for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilp[j+l*nyext]+nbdy); i++)
                 gt[i*nyext+j] = gin[i*nyext+j]-dt*(ful[(i+1)*nyext+j]
                       -ful[i*nyext+j]+fvl[i*nyext+j+1]-fvl[i*nyext+j])*scp2i[i*nyext+j];
 
@@ -149,7 +158,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
     /* obtain fluxes in x direction with limited high order correction fluxes*/
     for (int j = 0; j < nyext; j++)
         for (int l = 0; l < (int) isu[j]; l++)
-            for (int i = max(1,(int) ifu[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilu[j+l*nyext]+nbdy-1); i++)
+            for (int i = max(1,(int) ifu[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilu[j+l*nyext]+nbdy); i++)
                 fuh[i*nyext+j] = ful[i*nyext+j]+
                    max(-q*gt[i*nyext+j]*scp2[i*nyext+j],
                             min(q*gt[(i-1)*nyext+j]*scp2[(i-1)*nyext+j],fuh[i*nyext+j]));
@@ -157,7 +166,7 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
     /* obtain fluxes in y direction with limited high order correction fluxes*/
     for (int j = 1; j < nyext; j++)
         for (int l = 0; l < (int) isv[j]; l++)
-            for (int i = max(0,(int) ifv[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilv[j+l*nyext]+nbdy-1); i++)
+            for (int i = max(0,(int) ifv[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilv[j+l*nyext]+nbdy); i++)
                 fvh[i*nyext+j]=fvl[i*nyext+j]+
                    max(-q*gt[i*nyext+j]*scp2[i*nyext+j],
                             min(q*gt[i*nyext+j-1]*scp2[i*nyext+j-1],fvh[i*nyext+j]));
@@ -166,9 +175,17 @@ void weno3pd(double *gin, double *u, double *v, double *scuy,
     /* compute the spatial advective operator*/
     for (int j = 0; j < nyext; j++)
         for (int l = 0; l < (int) isp[j]; l++)
-            for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilp[j+l*nyext]+nbdy-1); i++)
+            for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-1,(int) ilp[j+l*nyext]+nbdy); i++)
                 saoout[i*nyext+j] = -(fuh[(i+1)*nyext+j]-fuh[i*nyext+j]+fvh[i*nyext+j+1]
                     -fvh[i*nyext+j])*scp2i[i*nyext+j];
+
+#if defined (TEST)
+    /*export variables from this routine for testing*/
+    /*NB test_array has matlab ordering*/
+    for (int i = 0; i < nxext; i++)
+        for (int j = 0; j < nyext; j++)
+            test_array[i+nxext*j]    = fvh[i*nyext+j];
+#endif
 
     /* deallocate memory for temp arrays*/
     free(ful);
@@ -286,7 +303,8 @@ void iceAdvWeno(double *h, double *u, double *v,
     padVar(scuy, scuy_pad,advopt_grid,nx,ny,nbdy);
     padVar(scvx, scvx_pad,advopt_grid,nx,ny,nbdy);
     padVar(h, h_pad,advopt,nx,ny,nbdy);/*this field uses the variable boundary condition advopt*/
-#if defined(TEST)
+
+#if 0/*defined(TEST)*/
     /*get array to test, but take transpose*/
     for (int i = 0; i < nxext; i++)
         for (int j = 0; j < nyext; j++)
@@ -294,13 +312,21 @@ void iceAdvWeno(double *h, double *u, double *v,
 #endif
 
     /* prediction step*/
+#if !defined (TEST)
     weno3pd(h_pad, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad,
             pmask,umask,vmask,isp,isu,isv,
             ifp,ifu,ifv,ilp,ilu,ilv,
             sao,dt,nx,ny,nbdy);
+#else
+    weno3pd(h_pad, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad,
+            pmask,umask,vmask,isp,isu,isv,
+            ifp,ifu,ifv,ilp,ilu,ilv,
+            sao,dt,nx,ny,nbdy,test_array);
+#endif
 
     /*write_status_file();*/
 
+#if !defined(TEST)
     if (nbdy>3)
     {
         /* need to loop over full padded domain*/
@@ -311,7 +337,7 @@ void iceAdvWeno(double *h, double *u, double *v,
         /* NB hp,h_pad have C ordering*/
         for (int j = 0; j < nyext; j++)
             for (int l = 0; l < (int) isp[j]; l++)
-                for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilp[j+l*nyext]+nbdy-1); i++)
+                for (int i = max(0,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext,(int) ilp[j+l*nyext]+nbdy); i++)
                     hp[i*nyext+j] = h_pad[i*nyext+j]+dt*sao[i*nyext+j];
     }
     else
@@ -321,22 +347,31 @@ void iceAdvWeno(double *h, double *u, double *v,
     }
 
     /* correction step*/
+#if !defined (TEST)
     weno3pd(hp, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad,
             pmask,umask,vmask,isp,isu,isv,
             ifp,ifu,ifv,ilp,ilu,ilv,
             sao,dt,nx,ny,nbdy);
+#else
+    weno3pd(hp, u_pad, v_pad, scuy_pad, scvx_pad, scp2i_pad, scp2_pad,
+            pmask,umask,vmask,isp,isu,isv,
+            ifp,ifu,ifv,ilp,ilu,ilv,
+            sao,dt,nx,ny,nbdy,test_array);
+#endif
 
 
-    /*NB i,j are for h, which is not padded*/
-    /*ifp is relative: ifp=1-nbdy->i=-nbdy or 1st padded row,
+    /*NB i,j are for h_pad, but h is not padded*/
+    /*NB h has matlab ordering*/
+    /*ifp is relative: ifp=1-nbdy->i=0 or 1st padded row,
      * so i=0 corresponds to ifp=1,
-     * so compare i,ifp-1 */
-    for (int j = 0; j < ny; j++)
+     * so compare i,ifp+nbdy-1 */
+    for (int j = nbdy; j < nyext-nbdy; j++)
         for (int l = 0; l < (int) isp[j]; l++)
-            for (int i = max(0,(int) ifp[j+l*nyext]-1); i < min(nx,(int) ilp[j+l*nyext]-1); i++)
-                h[i+nx*j]   = 0.5*(h_pad[(i+nbdy)*nyext+j+nbdy]
-                                  +hp[(i+nbdy)*nyext+j+nbdy]+dt*sao[(i+nbdy)*nyext+j+nbdy]);
+            for (int i = max(nbdy,(int) ifp[j+l*nyext]+nbdy-1); i < min(nxext-nbdy,(int) ilp[j+l*nyext]+nbdy); i++)
+                h[i-nbdy+nx*(j-nbdy)]   = 0.5*(h_pad[i*nyext+j]
+                                              +hp[i*nyext+j]+dt*sao[i*nyext+j]);
 
+#endif
 
     /*deallocate memory of temp arrays*/
     free(sao);
