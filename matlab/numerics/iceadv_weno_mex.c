@@ -463,7 +463,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /*isp,isu,isv*/
         mwSize M   = mxGetM(prhs[j]);
         mwSize N   = mxGetN(prhs[j]);
-        if ( (M!=nyext) | (N!=1) )
+        if ( (M!=nxext) | (N!=1) )
         {
             mexErrMsgIdAndTxt("iceadv_weno_mex:Inputs",
               "incorrect size of input argument (15-20)");
@@ -504,7 +504,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                   "ifv,ilv should have the same no of columns");
             }
         }
-        if ( M != nyext )
+        if ( M != nxext )
             mexErrMsgIdAndTxt("iceadv_weno_mex:Inputs",
               "incorrect size of input argument (18-23)");
     }
@@ -540,12 +540,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 #if defined(TEST)
     /*pointer to output array*/
     plhs[1] = mxCreateDoubleMatrix(nxext, nyext, mxREAL);
-    /*plhs[1] = mxCreateDoubleMatrix(nyext, 1, mxREAL);*/
+    /*plhs[1] = mxCreateDoubleMatrix(nxext, 1, mxREAL);*/
     double *test_array   = (double *) mxGetPr(plhs[1]);
 #endif
 
 #if 0
-    for (int j=0;j<nyext;j++)
+    for (int j=0;j<nxext;j++)
         test_array[j]   = (double) isu[j];
     return;
 #else
