@@ -89,7 +89,7 @@ h        = pad_var(h,ADV_OPT,nbdy);
 
 % --- Prediction step
 [sao,test_array]  = weno3pd(h,u,v,scuy,scvx,scp2i,scp2,dt,nbdy,masks);
-%return
+%return;%to check calculations in weno3pd
 
 if nbdy>=4
    %% no need to enforce periodicity between prediction and correction steps
@@ -309,7 +309,7 @@ for j_ = 1-nbdy+2:jj+nbdy-1
             fvl(i,j) = v(i,j)*g(i,jm1)*scvx(i,j);
 
          else
-            jp1   = jm1+masks.vmask(i,j+1);%j+1
+            jp1   = j+masks.vmask(i,j+1);%j+1
 
             q0 = cq11*g(i,jm1)+cq10*g(i,j  );
             q1 = cq01*g(i,j  )+cq00*g(i,jp1);
@@ -376,7 +376,7 @@ for j_ = 1-nbdy:jj+nbdy-1
    end%l-sections
 end%j-columns
 
-%tst   = ful;
+%tst   = fvh;
 return
 
 function imshow_array(arr,nbdy,ttl)
