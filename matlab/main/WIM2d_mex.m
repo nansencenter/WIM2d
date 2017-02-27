@@ -375,6 +375,7 @@ function params_vec = get_param_vec(params_mex)
 %%            FSD_OPT: 1
 %%         REF_Hs_ICE: 0
 %%        USE_ICE_VEL: 0
+%%     TAKE_MAX_WAVES: 0
 %%            Hs_init: 3
 %%             T_init: 12
 %%           dir_init: -90
@@ -432,11 +433,12 @@ fields(end+1:end+n)  = {...
 
 %% ================================================
 %% other integer parameters (in params):
-n  = 3;
+n  = 4;
 fields(end+1:end+n)  = {...
             'FSD_OPT',...
             'REF_Hs_ICE',...
-            'USE_ICE_VEL'};
+            'USE_ICE_VEL',...
+            'TAKE_MAX_WAVES'};
 %% ================================================
 
 

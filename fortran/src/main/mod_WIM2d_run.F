@@ -14,16 +14,8 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-!     integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
-!     integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
-!     integer  :: BRK_OPT  !breaking criterion to use
-!                          ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb
-!     integer  :: DO_ATTEN !can turn off attenuation to test advection
-!     !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
-!                          ! 0: RG (Dumont et al, 2011);1: smooth FSD
-!     integer  :: FSD_OPT=1 !TODO make this an input
-      integer  :: YOUNG_OPT=1
-      integer,parameter :: n_param_vec   = 35
+      integer  :: YOUNG_OPT=1!TODO needed?
+      integer,parameter :: n_param_vec   = 36
 
       real     :: x_ext,y_ext,u_ref,duration!,CFL
       integer  :: nt
@@ -1371,6 +1363,7 @@
       integer,parameter :: fid=99
       integer           :: inf_version
       character(len=80) :: ctmp
+      integer  :: itmp
       integer  :: m_year
       integer  :: m_month
       integer  :: m_day
@@ -1391,7 +1384,7 @@
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.5) then
+      if (inf_version.ne.6) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1457,6 +1450,9 @@
       print*,'REF_HS_ICE: ',REF_HS_ICE
       read(fid,'(i2.2,a)'), USE_ICE_VEL ,ctmp
       print*,'USE_ICE_VEL: ',USE_ICE_VEL
+      read(fid,'(i2.2,a)'), itmp ,ctmp
+      TAKE_MAX_WAVES = (itmp.ne.0)
+      print*,'TAKE_MAX_WAVES: ',TAKE_MAX_WAVES
       print*,'******************************************************'
       ! ===================================================
 
@@ -1650,7 +1646,7 @@
       ! ===================================================
 
       ! ===================================================
-      !! other integer parameters
+      !! other integer/logical parameters
       print*,' '
       print*,'******************************************************'
       i        = i+1
@@ -1662,6 +1658,9 @@
       i           = i+1
       USE_ICE_VEL = int(param_vec(i))
       print*,'USE_ICE_VEL: ',USE_ICE_VEL
+      i           = i+1
+      TAKE_MAX_WAVES = int(param_vec(i)).ne.0
+      print*,'TAKE_MAX_WAVES: ',TAKE_MAX_WAVES
       print*,'******************************************************'
       ! ===================================================
 

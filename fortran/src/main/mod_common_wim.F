@@ -36,9 +36,11 @@
       integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
                            ! 0: RG (Dumont et al, 2011);1: smooth FSD
 
-      logical,parameter :: TAKE_MAX_WAVES       = .true.!TODO make an input to mex functions and wim_step()
-      logical           :: INTERP_MESH          = .false.
-      logical           :: NEED_TAKE_MAX_WAVES  = .false.
+      logical  :: INTERP_MESH          = .false.
+      logical  :: TAKE_MAX_WAVES       = .false. ! this is independent of inputs on mesh
+      logical  :: NEED_TAKE_MAX_WAVES  = .false. ! even if TAKE_MAX_WAVES is true,
+                                                 !  this option will not be needed if
+                                                 !  interp_mesh is false (eg if no ice present)
       real, dimension(:,:), allocatable ::
      &   mom0_max,mom2_max,var_strain_max
 
