@@ -518,7 +518,6 @@
       real*8,intent(inout),optional :: mesh_e(nmesh_e,nmesh_vars)
       real :: mesh_e_dummy(nmesh_e,nmesh_vars)
 
-      logical  :: INTERP_MESH
       real     :: PI
 
       logical,parameter :: SET_WAVES   = .false.
@@ -538,7 +537,7 @@
       !!using mesh?
       INTERP_MESH = .false.
       if (present(mesh_e)) then
-         INTERP_MESH = .true.
+         INTERP_MESH = maxval(mesh_e).gt.0.
       end if
 
       PI = 4.0*atan(1.0)
@@ -701,8 +700,9 @@
       !!TODO remove from wim2d_run_io between **
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
 
-      logical :: critter,WANT_DIAG
+      logical :: WANT_DIAG,TMP_INTERP
       integer :: n
+      integer :: alloc_stat
 
       !! MAIN INTEGRATION
       !! - Common to WIM2d_run & WIM2d_run_io subroutines
@@ -722,12 +722,35 @@
      &   //model_year_info%cminute
      &   //model_year_info%csecond//'Z.txt'
 
+
+      !! INTERP_MESH is false by default
+      !! - changed in routine that calls run_WIM2d_common
+      !! if mesh is present and there is ice
+      if (TAKE_MAX_WAVES) then
+         NEED_TAKE_MAX_WAVES  = INTERP_MESH
+         if (INTERP_MESH) then
+            allocate(mom0_max(ii,jj),stat=alloc_stat)
+            if (alloc_stat.gt.0)
+     &         stop('allocation of mom0_max failed')
+
+            allocate(mom2_max(ii,jj),stat=alloc_stat)
+            if (alloc_stat.gt.0)
+     &         stop('allocation of mom2_max failed')
+
+            allocate(var_strain_max(ii,jj),stat=alloc_stat)
+            if (alloc_stat.gt.0)
+     &         stop('allocation of var_strain_max failed')
+
+            mom0_max       = 0.
+            mom2_max       = 0.
+            var_strain_max = 0.
+         end if
+      end if
+
+
       do n=1,nt
 
-
-         critter  = (DO_CHECK_PROG.eq.1).and.(mod(n-1,dumpfreq).eq.0)
-
-         if (critter) then
+         if ((DO_CHECK_PROG.eq.1).and.(mod(n-1,dumpfreq).eq.0)) then
             !!dump fields to binary
             call check_prog(0)
          end if
@@ -736,13 +759,29 @@
          DUMP_DIAG   = (WANT_DIAG).and.(mod(n-1,dumpfreq).eq.0)
 
          print*,'n/nt',n,nt
-!        wim_step_prams = (/SCATMOD,ADV_DIM,ADV_OPT                     &
-!    &                     ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT/)
-         if (.not.present(mesh_e)) then
-            call wim_step(nmesh_e)
-         else
-            call wim_step(nmesh_e,mesh_e)
+
+
+         !! =============================================================
+         !! call time step routine
+         !! - type of call depends on INTERP_MESH
+         TMP_INTERP  = INTERP_MESH
+
+         if (NEED_TAKE_MAX_WAVES) then
+            !! only do interpolation on last time step
+            !! - global variable INTERP_MESH can change from true to
+            !! false here
+            INTERP_MESH = INTERP_MESH.and.(n.eq.nt)
          end if
+
+         if (INTERP_MESH) then
+            call wim_step(nmesh_e,mesh_e)
+         else
+            call wim_step(1)
+         end if
+
+         INTERP_MESH = TMP_INTERP !set it to old value again
+         !! =============================================================
+
 
          if (.true.) then
             taux_max = maxval(tau_x)
@@ -765,6 +804,14 @@
      &            ,model_day,model_seconds)
 
       end do!! n - finish time stepping
+
+
+      !! deallocate mom0_max,mom2_max,var_strain_max
+      !! (if necessary)
+      if (allocated(mom0_max))         deallocate(mom0_max) 
+      if (allocated(mom2_max))         deallocate(mom2_max) 
+      if (allocated(var_strain_max))   deallocate(var_strain_max) 
+
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output

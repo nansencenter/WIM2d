@@ -4,7 +4,7 @@
       module mod_wavesice
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim   !! initial ice fields
+      use mod_common_wim   !! initial ice fields, some parameters
       use mod_year_info
 
       implicit none
@@ -249,7 +249,8 @@
       integer  :: jcrest,fid_diag
       logical  :: BREAK_CRIT
 
-      logical                 :: INTERP_MESH,crit_e,test_ij
+
+      logical                 :: crit_e,test_ij
       real                    :: wim_break_damage,Tp_e,lam_e
       real,dimension(nmesh_e) :: x_e,y_e                    !centres of elements
       real,dimension(nmesh_e) :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
@@ -257,12 +258,6 @@
      &                          ,broken_e,dmax_e
       real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(2)
       character(len=800) :: diag_filename
-      !
-      INTERP_MESH = .false.
-      if (present(mesh_e)) then
-         ! check if there is any ice
-         INTERP_MESH = maxval(mesh_e).gt.0.
-      end if
 
       
       if (DUMP_DIAG) then
@@ -603,12 +598,25 @@
      &      ,' # D_max, m'
          end if
 
+         if (NEED_TAKE_MAX_WAVES) then
+            if (var_strain(i,j).gt.var_strain_max(i,j)) then
+               !! get max val of var_strain over the entire call to WIM
+               !! - make mom0,mom2 consistent with it by making
+               !!   all fields simultaneous
+               var_strain_max(i,j)  = var_strain(i,j)
+               mom0_max(i,j)        = mom0(i,j)
+               mom2_max(i,j)        = mom2(i,j)
+            end if
+         end if
+
       end do!! end spatial loop j in y;
       end do!!end spatial loop i in x;
       close(fid_diag)
 
 
       if ((INTERP_MESH).and.(BRK_OPT>0)) then
+         !!if interpolating onto the mesh,
+         !! and we are doing breaking
          x_e      = mesh_e(:,1)
          y_e      = mesh_e(:,2)
          conc_e   = mesh_e(:,3)
@@ -616,12 +624,21 @@
          dmax_e   = mesh_e(:,5)
          broken_e = mesh_e(:,6)
 
-         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
-     &      ,nmesh_e,x_e,y_e,mom0_e)
-         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2
-     &         ,nmesh_e,x_e,y_e,mom2_e)
-         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain
-     &      ,nmesh_e,x_e,y_e,var_strain_e)
+         if (NEED_TAKE_MAX_WAVES) then
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0_max
+     &         ,nmesh_e,x_e,y_e,mom0_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2_max
+     &            ,nmesh_e,x_e,y_e,mom2_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain_max
+     &         ,nmesh_e,x_e,y_e,var_strain_e)
+         else
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
+     &         ,nmesh_e,x_e,y_e,mom0_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2
+     &            ,nmesh_e,x_e,y_e,mom2_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain
+     &         ,nmesh_e,x_e,y_e,var_strain_e)
+         end if
 
 
          ibrk  = 0
