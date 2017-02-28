@@ -1,4 +1,4 @@
-function plot_param_grid(param,simul_outfile,varargin)
+function figname = plot_param_grid(param,simul_outfile,varargin)
 %% CALL: plot_param_grid(param,simul_outfile,domain,colormap_name,manual_axis_range,
 %%          box_bound,figure_format,visible,textstring,remove_outer)
 
@@ -20,9 +20,10 @@ function plot_param_grid(param,simul_outfile,varargin)
 %   Created 2014-07-01 by Philipp 
 
 % default values
+figname  = '';
 %domain   = 'bigarctic'; 
 domain   = ''; 
-colormap_name='jet'; 
+colormap_name='jet';
 manual_axis_range = []; 
 figure_format=''; % with '' the plot is not saved 
 box_bound=[];
@@ -75,6 +76,7 @@ elseif strcmp(param,'tauy_waves')
 elseif strcmp(param,'Hs')
    Z     = simul_out.wim.wave_fields.Hs;
    tstr  = '{\itH}_{s}, m';
+   if nVarargs < 2, colormap_name = 'gray2red'; end
 elseif strcmp(param,'Tp')
    Z     = simul_out.wim.wave_fields.Tp;
    tstr  = '{\itT}_{p}, s';
@@ -84,6 +86,7 @@ elseif strcmp(param,'mwd')
 elseif strcmp(param,'cice')|strcmp(param,'c')
    Z     = simul_out.wim.ice_on_grid.cice;
    tstr  = 'concentration';
+   if nVarargs < 2, colormap_name = 'rev_gris'; end
 elseif strcmp(param,'hice')|strcmp(param,'h')
    Z     = simul_out.wim.ice_on_grid.hice;
    tstr  = 'thickness, m';

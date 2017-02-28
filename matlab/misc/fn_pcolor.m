@@ -65,7 +65,7 @@ GEN_proc_fig(labs{1},labs{2},fontsize);
 cb    = colorbar;
 if ~isempty(zlim)
    caxis(zlim);
-   Ytick_range = [round(zlim(1)),round(mean(zlim)),round(zlim(2))]
+   Ytick_range = [round(zlim(1)),round(mean(zlim)),round(zlim(2))];
    if length(unique(Ytick_range))==3
       set(cb,'YTick',Ytick_range,'fontname','Times','fontsize',fontsize);
    end
