@@ -58,8 +58,7 @@ function [out_fields,wave_stuff,diagnostics,mesh_e] =...
 %%         ye: [760x1 double]
 %%          c: [760x1 double]
 %%          h: [760x1 double]
-%%     Nfloes: [760x1 double]
-%% DAMAGE_OPT: 1
+%%       Dmax: [760x1 double]
 %% ============================================================
 
 format long;
@@ -82,15 +81,61 @@ if params_in.SCATMOD==3
 end
 
 %% get date & time;
-date_vector    = [params_in.start_year,...
-                  params_in.start_month,...
-                  params_in.start_day,...
-                  params_in.start_hour,...
-                  params_in.start_minute,...
-                  params_in.start_second];
-year_info      = datevec2year_info(date_vector);
+if isfield(params_in,'year_info_start')
+   year_info   = params_in.year_info_start;
+else
+   fields   = {'start_year',...
+               'start_month',...
+               'start_day',...
+               'start_hour',...
+               'start_minute',...
+               'start_second'};
+   STOP  = 0;
+   for j=1:6
+      fld   = fields{j};
+      if ~isfield(params_in,fld)
+         STOP  = 1;
+         break;
+      end
+      date_vector(j) = params_in.(fld);
+   end
+
+   if ~STOP
+      year_info   = datevec2year_info(date_vector);
+   else
+      msg   = strvcat({...
+               '<<params_in>> should have a field <<year_info>>';
+               'structure eg';
+               '        model_day: 39510';
+               '    model_seconds: 0';
+               '            iyear: 2008';
+               '           imonth: 3';
+               '             iday: 5';
+               '            ihour: 0';
+               '          iminute: 0';
+               '          isecond: 0';
+               '            cyear: ''2008''';
+               '           cmonth: ''03''';
+               '             cday: ''05''';
+               '            cdate: ''20080305''';
+               '            chour: ''00''';
+               '          cminute: ''00''';
+               '          csecond: ''00''';
+               '            ctime: ''00:00:00''';
+               '      date_string: ''20080305T000000Z''';
+               '       month_name: ''MAR''';
+               '     days_in_year: 366';
+               '   days_in_months: [31 29 31 30 31 30 31 31 30 31 30 31]';
+               'or else it should have the fields:';
+               '<<start_year>>, <<start_month>>, <<start_day>>,';
+               '<<start_hour>>, <<start_minute>>, <<start_second>>'});
+      disp(msg);
+      error('missing start time info in <<params_in>>')
+   end
+end
 model_day      = year_info.model_day;
 model_seconds  = year_info.model_seconds;
+
 if params_in.DO_DISP
    disp('year_info=');
    disp(year_info);
@@ -1296,10 +1341,6 @@ else
 
       %% FINALLY DO FLOE BREAKING;
       %% - ON GRID
-      P_crit0  = 0;
-      if params_in.BRK_OPT==0
-         P_crit0  = 1;
-      end
 
       for i=1:gridprams.nx
       for j=1:gridprams.ny
@@ -1307,16 +1348,9 @@ else
             %% only try breaking if ice is present
             %%  & some waves have arrived;
 
-            %% significant strain amp
-            sig_strain  = 2*sqrt(var_strain(i,j));
-
-            %%  probability of critical strain
-            %%  being exceeded from Rayleigh distribution;
-            Pstrain  = exp( -ice_prams.strain_c^2/(2*var_strain(i,j)) );
-            P_crit   = P_crit0+exp(-1);%%this is critical prob if monochromatic wave
-
             %% FLOE BREAKING:
-            BREAK_CRIT     = ( Pstrain>=P_crit );%%breaks if larger than this
+            BREAK_CRIT  = (params_in.BRK_OPT>0) &...
+               ( var_strain(i,j)>=ice_prams.strain_c^2/2 );%%breaks if larger than this
             brkcrt(i,j,n)  = BREAK_CRIT;
 
             if BREAK_CRIT
@@ -1363,8 +1397,7 @@ else
             end
             
             if params_in.BRK_OPT==0
-             P_crit_        = exp(-1);
-             BREAK_CRIT     = ( Pstrain>=P_crit_ );
+             BREAK_CRIT     = ( var_strain(i,j)>=ice_prams.strain_c^2/2 );
              brkcrt(i,j,n)  = BREAK_CRIT;
              if BREAK_CRIT
               if isnan(diagnostics.break_max)
@@ -1403,7 +1436,7 @@ else
 
 %% ==================================================================================
 %% extra task when coupling to neXtSIM:
-      if INTERP_MESH==1
+      if INTERP_MESH==1 & params_in.BRK_OPT>0
          %% FOR neXtSIM COUPLING
          %% - DO FLOE BREAKING ON MESH
          X  = gridprams.X.'/1e3;%take transpose, change to km
@@ -1417,7 +1450,7 @@ else
 
          %% get ice elements
          jice     = find(mesh_e.c>0);
-         thick_e  = mesh_e.h(jice)./mesh_e.c(jice);%absolute thickness
+         thick_e  = mesh_e.thick(jice);%absolute thickness
 
          %% Interp mom0,mom2  -> Tp
          mom0_e      = interp2(X,Y,mom0.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
@@ -1431,26 +1464,22 @@ else
          var_strain_e   = interp2(X,Y,var_strain.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
          %%
          for loop_j=1:length(jice)
-            vse      = var_strain_e(loop_j);
-            Pstrain  = exp( -ice_prams.strain_c^2/(2*vse) );
-            if Pstrain>P_crit&vse>0
-               % {var_strain_e,Pstrain,thick_e(loop_j),Tp_e(loop_j)}
+            vse   = var_strain_e(loop_j);
+            if vse>ice_prams.strain_c^2/2
+               % {vse,thick_e(loop_j),Tp_e(loop_j)}
                jl          = jice(loop_j);
                wlng_crest  = ...
                   GEN_get_ice_wavelength(thick_e(loop_j),Tp_e(loop_j),Inf,ice_prams.young);
                %%
-               Dmax              = sqrt(mesh_e.c(jl)/mesh_e.Nfloes(jl));
-               Dmax              = max(ice_prams.Dmax_min,min(Dmax,wlng_crest/2));
-               mesh_e.Nfloes(jl) = mesh_e.c(jl)/Dmax^2;
-               if mesh_e.DAMAGE_OPT==1
-                  mesh_e.broken(jl) = 1;
-               end
+               Dmax              = mesh_e.Dmax(jl);
+               mesh_e.Dmax(jl)   = max(ice_prams.Dmax_min,min(Dmax,wlng_crest/2));
+               mesh_e.broken(jl) = 1;
                %disp('Breaking on mesh')
             end
          end%%loop over ice elements
 
          if params_in.DO_DISP
-            Dmesh = sqrt(mesh_e.c(jice)./mesh_e.Nfloes(jice));
+            Dmesh = mesh_e.Dmax(jice);
             DrngM = [min(Dmesh),max(Dmesh(Dmesh<300)),max(Dmesh)]
          end
       end%% INTERP_MESH==1

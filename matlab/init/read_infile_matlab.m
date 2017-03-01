@@ -25,6 +25,19 @@ else
       end
    end
    fclose(fid);
+
+   fields   = {'start_year',...
+               'start_month',...
+               'start_day',...
+               'start_hour',...
+               'start_minute',...
+               'start_second'};
+   for j=1:6
+      fld            = fields{j};
+      date_vector(j) = params.(fld);
+      params         = rmfield(params,fld);
+   end
+   params.year_info_start  = datevec2year_info(date_vector);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
