@@ -37,8 +37,9 @@ function params_vec = get_param_vec_mex(params_mex)
 %%              itest: 25
 %%              jtest: 5
 %%           dumpfreq: 10
-%%            MEX_OPT: 1
-%%            DO_DISP: 1
+%%            MEX_OPT: 3
+%%            DO_DISP: 0
+%%           TEST_MEX: 0
 %%
 %% OUTPUT:
 %% vector with some of these fields
@@ -88,8 +89,9 @@ fields   = {'SCATMOD',...
 
 if nargin==0
    %return list of fields needed by params_mex;
-   fields(end+1:end+2)  = {'DO_DISP','MEX_OPT'};
-   params_vec           = fields;
+   xtras                            = {'DO_DISP','MEX_OPT','TEST_MEX'};
+   fields(end+1:end+length(xtras))  = xtras;
+   params_vec                       = fields;
 else
    Ni          = length(fields);
    params_vec  = zeros(Ni,1);
