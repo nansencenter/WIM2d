@@ -41,8 +41,13 @@
       logical  :: NEED_TAKE_MAX_WAVES  = .false. ! even if TAKE_MAX_WAVES is true,
                                                  !  this option will not be needed if
                                                  !  interp_mesh is false (eg if no ice present)
+#if 0
       real, dimension(:,:), allocatable ::
      &   mom0_max,mom2_max,var_strain_max
+#else
+      real, dimension(ii,jj) ::
+     &   mom0_max,mom2_max,var_strain_max
+#endif
 
       real     :: CFL
 

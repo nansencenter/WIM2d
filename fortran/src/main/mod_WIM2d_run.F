@@ -14,7 +14,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-      integer  :: YOUNG_OPT=1!TODO needed?
       integer,parameter :: n_param_vec   = 36
 
       real     :: x_ext,y_ext,u_ref,duration!,CFL
@@ -131,25 +130,9 @@
          call set_wim_prams() ! - ice properties like breaking strain
       else
          stop(infile//' not present')
-!        SCATMOD     = 0
-!        ADV_DIM     = 2
-!        ADV_OPT     = 2
-!           !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-!        BRK_OPT     = 1
-!        STEADY      = 1
-!        DO_ATTEN    = 1
-
-!        DO_CHECK_PROG  = 1
-!        DO_CHECK_INIT  = 1
-!        DO_CHECK_FINAL = 1
-
-!        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        !!initialisation of grid, ice con's
-!        call set_wim_prams(YOUNG_OPT) ! - ice properties like Young's modulus
-
       end if
 
-      if ((ADV_DIM.eq.2).and.(jj.eq.1)) then
+      if ((ADV_DIM.eq.2).and.(jj.le.nbdy)) then
          print*,'Invalid value of ADV_DIM (2) for jj = 1'
          print*,'Stopping'
          print*,''
@@ -176,7 +159,6 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      !call wim_init(STEADY,DO_ATTEN,CFL)
       call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -718,9 +700,11 @@
       !! INTERP_MESH is false by default
       !! - changed in routine that calls run_WIM2d_common
       !! if mesh is present and there is ice
+#if 0
       if (TAKE_MAX_WAVES) then
          NEED_TAKE_MAX_WAVES  = INTERP_MESH
          if (INTERP_MESH) then
+
             allocate(mom0_max(ii,jj),stat=alloc_stat)
             if (alloc_stat.gt.0)
      &         stop('allocation of mom0_max failed')
@@ -738,6 +722,11 @@
             var_strain_max = 0.
          end if
       end if
+#else
+      mom0_max       = 0.
+      mom2_max       = 0.
+      var_strain_max = 0.
+#endif
 
 
       do n=1,nt
@@ -798,11 +787,13 @@
       end do!! n - finish time stepping
 
 
+#if 0
       !! deallocate mom0_max,mom2_max,var_strain_max
       !! (if necessary)
       if (allocated(mom0_max))         deallocate(mom0_max) 
       if (allocated(mom2_max))         deallocate(mom2_max) 
       if (allocated(var_strain_max))   deallocate(var_strain_max) 
+#endif
 
 
       if (DO_CHECK_FINAL.eq.1) then

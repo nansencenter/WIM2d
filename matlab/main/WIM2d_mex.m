@@ -69,7 +69,7 @@ function [out_fields,wave_stuff,mesh_e] =...
 
 % %%check params_in has the needed fields
 % check_params_in_mex(params_in);
-RMFORT6  = 1;
+RMFORT6  = 0;
 
 %% check if we want to do breaking on the mesh also
 if ~exist('mesh_e','var')
@@ -236,6 +236,17 @@ elseif params_in.MEX_OPT==3
    mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.thick,mesh_e.Dmax,mesh_e.broken];
    %mesh0 = mesh_arr;
 
+   TEST_MEX = 1;
+   if TEST_MEX
+      arg1  = wave_stuff.dir_spec(:);
+      arg2  = in_arrays(:);
+      arg3  = mesh_arr(:);
+         params_vec,nmesh_e
+      save('mex_in.mat','arg1','arg2','arg3',...
+            'params_vec','nmesh_e');
+      clear arg1 arg2 arg3;
+   end
+
    %% make the call!
    tic;
    shp   = size(wave_stuff.dir_spec);
@@ -246,6 +257,11 @@ elseif params_in.MEX_OPT==3
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
+   if TEST_MEX
+      out1  = wave_stuff.dir_spec;
+      save('mex_out.mat','out1','out_arrays','mesh_arr');
+      clear out1;
+   end
 
    %% extract outputs
    fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
