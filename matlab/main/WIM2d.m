@@ -67,12 +67,23 @@ format long;
 check_params_in(params_in);
 
 %% check if we want to do breaking on the mesh also
-INTERP_MESH = 0;
-if exist('mesh_e','var') & params_in.MEX_OPT<=0
-   INTERP_MESH    = 1;
+INTERP_MESH    = 0;
+if exist('mesh_e','var') & params_in.MEX_OPT<=0 & params_in.BRK_OPT>0
+   % mesh_e passed in
+   % - only changes if using pure matlab code
+   %   and if doing breaking
+   %   and if there is some ice;
+   INTERP_MESH    = (max(mesh_e.c)>0);
    mesh_e.broken  = 0*mesh_e.c;%0/1 if ice was broken by waves this time
 else
-   mesh_e  = [];
+   mesh_e   = [];
+end
+
+TAKE_MAX_WAVES = (params_in.TAKE_MAX_WAVES&INTERP_MESH);
+if TAKE_MAX_WAVES
+   var_strain_max = zeros(gridprams.nx,gridprams.ny);
+   mom0_max       = zeros(gridprams.nx,gridprams.ny);
+   mom2_max       = zeros(gridprams.nx,gridprams.ny);
 end
 
 USE_EBS  = 0;
@@ -915,7 +926,12 @@ else
       end
    end
 
-   for n = 1:nt
+   for n=1:nt
+
+      if TAKE_MAX_WAVES
+         TMP_INTERP  = INTERP_MESH;
+         INTERP_MESH = (n==nt);
+      end
 
       %%determine if we need to dump local diagnostics
       DUMP_DIAG   = (mod(n-1,reps)==0)&TEST_IJ;
@@ -1237,6 +1253,13 @@ else
                                     + wt_om(jw)*strain_density;
             end
 
+            if TAKE_MAX_WAVES
+               if var_strain(i,j)>var_strain_max(i,j)
+                  var_strain_max(i,j)  = var_strain(i,j);
+                  mom0_max(i,j)        = mom0(i,j);
+                  mom2_max(i,j)        = mom2(i,j);
+               end
+            end
          end%% end spatial loop x;
          end%% end spatial loop y;
 
@@ -1436,7 +1459,7 @@ else
 
 %% ==================================================================================
 %% extra task when coupling to neXtSIM:
-      if INTERP_MESH==1 & params_in.BRK_OPT>0
+      if INTERP_MESH==1
          %% FOR neXtSIM COUPLING
          %% - DO FLOE BREAKING ON MESH
          X  = gridprams.X.'/1e3;%take transpose, change to km
@@ -1452,16 +1475,27 @@ else
          jice     = find(mesh_e.c>0);
          thick_e  = mesh_e.thick(jice);%absolute thickness
 
-         %% Interp mom0,mom2  -> Tp
-         mom0_e      = interp2(X,Y,mom0.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
-         mom2_e      = interp2(X,Y,mom2.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+         if ~TAKE_MAX_WAVES
+            %% Interp mom0,mom2 -> Tp
+            mom0_e   = interp2(X,Y,mom0.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+            mom2_e   = interp2(X,Y,mom2.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+
+            %% Interp var_strain
+            var_strain_e   = interp2(X,Y,var_strain.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+         else
+            %% Interp mom0_max,mom2_max -> Tp
+            mom0_e   = interp2(X,Y,mom0_max.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+            mom2_e   = interp2(X,Y,mom2_max.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+
+            %% Interp var_strain_max
+            var_strain_e   = interp2(X,Y,var_strain_max.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
+         end
          jwav        = find(mom2_e>0);%where waves are
+
          Tp_e        = 0*mom0_e;
          Tp_e(jwav)  = 2*pi*sqrt(mom0_e(jwav)./mom2_e(jwav));
          %%
 
-         %% Interp var_strain -> (P_strain>P_crit)
-         var_strain_e   = interp2(X,Y,var_strain.',mesh_e.xe(jice),mesh_e.ye(jice),meth);
          %%
          for loop_j=1:length(jice)
             vse   = var_strain_e(loop_j);
@@ -1483,6 +1517,10 @@ else
             DrngM = [min(Dmesh),max(Dmesh(Dmesh<300)),max(Dmesh)]
          end
       end%% INTERP_MESH==1
+
+      if TAKE_MAX_WAVES
+         INTERP_MESH = TMP_INTERP;
+      end
 
 %% end of work for coupling to neXtSIM
 %% ==================================================================================
