@@ -79,11 +79,13 @@ else
    mesh_e   = [];
 end
 
+TEST_TAKE_MAX_WAVES  = 0;
 TAKE_MAX_WAVES = (params_in.TAKE_MAX_WAVES&INTERP_MESH);
 if TAKE_MAX_WAVES
-   var_strain_max = zeros(gridprams.nx,gridprams.ny);
-   mom0_max       = zeros(gridprams.nx,gridprams.ny);
-   mom2_max       = zeros(gridprams.nx,gridprams.ny);
+   TEST_TAKE_MAX_WAVES  = 0;
+   var_strain_max       = zeros(gridprams.nx,gridprams.ny);
+   mom0_max             = zeros(gridprams.nx,gridprams.ny);
+   mom2_max             = zeros(gridprams.nx,gridprams.ny);
 end
 
 USE_EBS  = 0;
@@ -1515,6 +1517,17 @@ else
          if params_in.DO_DISP
             Dmesh = mesh_e.Dmax(jice);
             DrngM = [min(Dmesh),max(Dmesh(Dmesh<300)),max(Dmesh)]
+         end
+
+         if TEST_TAKE_MAX_WAVES
+            %% add a test:
+            Dmax  = out_fields.Dmax;
+            save('test_TAKE_MAX_WAVES_matlab.mat',...
+                  'mesh_e','ice_prams','gridprams',...
+                  'Dmax',...
+                  'mom0_max','mom2_max','var_strain_max',...
+                  'mom0_e','mom2_e','var_strain_e');
+            clear Dmax;
          end
       end%% INTERP_MESH==1
 
