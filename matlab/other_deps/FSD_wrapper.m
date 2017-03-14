@@ -2,6 +2,15 @@
 %% Author: Timothy Williams
 %% Date: 20161213
 function output = FSD_wrapper(inputs,params,output_type)
+%% params = eg:
+%%         Dmax_pack: 300
+%%  Dmax_pack_thresh: 400
+%%          Dmax_min: 20
+%%          cice_min: 0.050000000000000
+%%         fragility: 0.900000000000000
+%%                xi: 2
+%%           Dthresh: 200
+%%           FSD_OPT: 1
 
 DO_TEST  = 0;
 if nargin==0
