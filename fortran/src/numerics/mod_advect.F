@@ -11,7 +11,9 @@
          ! prediction/correction steps (WENO advection)
 
       !!public subroutines:
-      public   :: waveadv_weno,waveadv_weno_1d,waveadv_lax_1d
+      public   :: waveadv_weno
+     &           ,waveadv_weno_1d
+     &           ,waveadv_lax_1d
 
       contains
 
