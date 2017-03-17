@@ -265,7 +265,9 @@ step  = 5;
 for n = 1:step:nt
    %if shot==10 %%good for CFL=.8
    %if shot==20 %%good for CFL=.4
-   if shot==30 %%good for CFL=.4
+   %if shot==30 %%good for CFL=.4
+   if 0
+      !mkdir -p figs
       saveas(gcf,'figs/test_fig.png')
       GEN_pause;
    end

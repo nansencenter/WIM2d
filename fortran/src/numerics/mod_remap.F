@@ -61,25 +61,26 @@ c ---   vsflx  - v-component of salt flux.
 c ---   n_bdy  - no of ghost cells
 c ---   k      - layer index
 c
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),intent(in) ::
-     &  scuy,scvx,scp2i,scp2,pbmin,pbu,pbv,plo,u,v
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),intent(inout) ::
-     &  dp,temp,saln
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy),intent(out) ::
-     &  uflx,vflx,utflx,vtflx,usflx,vsflx
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy)
+     &   ,intent(in) :: scuy,scvx,scp2i,scp2,pbmin,pbu,pbv,plo,u,v
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy)
+     &   ,intent(inout) :: dp,temp,saln
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy)
+     &   ,intent(out) :: uflx,vflx,utflx,vtflx,usflx,vsflx
       real,intent(in)      :: dt
       integer,intent(in)   :: n_bdy!margin of halo that must be valid upon return.
 
       integer,parameter :: mrg = 0!margin of halo that must be valid upon return.
 #ifdef TRC
 #  include "param_trc.h"
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy,2*kdm,ntr) :: trc
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy,2*kdm,ntr) ::
+     &   trc
       integer k
 #endif
 c
 c --- Local variables.
 c
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
+      real, dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) ::
      &  pup,dx,dy,xd,yd,tx,ty,td,sx,sy,sd,cu,cv,cuc,cvc,fdu,fdv,ftu,ftv,
      &  fsu,fsv
       real dxi,dyi,dpw,dpe,dps,dpn,dpsw,dpse,dpc,dpnw,dpne,
@@ -89,14 +90,14 @@ c
       integer i,j,l,iw,ie,js,jn,isw,jsw,ise,jse,inw,jnw,ine,jne,nw
 #ifdef TRC
 #  ifdef ATRC
-      real, dimension(ntr-natr,1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
+      real, dimension(ntr-natr,1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) ::
      &  trx,try,trd,ftru,ftrv
-      real, dimension(natr,1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
+      real, dimension(natr,1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) ::
      &  ag,agx,agy,agd,fagu,fagv
       real xdt,ydt,axxx,ayyy,axxy,axyy,qxx,qyy,qxy,fdt
       integer nt,nat
 #  else
-      real, dimension(ntr,1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
+      real, dimension(ntr,1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) ::
      &  trx,try,trd,ftru,ftrv
       integer nt
 #  endif
