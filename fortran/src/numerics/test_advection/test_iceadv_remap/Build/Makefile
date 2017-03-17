@@ -7,12 +7,13 @@ src		:=	$(numerics)/..
 
 # modules here
 MDIR	:=	mods
+
 # objects here
 ODIR	:=	objs
+
 # header files (location of grid_info.h)
 # - put it in this dir for easier testing
 HDIR	:=	.
-# HDIR	:=	$(src)/header_files
 
 # put executables here
 bin	:=	../bin
