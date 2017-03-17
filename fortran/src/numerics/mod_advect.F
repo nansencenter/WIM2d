@@ -4,12 +4,6 @@
 
       private
 
-      integer, parameter   :: n_bdy = 4
-         !n_bdy=6: don't need to apply boundary condition between
-         ! prediction/correction steps (WENO advection)
-         !n_bdy=3: do need to apply boundary condition between
-         ! prediction/correction steps (WENO advection)
-
       !!public subroutines:
       public   :: waveadv_weno
      &           ,waveadv_weno_1d
@@ -55,9 +49,16 @@
 
       use mod_gridinfo
       use mod_file_utils
-!
+      use mod_common_advect, only: pad_var
+
       implicit none
-!
+
+      integer, parameter   :: n_bdy = 4
+         !n_bdy=6: don't need to apply boundary condition between
+         ! prediction/correction steps (WENO advection)
+         !n_bdy=3: do need to apply boundary condition between
+         ! prediction/correction steps (WENO advection)
+
       real,intent(in),dimension(idm,jdm) :: u,v
       !,scuy,scvx,scp2i,scp2,LANDMASK
       real,intent(inout),dimension(idm,jdm)  :: h
@@ -76,18 +77,18 @@
       !! - apply boundary conditions via "ghost cells"
 
       !!make u,v,sc* periodic
-      call pad_var(u_pad      ,u       ,1)
-      call pad_var(v_pad      ,v       ,1)
-      call pad_var(scp2_pad   ,scp2    ,1)
-      call pad_var(scp2i_pad  ,scp2i   ,1)
-      call pad_var(scuy_pad   ,scuy    ,1)
-      call pad_var(scvx_pad   ,scvx    ,1)
+      call pad_var(u_pad      ,u       ,1,n_bdy)
+      call pad_var(v_pad      ,v       ,1,n_bdy)
+      call pad_var(scp2_pad   ,scp2    ,1,n_bdy)
+      call pad_var(scp2i_pad  ,scp2i   ,1,n_bdy)
+      call pad_var(scuy_pad   ,scuy    ,1,n_bdy)
+      call pad_var(scvx_pad   ,scvx    ,1,n_bdy)
 
       !!ADV_OPT applies boundary conditions
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x,y
       !!2: make h be periodic in y only
-      call pad_var(h_pad,h,ADV_OPT)
+      call pad_var(h_pad,h,ADV_OPT,n_bdy)
 
       if (.false.) then
          !! confirm in correct subroutine
@@ -139,7 +140,7 @@
 ! --- Prediction step
       !print*,'prediction'
       call weno3pd_v2(h_pad,sao,u_pad,v_pad,                            &
-     &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
+     &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt,n_bdy)
 
       if (n_bdy.gt.3) then
          !! original version
@@ -155,7 +156,7 @@
              hp(i,j) = h_pad(i,j)+dt*sao(i,j)
          enddo
          enddo
-         call pad_var(hp,hp(1:ii,1:jj),ADV_OPT)
+         call pad_var(hp,hp(1:ii,1:jj),ADV_OPT,n_bdy)
       else
          print*,'Choose n_bdy>=3'
          stop
@@ -164,7 +165,7 @@
 ! --- Correction step
       !print*,'correction'
       call weno3pd_v2(hp,sao,u_pad,v_pad,                               &
-     &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt)
+     &   scuy_pad,scvx_pad,scp2i_pad,scp2_pad,dt,n_bdy)
 
       !! final output
       do j=1,jj
@@ -214,9 +215,16 @@
 
       use mod_gridinfo
       use mod_file_utils
-!
+      use mod_common_advect, only: pad_var_1d
+
       implicit none
-!
+
+      integer, parameter   :: n_bdy = 4
+         !n_bdy=6: don't need to apply boundary condition between
+         ! prediction/correction steps (WENO advection)
+         !n_bdy=3: do need to apply boundary condition between
+         ! prediction/correction steps (WENO advection)
+
       real,intent(in),dimension(idm,jdm)     :: u
       real,intent(inout),dimension(idm,jdm)  :: h
       real,intent(in)                        :: dt
@@ -234,15 +242,15 @@
       !! - apply boundary conditions via "ghost cells"
 
       !!make u,v,sc* periodic
-      call pad_var_1d(u_pad    ,u    ,1)
-      call pad_var_1d(scp2_pad ,scp2 ,1)
-      call pad_var_1d(scp2i_pad,scp2i,1)
-      call pad_var_1d(scuy_pad ,scuy ,1)
+      call pad_var_1d(u_pad    ,u    ,1,n_bdy)
+      call pad_var_1d(scp2_pad ,scp2 ,1,n_bdy)
+      call pad_var_1d(scp2i_pad,scp2i,1,n_bdy)
+      call pad_var_1d(scuy_pad ,scuy ,1,n_bdy)
 
       !!ADV_OPT applies boundary conditions
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x
-      call pad_var_1d(h_pad,h,ADV_OPT)
+      call pad_var_1d(h_pad,h,ADV_OPT,n_bdy)
 
       if (.false.) then
          !! confirm in correct subroutine
@@ -296,7 +304,7 @@
       
 ! --- Prediction step
       call weno3pd_v2_1d(h_pad,sao,u_pad,                               &
-     &   scuy_pad,scp2i_pad,scp2_pad,dt)
+     &   scuy_pad,scp2i_pad,scp2_pad,dt,n_bdy)
 
       if (n_bdy.gt.3) then
          !! original version - but I think this needed xctilr also
@@ -312,7 +320,7 @@
              hp(i,j) = h_pad(i,j)+dt*sao(i,j)
          enddo
          enddo
-         call pad_var_1d(hp,hp(1:ii,1:jj),ADV_OPT)
+         call pad_var_1d(hp,hp(1:ii,1:jj),ADV_OPT,n_bdy)
       else
          print*,'choose n_bdy>=3'
          stop
@@ -320,7 +328,7 @@
 
 ! --- Correction step
       call weno3pd_v2_1d(hp,sao,u_pad,                                  &
-     &   scuy_pad,scp2i_pad,scp2_pad,dt)
+     &   scuy_pad,scp2i_pad,scp2_pad,dt,n_bdy)
 
       !final output
       do j=1,jj
@@ -369,9 +377,12 @@
 
       use mod_gridinfo
       use mod_file_utils
-!
+      use mod_common_advect, only: pad_var_1d
+
       implicit none
-!
+
+      integer, parameter   :: n_bdy = 4!TODO this could probably be reduced for this adv scheme
+
       real,intent(in),dimension(idm,jdm) :: u
       !,scuy,scvx,scp2i,scp2,LANDMASK
       real,intent(inout),dimension(idm,jdm)  :: h
@@ -390,15 +401,15 @@
       !! - apply boundary conditions via "ghost cells"
 
       !!make u,v,sc* periodic
-      call pad_var_1d(u_pad    ,u    ,1)
-      call pad_var_1d(scp2_pad ,scp2 ,1)
-      call pad_var_1d(scp2i_pad,scp2i,1)
-      call pad_var_1d(scuy_pad ,scuy ,1)
+      call pad_var_1d(u_pad    ,u    ,1,n_bdy)
+      call pad_var_1d(scp2_pad ,scp2 ,1,n_bdy)
+      call pad_var_1d(scp2i_pad,scp2i,1,n_bdy)
+      call pad_var_1d(scuy_pad ,scuy ,1,n_bdy)
 
       !!ADV_OPT applies boundary conditions
       !!0: make h just be zero on boundaries
       !!1: make h be periodic in x
-      call pad_var_1d(h_pad,h,ADV_OPT)
+      call pad_var_1d(h_pad,h,ADV_OPT,n_bdy)
 
       if (.false.) then
       !if (.true.) then
@@ -445,7 +456,7 @@
       
 ! --- Single call to get Lax-Wendroff spatial advection operator
       call sao_lax_1d(h_pad,sao,u_pad,                                  &
-     &   scuy_pad,scp2i_pad,scp2_pad,dt)
+     &   scuy_pad,scp2i_pad,scp2_pad,dt,n_bdy)
 
       do j=1,jj
       do i=1,ii
@@ -464,80 +475,6 @@
       ! ---------------------------------------------------------------
 
 
-      ! ---------------------------------------------------------------
-      ! Boundary conditions
-      ! ---------------------------------------------------------------
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine pad_var(u_pad,u,OPT)
-
-      use mod_gridinfo, only: ii,jj,idm,jdm
-
-      implicit none
-
-      real,intent(out),                                                 &
-     &  dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: u_pad
-      real,intent(in),dimension(idm,jdm)         :: u
-      integer,intent(in)                           :: OPT
-
-      u_pad             = 0.0
-      u_pad(1:ii,1:jj)  = u
-
-      if (OPT.eq.1) then
-         !!make things periodic
-
-         !!make it periodic in i
-         u_pad(1-n_bdy:0,1:jj)       = u(ii-n_bdy:ii-1,:)
-         u_pad(ii+1:ii+n_bdy,1:jj)   = u(1:n_bdy,:)
-
-         !!make it periodic in j
-         u_pad(1:ii,1-n_bdy:0)       = u(1:ii,jj-n_bdy:jj-1)
-         u_pad(1:ii,jj+1:jj+n_bdy)   = u(1:ii,1:n_bdy)
-
-         !!BR,TL
-         u_pad(ii+1:ii+n_bdy,jj+1:jj+n_bdy)                             &
-     &     = u(1:n_bdy,1:n_bdy)
-         u_pad(1-n_bdy:0,1-n_bdy:0)                                     &
-     &     = u(ii-n_bdy:ii-1,jj-n_bdy:jj-1)
-
-         !!BL,TR
-         u_pad(ii+1:ii+n_bdy,1-n_bdy:0)                                 &
-     &     = u(1:n_bdy,jj-n_bdy:jj-1)
-         u_pad(1-n_bdy:0,jj+1:jj+n_bdy)                                 &
-     &     = u(ii-n_bdy:ii-1,1:n_bdy)
-
-      else if (OPT.eq.2) then
-         !!make it periodic in j only
-         u_pad(1:ii,1-n_bdy:0)       = u(1:ii,jj-n_bdy:jj-1)
-         u_pad(1:ii,jj+1:jj+n_bdy)   = u(1:ii,1:n_bdy)
-
-      end if
-
-      end subroutine pad_var
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine pad_var_1d(u_pad,u,OPT)
-
-      use mod_gridinfo, only: ii,jj,idm,jdm
-
-      implicit none
-
-      real,intent(out),                                                 &
-     &  dimension(1-n_bdy:idm+n_bdy,1:jdm)   :: u_pad
-      real,intent(in),dimension(idm,jdm)     :: u
-      integer,intent(in)                     :: OPT
-
-      u_pad             = 0.0
-      u_pad(1:ii,1:jj)  = u
-
-      if (OPT.eq.1) then
-         !!make it periodic in i
-         u_pad(1-n_bdy:0,1:jj)       = u(ii-n_bdy:ii-1,:)
-         u_pad(ii+1:ii+n_bdy,1:jj)   = u(1:n_bdy,:)
-      end if
-
-      end subroutine pad_var_1d
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! ---------------------------------------------------------------
@@ -550,7 +487,7 @@
       ! ---------------------------------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine weno3pd_v2(g,sao,u,v,scuy,scvx,scp2i,scp2,dt)
+      subroutine weno3pd_v2(g,sao,u,v,scuy,scvx,scp2i,scp2,dt,n_bdy)
 !
 ! --- ------------------------------------------------------------------
 ! --- By a weighted essentially non-oscillatory scheme with up to 3rd
@@ -563,9 +500,11 @@
 !
 
       use mod_gridinfo, only: ii,jj,idm,jdm
-!
+
       implicit none
-!
+
+      integer,intent(in)   :: n_bdy
+
       real,intent(in),                                                  &
      &  dimension(1-n_bdy:idm+n_bdy,1-n_bdy:jdm+n_bdy) :: g,u,v         &
      &    ,scp2,scp2i,scuy,scvx
@@ -704,7 +643,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine weno3pd_v2_1d(g,sao,u,scuy,scp2i,scp2,dt)
+      subroutine weno3pd_v2_1d(g,sao,u,scuy,scp2i,scp2,dt,n_bdy)
 !
 ! --- ------------------------------------------------------------------
 ! --- By a weighted essentially non-oscillatory scheme with up to 3rd
@@ -717,9 +656,11 @@
 !
 
       use mod_gridinfo, only: ii,jj,idm,jdm
-!
+
       implicit none
-!
+
+      integer,intent(in)   :: n_bdy
+
       real,intent(in),                                                  &
      &  dimension(1-n_bdy:idm+n_bdy,1:jdm) :: g,u                       &
      &    ,scp2,scp2i,scuy
@@ -807,7 +748,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine sao_lax_1d(g,sao,u,scuy,scp2i,scp2,dt)
+      subroutine sao_lax_1d(g,sao,u,scuy,scp2i,scp2,dt,n_bdy)
 !
 ! --- ------------------------------------------------------------------
 ! --- By a weighted essentially non-oscillatory scheme with up to 3rd
@@ -820,9 +761,14 @@
 !
 
       use mod_gridinfo, only: ii,jj,idm,jdm
-!
+
       implicit none
-!
+
+      !flux limiter method
+      integer,parameter :: FL_method   = 2
+
+      integer, intent(in)  :: n_bdy
+
       real,intent(in),                                                  &
      &  dimension(1-n_bdy:idm+n_bdy,1:jdm) :: g,u                       &
      &    ,scp2,scp2i,scuy
@@ -878,7 +824,7 @@
             r_flux   = (g(ip2,j)-g(ip1,j))/(g(ip1,j)-g(i,j))
          end if
          !!
-         call flux_limiter(q_flux,r_flux)
+         call flux_limiter(q_flux,r_flux,FL_method)
          flux_ip1(i,j)  = ful+q_flux*(fuh-ful)
       enddo
       enddo
@@ -905,11 +851,11 @@
       ! ---------------------------------------------------------------
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine flux_limiter(r,phi)
+      subroutine flux_limiter(r,phi,FL_method)
       implicit none
+      integer, intent(in)  :: FL_method
       real, intent(in)  :: r
       real, intent(out) :: phi
-      integer,parameter :: FL_method   = 2
       real  :: beta,phi0,phi1
 
       if (FL_method.eq.1) then

@@ -111,6 +111,7 @@ OBJS		:=      \
 			$(ODIR)/RTparam_hardcoded_v2.o \
 			$(ODIR)/mod_RTparam_utilities.o \
 			$(ODIR)/mod_adv_atten.o \
+			$(ODIR)/mod_common_advect.o \
 			$(ODIR)/mod_advect.o \
 			$(ODIR)/mod_wavesice.o
 
@@ -185,8 +186,9 @@ $(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
 	                        $(HDIR)/grid_info.h
 $(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o		$(HDIR)/wave_info.h \
 	                        $(HDIR)/grid_info.h
+$(ODIR)/mod_common_advect.o:	$(ODIR)/mod_gridinfo.o		$(HDIR)/grid_info.h
 $(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
-	                        $(HDIR)/grid_info.h
+				$(ODIR)/mod_common_advect.o	$(HDIR)/grid_info.h
 $(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
 				$(ODIR)/mod_advect.o            $(HDIR)/grid_info.h
 $(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o		$(ODIR)/mod_common_wim.o \
