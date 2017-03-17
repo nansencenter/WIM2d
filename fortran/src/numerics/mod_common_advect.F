@@ -1,12 +1,12 @@
       module mod_common_advect
 
-      use mod_gridinfo
+      use mod_gridinfo, only: ii,jj,idm,jdm,nbdy
 
       implicit none
 
       integer,parameter :: ms = 100 !max no of sections
 
-      real, dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
+      integer,dimension(1-nbdy:idm+nbdy,1-nbdy:jdm+nbdy) ::
      &   ip,iu,iv !wet masks for p,u,v points
 
       integer, dimension (1-nbdy:jdm+nbdy) ::
@@ -27,8 +27,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine pad_var(u_pad,u,OPT,n_bdy)
-
-      use mod_gridinfo, only: ii,jj,idm,jdm
 
       implicit none
 
@@ -75,8 +73,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine pad_var_1d(u_pad,u,OPT,n_bdy)
-
-      use mod_gridinfo, only: ii,jj,idm,jdm
 
       implicit none
 
