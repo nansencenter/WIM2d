@@ -2,11 +2,10 @@
 mkdir -p out test_out
 rm out/* test_out/*
 
+dim=2
 if [ $# -eq 1 ]
 then
    dim=$1
-else
-   dim=2
 fi
 
 if [ $dim -eq 2 ]
