@@ -2,7 +2,7 @@ CC	:=	gcc
 FC	:=	gfortran
 
 # path to numerics directory
-numerics	:=	../..
+numerics	:=	../../..
 src		:=	$(numerics)/..
 
 # modules here
