@@ -81,11 +81,7 @@ fortran/grid_setup/infile_waves.txt
 fortran/Build/*.h
 fortran/grid/*
 
-
-fortran/src/numerics/test_remap/Build/grid_info.h
-
-fortran/src/numerics/test_remap/Build/wave_info.h
-
-fortran/src/numerics/test_remap/grid/wave_info.h
-
-fortran/src/numerics/test_remap/grid/grid_info.h
+fortran/src/numerics/test_iceadv_remap/Build/*.h
+fortran/src/numerics/test_iceadv_remap/grid/*.h
+fortran/src/numerics/test_advection/test_iceadv_remap/Build/*.h
+fortran/src/numerics/test_advection/test_iceadv_remap/grid/*.h
