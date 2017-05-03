@@ -98,9 +98,13 @@ elseif strcmp(param,'thick')
    tstr     = 'thickness, m';
    clear c;
 elseif strcmp(param,'Dmax')
+   if isfield(simul_out.wim,'other_prams')
+      P  = simul_out.wim.other_prams;
+   else
+      P  = simul_out.wim;
+   end
    Z     = Nfloes_to_Dmax( simul_out.wim.ice_for_elements.Nfloes,...
-                           simul_out.wim.ice_on_grid.cice,...
-                           simul_out.wim.other_prams);
+                           simul_out.wim.ice_on_grid.cice,P);
    tstr  = '{\itD}_{max}, m';
    clear Nfloes;
 elseif strcmp(param,'Nfloes')

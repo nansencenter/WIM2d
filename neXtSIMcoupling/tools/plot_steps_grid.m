@@ -24,9 +24,9 @@ eval(['!mkdir -p ',figdir]);
 
 %%variables to plot
 twlim = [-2 0];%.25*[-1 1];%%tau_x range
-vbls  = {'Dmax' ,'Hs' ,'Tp'  ,'taux_waves','tauy_waves','cice'    ,'hice','Nfloes'};
-cmaps = {'jet'  ,'jet','jet' ,'jet'       ,'jet'       ,'rev_gris','jet' ,'jet'   };
-lims  = {[0,300],[0 6],[0 20],twlim       ,.1*twlim    ,[0 1]     ,[0 2] ,[0,250] };
+vbls  = {'Dmax' ,'Hs'      ,'Tp'  ,'taux_waves','tauy_waves','cice'    ,'hice','Nfloes'};
+cmaps = {'jet'  ,'gray2red','jet' ,'jet'       ,'jet'       ,'rev_gris','jet' ,'jet'   };
+lims  = {[0,300],[0 6]     ,[0 20],twlim       ,.1*twlim    ,[0 1]     ,[0 2] ,[0,250] };
 
 %% ==================================================
 
@@ -63,8 +63,8 @@ clear simul_in;
 jkeep    = 1:8;
 if 1
    %%shorten:
-   jkeep = 1:4;
-   %jkeep = 1:2;
+   %jkeep = 1:4;
+   jkeep = 1:2;
 end
 vbls  = vbls (jkeep);
 cmaps = cmaps(jkeep);
