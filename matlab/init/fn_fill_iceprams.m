@@ -65,6 +65,9 @@ s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
 if ~isfield(s1,'BRK_OPT');
    s1.BRK_OPT = 0;
 end
+if ~isfield(s1,'friction');
+   s1.friction = .7;
+end
 
 if s1.BRK_OPT==0|s1.BRK_OPT==1%%beam test
    %%not used if BRK_OPT==0
