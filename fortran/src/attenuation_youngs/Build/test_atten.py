@@ -1,8 +1,4 @@
 import numpy as np
-import sys
-
-sys.path.append("../../bin")
-
 import atten_young_f2py as AT
 
 iceh     = 2.0

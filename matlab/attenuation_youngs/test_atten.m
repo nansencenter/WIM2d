@@ -38,12 +38,12 @@ for w=1:nw
       disp('***********************************************');
       disp('check outputs from RTparam_outer:');
       disp(sprintf('T,h %f %f',T,iceh));
-      disp(sprintf('atten,damping %f %f' ,alp_scat,damping));
-      disp(sprintf('ki,kw,2pi/wlng_wtr,guess %f %f %f %f',kice,kwtr,kw_inf,guess));
-      disp(sprintf('|T|,argRT,s %f %f %f %f',modT,argR,argT,int_adm));
+      disp(sprintf('atten,damping %e %e' ,alp_scat,damping));
+      disp(sprintf('ki,kw,2pi/wlng_wtr,guess %e %e %e %e',kice,kwtr,kw_inf,guess));
+      disp(sprintf('|T|,argRT,s %e %e %e %f',modT,argR,argT,int_adm));
       disp('***********************************************');
       disp(' ');
    end
 
-   disp(sprintf('T (s), atten (per floe), damping (/m): %f %f %f',T,alp_scat,damping));
+   disp(sprintf('T (s), atten (per floe), damping (/m): %f %e %e',T,alp_scat,damping));
 end

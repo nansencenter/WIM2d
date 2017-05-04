@@ -67,14 +67,10 @@ $(ODIR)/%.o:	%.F
 # Link objects to make executable $(TARGET_F)
 exec: $(PROG_F) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
-	mkdir -p $(bin)
-	cp $(TARGET_F) $(bin)
 
 # Link objects to make python module $(TARGET_PY).so
 py:	$(PROG_PY) $(OBJS)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
-	mkdir -p $(bin)
-	cp $(TARGET_PY).so $(bin)
 
 all: exec py
 
@@ -94,7 +90,7 @@ clean:
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm -f $(bin)/$(TARGET_F) $(bin)/$(TARGET_PY).so $(ODIR)/* $(MDIR)/*
+	rm -f $(TARGET_F) $(TARGET_PY).so $(ODIR)/* $(MDIR)/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;
