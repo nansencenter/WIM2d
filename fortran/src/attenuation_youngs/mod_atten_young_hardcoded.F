@@ -1,6 +1,10 @@
       !!Hard-coded parts of attenuation coefficents
       !!This file is generated automatically by datfile2_f77.py
 
+      module mod_atten_young_hardcoded
+      implicit none
+      contains
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine get_Zthings(Zthings,tx,ty,Nthings,Ncx,Ncy,LOW,OPT)
       !!uses OP_chebinterp2d subroutine in RTparam_utilities.F
@@ -4010,3 +4014,4 @@
       end subroutine Amn_fxn_H5_03
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      end module mod_atten_young_hardcoded
