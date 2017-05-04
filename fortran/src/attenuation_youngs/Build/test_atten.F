@@ -1,8 +1,10 @@
       program test_atten
 
-      use mod_wim_prams
+      use mod_atten_young, only: RTparam_outer
 
       implicit none
+
+      include "common_wim.h"
 
       integer, parameter   :: nw = 25
       real, parameter      :: iceh  = 2.0
@@ -17,7 +19,6 @@
       real  :: kw_inf,wlng
      
       PI    = 4.0*atan(1.0)
-      call set_wim_prams()
       !!
       fmin  = 1/Tmax
       fmax  = 1/Tmin
@@ -29,11 +30,11 @@
          !!
          inputs(1)   = iceh
          inputs(2)   = om
-         inputs(3)   = young
-         inputs(4)   = visc_rp
+         inputs(3)   = wim_info%young
+         inputs(4)   = wim_info%drag_rp
 
          !! initial guess for ice wavenumber
-         kw_inf   = om**2/gravity
+         kw_inf   = om**2/wim_info%gravity
          wlng     = 2*PI/kw_inf
          if (w.eq.1) guess = kw_inf
 

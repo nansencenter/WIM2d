@@ -10,10 +10,6 @@ src	:=	../..
 # keep binaries here
 bin	:=	$(src)/bin
 
-# set path for compiler
-# NB relative to this directory
-VPATH 	:=	.:$(src)/init:$(src)/attenuation_youngs
-
 # directory where objects are kept
 ODIR	:=	objs
 
@@ -22,7 +18,12 @@ MDIR	:=	mods
 
 # header files for "include" statements
 # NB relative to $(ODIR)
-HDIR	:=	$(src)/header_files
+HDIR	:=	$(src)/../include
+
+# set paths for compiler
+# NB relative to this directory
+VPATH 	:=	.:$(HDIR):$(src)/attenuation_youngs
+
 
 # # optimise code
 # FCFLAGS=-O
@@ -36,7 +37,7 @@ IFLAGS=-I$(MDIR) -I$(HDIR)
 OFLAGS=-J$(MDIR)
 
 # Flags for f2py
-F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
+F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)" --include-paths $(HDIR)
 
 # fortran program to test attenuation
 PROG_F		:=	$(ODIR)/test_atten.o
@@ -45,15 +46,11 @@ TARGET_F	:=	test_atten.exec
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path
 # - enable access to attenuation coeffiicents in python
-PROG_PY		:=	$(src)/attenuation_youngs/RTparam_outer.F
-TARGET_PY	:=	RTparam_outer
+PROG_PY		:=	atten_young_f2py.F
+TARGET_PY	:=	atten_young_f2py
 
-OBJ_MAIN	:=	$(ODIR)/RTparam_outer.o
-
-OBJS		:=	\
-			$(ODIR)/mod_wim_prams.o \
-			$(ODIR)/RTparam_fast.o \
-			$(ODIR)/RTparam_hardcoded_v2.o \
+OBJS		:=	$(ODIR)/mod_atten_young.o \
+			$(ODIR)/mod_atten_young_hardcoded.o \
 			$(ODIR)/mod_RTparam_utilities.o
 
 # DEPS=print_screen_info.h \
@@ -68,7 +65,7 @@ $(ODIR)/%.o:	%.F
 	$(FC) -c -o $@ $< $(FCFLAGS) $(IFLAGS) $(OFLAGS)
 
 # Link objects to make executable $(TARGET_F)
-exe: $(PROG_F) $(OBJ_MAIN) $(OBJS)
+exec: $(PROG_F) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mkdir -p $(bin)
 	cp $(TARGET_F) $(bin)
@@ -79,26 +76,25 @@ py:	$(PROG_PY) $(OBJS)
 	mkdir -p $(bin)
 	cp $(TARGET_PY).so $(bin)
 
-all: exe py
+all: exec py
 
 # DEPENDENCIES
 #
-$(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o
-$(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
+$(ODIR)/mod_atten_young.o:		$(ODIR)/mod_atten_young_hardcoded.o	common_wim.h
+$(ODIR)/mod_atten_young_hardcoded.o:	$(ODIR)/mod_RTparam_utilities.o
 #
-$(OBJ_MAIN):		$(OBJS)
-$(PROG_F): 		$(OBJ_MAIN) $(ODIR)/mod_wim_prams.o
-$(PROG_PY): 		$(OBJS)
+$(PROG_F): 		$(ODIR)/mod_atten_young.o	common_wim.h
+$(PROG_PY): 		$(OBJS)				common_wim.h
 
 .PHONY: clean
 
 # clean: keep executable, but delete modules and objects
 clean:
-	rm $(ODIR)/* $(MDIR)/*
+	rm -f $(ODIR)/* $(MDIR)/*
 
 # vclean: delete executable, and delete modules and objects
 vclean:
-	rm $(bin)/$(TARGET_F) $(bin)/$(TARGET_PY).so $(ODIR)/* $(MDIR)/*
+	rm -f $(bin)/$(TARGET_F) $(bin)/$(TARGET_PY).so $(ODIR)/* $(MDIR)/*
 
 # -I. include headers from "." directory;
 # -L. include libraries from "." directory;

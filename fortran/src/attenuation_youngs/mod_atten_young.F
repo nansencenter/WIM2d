@@ -1,5 +1,7 @@
       module mod_atten_young
+
       implicit none
+      
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -191,6 +193,8 @@
       subroutine RTparam_inner(ac,modT,argR,argT,
      &                  tx,ty,OPT,LOW,int_adm)
       
+      use mod_atten_young_hardcoded
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!declare "input/output variables";
       real, intent(out)   :: ac,modT,argR,argT
