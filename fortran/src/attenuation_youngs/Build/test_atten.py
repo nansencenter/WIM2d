@@ -1,18 +1,13 @@
 import numpy as np
-import os
 import sys
 
-dd    = os.path.abspath("../..")
-dirs  = ["bin","misc_py"] # directories relative to "fortran"
-for n in range(0,len(dirs)):
-   dd2   = dd+"/"+dirs[n]
-   print('adding path : '+dd2)
-   sys.path.append(dd2)
+sys.path.append("../../bin")
 
-import RTparam_outer as RT
+import atten_young_f2py as AT
 
 iceh     = 2.0
-visc_rp  = 13.0
+drag_rp  = 13.0
+visc_ws  = 0.0
 young    = 2.0e9
 gravity  = 9.81
 #
@@ -38,8 +33,8 @@ for w in range(0,nw):
       print('guess='+str(guess)+'\n')
 
    ## get atten coeff
-   inputs   = np.array([iceh,om,young,visc_rp])
-   damping,kice,kwtr,int_adm,alp_nd,modT,argR,argT = RT.rtparam_outer(inputs,guess)
+   inputs   = np.array([iceh,om,young,drag_rp,visc_ws])
+   damping,kice,kwtr,int_adm,alp_nd,modT,argR,argT = AT.atten_young(inputs,guess)
 
    ## update guess for ice wavenumber
    guess = kice
