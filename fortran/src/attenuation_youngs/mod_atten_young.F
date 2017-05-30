@@ -2,20 +2,21 @@
 
       implicit none
       
+      private
+      public RTparam_outer
+
       contains
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!function [damping,kice,kwtr,int_adm,...
       !!            alp_scat,modT,argR,argT] =...
       !!               RT_param_outer(h,om,E,drag_rp,guess)
-      subroutine RTparam_outer(damping,kice,kwtr,int_adm,
-     &                  ac,modT,argR,argT,
-     &                  inputs,guess)
+      subroutine RTparam_outer(outputs,inputs,guess)
 
-      include "common_wim.h"
+      use mod_common_wim
 
-      real,intent(out)   :: damping,kice,kwtr,int_adm,
-     &                           ac,modT,argR,argT
+      type(atten_outputs),intent(out)  :: outputs
+
       real,intent(in)    :: inputs(2),guess
       real               :: h,om
       
@@ -44,7 +45,7 @@
 
       !![ki,BG2,coeff_del]   = gen_root_ice(varpi,H_nd,guess*L);
       call gen_root_ice(ki,BG2,coeff_del,coeff_D,varpi,H_nd,guess*L)
-      kice = ki/L
+      outputs%kice = ki/L
       !print*,'vHkGB_i',varpi,H_nd,kice,guess*L,BG1
          
       !!get wavenumber for water;
@@ -52,25 +53,28 @@
       Hw_nd = H_nd+zeta_nd
       !![kw,BG1] = gen_root_wtr(varpi,Hw_nd,alp_nd);
       call gen_root_wtr(kw,BG1,varpi,Hw_nd,alp_nd)
-      kwtr  = kw/L
+      outputs%kwtr  = kw/L
       !print*,'vHkGB_w',varpi,Hw_nd,kwtr,alp_nd,BG1
          
       !!get intrinsic admittance;
       !!|R|^2+int_adm*|T|^2=1
       !print*,'BG1   = ', BG1
       !print*,'BG2   = ', BG2
-      int_adm  = BG1/BG2
+      outputs%int_adm  = BG1/BG2
          
       !!get dissipative attenuation;
-      drag_rp_nd  = wim_info%drag_rp/wim_info%rhowtr/om/L !!RP drag
-      vews_nd     = h**3*rho*wim_info%visc_ws/
-     &               (6.*(1.+wim_info%poisson)*om*L**5)
-      damping_nd  = -coeff_del*drag_rp_nd -coeff_D*vews_nd
-      damping     = damping_nd/L
+      drag_rp_nd        = wim_info%drag_rp/wim_info%rhowtr/om/L !!RP drag
+      vews_nd           = h**3*rho*wim_info%visc_ws/
+     &                     (6.*(1.+wim_info%poisson)*om*L**5)
+      damping_nd        = -coeff_del*drag_rp_nd -coeff_D*vews_nd
+      outputs%damping   = damping_nd/L
       
       !!get interpolated attenuation coefficient;
-      call RTparam_fast(ac,modT,argR,argT,
-     &             alp_nd,hnd,int_adm)
+      call RTparam_fast(outputs%atten_nond
+     &                  ,outputs%modT
+     &                  ,outputs%argR
+     &                  ,outputs%argT
+     &                  ,alp_nd,hnd,outputs%int_adm)
 
       end subroutine RTparam_outer
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

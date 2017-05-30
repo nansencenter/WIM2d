@@ -7,6 +7,7 @@
 
       use mod_year_info
       use mod_common_wim
+      use mod_common_wim_arrays
 
       implicit none
 

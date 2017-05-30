@@ -2,6 +2,7 @@
 
       use mod_gridinfo
       use mod_common_wim
+      use mod_common_wim_arrays
 
       implicit none
 
@@ -130,8 +131,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine wavecons_ideal(init_cons)
-
-      !use mod_common_wim
 
       implicit none
       real,intent(in)   :: init_cons(3)

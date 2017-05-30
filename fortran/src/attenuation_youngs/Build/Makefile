@@ -22,7 +22,7 @@ HDIR	:=	$(src)/../include
 
 # set paths for compiler
 # NB relative to this directory
-VPATH 	:=	.:$(HDIR):$(src)/attenuation_youngs
+VPATH 	:=	.:$(HDIR):$(src)/attenuation_youngs:$(src)/main
 
 
 # # optimise code
@@ -49,7 +49,8 @@ TARGET_F	:=	test_atten.exec
 PROG_PY		:=	atten_young_f2py.F
 TARGET_PY	:=	atten_young_f2py
 
-OBJS		:=	$(ODIR)/mod_atten_young.o \
+OBJS		:=	$(ODIR)/mod_common_wim.o \
+   			$(ODIR)/mod_atten_young.o \
 			$(ODIR)/mod_atten_young_hardcoded.o \
 			$(ODIR)/mod_RTparam_utilities.o
 
@@ -76,11 +77,11 @@ all: exec py
 
 # DEPENDENCIES
 #
-$(ODIR)/mod_atten_young.o:		$(ODIR)/mod_atten_young_hardcoded.o	common_wim.h
+$(ODIR)/mod_atten_young.o:		$(ODIR)/mod_atten_young_hardcoded.o	$(ODIR)/mod_common_wim.o
 $(ODIR)/mod_atten_young_hardcoded.o:	$(ODIR)/mod_RTparam_utilities.o
 #
-$(PROG_F): 		$(ODIR)/mod_atten_young.o	common_wim.h
-$(PROG_PY): 		$(OBJS)				common_wim.h
+$(PROG_F): 		$(ODIR)/mod_atten_young.o	$(ODIR)/mod_common_wim.o
+$(PROG_PY): 		$(OBJS)				$(ODIR)/mod_common_wim.o
 
 .PHONY: clean
 

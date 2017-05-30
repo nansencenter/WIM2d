@@ -9,7 +9,7 @@
       subroutine advect_1freq(Sdir,Sfreq,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
-      use mod_common_wim, only: wavdir,n_wavdir
+      use mod_common_wim_arrays, only: wavdir,n_wavdir
       use mod_advect
 
       implicit none
@@ -91,8 +91,8 @@
      &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
-      use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
-     &   ,wavdir,n_wavdir
+      use mod_common_wim, only: dfloe_pack_init
+      use mod_common_wim_arrays, only: dfloe,ICE_MASK,wavdir,n_wavdir
       use mod_advect
 
       implicit none
@@ -206,8 +206,8 @@
      &   ,atten_dim,damp_dim,ag_eff,dt,ADV_DIM,ADV_OPT)
 
       use mod_gridinfo
-      use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
-     &   ,wavdir,n_wavdir
+      use mod_common_wim, only: dfloe_pack_init
+      use mod_common_wim_arrays, only: dfloe,ICE_MASK,wavdir,n_wavdir
       use mod_advect
 
       implicit none
@@ -444,8 +444,8 @@
      &                           ,atten_dim,damp_dim,ag_eff,dt)
 
       use mod_gridinfo
-      use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
-     &   ,wavdir,n_wavdir
+      use mod_common_wim, only: dfloe_pack_init
+      use mod_common_wim_arrays, only: dfloe,ICE_MASK,wavdir,n_wavdir
       use mod_advect
 
       implicit none
@@ -661,8 +661,8 @@
      &                        ,atten_dim,damp_dim,ag_eff,dt)
 
       use mod_gridinfo
-      use mod_common_wim, only: dfloe,dfloe_pack_init,ICE_MASK          &
-     &   ,wavdir,n_wavdir
+      use mod_common_wim, only: dfloe_pack_init
+      use mod_common_wim_arrays, only: dfloe,ICE_MASK,wavdir,n_wavdir
       use mod_advect
 
       implicit none

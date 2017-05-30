@@ -4,7 +4,7 @@ import atten_young_f2py as AT
 iceh     = 2.0
 drag_rp  = 13.0
 visc_ws  = 0.0
-young    = 2.0e9
+young    = 5.49e9 #2.0e9
 gravity  = 9.81
 #
 pi    = np.pi

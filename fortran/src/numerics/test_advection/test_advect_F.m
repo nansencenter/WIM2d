@@ -116,7 +116,7 @@ if 0%%test outputs from mod_waveadv_weno.F
    return;
 end
 
-if 0%%test outputs from mod_waveadv_weno.F
+if 0%%test outputs from mod_advect.F
 
    fad   = ADV_DIM-1;
    Nf    = 4+2*fad;

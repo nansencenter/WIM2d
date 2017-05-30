@@ -4,8 +4,9 @@
       module mod_wavesice
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim   !! initial ice fields, some parameters
       use mod_year_info
+      use mod_common_wim
+      use mod_common_wim_arrays
 
       implicit none
       private
@@ -60,7 +61,7 @@
       !! - need to do this each time ice is updated
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim,  only: ICE_MASK,iceh           !! initial ice fields
+      use mod_atten_young, only: RTparam_outer
 
       implicit none
 
@@ -68,7 +69,8 @@
 !     real,    intent(in) :: CFL
       !!
       real     :: PI,tmp
-      real     :: kwtr,kice,modT,int_adm,argT,argR
+      type(atten_outputs)  :: outputs
+      !real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
       integer  :: i,j,w
       real     :: adv_dir,dtheta,om,dom,guess,inputs(2)
@@ -151,12 +153,16 @@
             inputs(1)   = iceh(i,j)
             inputs(2)   = om
 
-            call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
-     &                  atten_nond(i,j,w),modT,argR,argT,               &
-     &                  inputs,guess)
+            call RTparam_outer(outputs,inputs,guess)
+!           call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
+!    &                  atten_nond(i,j,w),modT,argR,argT,               &
+!    &                  inputs,guess)
 
-            disp_ratio(i,j,w) = kice/kwtr*modT
-            wlng_ice(i,j,w)   = 2*PI/kice
+            damping(i,j,w)    = outputs%damping
+            atten_nond(i,j,w) = outputs%atten_nond
+
+            disp_ratio(i,j,w) = outputs%kice/outputs%kwtr*outputs%modT
+            wlng_ice(i,j,w)   = 2*PI/outputs%kice
 
 !           !!check attenuation coeff's, wavenumbers
 !           if ((i.eq.itest).and.(j.eq.jtest)) then
@@ -207,7 +213,6 @@
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
       use mod_interp, only: pwl_interp_2d_real
 
@@ -675,10 +680,6 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine do_wim_integrals(REF_Hs_ICE_)
 
-      ! already used at top
-!     use mod_common_wim,only: Hs,Tp,mwd,WAVE_MASK,                     &
-!    &      sdf_dir,freq_vec,wavdir
-
       implicit none
       include "wave_info.h"
 
@@ -747,10 +748,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine calc_mwd(REF_Hs_ICE_)
-
-      ! already used at top
-!     use mod_common_wim,only: mwd                                      &
-!    &      sdf_dir,freq_vec,wavdir
 
       implicit none
       include "wave_info.h"
@@ -853,7 +850,6 @@
       subroutine check_init()
 
       use mod_gridinfo
-      use mod_common_wim
       use mod_file_utils
 
       implicit none
@@ -902,7 +898,6 @@
       subroutine check_prog(OPT)
 
       use mod_gridinfo
-      use mod_common_wim
       use mod_file_utils
 
       implicit none
@@ -1124,12 +1119,14 @@
 
       subroutine do_breaking(brk_info)
 
+      use mod_atten_young, only: RTparam_outer
+
       implicit none
 
       type(break_info),intent(inout)   :: brk_info
+      type(atten_outputs)  :: outputs
       logical :: BREAK_CRIT
-      real    :: om,guess,inputs(2),lam,kice,kwtr,int_adm,              &
-     &            Tp,modT,argR,argT,pi
+      real    :: om,guess,inputs(2),lam,pi
 
       pi = 4*atan(1.)
       BREAK_CRIT   = (brk_info%conc.gt.0.)                            !ice present
@@ -1145,14 +1142,10 @@
          inputs(1)   = brk_info%thick !absolute thickness
          inputs(2)   = om
 
-         ! rest of arguments are outputs, but only need kice
-         ! so use Tp_e,lam_e as dummy variables
-         call RTparam_outer(lam,kice,kwtr,int_adm,                      &
-     &            Tp,modT,argR,argT,                                    &
-     &            inputs,guess)
+         call RTparam_outer(outputs,inputs,guess)
          ! =============================================================
 
-         lam = 2*pi/kice
+         lam = 2*pi/outputs%kice
          if (lam.lt.2*brk_info%dmax) then
             !breaking occurs
             brk_info%dmax     = max(wim_info%Dmin,lam/2.) !keep above Dmin
