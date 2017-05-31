@@ -192,10 +192,14 @@ if TEST_ROTATION:
 HYCOMregions   = {}
 HYCOMregions.update({'wim_grid_FS_8km':'gre'})
 HYCOMregions.update({'wim_grid_FS_4km':'gre'})
+HYCOMregions.update({'wim_grid_FS_2km':'gre'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_big':'beau'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_4km_big':'beau'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_small':'beau'})
-HYCOMreg = HYCOMregions[gridname]
+if gridname in HYCOMregions:
+   HYCOMreg = HYCOMregions[gridname]
+else:
+   HYCOMreg = 'Arctic'
 
 
 # ===============================================================
