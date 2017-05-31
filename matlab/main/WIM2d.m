@@ -156,9 +156,15 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if gridprams.ny==1
+   disp(['gridprams.ny==1 so using 1D advection (params_in.ADV_DIM==1)']);
+   params_in.ADV_DIM = 1;
+end
 if (params_in.ADV_DIM==2)&(gridprams.ny<4)
-   error({'incompatible values of params_in.ADV_DIM and gridprams.ny:';
+   %%give error if ny>1 (not 1D) but too small to work properly (ny<4)
+   disp({'incompatible values of params_in.ADV_DIM and gridprams.ny:';
           'increase gridprams.ny or use params_in.ADV_DIM=1'});
+   error('incompatible values of params_in.ADV_DIM and gridprams.ny');
 else
    adv_options = struct('ADV_DIM',params_in.ADV_DIM,...
                         'ADV_OPT',params_in.ADV_OPT);

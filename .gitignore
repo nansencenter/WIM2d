@@ -47,8 +47,9 @@ fortran/scripts/results/*
 #
 matlab/main/out
 matlab/main/results
-matlab/main/m_out
-matlab/main/out_io
+matlab/main/out_m
+matlab/main/out_mexadv
+matlab/main/out_io*
 matlab/main/out_2
 matlab/main/log
 matlab/main/infile_matlab.txt

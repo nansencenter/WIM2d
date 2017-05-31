@@ -48,9 +48,9 @@
 2     # ADV_DIM         : Dimension of advection (1/2)
 2     # ADV_OPT         : 0, not periodic boundary conditions; 1, periodic in x,y; 2, periodic in y only
 
-1     # DO_CHECK_FINAL  : 1/0: do/don't dump binary files for final conditions
-1     # DO_CHECK_PROG   : 1/0: do/don't dump binary files at regular time intervals
-1     # DO_CHECK_INIT   : 1/0: do/don't dump binary files for initial conditions
+0     # DO_CHECK_FINAL  : 1/0: do/don't dump binary files for final conditions
+0     # DO_CHECK_PROG   : 1/0: do/don't dump binary files at regular time intervals
+0     # DO_CHECK_INIT   : 1/0: do/don't dump binary files for initial conditions
 
 1     # STEADY          : 1 = Steady-state solution, top-up waves inside wave mask;
                         # 0 = wave packet that just travels through
@@ -86,14 +86,14 @@
 00    # start_second
 
 # diagnostic options
-0     # PLOT_INIT
-0     # PLOT_PROG
+1     # PLOT_INIT
+1     # PLOT_PROG
 1     # PLOT_FINAL
 0     # DIAG1d       : do 1-d diagnostics (eg plot profile of Hs)
 1     # DIAG1d_OPT   : options for 1-d diagnostics
 0     # SV_BIN       : save binary files regularly
 0     # SV_SPEC      : save final spectrum to mat-file
-0     # SV_FIG       : save figures that are plotted
+1     # SV_FIG       : save figures that are plotted
 1     # DO_DISP      : display output during calculations in WIM2d
 0     # DO_VIS             : display figures
 0     # SV_LOG             : save log file

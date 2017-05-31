@@ -52,7 +52,10 @@ if remove_outer
 end
 
 H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
-daspect([1,1,1]);
+if max([nx,ny])/min([nx,ny])<3;
+   %% set true aspect ratio if it won't squash figure too much
+   daspect([1,1,1]);
+end
 set(H,'EdgeColor', 'none');
 
 set(gca,'xlim',[xx(1),xx(end)],'ylim',[yy(1),yy(end)])
