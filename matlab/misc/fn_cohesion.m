@@ -40,7 +40,7 @@ function s1 = fn_cohesion(s1,INPUT_TYPE)
 %%     ref_scale: 1.000000000000000e-03
 %%         scale: 0.020014376580007
 
-alpha = (1+s1.poisson)/(1-s1.poisson);
+alpha = (1-s1.poisson)/(1+s1.poisson);
 
 switch INPUT_TYPE
 case 'strain'
