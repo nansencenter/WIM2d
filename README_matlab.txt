@@ -14,14 +14,15 @@ matlab &
 
 # ========================================================
 B. get input file & edit if you want
-- can change options like grid size (nx,ny),
+eg
+cp infiles/infile_matlab.save_matlab_figures.txt infile_matlab.txt
+
+- can also change options like grid size (nx,ny),
   number of frequencies and directions (nw,ndir),
   plotting options, save binary outputs or not
 - MEX_OPT=-1 gives a slight speedup compared to MEX_OPT=0
    (uses advection code from a mex file)
 - MEX_OPT>0 use mex interfaces to fortran code (more work to compile these)
-cp infiles/infile_matlab.save_matlab_figures.txt
-infiles/infile_matlab.txt
 # ========================================================
 
 

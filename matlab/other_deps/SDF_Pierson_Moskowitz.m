@@ -42,8 +42,8 @@ if ~exist('omega','var')
    DO_TEST  = 1;
    T        = (25:-1:1)';
    omega    = 2*pi./T;
-   return;
 end
+omega = abs(omega);
 
 f1 = alp*g^2*omega.^(-5);
 f2 = exp(-bet*(om_0./omega).^4);
