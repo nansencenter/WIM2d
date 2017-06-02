@@ -46,8 +46,10 @@ if ~exist('omega','var')
 end
 
 f1 = alp*g^2*omega.^(-5);
-f2 = exp(-bet*(om_0./omega).^4)
+f2 = exp(-bet*(om_0./omega).^4);
 S  = f1.*f2;
+
+S(omega==0) = 0;
 
 if DO_TEST
    params

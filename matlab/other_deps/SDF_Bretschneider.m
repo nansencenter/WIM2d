@@ -17,3 +17,5 @@ f1 = 5/16*Hs^2*om_m^4;
 f2 = omega.^(moment_no-5);
 f3 = exp(-1.25*(T./Tm).^4);
 S  = f1*f2.*f3;
+
+S(omega==0) = 0;
