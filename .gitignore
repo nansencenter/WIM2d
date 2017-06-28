@@ -86,3 +86,5 @@ fortran/src/numerics/test_advection/test_waveadv_weno/Build/*.h
 fortran/src/numerics/test_advection/test_waveadv_weno/grid/*.h
 fortran/src/numerics/test_advection/test_iceadv_remap/Build/*.h
 fortran/src/numerics/test_advection/test_iceadv_remap/grid/*.h
+
+neXtSIMcoupling/grid_setup/singular_points_WIM-latlon.txt

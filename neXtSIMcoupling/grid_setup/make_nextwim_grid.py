@@ -50,6 +50,68 @@ def get_depth_mask(plon,plat,**kwargs):
 
 
 # =======================================================================
+def get_connected(landmask,TEST_CONN=True):
+   from skimage import measure as msr
+   from skimage import morphology as morph
+   
+   # find connected regions
+   # - land (landmask==1) is the background
+   # - connectivity=1, diagonal connectivity doesn't count
+   labels,Nlabels = msr.label(landmask,background=1,return_num=True,connectivity=1)
+
+   # ==================================================
+   # find largest connected region
+   maxlen   = 0
+   maxlab   = 0
+   for n in range(1,Nlabels):
+      N  = len(labels[labels==n])
+      # print(n,N)
+      if N>maxlen:
+         maxlen   = N
+         maxlab   = n
+         print(n,N)
+
+   Landmask = 1+0*landmask
+   Landmask[labels==maxlab]   = 0.
+   # ==================================================
+
+
+   # ==================================================
+   # open to avoid "singular points"
+   selem = np.ones((3,3))
+   if 1:
+      selem=None # default (corners=0)
+   Landmask = morph.binary_opening(Landmask.astype('int'),selem=selem).astype(int)
+
+   if 0:
+      # plot original landmask
+      fig1  = plt.figure()
+      ax1   = fig1.add_subplot(1,1,1)
+      I1    = ax1.imshow(landmask.transpose(),origin='lower')
+      fig1.colorbar(I1)
+      fig1.show()
+
+   if TEST_CONN:
+      # plot processed landmask
+      fig3  = plt.figure()
+      ax3   = fig3.add_subplot(1,1,1)
+      I3    = ax3.imshow(Landmask.transpose(),origin='lower')
+      fig3.colorbar(I3)
+      plt.show(fig3)
+
+   if 0:
+      # plot all labels found
+      fig2  = plt.figure()
+      ax2   = fig2.add_subplot(1,1,1)
+      I2 = ax2.imshow(labels,cmap='spectral')
+      fig2.colorbar(I2)
+      plt.show(fig2)
+
+   return Landmask
+# =======================================================================
+
+
+# =======================================================================
 # command line inputs
 opts,args      = getopt(sys.argv[1:],"",["TEST_PLOT=","grid_info_file="])
 grid_info_file = None
@@ -191,6 +253,7 @@ if TEST_ROTATION:
 #for test plots
 HYCOMregions   = {}
 HYCOMregions.update({'wim_grid_FS_8km':'gre'})
+HYCOMregions.update({'wim_grid_FS_5km':'gre'})
 HYCOMregions.update({'wim_grid_FS_4km':'gre'})
 HYCOMregions.update({'wim_grid_FS_2km':'gre'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_big':'beau'})
@@ -404,7 +467,10 @@ if USE_BATHY:
 else:
    landmask = np.zeros((nx,ny))
 
-if 1:
+# make sure 'lakes' (disconnected bodies of water) are removed
+landmask = get_connected(landmask,TEST_CONN=True)
+
+if 0:
    # add closed boundaries
    landmask[0,:]  = 1.
    # landmask[:,0]  = 1.
@@ -495,13 +561,21 @@ if TEST_PLOT>0:
             # finish with coast etc
             Fplt.finish_map(bmap,ax=po.ax)
 
-         # depth=0 contour
+         # depth==0 contour
          bmap.contour(plon,plat,depth,colors=cols,linewidth=4,latlon=True,ax=po.ax,levels=[0.])
+
+         if vbl=='landmask':
+            # landmask==0 contour
+            bmap.contour(plon,plat,landmask,colors=['k'],linewidth=4,latlon=True,ax=po.ax,levels=[0.])
          
          # save fig
          figname  = outdir+"/test_"+gridname+"_"+vbl+".png"
          print('\nSaving '+figname+'\n')
          po.fig.savefig(figname)
+
+         # if vbl=='landmask':
+         #    plt.show(po.fig)
+
          po.ax.cla()
 
    plt.close(po.fig)
