@@ -8,10 +8,26 @@ clear;
 ADV_OPT  = 1; %waves periodic in i,j
 %ADV_OPT  = 2; %waves periodic in j (y) only
 adv_options.ADV_OPT  = ADV_OPT;
+MEX   = 1;
+OPT   = 3;
+CFL   = .7;
 
 %%testing:
-ii = 150;
-jj = 10;
+if 0
+   OPT   = 1;
+   %OPT   = 2;
+   ii = 150;
+   jj = 10;
+   iland = 80:90;
+   %jland = 1:jj;
+   jland = 3:6;
+else
+   OPT   = 3;
+   ii    = 70;
+   jj    = 70;
+   iland = 40:50;
+   jland = iland;
+end
 dx = 4e3;%m
 dy = 4e3;%m
 %%
@@ -32,15 +48,15 @@ s1.scvx     = 0*X+dx;
 s1.scp2     = s1.scuy.*s1.scvx;
 s1.scp2i    = 1./s1.scp2;
 s1.LANDMASK = 0*X;
+if 0
+   s1.LANDMASK(iland,jland)   = 1;
+end
 s1.dx       = dx;
 s1.dy       = dy;
 s1.X        = X;
 s1.Y        = Y;
 grid_prams  = s1;
 clear s1;
-
-OPT   = 1;
-CFL   = .7;
 
 if OPT==1
    uc      = 30;%const speed m/s
@@ -79,22 +95,22 @@ elseif OPT==3
    jwave    = find((R<Rm)&(X>0)&(abs(Y)>Ym));%%rhs of pacman
    h(jwave) = 1;
    %%
-   angrot   = (1/20)*pi/180;%%radian/s
+   angrot   = -(1/20)*pi/180;%%radian/s
    u        = 0*X;
    v        = 0*X;
    juv      = find(R<(Rm*1.45));
    u(juv)   = -Y(juv).*angrot;
    v(juv)   =  X(juv).*angrot;
    %%
-   %%
-   max_speed   = Rm*angrot
+   max_speed   = abs(Rm*angrot)
    dt          = CFL*dx/max_speed
-   nt          = round(2*pi/(angrot*dt))
+   nt          = round(2*pi/(abs(angrot)*dt))
    dtheta      = dt*angrot;
 end
 
 if 1%%plot u,v,h
    figure(2);
+   fn_fullscreen;
    subplot(2,2,1);
    ax = pcolor(X/1e3,Y/1e3,u);
    set(ax, 'EdgeColor', 'none');
@@ -165,7 +181,46 @@ end
 for n = 1:nt
    [n,nt]
    %h     = waveadv_weno(h,u,v,scuy,scvx,scp2i,scp2,dt,LANDMASK);
-   h     = waveadv_weno(h,u,v,grid_prams,dt,adv_options);
+   if MEX==0
+      h  = waveadv_weno(h,u,v,grid_prams,dt,adv_options);
+   else
+      tst   = h;
+      %[h,test_array]  =...
+      h  =...
+         waveadv_weno_mex(grid_prams.nx,grid_prams.ny,dt,ADV_OPT, h, u, v,...
+            grid_prams.LANDMASK, grid_prams.scp2, grid_prams.scp2i, grid_prams.scuy, grid_prams.scvx);
+      if 0
+         tst   = h;%advected h
+         figure;
+         subplot(2,1,1);
+         ax = pcolor(tst.');
+         set(ax, 'EdgeColor', 'none');
+         colorbar;
+         %%
+         {tst,test_array}
+         tst_rng1 = [min(tst(:)),max(tst(:))]
+         tst_rng2 = [min(test_array(:)),max(test_array(:))]
+         subplot(2,1,2);
+         ax = pcolor(test_array.');
+         set(ax, 'EdgeColor', 'none');
+         colorbar;
+         return;
+      elseif 0
+         h1 = waveadv_weno(h,u,v,grid_prams,dt,adv_options);
+         %[h2,test_array]   =...
+         h2 = ...
+            waveadv_weno_mex(grid_prams.nx,grid_prams.ny,dt,ADV_OPT, h, u, v,...
+               grid_prams.LANDMASK, grid_prams.scp2, grid_prams.scp2i, grid_prams.scuy, grid_prams.scvx);
+         tst      = h2-h1;
+         tst_rng  = [min(tst(:)),max(tst(:))]
+         %%
+         figure;
+         ax = pcolor(tst.');
+         set(ax, 'EdgeColor', 'none');
+         colorbar;
+         return;
+      end
+   end
    hmax  = max(h(:))
    %%
    if 0

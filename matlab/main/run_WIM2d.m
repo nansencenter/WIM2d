@@ -65,6 +65,8 @@ if ~isstr(params.outdir)
    if params.outdir==0
       if params.MEX_OPT==0
          params.outdir  = 'out_m';
+      elseif params.MEX_OPT==-1
+         params.outdir  = 'out_mexadv';
       else
          params.outdir  = ['out_io_',num2str(params.MEX_OPT)];
       end

@@ -101,8 +101,9 @@ mf       = open(mppfile)
 lines    = mf.readlines()
 mf.close()
 
-USE_LL      = 1
-TEST_PROJ   = 0 # test projection against mapxy and exit
+USE_LL         = 1
+TEST_PROJ      = 0 # test projection against mapxy and exit
+TEST_ROTATION  = 0 # test rotation of mwd inside nextsim
 
 # shape of earth
 ecc   = float(lines[-1].split()[0])
@@ -136,6 +137,54 @@ if TEST_PROJ:
       ss       = "%f   %f   %f   %f\n" %(xi/1.e3,y/1.e3,lon,lat)
       print(ss)
    sys.exit()
+
+if TEST_ROTATION:
+   tlon  = 344.606994628906
+   tlat  = 69.3150024414062
+   mwd   = 50.1000007465482
+   
+   # shape of earth
+   if 0:
+      # sphere
+      R  = 6371.23e3
+      A  = R
+      B  = R
+   else:
+      # nextsim ellipsoid
+      A  = a
+      B  = b
+
+   disp_factor = -1.#wave-from
+   delta_r     = 10.#small distance (m)
+   d2r         = np.pi/180.
+   r2d         = 180./np.pi
+   tx,ty       = mapx(tlon,tlat)
+   lon_factor  = A*np.cos(d2r*tlat)
+   lat_factor  = np.hypot(lon_factor,B*np.sin(d2r*tlat)) #R for sphere
+   # print(R,lat_factor)
+
+   dx1   = delta_r*disp_factor*np.sin(d2r*mwd)
+   dy1   = delta_r*disp_factor*np.cos(d2r*mwd)
+   dlon  = r2d*(dx1/lon_factor)
+   dlat  = r2d*(dy1/lat_factor)
+   tlon2 = tlon+dlon
+   tlat2 = tlat+dlat
+
+   tx2,ty2  = mapx(tlon2,tlat2)
+   dx2      = tx2-tx
+   dy2      = ty2-ty
+   delta_r2 = np.hypot(dx2,dy2)
+   uwave    = dx2/delta_r2
+   vwave    = dy2/delta_r2
+   print(tx,ty)
+   print(dx1,dy1)
+   print(dlon,dlat,dx2,dy2)
+   print(uwave,vwave)
+   sys.exit()
+
+
+
+
 # ===============================================================
 
 
@@ -143,10 +192,14 @@ if TEST_PROJ:
 HYCOMregions   = {}
 HYCOMregions.update({'wim_grid_FS_8km':'gre'})
 HYCOMregions.update({'wim_grid_FS_4km':'gre'})
+HYCOMregions.update({'wim_grid_FS_2km':'gre'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_big':'beau'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_4km_big':'beau'})
 HYCOMregions.update({'wim_grid_full_ONR_Oct2015_2km_small':'beau'})
-HYCOMreg = HYCOMregions[gridname]
+if gridname in HYCOMregions:
+   HYCOMreg = HYCOMregions[gridname]
+else:
+   HYCOMreg = 'Arctic'
 
 
 # ===============================================================

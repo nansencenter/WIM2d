@@ -2,11 +2,10 @@
 mkdir -p out test_out
 rm out/* test_out/*
 
+dim=2
 if [ $# -eq 1 ]
 then
    dim=$1
-else
-   dim=2
 fi
 
 if [ $dim -eq 2 ]
@@ -23,7 +22,7 @@ fi
 echo " "
 echo "**********************************************************"
 echo "Testing options:"
-echo "1. run test_advect_F.m in matlab"
-echo "2. run test_advect_F.py in python"
+echo "1. run ../test_advect_F.m in matlab from this directory"
+echo "2. run ../test_advect_F.py in python from this directory"
 echo "**********************************************************"
 echo " "

@@ -9,9 +9,49 @@ clear;
 fmt   = 'float32';%%single precision
 %fmt   = 'float64';%%single precision
 
-%TODO read in from infile.txt
-ADV_DIM  = 1;
-CFL      = .4;
+w2d = getenv('WIM2D_PATH');
+addpath([w2d,'/fortran/matlab_funs']);
+gridprams   = fn_get_grid('grid');
+
+x0 = min(gridprams.X(:));
+y0 = min(gridprams.Y(:));
+xm = mean(gridprams.X(:));
+ym = mean(gridprams.Y(:));
+ii = gridprams.nx;
+jj = gridprams.ny;
+xx = gridprams.X(:,1);
+yy = gridprams.Y(1,:);
+
+if gridprams.ny==1
+    ADV_DIM  = 1;
+else
+    ADV_DIM  = 2;
+end
+
+%% ==================================================
+% read infile.txt to get some parameters to help with testing
+fid = fopen('infile.txt');
+lin   = strtrim(fgets(fid));
+%%
+lin   = strtrim(fgets(fid));
+lin2  = strsplit(lin);
+OPT   = str2num(lin2{1});
+%%
+lin     = strtrim(fgets(fid));
+lin2    = strsplit(lin);
+ADV_OPT = str2num(lin2{1});
+%%
+lin     = strtrim(fgets(fid));
+lin     = strtrim(fgets(fid));
+lin     = strtrim(fgets(fid));
+lin2    = strsplit(lin);
+CFL     = str2num(lin2{1});
+%%
+lin     = strtrim(fgets(fid));
+lin2    = strsplit(lin);
+adv_dir = str2num(lin2{1});
+fclose(fid);
+%% ==================================================
 
 if 1
    %% no attenuation
@@ -21,64 +61,39 @@ else
    alp   = 4e-4
 end
 
-nbdy  = 3;
-ii    = 150;
-jj    = 20;
-dx    = 4e3;%m
-dy    = 4e3;%m
-%%
-x0 = 0;
-y0 = 0;
-%%
-xx = x0+dx*(1:ii)';
-yy = y0+dy*(1:jj)';
-xm = .5*(max(xx)-x0);
-ym = .5*(max(yy)-y0);
-%
-[Y,X] = meshgrid(yy,xx);
-R     = sqrt(X.^2+Y.^2);
-Theta = atan2(Y,X);
-
-scuy     = 0*X+dy;
-scvx     = 0*X+dx;
-scp2     = scuy.*scvx;
-scp2i    = 1./scp2;
-LANDMASK = 0*X;
-
-OPT   = 1;
 
 if OPT==1
    uc    = 30;%const speed m/s
    xc    = x0+5*xm/3;
-   %theta = 180;%deg straight across
-   theta = 135;%deg
-   u     = 0*X+uc*cos(pi/180*theta);
-   v     = 0*X+uc*sin(pi/180*theta);
+   theta = adv_dir;
+   u     = 0*gridprams.X+uc*cos(pi/180*theta);
+   v     = 0*gridprams.X+uc*sin(pi/180*theta);
    %%
-   dt = CFL*dx/uc;
+   dt = CFL*gridprams.dx/uc;
    nt = 2*xm/(uc*dt);
 elseif OPT==2
    uc = 30;%const speed m/s
    xc = x0+5*xm/3;
-   u  = -uc*X/xm;
+   u  = -uc*gridprams.X/xm;
    v  = 0*X;
    %%
-   dt = CFL*dx/uc;
+   dt = CFL*gridprams.dx/uc;
    nt = 2*xm/(uc*dt);
 elseif OPT==3
-   Rm    = xm/3;
-   Ym    = ym/12;
+   Rm   = xm/3;
+   Ym   = ym/12;
+   R    = hypot(gridprams.X-xm,gridprams.Y-ym);
    %%
    angrot   = (1/20)*pi/180;%%radian/s
-   u        = 0*X;
-   v        = 0*X;
+   u        = 0*gridprams.X;
+   v        = 0*gridprams.X;
    juv      = find(R<(Rm*1.45));
    u(juv)   = -Y(juv).*angrot;
    v(juv)   =  X(juv).*angrot;
    %%
    %%
    max_speed   = Rm*angrot
-   dt          = CFL*dx/max_speed
+   dt          = CFL*gridprams.dx/max_speed
    nt          = round(2*pi/(angrot*dt))
    dtheta      = dt*angrot;
 end
@@ -101,7 +116,7 @@ if 0%%test outputs from mod_waveadv_weno.F
    return;
 end
 
-if 0%%test outputs from mod_waveadv_weno.F
+if 0%%test outputs from mod_advect.F
 
    fad   = ADV_DIM-1;
    Nf    = 4+2*fad;
@@ -250,7 +265,9 @@ step  = 5;
 for n = 1:step:nt
    %if shot==10 %%good for CFL=.8
    %if shot==20 %%good for CFL=.4
-   if shot==30 %%good for CFL=.4
+   %if shot==30 %%good for CFL=.4
+   if 0
+      !mkdir -p figs
       saveas(gcf,'figs/test_fig.png')
       GEN_pause;
    end

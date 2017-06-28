@@ -1,4 +1,4 @@
-04  # infile version
+06  # infile version
 
 # int_prams - all fortran format '(i2.2)'
 00  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
@@ -15,14 +15,15 @@
 0.549E+10   # Young's modulus (Pa)                       - fortran format '(e10.3)'
 13.00       # Robinson-Palmer drag parameter (Pa/(m/s))  - fortran format '(f5.2)'
 00.00       # Wang-Shen viscosity parameter (m^2/s)      - fortran format '(f5.2)'
-0.11E+7     # cohesion (Pa)                              - fortran format '(e10.3)'
+0.6396E+6   # cohesion (Pa)                              - fortran format '(e10.3)'
 0.70        # friction coefficient                       - fortran format '(f4.2)'
 0.70        # CFL                                        - fortran format '(f4.2)'
 
 # other integer parameters - all fortran format '(i2.2)'
-01 # FSD_OPT
+01 # FSD_OPT         : 0 = RG method (Dumont et al, 2011); 1 = smoothed RG
 00 # REF_Hs_ICE      : 1 = in ice, give Hs for displacement of the ice;
 00 # USE_ICE_VEL     : 0 = approx ice group vel by water group vel;
+00 # TAKE_MAX_WAVES  : 1 = use max var_strain (in time) to calc Dmax on mesh
 
 # initial conditions
 3.0   # Hs_init         : initial Hs (constant over wave mask unless waves are read in)
@@ -31,6 +32,13 @@
 0.7   # conc_init       : initial constant value of concentration (used only if no conc field read in)
 1.0   # h_init          : initial constant value of thickness     (used only if no thickness field read in)
 300.0 # Dmax_init       : initial constant value of Dmax          (used only if no Dmax field read in)
+
+# FSD params
+20.0  # Dmin         : min Dmax
+2.0   # xi           : no of pieces to break into = xi^2
+0.9   # fragility    : breaking probability
+200.0 # Dthresh      : change to uniform above this value of Dmax
+0.05  # cice_min     : min value of conc for atten to happen
 
 21600.00    # duration of simulation (s)                 - fortran format '(f9.2)'
 

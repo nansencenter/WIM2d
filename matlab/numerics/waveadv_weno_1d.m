@@ -32,7 +32,6 @@ function h  = waveadv_weno_1d(h,u,grid_prams,dt,adv_options)
 %%                    nx: 49
 %%                    ny: 1 (NOT USED)
 %%                  scuy: [49x1 double]   - mesh size at u points in y direction
-%%                  scvx: [49x1 double]   - mesh size at v points in x direction (NOT USED)
 %%                  scp2: [49x1 double]   - grid box area at p points
 %%                 scp2i: [49x1 double]   - inverse of scp2
 %%              LANDMASK: [49x1 double]   - 1 on land, 0 on water
@@ -51,7 +50,6 @@ end
 
 ii       = grid_prams.nx;
 scuy     = grid_prams.scuy(:,1);
-scvx     = grid_prams.scvx(:,1);
 scp2i    = grid_prams.scp2i(:,1);
 scp2     = grid_prams.scp2(:,1);
 LANDMASK = grid_prams.LANDMASK(:,1);
@@ -72,10 +70,12 @@ TEST_PLOT   = 0;
 %%-do this beforehand in case want to parallelise??
 
 %%make all these periodic in i,j (x,y)
-u     = pad_var_1d(u    ,1,nbdy);
-scuy  = pad_var_1d(scuy ,1,nbdy);%dy: only needed for 1/dx=scp2/scuy
-scp2  = pad_var_1d(scp2 ,1,nbdy);
-scp2i = pad_var_1d(scp2i,1,nbdy);
+advopt_u    = 1;%periodic in x
+advopt_grid = 1;%periodic in x
+u           = pad_var_1d(u    ,advopt_u   ,nbdy);
+scuy        = pad_var_1d(scuy ,advopt_grid,nbdy);%dy: only needed for 1/dx=scp2/scuy
+scp2        = pad_var_1d(scp2 ,advopt_grid,nbdy);
+scp2i       = pad_var_1d(scp2i,advopt_grid,nbdy);
 %%
 CFL   = abs(u.*(scuy./scp2)*dt);
 if max(CFL)>1
@@ -90,7 +90,7 @@ h     = pad_var_1d(h,ADV_OPT,nbdy);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % --- Prediction step
-sao      = weno3pd_v2_1d(h,u,scuy,scp2i,scp2,dt,nbdy);
+sao   = weno3pd_v2_1d(h,u,scuy,scp2i,scp2,dt,nbdy);
 
 hp = 0*h;
 if nbdy>=4

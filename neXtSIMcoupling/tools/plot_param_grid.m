@@ -1,4 +1,4 @@
-function plot_param_grid(param,simul_outfile,varargin)
+function figname = plot_param_grid(param,simul_outfile,varargin)
 %% CALL: plot_param_grid(param,simul_outfile,domain,colormap_name,manual_axis_range,
 %%          box_bound,figure_format,visible,textstring,remove_outer)
 
@@ -20,16 +20,18 @@ function plot_param_grid(param,simul_outfile,varargin)
 %   Created 2014-07-01 by Philipp 
 
 % default values
+figname  = '';
 %domain   = 'bigarctic'; 
 domain   = ''; 
-colormap_name='jet'; 
+colormap_name='jet';
 manual_axis_range = []; 
 figure_format=''; % with '' the plot is not saved 
 box_bound=[];
 date_flag=1; %Set to 1 to plot the date, 0 to disable Phil
 plot_coastline  =   1; %0: A coarse Arctic mesh is plotted which is loaded from artic_coasts_light.mat
                        %1: The actual domain boundaries are plotted, black for closed and white for open
-visible      = 1;
+visible     = 1;
+textstring  = '';
 box on;
 
 remove_outer   = 0;
@@ -66,14 +68,15 @@ Y  = simul_out.wim.gridprams.Y(1,:)/1.e3;%km
 % for param == 'speed' we plot the speed in km/day
 tstr  = param;
 if strcmp(param,'taux_waves')
-   Z  = simul_out.wim.waves_for_nodes.tau_x;
-   tstr  = '{\it\tau_x}, Pa';
+   Z  = log10(simul_out.wim.waves_for_nodes.tau_x);
+   tstr  = 'log_{10}({\it\tau_x}), Pa';
 elseif strcmp(param,'tauy_waves')
-   Z  = simul_out.wim.waves_for_nodes.tau_y;
-   tstr  = '{\it\tau_y}, Pa';
+   Z     = log10(simul_out.wim.waves_for_nodes.tau_y);
+   tstr  = 'log_{10}({\it\tau_y}), Pa';
 elseif strcmp(param,'Hs')
    Z     = simul_out.wim.wave_fields.Hs;
    tstr  = '{\itH}_{s}, m';
+   if nVarargs < 2, colormap_name = 'gray2red'; end
 elseif strcmp(param,'Tp')
    Z     = simul_out.wim.wave_fields.Tp;
    tstr  = '{\itT}_{p}, s';
@@ -83,6 +86,7 @@ elseif strcmp(param,'mwd')
 elseif strcmp(param,'cice')|strcmp(param,'c')
    Z     = simul_out.wim.ice_on_grid.cice;
    tstr  = 'concentration';
+   if nVarargs < 2, colormap_name = 'rev_gris'; end
 elseif strcmp(param,'hice')|strcmp(param,'h')
    Z     = simul_out.wim.ice_on_grid.hice;
    tstr  = 'thickness, m';
@@ -94,9 +98,13 @@ elseif strcmp(param,'thick')
    tstr     = 'thickness, m';
    clear c;
 elseif strcmp(param,'Dmax')
+   if isfield(simul_out.wim,'other_prams')
+      P  = simul_out.wim.other_prams;
+   else
+      P  = simul_out.wim;
+   end
    Z     = Nfloes_to_Dmax( simul_out.wim.ice_for_elements.Nfloes,...
-                           simul_out.wim.ice_on_grid.cice,...
-                           simul_out.wim.other_prams);
+                           simul_out.wim.ice_on_grid.cice,P);
    tstr  = '{\itD}_{max}, m';
    clear Nfloes;
 elseif strcmp(param,'Nfloes')
@@ -104,13 +112,16 @@ elseif strcmp(param,'Nfloes')
    tstr  = '{\itN}_{floes}, km^{-2}';
 end
 
-if 0
+%%make sure things are 0 on land
+Z  = Z.*(1-simul_out.wim.gridprams.LANDMASK);
+
+if 1
    labs  = {'\itx, \rmkm','\ity, \rmkm',tstr};
 else
    labs  = {'\itx, \rmkm','\ity, \rmkm',[]};
 end
 P  = fn_pcolor(X,Y,Z,labs,manual_axis_range,remove_outer);
-%colormap(colormap_name);
+colormap(colormap_name);
 
 
 

@@ -7,6 +7,7 @@
 
       use mod_year_info
       use mod_common_wim
+      use mod_common_wim_arrays
 
       implicit none
 
@@ -14,18 +15,9 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! variables common to subroutines here
-      integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
-      integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
-      integer  :: BRK_OPT  !breaking criterion to use
-                           ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb
-      integer  :: DO_ATTEN !can turn off attenuation to test advection
-      !integer  :: FSD_OPT  ! which FSD parameterisation to use (0,1)
-                           ! 0: RG (Dumont et al, 2011);1: smooth FSD
-      integer  :: FSD_OPT=1 !TODO make this an input
-      integer  :: YOUNG_OPT=1
-      integer,parameter :: n_param_vec   = 30
+      integer,parameter :: n_param_vec   = 36
 
-      real     :: x_ext,y_ext,u_ref,duration,CFL
+      real     :: x_ext,y_ext,u_ref,duration!,CFL
       integer  :: nt
       integer  :: dumpfreq = 10!frequency of dumping (every 10 time steps dump binary file)
 
@@ -136,27 +128,12 @@
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!initialisation of grid, ice con's
-         call set_wim_prams(BRK_OPT) ! - ice properties like breaking strain
+         call set_wim_prams() ! - ice properties like breaking strain
       else
-         SCATMOD     = 0
-         ADV_DIM     = 2
-         ADV_OPT     = 2
-            !!0, not periodic; 1, periodic in both x,y; 2, periodic in y only;
-         BRK_OPT     = 1
-         STEADY      = 1
-         DO_ATTEN    = 1
-
-         DO_CHECK_PROG  = 1
-         DO_CHECK_INIT  = 1
-         DO_CHECK_FINAL = 1
-
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         !!initialisation of grid, ice con's
-         call set_wim_prams(BRK_OPT,YOUNG_OPT) ! - ice properties like Young's modulus
-
+         stop(infile//' not present')
       end if
 
-      if ((ADV_DIM.eq.2).and.(jj.eq.1)) then
+      if ((ADV_DIM.eq.2).and.(jj.le.nbdy)) then
          print*,'Invalid value of ADV_DIM (2) for jj = 1'
          print*,'Stopping'
          print*,''
@@ -183,7 +160,7 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN,CFL)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if (DO_CHECK_INIT.eq.1) then
@@ -291,7 +268,7 @@
       integer,parameter :: nw    = n_wave_freq
       integer           :: w,wth
 
-      real,parameter    :: min_conc = 0.05
+      !real,parameter    :: min_conc = 0.05
 
       !real  :: Tmean,Tvar,Tstdev
 
@@ -347,7 +324,7 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(BRK_OPT)   ! - ice properties like Young's modulus
+      call set_wim_prams()   ! - ice properties like breaking strain
       call get_grid_file(indir)     ! - grid: X,Y,LAND_MASK
 
       !!ice conditions from inputs
@@ -355,7 +332,7 @@
       iceh     = real(in_arrays(:,:,2))
       dfloe    = real(in_arrays(:,:,3))
       ICE_MASK = 0.0
-      where (icec.gt.min_conc)
+      where (icec.gt.wim_info%cice_min)
          ICE_MASK = 1.0
       end where
 
@@ -404,7 +381,8 @@
 
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN,CFL)
+      !call wim_init(STEADY,DO_ATTEN,CFL)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       if ((DO_CHECK_INIT.eq.1).or.
@@ -515,13 +493,12 @@
       real*8,intent(inout),optional :: mesh_e(nmesh_e,nmesh_vars)
       real :: mesh_e_dummy(nmesh_e,nmesh_vars)
 
-      logical  :: INTERP_MESH
       real     :: PI
 
       logical,parameter :: SET_WAVES   = .false.
       integer           :: w,wth
 
-      real,parameter    :: min_conc = 0.05
+      !real,parameter    :: min_conc = 0.05
 
       real  :: Tmean,Tvar,Tstdev
 
@@ -535,7 +512,7 @@
       !!using mesh?
       INTERP_MESH = .false.
       if (present(mesh_e)) then
-         INTERP_MESH = .true.
+         INTERP_MESH = maxval(mesh_e).gt.0.
       end if
 
       PI = 4.0*atan(1.0)
@@ -583,13 +560,13 @@
       !print*,freq_vec
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
-      call set_wim_prams(BRK_OPT) ! - ice properties like breaking strain
+      call set_wim_prams() ! - ice properties like breaking strain
       call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
 
       !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
       !! > icec,iceh,dfloe
       ICE_MASK = 0.0
-      where (icec.gt.min_conc)
+      where (icec.gt.wim_info%cice_min)
          ICE_MASK = 1.0
       end where
 
@@ -606,7 +583,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !! initialise WIM (mod_wavesice)
       !! set the attenuation coefficients;
-      call wim_init(STEADY,DO_ATTEN,CFL)
+      call wim_init()
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -692,14 +669,15 @@
       integer,intent(in)            :: nmesh_e
       real,intent(inout),optional   :: mesh_e(nmesh_e,nmesh_vars)
       integer  :: nMIZ,ndays_fwd
-      integer,parameter                   :: n_wim_step_prams  = 7
-      integer,dimension(n_wim_step_prams) :: wim_step_prams
+      !integer,parameter                   :: n_wim_step_prams  = 7
+      !integer,dimension(n_wim_step_prams) :: wim_step_prams
 
       !!TODO remove from wim2d_run_io between **
       real,dimension(idm,jdm) :: MIZ_MASK,tmp1
 
-      logical :: critter,WANT_DIAG
+      logical :: WANT_DIAG,TMP_INTERP
       integer :: n
+      integer :: alloc_stat
 
       !! MAIN INTEGRATION
       !! - Common to WIM2d_run & WIM2d_run_io subroutines
@@ -719,12 +697,42 @@
      &   //model_year_info%cminute
      &   //model_year_info%csecond//'Z.txt'
 
+
+      !! INTERP_MESH is false by default
+      !! - changed in routine that calls run_WIM2d_common
+      !! if mesh is present and there is ice
+#if 0
+      if (TAKE_MAX_WAVES) then
+         NEED_TAKE_MAX_WAVES  = INTERP_MESH
+         if (INTERP_MESH) then
+
+            allocate(mom0_max(ii,jj),stat=alloc_stat)
+            if (alloc_stat.gt.0)
+     &         stop('allocation of mom0_max failed')
+
+            allocate(mom2_max(ii,jj),stat=alloc_stat)
+            if (alloc_stat.gt.0)
+     &         stop('allocation of mom2_max failed')
+
+            allocate(var_strain_max(ii,jj),stat=alloc_stat)
+            if (alloc_stat.gt.0)
+     &         stop('allocation of var_strain_max failed')
+
+            mom0_max       = 0.
+            mom2_max       = 0.
+            var_strain_max = 0.
+         end if
+      end if
+#else
+      mom0_max       = 0.
+      mom2_max       = 0.
+      var_strain_max = 0.
+#endif
+
+
       do n=1,nt
 
-
-         critter  = (DO_CHECK_PROG.eq.1).and.(mod(n-1,dumpfreq).eq.0)
-
-         if (critter) then
+         if ((DO_CHECK_PROG.eq.1).and.(mod(n-1,dumpfreq).eq.0)) then
             !!dump fields to binary
             call check_prog(0)
          end if
@@ -733,13 +741,29 @@
          DUMP_DIAG   = (WANT_DIAG).and.(mod(n-1,dumpfreq).eq.0)
 
          print*,'n/nt',n,nt
-         wim_step_prams = (/SCATMOD,ADV_DIM,ADV_OPT                     &
-     &                     ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT/)
-         if (.not.present(mesh_e)) then
-            call wim_step(wim_step_prams,nmesh_e)
-         else
-            call wim_step(wim_step_prams,nmesh_e,mesh_e)
+
+
+         !! =============================================================
+         !! call time step routine
+         !! - type of call depends on INTERP_MESH
+         TMP_INTERP  = INTERP_MESH
+
+         if (NEED_TAKE_MAX_WAVES) then
+            !! only do interpolation on last time step
+            !! - global variable INTERP_MESH can change from true to
+            !! false here
+            INTERP_MESH = INTERP_MESH.and.(n.eq.nt)
          end if
+
+         if (INTERP_MESH) then
+            call wim_step(nmesh_e,mesh_e)
+         else
+            call wim_step(1)
+         end if
+
+         INTERP_MESH = TMP_INTERP !set it to old value again
+         !! =============================================================
+
 
          if (.true.) then
             taux_max = maxval(tau_x)
@@ -762,6 +786,16 @@
      &            ,model_day,model_seconds)
 
       end do!! n - finish time stepping
+
+
+#if 0
+      !! deallocate mom0_max,mom2_max,var_strain_max
+      !! (if necessary)
+      if (allocated(mom0_max))         deallocate(mom0_max) 
+      if (allocated(mom2_max))         deallocate(mom2_max) 
+      if (allocated(var_strain_max))   deallocate(var_strain_max) 
+#endif
+
 
       if (DO_CHECK_FINAL.eq.1) then
          !!dump final output
@@ -817,7 +851,7 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!inputs
       real*8,dimension(ii*jj*n_wavdir*n_wave_freq)
-     &   ,intent(in) :: Sdir_in                                         !! pass in directional spec
+     &   ,intent(in) :: Sdir_in                                        !! pass in directional spec
       real*8,dimension(ii,jj,3),intent(in)  :: ice_arrays              !! pass in  icec,iceh,dfloe
       real*8,intent(in)                     :: param_vec(n_param_vec)  !! parameters
 
@@ -1223,6 +1257,21 @@
 
       write(fid,'(a)'),' '
       write(fid,'(a)'),'***********************************************'
+      write(fid,'(a)'),'FSD params'
+      write(fid,'(a,f5.2)'),'Dmin (m):          '
+     &                           ,wim_info%Dmin
+      write(fid,'(a,f5.2)'),'xi:                '
+     &                           ,wim_info%xi
+      write(fid,'(a,f5.2)'),'fragility:         '
+     &                           ,wim_info%fragility
+      write(fid,'(a,f6.2)'), 'Dthresh (m):      '
+     &                           ,wim_info%Dthresh
+      write(fid,'(a,f5.2)'), 'cice_min:         '
+     &                           ,wim_info%cice_min
+      write(fid,'(a)'),'***********************************************'
+
+      write(fid,'(a)'),' '
+      write(fid,'(a)'),'***********************************************'
       write(fid,'(a)'),'Other Parameters:'
       write(fid,'(a,f9.4)'),'Time step (s):                    ' ,dt
       write(fid,'(a,f4.3)'),'CFL number:                       ' ,CFL
@@ -1306,6 +1355,7 @@
       integer,parameter :: fid=99
       integer           :: inf_version
       character(len=80) :: ctmp
+      integer  :: itmp
       integer  :: m_year
       integer  :: m_month
       integer  :: m_day
@@ -1326,7 +1376,7 @@
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.4) then
+      if (inf_version.ne.6) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1392,6 +1442,9 @@
       print*,'REF_HS_ICE: ',REF_HS_ICE
       read(fid,'(i2.2,a)'), USE_ICE_VEL ,ctmp
       print*,'USE_ICE_VEL: ',USE_ICE_VEL
+      read(fid,'(i2.2,a)'), itmp ,ctmp
+      TAKE_MAX_WAVES = (itmp.ne.0)
+      print*,'TAKE_MAX_WAVES: ',TAKE_MAX_WAVES
       print*,'******************************************************'
       ! ===================================================
 
@@ -1414,6 +1467,27 @@
       read(fid,'(f5.2,a)'), init_cons(6),ctmp !Dmax_init 
       print*,"Dmax_init: ",init_cons(6)
       print*,'******************************************************'
+      ! ===================================================
+
+
+      ! ===================================================
+      ! FSD params
+      print*,' '
+      print*,'******************************************************'
+      read(fid,'(a)'), ctmp !blank
+      read(fid,'(a)'), ctmp !comment
+      read(fid,'(f5.2,a)'), wim_info%Dmin,ctmp
+      print*,"Dmin (m): ",wim_info%Dmin
+      read(fid,'(f5.2,a)'), wim_info%xi,ctmp
+      print*,"xi: ",wim_info%xi
+      read(fid,'(f5.2,a)'), wim_info%fragility,ctmp
+      print*,"fragility: ",wim_info%fragility
+      read(fid,'(f5.2,a)'), wim_info%Dthresh,ctmp
+      print*,"Dthresh: ",wim_info%Dthresh
+      read(fid,'(f5.2,a)'), wim_info%cice_min,ctmp
+      print*,"cice_min: ",wim_info%cice_min
+      print*,'******************************************************'
+      print*,' '
       ! ===================================================
 
       ! ===================================================
@@ -1564,7 +1638,7 @@
       ! ===================================================
 
       ! ===================================================
-      !! other integer parameters
+      !! other integer/logical parameters
       print*,' '
       print*,'******************************************************'
       i        = i+1
@@ -1576,6 +1650,9 @@
       i           = i+1
       USE_ICE_VEL = int(param_vec(i))
       print*,'USE_ICE_VEL: ',USE_ICE_VEL
+      i           = i+1
+      TAKE_MAX_WAVES = int(param_vec(i)).ne.0
+      print*,'TAKE_MAX_WAVES: ',TAKE_MAX_WAVES
       print*,'******************************************************'
       ! ===================================================
 
@@ -1594,6 +1671,31 @@
       print*,"h_init: "          ,init_cons(5)
       print*,"Dmax_init: "       ,init_cons(6)
       print*,'******************************************************'
+      ! ===================================================
+
+
+      ! ===================================================
+      ! FSD info
+      !  real  :: Dmin
+      !  real  :: xi
+      !  real  :: fragility
+      !  real  :: Dthresh
+      !  real  :: cice_min
+      i              = i+1
+      wim_info%Dmin  = real(param_vec(i))
+      print*,'Dmin: ',wim_info%Dmin
+      i           = i+1
+      wim_info%xi = real(param_vec(i))
+      print*,'xi: ',wim_info%xi
+      i                    = i+1
+      wim_info%fragility   = real(param_vec(i))
+      print*,'fragility: ',wim_info%fragility
+      i                 = i+1
+      wim_info%Dthresh  = real(param_vec(i))
+      print*,'Dthresh: ',wim_info%Dthresh
+      i                 = i+1
+      wim_info%cice_min = real(param_vec(i))
+      print*,'cice_min: ',wim_info%cice_min
       ! ===================================================
 
       ! ===================================================

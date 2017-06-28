@@ -52,7 +52,10 @@ if remove_outer
 end
 
 H  = pcolor(xx,yy,Z');%% rows of arg 3 correspond to y not x
-daspect([1,1,1]);
+if max([nx,ny])/min([nx,ny])<3;
+   %% set true aspect ratio if it won't squash figure too much
+   daspect([1,1,1]);
+end
 set(H,'EdgeColor', 'none');
 
 set(gca,'xlim',[xx(1),xx(end)],'ylim',[yy(1),yy(end)])
@@ -65,8 +68,10 @@ GEN_proc_fig(labs{1},labs{2},fontsize);
 cb    = colorbar;
 if ~isempty(zlim)
    caxis(zlim);
-   Ytick_range = [round(zlim(1)),round(mean(zlim)),round(zlim(2))]
-   set(cb,'YTick',Ytick_range,'fontname','Times','fontsize',fontsize);
+   Ytick_range = [round(zlim(1)),round(mean(zlim)),round(zlim(2))];
+   if length(unique(Ytick_range))==3
+      set(cb,'YTick',Ytick_range,'fontname','Times','fontsize',fontsize);
+   end
 end
 GEN_font(gca,fontsize);
 

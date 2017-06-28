@@ -37,7 +37,7 @@ if sum(abs(h(:)))==0
    return;
 end
 
-ADV_OPT   = adv_options.ADV_OPT;
+ADV_OPT  = adv_options.ADV_OPT;
 
 ii       = grid_prams.nx;
 jj       = grid_prams.ny;

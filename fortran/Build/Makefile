@@ -23,6 +23,7 @@ VPATH   +=  $(src)/numerics
 VPATH 	+=  $(src)/attenuation_youngs
 VPATH 	+=  $(src)/interfaces
 VPATH 	+=  $(src)/extern
+VPATH 	+=  .
 
 # directory where objects are kept
 # ODIR	:=	$(P)/objs
@@ -34,7 +35,7 @@ MDIR	:=	./mods
 
 # header files for "include" statements
 # NB needs to be in VPATH and in -I$(HDIR) in calls to compiler
-HDIR	:=	.
+HDIR	:=	$(src)/../include
 VPATH 	+= 	$(HDIR)
 
 # # optimise code
@@ -43,7 +44,7 @@ VPATH 	+= 	$(HDIR)
 FCFLAGS=-g -fPIC
 
 # include modules/headers from $(MDIR) or $(HDIR)
-IFLAGS=-I$(MDIR) -I$(HDIR)
+IFLAGS=-I$(MDIR) -I$(HDIR) -I.
 
 # Put modules in $(MDIR) when they are created
 OFLAGS=-J$(MDIR)
@@ -105,12 +106,13 @@ OBJS		:=      \
 			$(ODIR)/mod_file_utils.o \
                         $(ODIR)/mod_gridinfo.o \
 			$(ODIR)/mod_common_wim.o \
+			$(ODIR)/mod_common_wim_arrays.o \
 			$(ODIR)/mod_wim_init.o \
-			$(ODIR)/RTparam_outer.o \
-			$(ODIR)/RTparam_fast.o \
-			$(ODIR)/RTparam_hardcoded_v2.o \
+			$(ODIR)/mod_atten_young.o \
+			$(ODIR)/mod_atten_young_hardcoded.o \
 			$(ODIR)/mod_RTparam_utilities.o \
 			$(ODIR)/mod_adv_atten.o \
+			$(ODIR)/mod_common_advect.o \
 			$(ODIR)/mod_advect.o \
 			$(ODIR)/mod_wavesice.o
 
@@ -180,31 +182,35 @@ All:	py exec
 mex:	mex1 mex2 mex3
 
 # DEPENDENCIES
-$(ODIR)/mod_grid_info.o:	$(ODIR)/mod_file_utils.o	$(HDIR)/grid_info.h
-$(ODIR)/mod_wim_init.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
-	                        $(HDIR)/grid_info.h
-$(ODIR)/mod_common_wim.o:	$(ODIR)/mod_gridinfo.o		$(HDIR)/wave_info.h \
-	                        $(HDIR)/grid_info.h
-$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
-	                        $(HDIR)/grid_info.h
-$(ODIR)/mod_adv_atten.o:	$(ODIR)/mod_gridinfo.o  	$(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o            $(HDIR)/grid_info.h
-$(ODIR)/mod_wavesice.o:		$(ODIR)/mod_gridinfo.o		$(ODIR)/mod_common_wim.o \
-				$(ODIR)/mod_advect.o 		$(ODIR)/mod_adv_atten.o	 \
-				$(ODIR)/mod_interp.o            $(HDIR)/grid_info.h
+$(ODIR)/mod_grid_info.o:		$(ODIR)/mod_file_utils.o	grid_info.h
+$(ODIR)/mod_wim_init.o:			$(ODIR)/mod_gridinfo.o		grid_info.h \
+	                        	$(ODIR)/mod_common_wim.o	$(ODIR)/mod_common_wim_arrays.o
+$(ODIR)/mod_common_wim_arrays.o:	$(ODIR)/mod_gridinfo.o		wave_info.h \
+	                        	grid_info.h
+$(ODIR)/mod_common_advect.o:		$(ODIR)/mod_gridinfo.o		grid_info.h
+$(ODIR)/mod_advect.o:			$(ODIR)/mod_gridinfo.o 		grid_info.h \
+	                        	$(ODIR)/mod_common_wim.o	$(ODIR)/mod_common_wim_arrays.o \
+					$(ODIR)/mod_common_advect.o
+$(ODIR)/mod_adv_atten.o:		$(ODIR)/mod_gridinfo.o  	grid_info.h \
+	                        	$(ODIR)/mod_common_wim.o	$(ODIR)/mod_common_wim_arrays.o \
+					$(ODIR)/mod_advect.o 
+$(ODIR)/mod_wavesice.o:			$(ODIR)/mod_gridinfo.o		grid_info.h \
+	                        	$(ODIR)/mod_common_wim.o	$(ODIR)/mod_common_wim_arrays.o \
+					$(ODIR)/mod_advect.o 		$(ODIR)/mod_adv_atten.o	 \
+					$(ODIR)/mod_interp.o            $(ODIR)/mod_atten_young.o \
+				
 # $(ODIR)/interp.o:		$(ODIR)/r8lib.o
 #
-$(ODIR)/RTparam_outer.o:        $(ODIR)/RTparam_fast.o
-$(ODIR)/RTparam_fast.o:         $(ODIR)/RTparam_hardcoded_v2.o
-$(ODIR)/RTparam_hardcoded_v2.o: $(ODIR)/mod_RTparam_utilities.o
+$(ODIR)/mod_atten_young.o:		$(ODIR)/mod_atten_young_hardcoded.o	$(ODIR)/mod_common_wim.o
+$(ODIR)/mod_atten_young_hardcoded.o:	$(ODIR)/mod_RTparam_utilities.o
 #
 $(OBJ_MAIN):			$(OBJS)
 
-$(PROG_F):      $(OBJ_MAIN)             $(ODIR)/mod_gridinfo.o
-$(PROG_PY): 	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJS)
-$(MEX1):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h     $(OBJ_MAIN)
-$(MEX2):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
-$(MEX3):	$(HDIR)/grid_info.h     $(HDIR)/wave_info.h	$(OBJ_MAIN)
+$(PROG_F):      $(OBJ_MAIN)     $(ODIR)/mod_gridinfo.o
+$(PROG_PY): 	grid_info.h	wave_info.h		$(OBJS)
+$(MEX1):	grid_info.h     wave_info.h     	$(OBJ_MAIN)
+$(MEX2):	grid_info.h     wave_info.h		$(OBJ_MAIN)
+$(MEX3):	grid_info.h     wave_info.h		$(OBJ_MAIN)
 
 .PHONY: clean vclean mex1 mex2 mex3
 

@@ -43,16 +43,7 @@ scvx     = 0*X+dx;
 scp2     = scuy.*scvx;%%cell area
 LANDMASK = 0*X;
 
-if OPT==0
-   %%make an island;
-   %%(circle in lower right)
-   x1             = x0+1.5*xm;   %%centre
-   y1             = y0+.5*ym;    %%centre
-   R0             = 30e3;        %%radius
-   j0             = find( (X-x1).^2+(Y-y1).^2<R0^2 );
-   %%
-   LANDMASK(j0)   = 1;
-elseif OPT==1
+if OPT==1
    %% land on right
    x1             = x0+1.6*xm;
    j0             = find(X>x1);
@@ -64,7 +55,19 @@ elseif OPT==2
    j0             = find((X>x1)&(Y<y1));
    LANDMASK(j0)   = 1;
 elseif OPT==3
-   %%no land
+   %%make an island;
+   %%(circle in lower right)
+   x1             = x0+1.5*xm;   %%centre
+   y1             = y0+.5*ym;    %%centre
+   R0             = 30e3;        %%radius
+   j0             = find( (X-x1).^2+(Y-y1).^2<R0^2 );
+   %%
+   LANDMASK(j0)   = 1;
+elseif OPT==4
+   %%land on upper,lower and rhs
+   LANDMASK(:,end)   = 1;% upper
+   LANDMASK(:,1)     = 1;% lower
+   LANDMASK(end,:)   = 1;% rhs
 end
 
 grid_prams.X         = X;

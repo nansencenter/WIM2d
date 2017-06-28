@@ -9,10 +9,11 @@ function [Dave,FSD] = floe_scaling(Dmax,prams,moment)
 %%
 %% Dave  = average floe size
 %% Dmax  = max floe size
-%% prams = [structure] 
+%% prams = [structure] eg
 %%            xi: 2
 %%     fragility: 0.900000000000000
-%%          Dmin: 20
+%%      Dmax_min: 20
+%%       Dthresh: 200 (optional)
 %% moment=1,2 -> <D> or <D^2>
 
 if ~exist('moment','var')
@@ -20,9 +21,13 @@ if ~exist('moment','var')
 end
 f        = prams.fragility;
 xi       = prams.xi;
-Dmin     = prams.Dmin;
+Dmin     = prams.Dmax_min;
 Dave     = max(Dmax.^moment,Dmin^moment);
-Dthresh  = 200;
+if isfield(prams,'Dthresh')
+   Dthresh  = prams.Dthresh;
+else
+   Dthresh  = 200;
+end
 F        = f*xi^2;
 
 want_fsd = 0;
@@ -32,7 +37,7 @@ end
 
 for j=1:length(Dmax(:));
    dmax     = Dmax(j);
-   unifdist = (dmax<xi*Dmin)|(dmax>=Dthresh);
+   unifdist = (dmax<xi*Dmin)|(dmax>Dthresh);
 
    if ~unifdist
       r  = dmax/Dmin;

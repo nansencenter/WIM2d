@@ -44,7 +44,7 @@
 
       use mod_wim2d_run, only: py_wim2d_run_vSdir_gate
      &                          ,n_param_vec 
-      use mod_common_wim, only: ii,jj,n_wavdir,n_wave_freq
+      use mod_common_wim_arrays, only: ii,jj,n_wavdir,n_wave_freq
 
       implicit none
 
@@ -98,9 +98,9 @@
      &                  ,Sdir_in,ice_arrays,mesh_in,mesh_out            &
      &                  ,param_vec,ndir,nw,nmesh_e,nx,ny,nr)
 
-      use mod_common_wim,  only: icec,iceh,dfloe                        &
-     &                           ,sdf_dir,sdf_inc                       &
-     &                           ,freq_vec,wavdir
+      use mod_common_wim_arrays,  only: icec,iceh,dfloe                 &
+     &                                 ,sdf_dir,sdf_inc                 &
+     &                                 ,freq_vec,wavdir
       use mod_wim2d_run,   only: wim2d_run_vSdir,read_param_vec,STEADY
       use mod_wavesice,    only: WAVE_MASK2
 

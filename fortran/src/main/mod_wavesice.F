@@ -4,8 +4,9 @@
       module mod_wavesice
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim   !! initial ice fields
       use mod_year_info
+      use mod_common_wim
+      use mod_common_wim_arrays
 
       implicit none
       private
@@ -53,21 +54,23 @@
 
       contains
 
-      subroutine wim_init(STEADY,DO_ATTEN,CFL)
+      !subroutine wim_init(STEADY,DO_ATTEN,CFL)
+      subroutine wim_init()
       !! set initial waves
       !! set attenuation coefficients
       !! - need to do this each time ice is updated
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim,  only: ICE_MASK,iceh           !! initial ice fields
+      use mod_atten_young, only: RTparam_outer
 
       implicit none
 
-      integer, intent(in) :: STEADY,DO_ATTEN
-      real,    intent(in) :: CFL
+!     integer, intent(in) :: STEADY,DO_ATTEN
+!     real,    intent(in) :: CFL
       !!
       real     :: PI,tmp
-      real     :: kwtr,kice,modT,int_adm,argT,argR
+      type(atten_outputs)  :: outputs
+      !real     :: kwtr,kice,modT,int_adm,argT,argR
       real,dimension(nw)   :: wt_simp,wlng,ag,ap
       integer  :: i,j,w
       real     :: adv_dir,dtheta,om,dom,guess,inputs(2)
@@ -150,12 +153,16 @@
             inputs(1)   = iceh(i,j)
             inputs(2)   = om
 
-            call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
-     &                  atten_nond(i,j,w),modT,argR,argT,               &
-     &                  inputs,guess)
+            call RTparam_outer(outputs,inputs,guess)
+!           call RTparam_outer(damping(i,j,w),kice,kwtr,int_adm,        &
+!    &                  atten_nond(i,j,w),modT,argR,argT,               &
+!    &                  inputs,guess)
 
-            disp_ratio(i,j,w) = kice/kwtr*modT
-            wlng_ice(i,j,w)   = 2*PI/kice
+            damping(i,j,w)    = outputs%damping
+            atten_nond(i,j,w) = outputs%atten_nond
+
+            disp_ratio(i,j,w) = outputs%kice/outputs%kwtr*outputs%modT
+            wlng_ice(i,j,w)   = 2*PI/outputs%kice
 
 !           !!check attenuation coeff's, wavenumbers
 !           if ((i.eq.itest).and.(j.eq.jtest)) then
@@ -202,35 +209,34 @@
       end subroutine wim_init
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine wim_step(wim_step_prams,nmesh_e,mesh_e)
+      subroutine wim_step(nmesh_e,mesh_e)
       !! do 1 time step
 
       use mod_gridinfo     !! grid info
-      use mod_common_wim   !! initial ice fields
       use mod_adv_atten    !! advection routine
       use mod_interp, only: pwl_interp_2d_real
 
       implicit none
 
       type(break_info)  :: brk_info
-      integer,parameter :: n_wim_step_prams  = 7
-      integer,dimension(n_wim_step_prams),intent(in) :: wim_step_prams  &
+      !integer,parameter :: n_wim_step_prams  = 7
+      !integer,dimension(n_wim_step_prams),intent(in) :: wim_step_prams  &
          !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
       integer,intent(in)   :: nmesh_e
 
       real,dimension(nmesh_e,nmesh_vars),intent(inout),optional         &
      &   :: mesh_e
-         ! this is [x_e,y_e,conc_e,thick_e,Nfloes_e,broken_e]
+         ! this is [x_e,y_e,conc_e,thick_e,dmax_e,broken_e]
          ! -1st 4 are unchanged; last 2 get updated
 
-      integer  :: SCATMOD,ADV_DIM,ADV_OPT                               &
-     &            ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
+!     integer  :: SCATMOD,ADV_DIM,ADV_OPT                               &
+!    &            ,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
 
       real,dimension(idm,jdm)    :: mom0,mom2,var_strain                &
      &   ,S_freq,atten_dim,damp_dim                                     &
      &   ,taux_om,tauy_om,tmp1                                          &
      &   ,mom0w,mom2w
-      integer  :: i,j,w
+      integer  :: i,j,w,ibrk
 
       !!to top up waves
       integer  :: wth
@@ -248,20 +254,15 @@
       integer  :: jcrest,fid_diag
       logical  :: BREAK_CRIT
 
-      logical                 :: INTERP_MESH,crit_e,test_ij
+
+      logical                 :: crit_e,test_ij
       real                    :: wim_break_damage,Tp_e,lam_e
       real,dimension(nmesh_e) :: x_e,y_e                    !centres of elements
       real,dimension(nmesh_e) :: mom0_e,mom2_e,var_strain_e !interpolated values onto elements
-      real,dimension(nmesh_e) :: conc_e,thick_e,Nfloes_e
-     &                              ,broken_e,dmax_e
+      real,dimension(nmesh_e) :: conc_e,thick_e
+     &                          ,broken_e,dmax_e
       real     :: kwtr,modT,int_adm,argT,argR,guess,inputs(2)
       character(len=800) :: diag_filename
-      !
-      INTERP_MESH = .false.
-      if (present(mesh_e)) then
-         ! check if there is any ice
-         INTERP_MESH = maxval(mesh_e).gt.0.
-      end if
 
       
       if (DUMP_DIAG) then
@@ -280,18 +281,6 @@
          write(fid_diag,'(f3.1,a)'),ICE_MASK(itest,jtest),' # ICE_MASK'
          write(fid_diag,'(a)'),' '
       end if
-
-
-      !wim_step_prams   = (/
-      !SCATMOD,ADV_DIM,ADV_OPT,BRK_OPT,STEADY,DO_ATTEN,FSD_OPT
-      !/)
-      SCATMOD  = wim_step_prams(1)
-      ADV_DIM  = wim_step_prams(2)
-      ADV_OPT  = wim_step_prams(3)
-      BRK_OPT  = wim_step_prams(4)
-      STEADY   = wim_step_prams(5)
-      DO_ATTEN = wim_step_prams(6)
-      FSD_OPT  = wim_step_prams(7)
 
       PI    = 4*atan(1.0)
       dom   = 2*PI*(freq_vec(nw)-freq_vec(1))/(nw-1.0)
@@ -367,7 +356,10 @@
 
             !! get expected no of floes met per unit
             !!  distance if travelling in a line;
-            if (dfloe(i,j).le.200.0) then
+            if (dfloe(i,j).le.wim_info%Dthresh) then
+               !! NB ".le." is important - needs to be consistent with
+               !! floe_scaling_smooth() below,
+               !! and also matlab code (floe_scaling_smooth.m)
                if (FSD_OPT.eq.0) then
                   !! renormalisation group method (Dumont et al, 2011)
                   call floe_scaling(Dave(i,j),dfloe(i,j),1)
@@ -611,31 +603,50 @@
      &      ,' # D_max, m'
          end if
 
+         if (NEED_TAKE_MAX_WAVES) then
+            if (var_strain(i,j).gt.var_strain_max(i,j)) then
+               !! get max val of var_strain over the entire call to WIM
+               !! - make mom0,mom2 consistent with it by making
+               !!   all fields simultaneous
+               var_strain_max(i,j)  = var_strain(i,j)
+               mom0_max(i,j)        = mom0(i,j)
+               mom2_max(i,j)        = mom2(i,j)
+            end if
+         end if
+
       end do!! end spatial loop j in y;
       end do!!end spatial loop i in x;
       close(fid_diag)
 
 
       if ((INTERP_MESH).and.(BRK_OPT>0)) then
+         !!if interpolating onto the mesh,
+         !! and we are doing breaking
          x_e      = mesh_e(:,1)
          y_e      = mesh_e(:,2)
          conc_e   = mesh_e(:,3)
          thick_e  = mesh_e(:,4)
-         Nfloes_e = mesh_e(:,5)
+         dmax_e   = mesh_e(:,5)
          broken_e = mesh_e(:,6)
 
-         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
-     &      ,nmesh_e,x_e,y_e,mom0_e)
-         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2
-     &         ,nmesh_e,x_e,y_e,mom2_e)
-         call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain
-     &      ,nmesh_e,x_e,y_e,var_strain_e)
+         if (NEED_TAKE_MAX_WAVES) then
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0_max
+     &         ,nmesh_e,x_e,y_e,mom0_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2_max
+     &            ,nmesh_e,x_e,y_e,mom2_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain_max
+     &         ,nmesh_e,x_e,y_e,var_strain_e)
+         else
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom0
+     &         ,nmesh_e,x_e,y_e,mom0_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),mom2
+     &            ,nmesh_e,x_e,y_e,mom2_e)
+            call pwl_interp_2d_real(ii,jj,X(:,1),Y(1,:),var_strain
+     &         ,nmesh_e,x_e,y_e,var_strain_e)
+         end if
 
-         dmax_e   = 0.
-         where (Nfloes_e.gt.0)
-            dmax_e   = sqrt(conc_e/Nfloes_e)
-         end where
 
+         ibrk  = 0
          do i=1,nmesh_e
             if (mom0_e(i).gt.0.) then
                brk_info%conc        = conc_e(i)
@@ -649,14 +660,15 @@
                call do_breaking(brk_info)
                
                broken_e(i) = brk_info%broken
+               !if (broken_e(i).gt..5) then
+               !   ibrk  = i
+               !   print*,'TWbrk',i,dmax_e(i),brk_info%dmax
+               !end if
                dmax_e(i)   = brk_info%dmax
             end if
          end do
 
-         where (dmax_e.gt.0.)
-            Nfloes_e   = conc_e/dmax_e**2
-         end where
-         mesh_e(:,5) = Nfloes_e
+         mesh_e(:,5) = dmax_e
          mesh_e(:,6) = broken_e
          !print*,maxval(broken_e)
 
@@ -667,10 +679,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine do_wim_integrals(REF_Hs_ICE_)
-
-      ! already used at top
-!     use mod_common_wim,only: Hs,Tp,mwd,WAVE_MASK,                     &
-!    &      sdf_dir,freq_vec,wavdir
 
       implicit none
       include "wave_info.h"
@@ -740,10 +748,6 @@
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine calc_mwd(REF_Hs_ICE_)
-
-      ! already used at top
-!     use mod_common_wim,only: mwd                                      &
-!    &      sdf_dir,freq_vec,wavdir
 
       implicit none
       include "wave_info.h"
@@ -846,7 +850,6 @@
       subroutine check_init()
 
       use mod_gridinfo
-      use mod_common_wim
       use mod_file_utils
 
       implicit none
@@ -895,7 +898,6 @@
       subroutine check_prog(OPT)
 
       use mod_gridinfo
-      use mod_common_wim
       use mod_file_utils
 
       implicit none
@@ -1006,52 +1008,62 @@
       integer              :: m,mm 
       real                 :: nm,nm1,dm,nsum,ndsum,r,ffac
 
-      Dave  = max(dmax**moment,wim_info%dmin**moment)
-      ffac  = wim_info%fragility*wim_info%xi**2
+      !this works for D<=Dmin and D>Dthresh
+      !- otherwise go into if clause below
+      Dave  = max(dmax**moment,wim_info%Dmin**moment)
 
-      !! determine no of breaks
-      r     = dmax/wim_info%dmin
-      mm    = 0  
-      do while ( r .ge. wim_info%xi ) 
-         !! if r<xi,no more breaking
-         !! - don't change Dave
-         r  = r/wim_info%xi 
-         mm = mm+1 
-      end do
+      if ((dmax.gt.wim_info%Dmin).and.(dmax.le.wim_info%Dthresh)) then
+         !! bigger floes
+         !! NB ".le." is important - needs to be consistent with
+         !! matlab code (floe_scaling_smooth.m)
+         ffac  = wim_info%fragility*wim_info%xi**2
 
-      if ( mm .gt. 0 ) then 
-         nm1   = 1.
-         dm    = dmax   !floe length
-         nsum  = 0      !eventually \sum_m=0^mm.n_m
-         ndsum = 0      !eventually \sum_m=0^mm.n_m.d_m^moment
-
-         do m = 0,mm-1
-            nm    = (1.-wim_info%fragility)*nm1     !no of floes at dm
-            nsum  = nsum +nm
-            ndsum = ndsum+nm*dm**moment
-            !!
-            nm1   = nm1*ffac
-            dm    = dm/wim_info%xi
+         !! determine no of breaks
+         r     = dmax/wim_info%Dmin
+         mm    = 0  
+         do while ( r .ge. wim_info%xi ) 
+            !! if r<xi,no more breaking
+            !! - don't change Dave
+            r  = r/wim_info%xi 
+            mm = mm+1 
          end do
 
-         !m=M
-         nsum  = nsum+nm1
-         ndsum = ndsum+nm1*dm**moment
-         
+         if ( mm .gt. 0 ) then 
+            nm1   = 1.
+            dm    = dmax   !floe length
+            nsum  = 0      !eventually \sum_m=0^mm.n_m
+            ndsum = 0      !eventually \sum_m=0^mm.n_m.d_m^moment
 
-         Dave  = ndsum/nsum
+            do m = 0,mm-1
+               nm    = (1.-wim_info%fragility)*nm1     !no of floes at dm
+               nsum  = nsum +nm
+               ndsum = ndsum+nm*dm**moment
+               !!
+               nm1   = nm1*ffac
+               dm    = dm/wim_info%xi
+            end do
+
+            !m=M
+            nsum  = nsum+nm1
+            ndsum = ndsum+nm1*dm**moment
+            
+
+            Dave  = ndsum/nsum
+         end if
       end if
 
-!     !test subroutine (NB this will crash after 1st call, since status='new')
-!     print*,'in floe_scaling'
-!     open(unit=999,file='fsd_test_old.txt',                            &
-!    &     action='write',status='new')
-!     write(999,*) Dave
-!     write(999,*) Dmax
-!     write(999,*) fragility
-!     write(999,*) xi
-!     write(999,*) Dmin
-!     close(999)
+#if 0
+      !test subroutine (NB this will crash after 1st call, since status='new')
+      print*,'in floe_scaling'
+      open(unit=999,file='fsd_test_old.txt',                         &
+     &     action='write',status='new')
+      write(999,*) Dave
+      write(999,*) Dmax
+      write(999,*) fragility
+      write(999,*) xi
+      write(999,*) Dmin
+      close(999)
+#endif
 
       end subroutine floe_scaling
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1065,12 +1077,11 @@
       real,    intent(in)  :: dmax
       integer, intent(in)  :: mom
       integer              :: n
-      real                 :: b,Dthresh,fsd_exp,A
+      real                 :: b,fsd_exp,A
 
       n        = mom
       fsd_exp  = 2+log(wim_info%fragility)/log(wim_info%xi)!!power law exponent: P(d>D)=(D_min/D)^fsd_exp;
       b        = n-fsd_exp
-      Dthresh  = 200.
 
       !! calculate <D^n> from Dmax
       !! - uniform dist for larger floes
@@ -1079,37 +1090,43 @@
       !! small floes
       if (Dmax.le.wim_info%Dmin) then
          Dave  = wim_info%Dmin**n
-      elseif (Dmax.le.Dthresh) then
+      elseif (Dmax.le.wim_info%Dthresh) then
          !! bigger floes
+         !! NB ".le." is important - needs to be consistent with
+         !! matlab code (floe_scaling_smooth.m)
          A     = (fsd_exp*exp(fsd_exp*(log(wim_info%Dmin)+log(Dmax))))
          A     = A/( exp(fsd_exp*log(Dmax))
      &               -exp(fsd_exp*log(wim_info%Dmin)) )
          Dave  = -(A/b)*(exp(b*log(wim_info%Dmin))-exp(b*log(Dmax)))
       end if
 
-!!     !test subroutine (NB this will crash after 1st call, since status='new')
-!      print*,'in floe_scaling_smooth'
-!      open(unit=999,file='fsd_test_smooth.txt',                         &
-!     &     action='write',status='new')
-!      write(999,*) Dave
-!      write(999,*) Dmax
-!      write(999,*) mom
-!      write(999,*) fragility
-!      write(999,*) xi
-!      write(999,*) Dmin
-!      close(999)
+#if 0
+      !test subroutine (NB this will crash after 1st call, since status='new')
+      print*,'in floe_scaling_smooth'
+      open(unit=999,file='fsd_test_smooth.txt',                      &
+     &     action='write',status='new')
+      write(999,*) Dave
+      write(999,*) Dmax
+      write(999,*) mom
+      write(999,*) fragility
+      write(999,*) xi
+      write(999,*) Dmin
+      close(999)
+#endif
 
       end subroutine floe_scaling_smooth
 
 
       subroutine do_breaking(brk_info)
 
+      use mod_atten_young, only: RTparam_outer
+
       implicit none
 
       type(break_info),intent(inout)   :: brk_info
+      type(atten_outputs)  :: outputs
       logical :: BREAK_CRIT
-      real    :: om,guess,inputs(2),lam,kice,kwtr,int_adm,              &
-     &            Tp,modT,argR,argT,pi
+      real    :: om,guess,inputs(2),lam,pi
 
       pi = 4*atan(1.)
       BREAK_CRIT   = (brk_info%conc.gt.0.)                            !ice present
@@ -1125,14 +1142,10 @@
          inputs(1)   = brk_info%thick !absolute thickness
          inputs(2)   = om
 
-         ! rest of arguments are outputs, but only need kice
-         ! so use Tp_e,lam_e as dummy variables
-         call RTparam_outer(lam,kice,kwtr,int_adm,                      &
-     &            Tp,modT,argR,argT,                                    &
-     &            inputs,guess)
+         call RTparam_outer(outputs,inputs,guess)
          ! =============================================================
 
-         lam = 2*pi/kice
+         lam = 2*pi/outputs%kice
          if (lam.lt.2*brk_info%dmax) then
             !breaking occurs
             brk_info%dmax     = max(wim_info%Dmin,lam/2.) !keep above Dmin

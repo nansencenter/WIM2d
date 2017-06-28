@@ -1,18 +1,18 @@
 function [out_fields,wave_stuff,mesh_e] =...
-   WIM2d_mex(params_in,gridprams,ice_fields,wave_fields,wave_stuff,mesh_e)
+   WIM2d_mex(params_mex,gridprams,ice_fields,wave_fields,wave_stuff,mesh_e)
 
-%duration,ice_prams into params_in
-%% params_in.MEX_OPT=1:
-%% * inputs : params_in,gridprams,ice_fields,wave_fields
+%duration,ice_prams into params_mex
+%% params_mex.MEX_OPT=1:
+%% * inputs : params_mex,gridprams,ice_fields,wave_fields
 %% * outputs: out_fields
 %%
-%% params_in.MEX_OPT=2:
-%% * inputs : params_in,gridprams,ice_fields,wave_fields,...
+%% params_mex.MEX_OPT=2:
+%% * inputs : params_mex,gridprams,ice_fields,wave_fields,...
 %%            wave_stuff (to give Sdir as input)
 %% * outputs: out_fields,Sdir
 %%
-%% params_in.MEX_OPT=3:
-%% * inputs : params_in,gridprams,ice_fields,wave_fields,...
+%% params_mex.MEX_OPT=3:
+%% * inputs : params_mex,gridprams,ice_fields,wave_fields,...
 %%            wave_stuff (to give Sdir as input),
 %%            mesh_e (mesh quantities for interpolation)
 %% * outputs: out_fields,Sdir,...
@@ -21,16 +21,57 @@ function [out_fields,wave_stuff,mesh_e] =...
 %% ============================================================
 %% Inputs:
 %%
-%% params_in = structure eg:
-%%           int_prams: 9x1 vector
-%%          real_prams: 4x1 vector
-%%             MEX_OPT: 3
-%%              DODISP: 1
+%% params_mex = structure eg:
+%%            SCATMOD: 3
+%%            ADV_DIM: 2
+%%            ADV_OPT: 2
+%%      DO_CHECK_INIT: 1
+%%      DO_CHECK_PROG: 1
+%%     DO_CHECK_FINAL: 1
+%%             STEADY: 1
+%%            BRK_OPT: 1
+%%           DO_ATTEN: 1
+%%              young: 5.490000000000000e+09
+%%            drag_rp: 13
+%%            visc_ws: 0
+%%           duration: 21600
+%%                CFL: 0.700000000000000
+%%            FSD_OPT: 1
+%%         REF_Hs_ICE: 0
+%%        USE_ICE_VEL: 0
+%%     TAKE_MAX_WAVES: 0
+%%            Hs_init: 3
+%%             T_init: 12
+%%           dir_init: -90
+%%          conc_init: 0.700000000000000
+%%             h_init: 1
+%%          Dmax_init: 300
+%%               Dmin: 20
+%%                 xi: 2
+%%          fragility: .9
+%%            Dthresh: 200
+%%           cice_min: 0.05
+%%          model_day: 42003
+%%      model_seconds: 0
+%%              itest: 25
+%%              jtest: 5
+%%           dumpfreq: 10
+%%            MEX_OPT: 3
+%%            DO_DISP: 0
+%%           TEST_MEX: 0
 %%
 %% gridprams = structure eg:
-%%      cice: [51x51 double]
-%%      hice: [51x51 double]
-%%      Dmax: [51x51 double]
+%%         X: [101x51 double]
+%%         Y: [101x51 double]
+%%      scuy: [101x51 double]
+%%      scvx: [101x51 double]
+%%      scp2: [101x51 double]
+%%     scp2i: [101x51 double]
+%%  LANDMASK: [101x51 double]
+%%        nx: 101
+%%        ny: 51
+%%        dx: 4000
+%%        dy: 4000
 %%
 %%
 %% ice_fields  = structure eg:
@@ -39,11 +80,14 @@ function [out_fields,wave_stuff,mesh_e] =...
 %%      Dmax: [51x51 double]
 %%
 %%
-%% wave_fields = structure eg
-%%           Hs: [150x10 double]
-%%           Tp: [150x10 double]
-%%          mwd: [150x10 double]
-%%  STEADY_MASK: [150x10 logical]
+%% if params_mex.MEX_OPT==1:
+%%    wave_fields = structure eg
+%%              Hs: [150x10 double]
+%%              Tp: [150x10 double]
+%%             mwd: [150x10 double]
+%%     STEADY_MASK: [150x10 logical]
+%% else:
+%%    wave_fields = []
 %%
 %%
 %% wave_stuff = structure eg
@@ -63,12 +107,13 @@ function [out_fields,wave_stuff,mesh_e] =...
 %%         ye: [760x1 double]
 %%          c: [760x1 double]
 %%      thick: [760x1 double]
-%%     Nfloes: [760x1 double]
+%%       Dmax: [760x1 double]
+%%     broken: [760x1 double]
 %% ============================================================
 
-% %%check params_in has the needed fields
-% check_params_in_mex(params_in);
-RMFORT6  = 1;
+% %%check params_mex has the needed fields
+% check_params_in_mex(params_mex);
+RMFORT6  = 1;%delete fort.6 file
 
 %% check if we want to do breaking on the mesh also
 if ~exist('mesh_e','var')
@@ -78,10 +123,10 @@ if ~exist('wave_stuff','var')
    wave_stuff  = [];
 end
 
-params_vec  = get_param_vec(params_in);
-if params_in.MEX_OPT==1
+params_vec  = get_param_vec_mex(params_mex);
+if params_mex.MEX_OPT==1
 
-   if params_in.DO_DISP; disp(' ');
+   if params_mex.DO_DISP; disp(' ');
       disp('*****************************************************************');
       disp('Running fortran code with mex function: run_WIM2d_io_mex_v2');
       disp('*****************************************************************');
@@ -121,9 +166,9 @@ if params_in.MEX_OPT==1
    end
    return%%MEX_OPT==1
 
-elseif params_in.MEX_OPT==2
+elseif params_mex.MEX_OPT==2
 
-   if params_in.DO_DISP; disp(' ');
+   if params_mex.DO_DISP; disp(' ');
       disp('*****************************************************************');
       disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir');
       disp('*****************************************************************');
@@ -163,9 +208,9 @@ elseif params_in.MEX_OPT==2
    end
    return%%MEX_OPT==2
 
-elseif params_in.MEX_OPT==3
+elseif params_mex.MEX_OPT==3
 
-   if params_in.DO_DISP; disp(' ');
+   if params_mex.DO_DISP; disp(' ');
       disp('*****************************************************************');
       disp('Running fortran code with mex function: run_WIM2d_io_mex_vSdir_mesh');
       disp('*****************************************************************');
@@ -232,8 +277,17 @@ elseif params_in.MEX_OPT==3
    %% get mesh variables
    nmesh_e     = length(mesh_e.xe);
    nmesh_vars  = length(fieldnames(mesh_e));
-   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.thick,mesh_e.Nfloes,mesh_e.broken];
+   mesh_arr    = [mesh_e.xe,mesh_e.ye,mesh_e.c,mesh_e.thick,mesh_e.Dmax,mesh_e.broken];
    %mesh0 = mesh_arr;
+
+   if params_mex.TEST_MEX==1
+      arg1  = wave_stuff.dir_spec(:);
+      arg2  = in_arrays(:);
+      arg3  = mesh_arr(:);
+      save('mex_in.mat','arg1','arg2','arg3',...
+            'params_vec','nmesh_e');
+      clear arg1 arg2 arg3;
+   end
 
    %% make the call!
    tic;
@@ -245,6 +299,11 @@ elseif params_in.MEX_OPT==3
    wave_stuff.dir_spec  = reshape(wave_stuff.dir_spec,shp);
    toc;
 
+   if params_mex.TEST_MEX==1
+      out1  = wave_stuff.dir_spec;
+      save('mex_out.mat','out1','out_arrays','mesh_arr');
+      clear out1;
+   end
 
    %% extract outputs
    fldnames    = {'Dmax','tau_x','tau_y','Hs','Tp','mwd'};
@@ -262,7 +321,7 @@ elseif params_in.MEX_OPT==3
    %save mesh mesh_e mesh0 mesh_arr out_fields;
 
    %% recreate mesh_e
-   mesh_e.Nfloes  = mesh_arr(:,5);
+   mesh_e.Dmax    = mesh_arr(:,5);
    mesh_e.broken  = mesh_arr(:,6);
 
    if 0
@@ -352,129 +411,3 @@ return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function params_vec = get_param_vec(params_mex)
-%% 
-%% INPUT:
-%% params_mex = 
-%%            SCATMOD: 3
-%%            ADV_DIM: 2
-%%            ADV_OPT: 2
-%%      DO_CHECK_INIT: 1
-%%      DO_CHECK_PROG: 1
-%%     DO_CHECK_FINAL: 1
-%%             STEADY: 1
-%%            BRK_OPT: 1
-%%           DO_ATTEN: 1
-%%              young: 5.490000000000000e+09
-%%            drag_rp: 13
-%%            visc_ws: 0
-%%           duration: 21600
-%%                CFL: 0.700000000000000
-%%            FSD_OPT: 1
-%%         REF_Hs_ICE: 0
-%%        USE_ICE_VEL: 0
-%%            Hs_init: 3
-%%             T_init: 12
-%%           dir_init: -90
-%%          conc_init: 0.700000000000000
-%%             h_init: 1
-%%          Dmax_init: 300
-%%          model_day: 42003
-%%      model_seconds: 0
-%%              itest: 25
-%%              jtest: 5
-%%           dumpfreq: 10
-%%            MEX_OPT: 1
-%%            DO_DISP: 1
-%%
-%% OUTPUT:
-%% vector with some of these fields
-%% - for ordering see:
-%%   - fortran/infiles/infile_nonIO.txt
-%%   - read_params_vec subroutine in fortran/src/main/mod_WIM2d_run.F
-
-%% ================================================
-%% old int_prams:
-fields   = {};
-n        = 9;
-fields(end+1:end+n)  = {...
-            'SCATMOD',...
-            'ADV_DIM',...
-            'ADV_OPT',...
-            'BRK_OPT',...
-            'STEADY',...
-            'DO_ATTEN',...
-            'DO_CHECK_INIT',...
-            'DO_CHECK_PROG',...
-            'DO_CHECK_FINAL'};
-%% ================================================
-
-
-%% ================================================
-%% old real_prams:
-n  = 6;
-fields(end+1:end+n)  = {...
-            'young',...
-            'drag_rp',...
-            'visc_ws',...
-            'cohesion',...
-            'friction',...
-            'CFL'};
-%% ================================================
-
-
-%% ================================================
-%% other integer parameters (in params):
-n  = 3;
-fields(end+1:end+n)  = {...
-            'FSD_OPT',...
-            'REF_Hs_ICE',...
-            'USE_ICE_VEL'};
-%% ================================================
-
-
-%% ================================================
-%% initial conditions (in params):
-n  = 6;
-fields(end+1:end+n)  = {...
-            'Hs_init',...
-            'T_init',...
-            'dir_init',...
-            'conc_init',...
-            'h_init',...
-            'Dmax_init'};
-%% ================================================
-
-
-%% ================================================
-%% duration & start time:
-n  = 3;
-fields(end+1:end+n)  = {...
-            'duration',...
-            'model_day',... % day relative to 1900-1-1
-            'model_seconds'};
-%% ================================================
-
-
-%% ================================================
-%% diagnostics:
-n  = 3;
-fields(end+1:end+n)  = {...
-            'itest',...
-            'jtest',...
-            'dumpfreq'};
-%% ================================================
-
-Ni = length(fields);
-params_vec   = zeros(Ni,1);
-for j=1:Ni
-   cmd   = ['params_vec(',num2str(j),') = params_mex.',fields{j},';'];
-   eval(cmd);
-   if params_mex.DO_DISP==1
-      disp([cmd(1:end-1),' = ',num2str(params_mex.(fields{j}))]);
-   end
-end
-
-return
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,3 +1,4 @@
+# run from Build directory
 GS="$WIM2D_PATH/fortran/grid_setup"
 Gbin="$GS/bin"
 P=`pwd`
@@ -42,6 +43,7 @@ then
    pic=$gdir/land_mask.png
    if [ $kernel == "Darwin" ]
    then
+      # OSX
       open $pic
    else
       display $pic &

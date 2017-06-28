@@ -47,8 +47,9 @@ fortran/scripts/results/*
 #
 matlab/main/out
 matlab/main/results
-matlab/main/m_out
-matlab/main/out_io
+matlab/main/out_m
+matlab/main/out_mexadv
+matlab/main/out_io*
 matlab/main/out_2
 matlab/main/log
 matlab/main/infile_matlab.txt
@@ -57,6 +58,7 @@ matlab/boltzmann/out/*
 matlab/boltzmann/*.mat
 matlab/boltzmann/solve_boltzmann_numeric.m
 matlab/attenuation_robinson_palmer/out/*
+!matlab/numerics/testing/test_waveadv_weno_1d_mex.mat
 #
 neXtSIMcoupling/results/*
 neXtSIMcoupling/run/*
@@ -80,3 +82,7 @@ fortran/grid_setup/infile_waves.txt
 fortran/Build/*.h
 fortran/grid/*
 
+fortran/src/numerics/test_advection/test_waveadv_weno/Build/*.h
+fortran/src/numerics/test_advection/test_waveadv_weno/grid/*.h
+fortran/src/numerics/test_advection/test_iceadv_remap/Build/*.h
+fortran/src/numerics/test_advection/test_iceadv_remap/grid/*.h

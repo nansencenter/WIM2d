@@ -2,17 +2,21 @@ CC	:=	gcc
 FC	:=	gfortran
 
 # path to numerics directory
-numerics	:=	../..
+numerics	:=	../../..
 src		:=	$(numerics)/..
 
 # modules here
 MDIR	:=	mods
+
 # objects here
 ODIR	:=	objs
-# header files
-HDIR	:=	$(src)/header_files
+
+# header files (location of grid_info.h)
+# - put it in this dir for easier testing
+HDIR	:=	.
+
 # put executables here
-bin	:=	$(numerics)/test_advection/bin
+bin	:=	../bin
 
 # paths for source files
 VPATH 		:=	..:$(numerics):$(src)/misc:$(src)/init:$(HDIR)
@@ -23,15 +27,15 @@ FCFLAGS=-g -I$(MDIR) -I$(HDIR)
 FCFLAGS2=-J$(MDIR)
 
 PROG=$(ODIR)/p_test_advect.o 
-PROG_1d=$(ODIR)/p_test_advect_1d.o 
 
 OBJS=\
-     $(ODIR)/mod_file_utils.o \
-     $(ODIR)/mod_gridinfo.o \
-     $(ODIR)/mod_advect.o
+	$(ODIR)/mod_file_utils.o \
+	$(ODIR)/mod_gridinfo.o \
+	$(ODIR)/mod_common_advect.o \
+	$(ODIR)/mod_remap.o \
+	$(ODIR)/mod_advect_ice.o
 
-TARGET2d=test_advect.exec
-TARGET1d=test_advect_1d.exec
+TARGET=test_advect.exec
 
 # Create objects by compiling their respective .F files
 $(ODIR)/%.o:	%.F
@@ -42,22 +46,18 @@ $(ODIR)/%.o:	%.F
 # Default is 2d advection code
 2d: $(PROG) $(OBJS)
 	mkdir -p $(bin)
-	$(FC) -o $(TARGET2d) $^ $(FCFLAGS)
-	mv $(TARGET2d) $(bin)
-
-1d:	$(PROG_1d) $(OBJS)
-	mkdir -p $(bin)
-	$(FC) -o $(TARGET1d) $^ $(FCFLAGS)
-	mv $(TARGET1d) $(bin)
-
-all:	2d	1d
+	$(FC) -o $(TARGET) $^ $(FCFLAGS)
+	mv $(TARGET) $(bin)
 
 # dependencies:
-$(ODIR)/mod_gridinfo.o:	grid_info.h
-$(ODIR)/mod_advect.o:	$(ODIR)/mod_gridinfo.o \
-			$(ODIR)/mod_file_utils.o
-$(PROG): 		$(OBJS)
-$(PROG_1d): 		$(OBJS)
+$(ODIR)/mod_gridinfo.o:		grid_info.h
+$(ODIR)/mod_common_advect.o:	$(ODIR)/mod_gridinfo.o
+$(ODIR)/mod_advect.o:		$(ODIR)/mod_gridinfo.o \
+				$(ODIR)/mod_file_utils.o \
+				$(ODIR)/mod_common_advect.o \
+				$(ODIR)/mod_remap.o
+$(ODIR)/mod_remap.o:		$(ODIR)/mod_gridinfo.o
+$(PROG): 			$(OBJS)
 
 .PHONY: clean vclean
 

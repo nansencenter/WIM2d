@@ -65,6 +65,9 @@ s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
 if ~isfield(s1,'BRK_OPT');
    s1.BRK_OPT = 0;
 end
+if ~isfield(s1,'friction');
+   s1.friction = .7;
+end
 
 if s1.BRK_OPT==0|s1.BRK_OPT==1%%beam test
    %%not used if BRK_OPT==0
@@ -83,6 +86,9 @@ end
 s1.flex_rig_coeff = s1.young/12/(1-s1.poisson^2);
 
 % Parameters for the floe size distribution
-s1.Dmin        = 20;  % min floe size [m]
-s1.xi          = 2;   % [-]
-s1.fragility   = 0.9; % [-]
+fsd_params     = set_FSD_params();
+s1.Dmax_min    = fsd_params.Dmax_min;  % min floe size [m]
+s1.xi          = fsd_params.xi;        % [-]
+s1.fragility   = fsd_params.fragility; % [-]
+s1.Dthresh     = fsd_params.Dthresh;   % change from power law to uniform FSD here [m]
+s1.cice_min    = fsd_params.cice_min;  % min conc where atten happens

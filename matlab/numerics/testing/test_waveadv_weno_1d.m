@@ -3,9 +3,25 @@
 %% Date:   20150505
 clear;
 
+if 0
+   %% test for mex memory/initialisation problems
+   %% - eg different results each time
+   load test_waveadv_weno_1d_mex;
+   Hmat  = waveadv_weno_1d(h0,u,gridprams,dt,adv_options);
+   for j=1:100
+      Hmex  = waveadv_weno_1d_mex(nx,dt,ADV_OPT,h0,u,LANDMASK,scp2,scp2i,scuy);
+      %[max(Hmat),max(Hmex)],pause
+      disp(max(Hmex))%pause
+   end
+   return;
+end
+
 %%boundary conditions:
 %adv_options.ADV_OPT  = 0;%waves escape domain
 adv_options.ADV_OPT  = 1;%waves periodic in i
+CFL   = .4;
+MEX   = 0;
+MEX2d = 0;
 
 %%testing:
 ii = 49;
@@ -43,8 +59,6 @@ grid_prams2 = s1;
 clear s1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-CFL   = .4;
-
 uc       = -30;%const speed m/s
 xc       = 2*xm/3;
 u        = 0*X+uc;
@@ -57,6 +71,8 @@ if adv_options.ADV_OPT==1
    nt = 2*nt;
 end
 
+figure(2);
+fn_fullscreen;
 for j=1:2%%plot initial h
    subplot(2,1,j);
    ax = plot(X/1e3,h);
@@ -76,10 +92,25 @@ h0 = h;
 for n = 1:nt
    [n,nt]
    h_    = h;
-   h     = waveadv_weno_1d(h,u,grid_prams,dt,adv_options);
+   if MEX==0
+      h  = waveadv_weno_1d(h,u,grid_prams,dt,adv_options);
+   else
+      %[h,test_array]  =...
+      h  =...
+         waveadv_weno_1d_mex(grid_prams.nx,dt,adv_options.ADV_OPT, h, u,...
+            grid_prams.LANDMASK, grid_prams.scp2, grid_prams.scp2i, grid_prams.scuy);
+   end
    hmax  = max(h)
    %%
-   H  = waveadv_weno(H,u2,v2,grid_prams2,dt,adv_options);
+   if MEX2d==0
+      %%check against matlab 2d advection if MEX==0
+      H  = waveadv_weno(H,u2,v2,grid_prams2,dt,adv_options);
+   elseif MEX2d==1
+      %%check against mex 2d advection if MEX==1
+      H  = ...
+         waveadv_weno_mex(grid_prams2.nx,grid_prams2.ny,dt,adv_options.ADV_OPT, H, u2, v2,...
+            grid_prams2.LANDMASK, grid_prams2.scp2, grid_prams2.scp2i, grid_prams2.scuy, grid_prams2.scvx);
+   end
    %%
    subplot(2,1,2);
    plot(X/1e3,h);

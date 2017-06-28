@@ -1,41 +1,29 @@
-function meshfile = create_mesh(OPT,output_type)
-%% CALL: meshfile = create_mesh(OPT,output_type)
-%% OPT=1: ideal WIM grid
-%% OPT=2: ONR grid: 2km,small
-%% OPT=3: ONR grid: 2km,big
-%% OPT=4: ONR grid: 4km,big
-%% OPT=5: FS: 4km
+function meshfile = create_mesh(gfil,output_type)
+%% CALL: meshfile = create_mesh(gridfile,output_type)
 %% output_type = 'msh' or 'mat'
 
-
-if nargin~=2
-   error('create_mesh(OPT,output_type) eg OPT=2, output_type=''msh'' or ''mat''')
+if ~exist('gfil','var')
+   error('create_mesh(gridfile,output_type); output_type=''msh'' or ''mat''');
+end
+if ~exist('output_type','var')
+   output_type  = 'msh';
 end
 
-wgd   = getenv('WIMGRIDPATH');
-
-if OPT==1
-   gdir  = [pwd,'/grid'];
-   gfil  = [gdir,'/wim_grid.a']
-elseif OPT==2
-   gdir  = wgd;
-   gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_2km_big.a']
-elseif OPT==3
-   gdir  = wgd;
-   gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_2km_small.a']
-elseif OPT==4
-   gdir  = wgd;
-   gfil  = [gdir,'/wim_grid_full_ONR_Oct2015_4km_big.a']
-elseif OPT==5
-   gdir  = wgd;
-   gfil  = [gdir,'/wim_grid_full_FS_Dec2015_4km_big.a']
-elseif OPT==6
-   gdir  = wgd;
-   gfil  = [gdir,'/wim_grid_FS_8km.a']
+ii    = strfind(gfil,'/');
+if ~isempty(ii)
+   gdir  = gfil(1:ii(end));
+   if ii(1)~=1
+      gdir  = [pwd,'/',gdir];
+   end
+   gfil0 = gfil(ii(end)+1:end);
+else
+   gdir  = pwd;
+   gfil0 = gfil;
 end
+gfil  = [gdir,'/',gfil0];
 
 % test reading of file (plot land-mask)
-if OPT==1
+if strcmp(gfil0,'wim_grid.a')
    gp = fn_get_grid(gdir);
    disp(gp);
    x  = gp.X(:,1)/1e3;

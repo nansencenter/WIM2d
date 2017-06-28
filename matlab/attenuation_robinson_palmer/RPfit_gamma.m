@@ -50,6 +50,9 @@ a_undamped  = ALPfxn_E549_cheb2(om,h);
 %%
 [lam,q_damping]   = RPget_lam_dmpg(h,om,prams_rp,visc_rp);
 a_damped          = a_undamped+2*d_av*q_damping;
+
+[lam,q_damping]   = RPget_lam_dmpg(h,om,prams_rp,1.5*visc_rp);
+a_damping         = 2*d_av*q_damping;
 %%
 PLOT_DIM = 1;
 if PLOT_DIM
@@ -61,11 +64,13 @@ else
    ylab  = '\alpha';
    ax    = [min(T) max(T) 0 0.02];
 end
-plot(T,fac*a_damped,'-b');
+h1 = plot(T,fac*a_undamped,'r','linewidth',2);
 hold on;
-plot(T,fac*a_undamped,'--b');
+h2 = plot(T,fac*a_damped,'b','linewidth',2);
+h3 = plot(T,fac*a_damping,'g','linewidth',2);
 %plot(Tsm,asm,'^k');
-errorbar(Tsm,fac*asm,fac*err_nd,'or');
+h4 = errorbar(Tsm,fac*asm,fac*err_nd,'ok','linewidth',2,'markersize',2);
+legend([h1,h2,h3],{'Scattering','Scattering + drag','Drag'});
 %%
 set(gca,'yscale','log');
 axis(ax);
@@ -74,7 +79,7 @@ GEN_proc_fig('Period, s',ylab);
 hold off;
 
 !mkdir -p out
-saveas(gcf,'out/RPfit.eps');
+saveas(gcf,'out/RPfit.eps','epsc');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Y  = fn_error(vrp2,Tsm,asm,prams_rp,hd,a_undamped)
