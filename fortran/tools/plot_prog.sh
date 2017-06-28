@@ -7,7 +7,7 @@ if [ $# -eq 0 ]
 then
    echo "Usage:"
    echo "plot_prog.sh [1/0: do/don't make movie] [root results directory ie with binaries, log etc]"
-   echo "Optional arg's: PLOT_PROG PLOT_INIT PLOT_FINAL"
+   echo "Optional arg's: PLOT_PROG PLOT_INIT PLOT_FINAL PLOT_INC vname1 vname2 vname3..."
    exit
 fi
 
@@ -16,6 +16,7 @@ outdir=$2
 PLOT_PROG=1
 PLOT_INIT=1
 PLOT_FINAL=1
+PLOT_INC=1
 
 n=0
 vlist=""
@@ -36,6 +37,9 @@ do
    elif [ $n -eq 5 ]
    then
       PLOT_FINAL=$var
+   elif [ $n -eq 6 ]
+   then
+      PLOT_INC=$var
    else
       vlist="$vlist $var"
       vbls[$nvbl]=$var
@@ -58,8 +62,8 @@ fi
 
 echo In `pwd`:
 rm -rf figs/prog/*
-echo python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL $vlist
-python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL $vlist
+echo python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL  --incwaves=$PLOT_INC $vlist
+python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL  --incwaves=$PLOT_INC $vlist
 
 if [ $MKMOV -eq 1 ]
 then
