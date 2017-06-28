@@ -326,9 +326,21 @@ def fn_check_prog(outdir,cts):
 ##############################################################
 
 class file_list:
+
+   # ============================================================
    def __init__(self,directory,pattern):
       self.dir       = directory
       self.pattern   = pattern
+      self.times     = []
+      self.files     = []
+      self.Nfiles    = 0
+      self.variables = []
+
+      # check if directory exists before continuing
+      if not os.path.exists(self.dir):
+         return
+
+      # if directory exists, sort the files
       all_files      = os.listdir(self.dir)
 
       # find the .a files
@@ -358,7 +370,9 @@ class file_list:
          self.variables = info['recnos'].keys()
 
       return
+   # ============================================================
 
+   # ============================================================
    def plot_steps(self,grid_prams,figdir3,zlims=None,**kwargs):
       pdir        = self.dir
 
@@ -423,7 +437,10 @@ class file_list:
                   zlims_in=zlims,text=tlist[i],vlist=[vbl])
       # =============================================================
       return
+   # ============================================================
 
+
+   # ============================================================
    def plot_step(self,grid_prams,figdir3=None,time_index=0,vlist=None,**kwargs):
 
       pf    = self.files[time_index]
@@ -453,6 +470,7 @@ class file_list:
           text=tstr,**kwargs)
       # =============================================================
       return
+   # ============================================================
 
 ############################################################################
 class wim_results:
