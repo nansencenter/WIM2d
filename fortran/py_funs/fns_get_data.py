@@ -128,7 +128,13 @@ def check_names(vname,variables,stop=True):
             return v
 
    if stop:
-      raise ValueError(vname+'not in variable list')
+      print('Failed to get '+vname)
+      print('\nAvailable variables:')
+      for v in variables:
+         print(v)
+
+      print('')
+      raise ValueError(vname+' not in variable list')
    else:
       return ''
 ###########################################################
@@ -150,7 +156,7 @@ def fn_read_general_binary(afile,vlist=None):
       # check vbls are in binary files
       recnos   = {}
       for vbl in vlist:
-         vname = check_names(vbl,binfo['recnos'].keys())
+         vname = check_names(vbl,binfo['recnos'].keys(),stop=True)
          recnos.update({vbl:binfo['recnos'][vname]})
 
    nv = binfo['Nrecs']
@@ -353,7 +359,7 @@ class file_list:
 
       return
 
-   def plot_steps(self,grid_prams,figdir3,**kwargs):
+   def plot_steps(self,grid_prams,figdir3,zlims=None,**kwargs):
       pdir        = self.dir
 
       if not os.path.exists(figdir3):
@@ -361,31 +367,7 @@ class file_list:
 
       # =============================================================
       # determine the plotting limits
-      if 0:
-         # set colorbar axes manually
-         zlims  = {'icec'  :[0,1],      \
-                   'iceh'  :[0,5],      \
-                   'Dmax'  :[0,300],    \
-                   'tau_x' :[-.5,.5],  \
-                   'tau_y' :[-.05,.05],\
-                   'Hs'    :[0,4],        \
-                   'Tp'    :[10,20],      \
-                   'mwd'   :[-180,180]}
-
-      elif 0:
-         # let python choose
-         # - different for each time step,
-         #   so not good for a movie for example
-         zlims  = {'icec'  :None,\
-                   'iceh'  :None,\
-                   'Dmax'  :None,\
-                   'tau_x' :None,\
-                   'tau_y' :None,\
-                   'Hs'    :None,\
-                   'Tp'    :None,\
-                   'mwd'   :None}
-
-      else:
+      if zlims is None:
          # set colorbar axes automatically
          zdef  = [1.e30,-1.e30]
          zlims  = {'icec' :1*zdef,\
@@ -407,7 +389,7 @@ class file_list:
             #
             fields   = fn_read_general_binary(afile,**kwargs)[0]
             for key in fields.keys():
-               key2  = check_names(key,zlims.keys())
+               key2  = check_names(key,zlims.keys(),stop=False)
                if key2!="":
                   zmin  = fields[key].min()
                   zmax  = fields[key].max()
@@ -453,39 +435,12 @@ class file_list:
          if not os.path.exists(figdir3):
             os.mkdir(figdir3)
 
-      # =============================================================
-      # determine the plotting limits
-      if 0:
-         # set colorbar axes manually
-         zlims  = {'icec'  :[0,1],      \
-                   'iceh'  :[0,5],      \
-                   'Dmax'  :[0,300],    \
-                   'tau_x' :[-.5,.5],  \
-                   'tau_y' :[-.05,.05],\
-                   'Hs'    :[0,4],        \
-                   'Tp'    :[10,20],      \
-                   'mwd'   :[-180,180]}
-
-      elif 1:
-         # let python choose
-         # - different for each time step,
-         #   so not good for a movie for example
-         zlims  = {'icec'  :None,\
-                   'iceh'  :None,\
-                   'Dmax'  :None,\
-                   'tau_x' :None,\
-                   'tau_y' :None,\
-                   'Hs'    :None,\
-                   'Tp'    :None,\
-                   'mwd'   :None}
-      # =============================================================
 
 
       # =============================================================
       # do the plots
       fields   = fn_read_general_binary(afile,vlist=vlist)[0]
 
-      print(DO_SAVE)
       for vbl in fields.keys():
          if DO_SAVE:
             figdir3B = figdir3+'/'+vbl
@@ -495,7 +450,7 @@ class file_list:
             figdir3B = None
 
       Fplt.fn_plot_gen(grid_prams,fields,figdir=figdir3B,\
-          zlims_in=zlims,text=tstr,**kwargs)
+          text=tstr,**kwargs)
       # =============================================================
       return
 
@@ -665,7 +620,7 @@ class wim_results:
 
 
    ##########################################################################
-   def plot(self,time_index=None,show=False,field_type="initial",vlist=None):
+   def plot(self,time_index=None,show=False,field_type="initial",vlist=None,**kwargs):
 
       # =============================================================
       if field_type=="initial":
@@ -713,14 +668,15 @@ class wim_results:
       grid_prams  = self.get_grid()
       if time_index is None:
          # plot all
-         file_list.plot_steps(grid_prams,figdir3=figdir3,vlist=vlist)
+         file_list.plot_steps(grid_prams,figdir3=figdir3,vlist=vlist,**kwargs)
          print('\nPlots in '+figdir3+'\n')
       else:
          if show:
             figdir3  = None
             # plot step & show
             # - otherwise plot step & save fig
-         file_list.plot_step(grid_prams,time_index=time_index,figdir3=figdir3,vlist=vlist)
+         file_list.plot_step(grid_prams,time_index=time_index,
+               figdir3=figdir3,vlist=vlist,**kwargs)
 
       return
    ##########################################################################

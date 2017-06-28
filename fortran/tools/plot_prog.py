@@ -9,10 +9,11 @@ outdir      = os.getcwd()
 PLOT_INIT   = 1
 PLOT_FINAL  = 1
 PLOT_PROG   = 1
+PLOT_INC    = 1
 
 # =======================================================================
 # command line inputs
-opts,args   = getopt(sys.argv[1:],"",["outdir=","init=","final=","prog="])
+opts,args   = getopt(sys.argv[1:],"",["outdir=","init=","final=","prog=","incwaves="])
 for opt,arg in opts:
    if opt=='--outdir':
       outdir   = arg 
@@ -22,6 +23,8 @@ for opt,arg in opts:
       PLOT_FINAL  = int(arg)
    if opt=='--prog':
       PLOT_PROG  = int(arg)
+   if opt=='--incwaves':
+      PLOT_INC   = int(arg)
 
 if len(args)==0:
    vlist = None
@@ -31,6 +34,11 @@ else:
 
 results  = Fdat.wim_results(outdir=outdir)
 
+
+##########################################################################
+if PLOT_INC:
+   results.plot_incwaves(vlist=vlist)
+##########################################################################
 
 
 ##########################################################################

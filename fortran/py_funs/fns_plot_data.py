@@ -198,7 +198,7 @@ def cmap_3d(x,y,z,labs,pobj=None,zlims=None):
 
 #######################################################################
 def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
-      text='',vlist=None,hold=True):
+      text='',vlist=None,hold=True,OVERWRITE=False):
 
    from matplotlib import pyplot as plt
 
@@ -275,18 +275,26 @@ def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
    for key in vlist:
       key3     = Fdat.check_names(key,fields.keys())
 
-      key2     = Fdat.check_names(key,znames)
+      key2     = Fdat.check_names(key,znames,stop=False)
       zlim     = None
       lab      = key
-      figname  = key+text+".png"
+      figname  = key+"_"+text+".png"
       if key2!="":
          zlim     = zlims[key2]
          lab      = labs[key2]
          figname  = figs[key2]
       else:
-         key2_ = Fdat.check_names(key,zlims_in.keys())
+         key2_ = Fdat.check_names(key,zlims_in.keys(),stop=False)
          if key2_!="":
             zlim  = zlims_in[key2_]
+
+      if DO_SAVE:
+         # set filename
+         # & check if it should be overwritten before doing plot
+         Figname  = figdir+'/'+figname
+         if os.path.exists(Figname) and (not OVERWRITE):
+            continue
+
 
       F  = fields[key3]
       if ny>1:
@@ -300,7 +308,6 @@ def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
          ax.set_ylim(zlim)
 
       if DO_SAVE:
-         Figname  = figdir+'/'+figname
          # print('Saving '+Figname)
          f.savefig(Figname,bbox_inches='tight',pad_inches=0.05)
          plt.close(f)
