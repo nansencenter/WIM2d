@@ -105,7 +105,7 @@
       integer, intent(in)  :: BRK_OPT
       real                 :: alpha,sig_N
 
-      alpha    = (1+wim_info%poisson)/(1-wim_info%poisson)
+      alpha    = (1-wim_info%poisson)/(1+wim_info%poisson)
       if (BRK_OPT.eq.1) then
          wim_info%stress_c = wim_info%young
      &                        *wim_info%epsc/(1-wim_info%poisson**2)
