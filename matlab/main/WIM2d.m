@@ -277,7 +277,8 @@ out_fields.Dmax   = ice_fields.Dmax;
 
 if params_in.DO_DISP;
    Dice  = out_fields.Dmax(ice_fields.cice>0);
-   Drng  = [min(Dice),max(Dice(Dice<300)),max(out_fields.Dmax(:))]
+   disp('range in Dmax');
+   disp([min(Dice),max(Dice(Dice<300)),max(out_fields.Dmax(:))]);
    clear Dice
 end
 %% add max distance at which waves could have broken the ice
@@ -966,13 +967,7 @@ else
          end
       end
 
-      if params_in.DO_DISP
-         disp([n nt]);
-         disp(' ');
-         Dice  = out_fields.Dmax(ice_fields.cice>0);
-         Drng  = [min(Dice),max(Dice(Dice<300)),max(out_fields.Dmax(:))]
-         clear Dice
-      end
+      if params_in.DO_DISP; disp([n nt]); end
 
       %% spectral moments;
       mom0  = zeros(gridprams.nx,gridprams.ny);
@@ -1461,6 +1456,19 @@ else
 
       if DUMP_DIAG
          fclose(logid2);
+      end
+
+      if params_in.DO_DISP
+         disp(' ');
+         Dice  = out_fields.Dmax(ice_fields.cice>0);
+         disp('range in Dmax (m):');
+         disp([min(Dice),max(Dice(Dice<300)),max(out_fields.Dmax(:))]);
+         disp('range in Hs (m):');
+         disp([min(out_fields.Hs(:)),max(out_fields.Hs(:))]);
+         disp('range in taux (Pa):');
+         disp([min(out_fields.tau_x(:)),max(out_fields.tau_x(:))]);
+         disp(' ');
+         clear Dice
       end
 
 %% end of time stepping in matlab
