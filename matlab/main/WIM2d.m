@@ -225,6 +225,7 @@ if params_in.SV_LOG
 
    log_file    = [log_dir,'/WIM2d_diagnostics',year_info.date_string,'.txt'];
    this_subr   = mfilename();
+   log_width   = 37;
 
    %%open log file for writing (clear contents)
    logid       = fopen(log_file,'w');
@@ -236,10 +237,10 @@ if params_in.SV_LOG
    fprintf(logid,'%s\n',' ');
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','Main parameters:');
-   fprintf(logid,'%s%2.2d\n','SCATMOD:                          ',params_in.SCATMOD);
-   fprintf(logid,'%s%2.2d\n','ADV_DIM:                          ',params_in.ADV_DIM);
-   fprintf(logid,'%s%2.2d\n','ADV_OPT:                          ',params_in.ADV_OPT);
-   fprintf(logid,'%s%2.2d\n','BRK_OPT:                          ',params_in.BRK_OPT);
+   fprintf(logid,'%s%2.2d\n',string_of_width('SCATMOD',log_width),params_in.SCATMOD);
+   fprintf(logid,'%s%2.2d\n',string_of_width('ADV_DIM',log_width),params_in.ADV_DIM);
+   fprintf(logid,'%s%2.2d\n',string_of_width('ADV_OPT',log_width),params_in.ADV_OPT);
+   fprintf(logid,'%s%2.2d\n',string_of_width('BRK_OPT',log_width),params_in.BRK_OPT);
    switch params_in.BRK_OPT
    case 0
       fprintf(logid,'%s\n','(No breaking)');
@@ -250,15 +251,15 @@ if params_in.SV_LOG
    case 3
       fprintf(logid,'%s\n','(Mohr-Coulomb)');
    end
-   fprintf(logid,'%s%2.2d\n','STEADY:                           ',params_in.STEADY);
-   fprintf(logid,'%s%2.2d\n','DO_ATTEN:                         ',params_in.DO_ATTEN);
+   fprintf(logid,'%s%2.2d\n',string_of_width('STEADY'  ,log_width),params_in.STEADY);
+   fprintf(logid,'%s%2.2d\n',string_of_width('DO_ATTEN',log_width),params_in.DO_ATTEN);
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n',' ');
 
    %%other params
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','Other integer parameters:');
-   fprintf(logid,'%s%2.2d\n','FSD_OPT:                          ',params_in.FSD_OPT);
+   fprintf(logid,'%s%2.2d\n',string_of_width('FSD_OPT',log_width),params_in.FSD_OPT);
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n',' ');
 
@@ -281,7 +282,7 @@ if params_in.DO_DISP;
 end
 %% add max distance at which waves could have broken the ice
 if ~params_in.BRK_OPT
- diagnostics.break_max = nan;%%TW move scalar outputs to new structure "diagnostics"
+   diagnostics.break_max = nan;%%TW move scalar outputs to new structure "diagnostics"
 end
 
 % %% WAVES
@@ -356,24 +357,24 @@ if params_in.SV_LOG
    logid = fopen(log_file,'a');
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','WIM parameters:');
-   fprintf(logid,'%s%4.2f\n','Brine volume fraction:       ' ,ice_prams.vbf);
-   fprintf(logid,'%s%10.3e\n','Youngs modulus (Pa):        ' ,ice_prams.young);
-   fprintf(logid,'%s%10.3e\n','Flexural strength (Pa):     ' ,ice_prams.sigma_c);
-   fprintf(logid,'%s%10.3e\n','Breaking stress (Pa):       ' ,ice_prams.stress_c);
-   fprintf(logid,'%s%10.3e\n','Breaking strain:            ' ,ice_prams.strain_c);
-   fprintf(logid,'%s%10.3e\n','Cohesion (Pa):              ' ,ice_prams.cohesion);
-   fprintf(logid,'%s%10.3f\n','Friction coefficient:       ' ,ice_prams.friction);
-   fprintf(logid,'%s%5.2f\n','RP drag (Pa.s/m):            ' ,ice_prams.drag_rp);
-   fprintf(logid,'%s%5.2f\n','WS viscosity (m^2/s):        ' ,ice_prams.visc_ws);
+   fprintf(logid,'%s%4.2f\n' , string_of_width('Brine volume fraction' ,log_width), ice_prams.vbf);
+   fprintf(logid,'%s%10.3e\n', string_of_width('Youngs modulus (Pa)'   ,log_width), ice_prams.young);
+   fprintf(logid,'%s%10.3e\n', string_of_width('Flexural strength (Pa)',log_width), ice_prams.sigma_c);
+   fprintf(logid,'%s%10.3e\n', string_of_width('Breaking stress (Pa)'  ,log_width), ice_prams.stress_c);
+   fprintf(logid,'%s%10.3e\n', string_of_width('Breaking strain'       ,log_width), ice_prams.strain_c);
+   fprintf(logid,'%s%10.3e\n', string_of_width('Cohesion (Pa)'         ,log_width), ice_prams.cohesion);
+   fprintf(logid,'%s%10.3f\n', string_of_width('Friction coefficient'  ,log_width), ice_prams.friction);
+   fprintf(logid,'%s%5.2f\n' , string_of_width('RP drag (Pa.s/m)'      ,log_width), ice_prams.drag_rp);
+   fprintf(logid,'%s%5.2f\n' , string_of_width('WS viscosity (m^2/s)'  ,log_width), ice_prams.visc_ws);
    fprintf(logid,'%s\n\n','***********************************************');
    %%
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','FSD parameters:');
-   fprintf(logid,'%s%4.2f\n','Dmin (m):         ' ,ice_prams.Dmax_min);
-   fprintf(logid,'%s%10.3e\n','xi:              ' ,ice_prams.xi);
-   fprintf(logid,'%s%10.3e\n','fragility:       ' ,ice_prams.fragility);
-   fprintf(logid,'%s%4.2f\n','Dthresh (m):      ' ,ice_prams.Dthresh);
-   fprintf(logid,'%s%4.2f\n','cice_min:         ' ,ice_prams.cice_min);
+   fprintf(logid,'%s%4.2f\n' , string_of_width('Dmin (m)'   ,log_width), ice_prams.Dmax_min);
+   fprintf(logid,'%s%10.3e\n', string_of_width('xi'         ,log_width), ice_prams.xi);
+   fprintf(logid,'%s%10.3e\n', string_of_width('fragility'  ,log_width), ice_prams.fragility);
+   fprintf(logid,'%s%4.2f\n' , string_of_width('Dthresh (m)',log_width), ice_prams.Dthresh);
+   fprintf(logid,'%s%4.2f\n' , string_of_width('cice_min'   ,log_width), ice_prams.cice_min);
    fprintf(logid,'%s\n','***********************************************');
    fclose(logid);
 end
@@ -606,28 +607,28 @@ if params_in.SV_LOG
    fprintf(logid,'%s\n',' ');
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','Other Parameters:');
-   fprintf(logid,'%s%6.1f\n','Time step (s):                    ',dt);
-   fprintf(logid,'%s%4.3f\n','CFL number:                       ',params_in.CFL);
-   fprintf(logid,'%s%5.2f\n','Maximum wave group velocity (m/s):',amax);
-   fprintf(logid,'%s%4.4d\n','Number of time steps:             ',nt);
-   fprintf(logid,'%s%5.2f\n','Time interval (h):                ',nt*dt/3600 );
+   fprintf(logid,'%s%6.1f\n', string_of_width('Time step (s)'                    ,log_width), dt);
+   fprintf(logid,'%s%4.3f\n', string_of_width('CFL number'                       ,log_width), params_in.CFL);
+   fprintf(logid,'%s%5.2f\n', string_of_width('Maximum wave group velocity (m/s)',log_width), amax);
+   fprintf(logid,'%s%4.4d\n', string_of_width('Number of time steps'             ,log_width), nt);
+   fprintf(logid,'%s%5.2f\n', string_of_width('Time interval (h)'                ,log_width), nt*dt/3600 );
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n',' ');
 
    fprintf(logid,'%s\n','***********************************************');
-   fprintf(logid,'%s%4.4d%s%4.4d\n','Grid dimensions:                  ' ,...
+   fprintf(logid,'%s%4.4d%s%4.4d\n',string_of_width('Grid dimensions',log_width),...
       gridprams.nx,' ',gridprams.ny);
-   fprintf(logid,'%s%4.1f%s%4.1f\n','Spatial resolution (km):          ' ,...
+   fprintf(logid,'%s%4.1f%s%4.1f\n',string_of_width('Spatial resolution (km)',log_width),...
       gridprams.dx/1.0e3,' ',gridprams.dy/1.0e3);
-   fprintf(logid,'%s%4.1f%s%4.1f\n','Extent of domain   (km):          ' ,...
+   fprintf(logid,'%s%4.1f%s%4.1f\n',string_of_width('Extent of domain   (km)',log_width),...
       gridprams.nx*gridprams.dx/1.0e3,' ',gridprams.ny*gridprams.dy/1.0e3);
 
    fprintf(logid,'%s\n',' ');
-   fprintf(logid,'%s%5.2f\n','Minimum period (s):               ',1/max(wave_stuff.freq) );
-   fprintf(logid,'%s%5.2f\n','Maximum period (s):               ',1/min(wave_stuff.freq) );
-   fprintf(logid,'%s%4.4d\n','Number of wave frequencies:       ',wave_stuff.nfreq);
-   fprintf(logid,'%s%4.4d\n','Number of wave directions:        ',wave_stuff.ndir);
-   fprintf(logid,'%s%5.2f\n','Directional resolution (degrees): ',360.0/(1.0*wave_stuff.ndir) );
+   fprintf(logid,'%s%5.2f\n', string_of_width('Minimum period (s)'              ,log_width), 1/max(wave_stuff.freq) );
+   fprintf(logid,'%s%5.2f\n', string_of_width('Maximum period (s)'              ,log_width), 1/min(wave_stuff.freq) );
+   fprintf(logid,'%s%4.4d\n', string_of_width('Number of wave frequencies'      ,log_width), wave_stuff.nfreq);
+   fprintf(logid,'%s%4.4d\n', string_of_width('Number of wave directions'       ,log_width), wave_stuff.ndir);
+   fprintf(logid,'%s%5.2f\n', string_of_width('Directional resolution (degrees)',log_width), 360.0/(1.0*wave_stuff.ndir) );
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n',' ');
    fclose(logid);
@@ -1445,8 +1446,8 @@ else
             if DUMP_DIAG&test_ij
                fprintf(logid2,'%s\n',' ');
                fprintf(logid2,'%s\n','Ice info: post-breaking');
-               fprintf(logid2,'13.6%e%s\n',Pstrain,' # P_strain');
-               fprintf(logid2,'13.6%e%s\n',P_crit,' # P_crit');
+               fprintf(logid2,'13.6%e%s\n',var_strain(i,j),' # var_strain');
+               fprintf(logid2,'13.6%e%s\n',ice_prams.strain_c^2/2,' # var_strain_c');
                fprintf(logid2,'%10.5f%s\n',wlng_crest,' # peak wavelength, m');
                fprintf(logid2,'%9.5f%s\n',out_fields.Dmax(i,j),' # D_max, m');
             end
@@ -1903,13 +1904,14 @@ if params_in.SV_LOG
    fprintf(logid,'%s\n','***********************************************');
    fprintf(logid,'%s\n','Diagnostics:');
    if (params_in.OPT==1)|(params_in.OPT==3)
-      fprintf(logid,'%s%9.4f\n','MIZ width (km): ',Wmiz/1e3);
-      fprintf(logid,'%s%9.4f%s%9.4f\n','Dmax range in MIZ (m): ',...
+      fprintf(logid,'%s%9.4f\n',string_of_width('MIZ width (km)',log_width),...
+         Wmiz/1e3);
+      fprintf(logid,'%s%9.4f%s%9.4f\n',string_of_width('Dmax range in MIZ (m)',log_width),...
          Dmax_min,' ',Dmax_max);
    end
-   fprintf(logid,'%s%13.6e%s%13.6e\n','tau_x range (Pa): ',...
+   fprintf(logid,'%s%13.6e%s%13.6e\n',string_of_width('tau_x range (Pa)',log_width),...
       taux_min,' ',taux_max);
-   fprintf(logid,'%s%13.6e%s%13.6e\n','tau_y range (Pa): ',...
+   fprintf(logid,'%s%13.6e%s%13.6e\n',string_of_width('tau_y range (Pa)',log_width),...
       tauy_min,' ',tauy_max);
    fprintf(logid,'%s\n','***********************************************');
 
@@ -2640,3 +2642,15 @@ if params.DO_DISP
 end
 
 return;
+%% ===============================================
+
+%% ===============================================
+function s2 = string_of_width(s1,width,filler)
+if ~exist('filler','var') filler = ':'; end
+N           = length(s1);
+width       = max(N+3,width);
+s2          = blanks(width);
+s2(1:N)     = s1;
+s2(end-1)   = filler;
+return
+%% ===============================================

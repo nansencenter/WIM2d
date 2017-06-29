@@ -96,7 +96,7 @@
 0     # SV_FIG       : save figures that are plotted
 1     # DO_DISP      : display output during calculations in WIM2d
 0     # DO_VIS             : display figures
-0     # SV_LOG             : save log file
+1     # SV_LOG             : save log file
 0     # check_symmetry     : check y-dependance (eg for 1d geometries)
 0     # check_E_partition  : split energy into fwd/back
 
