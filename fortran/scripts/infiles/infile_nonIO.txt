@@ -1,6 +1,7 @@
-06  # infile version
+07  # infile version
 
 # int_prams - all fortran format '(i2.2)'
+00  # AUTO_GRID      : generate grid automatically (0/1)
 00  # SCATMOD        : scattering model; 0, scattered energy is dissipated; 1, scattered energy is distributed isotropically 
 02  # ADV_DIM        : dimension of advection scheme (1/2)
 02  # ADV_OPT        : 0, not periodic; 1, periodic in both x,y; 2, periodic in y only;

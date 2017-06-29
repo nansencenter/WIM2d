@@ -6,7 +6,11 @@
       character(len=80) :: outdir
       integer,parameter :: nmesh_vars  = 6 !no of fields taken in with info about mesh
 
-      integer  :: SCATMOD,ADV_DIM,ADV_OPT,STEADY
+      integer  :: AUTO_GRID = 0 ! generate grid arrays automatically (0/1)
+      integer  :: SCATMOD       ! scattering model to use
+      integer  :: ADV_DIM       ! dimension of advection scheme (1/2)
+      integer  :: ADV_OPT       ! boundary conditions
+      integer  :: STEADY        ! top up waves each time step
       integer  :: DO_CHECK_PROG,DO_CHECK_INIT,DO_CHECK_FINAL
       integer  :: BRK_OPT  !breaking criterion to use
                            ! 0: no breaking; 1: Vernon; 2: Marchenko; 3: Mohr-Coulomb

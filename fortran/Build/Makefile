@@ -35,7 +35,7 @@ MDIR	:=	./mods
 
 # header files for "include" statements
 # NB needs to be in VPATH and in -I$(HDIR) in calls to compiler
-HDIR	:=	$(src)/../include
+HDIR	:=	.
 VPATH 	+= 	$(HDIR)
 
 # # optimise code

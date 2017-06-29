@@ -25,7 +25,9 @@
       character(len=*),parameter :: infile_dirs = 'infile_dirs.txt'
 
       real  :: W_MIZ,taux_max,tauy_max                                  &
-     &   ,taux_min,tauy_min,Dmax_min,Dmax_max                           &
+     &   ,taux_min,tauy_min                                             &
+     &   ,Dmax_min,Dmax_max                                             &
+     &   ,Hs_max
 
       real*4 :: et,tictoc(2) !!print time
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -140,7 +142,12 @@
          STOP
       end if
 
-      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
+      ! grid: X,Y,LAND_MASK
+      if (AUTO_GRID.eq.1) then
+         call get_grid_auto()
+      else
+         call get_grid_from_file(indir)
+      end if
 
       !! set idealised incident ice parameters
       call icecons_ideal(real(init_cons(4:6)))      ! - initial icec,iceh,dfloe
@@ -325,7 +332,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams()   ! - ice properties like breaking strain
-      call get_grid_file(indir)     ! - grid: X,Y,LAND_MASK
+
+      ! grid: X,Y,LAND_MASK
+      if (AUTO_GRID.eq.1) then
+         call get_grid_auto()
+      else
+         call get_grid_from_file(indir)
+      end if
 
       !!ice conditions from inputs
       icec     = real(in_arrays(:,:,1))
@@ -561,7 +574,13 @@
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!initialisation of grid, ice con's
       call set_wim_prams() ! - ice properties like breaking strain
-      call get_grid_file(indir) ! - grid: X,Y,LAND_MASK
+
+      ! grid: X,Y,LAND_MASK
+      if (AUTO_GRID.eq.1) then
+         call get_grid_auto()
+      else
+         call get_grid_from_file(indir)
+      end if
 
       !! ice conditions set from inputs in WIM2d_f2py or in mex gateway function
       !! > icec,iceh,dfloe
@@ -770,10 +789,12 @@
             taux_min = minval(tau_x)
             tauy_max = maxval(tau_y)
             tauy_min = minval(tau_y)
+            Hs_max   = maxval(Hs)
             print*,' '
             print*,'time step no:',n,nt
             print*,'tau_x range (Pa)',taux_min,taux_max
             print*,'tau_y range (Pa)',tauy_min,tauy_max
+            print*,'Hs max (m)      ',Hs_max
             print*,' '
          end if
 
@@ -832,6 +853,10 @@
       tauy_min = minval(tau_y)
       print*,'tau_x range (Pa)',taux_min,taux_max
       print*,'tau_y range (Pa)',tauy_min,tauy_max
+
+      !! max Hs
+      Hs_max   = maxval(Hs)
+      print*,'Hs max (m)      ',Hs_max
       print*,' '
 
       call print_log_info()
@@ -1297,7 +1322,7 @@
      &                   ,1.0/freq_vec(1)
       write(fid,'(a,i2.2)'),'Number of wave frequencies:       ' , nw
       write(fid,'(a,i3.3)'),'Number of wave directions:        ' , ndir
-      write(fid,'(a,f6.3)'),'Directional resolution (degrees): '
+      write(fid,'(a,f7.3)'),'Directional resolution (degrees): '
      &                   ,360.0/(1.0*ndir)
       write(fid,'(a)'),'***********************************************'
 
@@ -1311,6 +1336,7 @@
      &                          ,taux_min,' ',taux_max
       write(fid,'(a,e13.6,a,e13.6)'),'tau_y range (Pa): '               &
      &                          ,tauy_min,' ',tauy_max
+      write(fid,'(a,e13.6,a,e13.6)'),'max Hs (m): ',Hs_max
       write(fid,'(a)'),'***********************************************'
 
 !     write(fid,'(a,f6.1)'),' '
@@ -1353,7 +1379,7 @@
       real*8,intent(out)  :: init_cons(6)
       character(len=*),intent(in)   :: infile
       integer,parameter :: fid=99
-      integer           :: inf_version
+      integer           :: infile_version
       character(len=80) :: ctmp
       integer  :: itmp
       integer  :: m_year
@@ -1372,11 +1398,11 @@
 
       ! ===================================================
       ! check infile version
-      read(fid,'(i2.2,a)'), inf_version     ,ctmp
+      read(fid,'(i2.2,a)'), infile_version     ,ctmp
 
       ! set correct infile version number here
       ! - check if its correct
-      if (inf_version.ne.6) then
+      if (infile_version.ne.7) then
          print*,'Wrong infile version'
          print*,'- get template and edit'
          stop
@@ -1384,10 +1410,13 @@
       ! ===================================================
 
 
+
       ! ===================================================
       !! int_prams
       read(fid,'(a)'), ctmp !blank
       read(fid,'(a)'), ctmp !comment
+      read(fid,'(i2.2,a)'), AUTO_GRID   ,ctmp
+      print*,'AUTO_GRID: ',AUTO_GRID
       read(fid,'(i2.2,a)'), SCATMOD     ,ctmp
       print*,'SCATMOD: ',SCATMOD
       read(fid,'(i2.2,a)'), ADV_DIM     ,ctmp
