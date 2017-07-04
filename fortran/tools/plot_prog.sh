@@ -96,5 +96,5 @@ then
 else
    echo To make movie
    echo "$tools/prog2mp4.sh Hs" $outdir/figs/prog
-   echo "(can also use eg Dmax,taux,tauy)"
+   echo "(can also use eg Dmax,tau_x,tau_y)"
 fi

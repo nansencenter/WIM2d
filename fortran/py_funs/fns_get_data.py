@@ -373,11 +373,31 @@ class file_list:
    # ============================================================
 
    # ============================================================
-   def plot_steps(self,grid_prams,figdir3,zlims=None,**kwargs):
+   def plot_steps(self,grid_prams,figdir3,zlims=None,vlist=None,**kwargs):
       pdir        = self.dir
 
       if not os.path.exists(figdir3):
          os.mkdir(figdir3)
+
+      # =============================================================
+      # check variables to stop crash
+      if vlist is not None:
+         Vlist = []
+         for vbl in vlist:
+            if vbl in self.variables:
+               Vlist.append(vbl)
+         if len(Vlist)==0:
+            print("Variables in 'vlist' argument not present in files")
+            print("Variables that are available:")
+            for vbl in self.variables:
+               print("   "+vbl)
+            return
+      else:
+         Vlist = None
+      # =============================================================
+
+      # =============================================================
+
 
       # =============================================================
       # determine the plotting limits
@@ -401,7 +421,7 @@ class file_list:
          for pf in alist:
             afile = pdir+'/'+pf
             #
-            fields   = fn_read_general_binary(afile,**kwargs)[0]
+            fields   = fn_read_general_binary(afile,vlist=Vlist,**kwargs)[0]
             for key in fields.keys():
                key2  = check_names(key,zlims.keys(),stop=False)
                if key2!="":
