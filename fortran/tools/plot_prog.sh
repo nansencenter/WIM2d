@@ -51,17 +51,52 @@ done
 # (if they exist)
 cd $outdir
 outdir=`pwd` # change to full path
-bindir=$outdir/binaries/prog
-
-afiles=($bindir/wim_prog*.a)
-if [ ${#afiles[@]} -eq 0 ]
-then
-   echo "No prog files in $bindir"
-   exit
-fi
 
 echo In `pwd`:
-rm -rf figs/prog/*
+if [ "$vlist" != "" ]
+then
+   # overwrite
+   for vbl in $vlist
+   do
+      if [ "$PLOT_PROG" -eq 1 ]
+      then
+         vdir=figs/prog/$vbl
+         if [ -d "$vdir" ]
+         then
+            echo rm -rf $vdir
+            rm -rf $vdir
+         fi
+      fi
+      if [ "$PLOT_INIT" -eq 1 ]
+      then
+         vdir=figs/init/$vbl
+         if [ -d "$vdir" ]
+         then
+            echo rm -rf $vdir
+            rm -rf $vdir
+         fi
+      fi
+      if [ "$PLOT_FINAL" -eq 1 ]
+      then
+         vdir=figs/final/$vbl
+         if [ -d "$vdir" ]
+         then
+            echo rm -rf $vdir
+            rm -rf $vdir
+         fi
+      fi
+      if [ "$PLOT_INC" -eq 1 ]
+      then
+         vdir=figs/incwaves/$vbl
+         if [ -d "$vdir" ]
+         then
+            echo rm -rf $vdir
+            rm -rf $vdir
+         fi
+      fi
+   done
+fi
+
 echo python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL  --incwaves=$PLOT_INC $vlist
 python $tools/plot_prog.py --outdir=$outdir --prog=$PLOT_PROG --init=$PLOT_INIT --final=$PLOT_FINAL  --incwaves=$PLOT_INC $vlist
 

@@ -435,6 +435,10 @@ class file_list:
             tlist.append('_'+pf[4:-2])
          # =============================================================
 
+      for vbl in fields.keys():
+         key2  = check_names(key,zlims.keys(),stop=False)
+         if key2!="":
+            print("range in "+vbl,zlims[key2][0],zlims[key2][1])
       # =============================================================
 
 
