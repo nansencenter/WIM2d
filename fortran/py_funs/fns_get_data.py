@@ -7,7 +7,7 @@ import datetime as dtm
 
 ##############################################################
 def fn_bfile_info(bfile):
-   # routine to get output fields from binary files:
+   # routine to get all output fields from binary files:
 
    ###########################################################
    # get info like dimensions and variable names from .b file
@@ -239,7 +239,6 @@ def fn_check_grid(outdir):
    grid_prams.update({'dy':dy})
    ###########################################################
 
-   # output
    return grid_prams
 ##############################################################
 
@@ -534,13 +533,11 @@ class wim_results:
                if 'wim_grid' in f and '.a' in f:
                   self.grid_dir  = dir_i
                   break
-            i +=1
+            i += 1
 
          if self.grid_dir is None:
             raise ValueError('wim_grid.[a,b] not found')
       # =====================================================================
-      # print(self.grid_dir)
-      # sys.exit()
 
 
       # =====================================================================
@@ -719,6 +716,32 @@ class wim_results:
             # - otherwise plot step & save fig
          file_list.plot_step(grid_prams,time_index=time_index,
                figdir3=figdir3,vlist=vlist,**kwargs)
+
+      return
+   ##########################################################################
+
+
+   ##########################################################################
+   def plot_grid(self,show=False,**kwargs):
+
+      # =============================================================
+      print('\nPLOTTING LAND MASK...\n')
+
+      if not show:
+         hold     = False
+         figdir   = self.figdir
+         if not os.path.exists(figdir):
+            os.mkdir(figdir)
+         figdir += '/grid'
+         if not os.path.exists(figdir):
+            os.mkdir(figdir)
+      else:
+         figdir   = None
+         hold     = True
+
+      grid_prams  = self.get_grid()
+      Fplt.fn_plot_gen(grid_prams,grid_prams,vlist=['LANDMASK'],\
+            figdir=figdir,hold=hold)
 
       return
    ##########################################################################
