@@ -1,6 +1,7 @@
 addpath('misc_numeric');
 addpath('misc');
 addpath('roots');
+addpath('invacuo_hinges');
 addpath('../misc');
 addpath('../attenuation_youngs');
 hmdir    = getenv('HOME');
