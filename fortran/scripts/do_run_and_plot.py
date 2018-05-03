@@ -10,18 +10,18 @@ import run_WIM2d     as Rwim
 import fns_get_data  as Fdat
 import fns_plot_data as Fplt
 
-# RUN_OPT      = 0 # non-IO version
-RUN_OPT      = 1 # rerun then plot
+# RUN_OPT   = 0 # non-IO version
+RUN_OPT     = 1 # rerun then plot
 DO_PLOTTING = 1 # cancel plotting if desired by setting to 0
 
-gf             = Fdat.fn_check_grid('grid')
-gfl            = gf['LANDMASK']
-ICEMASK      = 1.-gfl
-WAVEMASK     = 1.-gfl
-grid_prams  = gf
+gf         = Fdat.fn_check_grid('grid')
+gfl        = gf['LANDMASK']
+ICEMASK    = 1.-gfl
+WAVEMASK   = 1.-gfl
+grid_prams = gf
 
 if RUN_OPT==0:
-    results  = Rwim.do_run()
+    results = Rwim.do_run()
 else:
     # set inputs: (icec,iceh,dfloe), (Hs,Tp,mwd)
 
@@ -114,19 +114,18 @@ else:
     # call gateway between python and pre-compiled f2py module
     out_fields,results = Rwim.do_run(in_fields=in_fields,params_in=params_in)
 
-##########################################################################
 if DO_PLOTTING==0:
     # stop here
     
     w2d = os.getenv('WIM2D_PATH')
-    print('#####################################################################')
+    print(80*'#')
     print("To plot init, final, and progress files, type:")
     print(w2d+"/fortran/tools/plot_prog.sh 0 "+results.rootdir)
     print("(0 = no movie; change to 1 to make a movie)\n")
 
     print("Or, to just plot 1d slices, type:")
     print(w2d+"/fortran/tools/plot_prog_profiles.sh 0 "+results.rootdir)
-    print('#####################################################################')
+    print(80*'#')
 
 else:
     results.plot_initial()
@@ -146,7 +145,6 @@ else:
     results.plot_prog()
     
     if 0:
-        ################################################################
         # Plot progress files (if they exist)
         # - as profiles on one graph
         cols   = ['k','b','r','g','m','c']
@@ -159,7 +157,6 @@ else:
         pdir = bindir+'/prog/'
         prog_files  = os.listdir(pdir)
     
-        ################################################################
         # checks
         if len(prog_files)>0:
             # make dir for progress plots
@@ -167,14 +164,12 @@ else:
                 os.mkdir(figdir)
         else:
             raise ValueError('No progress files to plot')
-        ################################################################
     
         fig  = plt.figure()
         ax   = fig.add_subplot(1,1,1)
         xx   = gf['X'][:,0]/1.e3
         labs = ['$x$, km','$H_s$, m']
     
-        ################################################################
         for pf in prog_files:
             if '.a'==pf[-2:]:
                 print("Reading "+pf+" ...")
