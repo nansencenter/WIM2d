@@ -8,8 +8,8 @@ this_fxn = "datfile2_cfxn.py"
 #make a c function to obtain one column of datfile;
 outfile1 = "RTparam_hardcoded.c" #main code
 outfile2 = "RTparam_hardcoded.h" #header file with function declarations
-of1        = open(outfile1,'w')
-of2        = open(outfile2,'w')
+of1      = open(outfile1,'w')
+of2      = open(outfile2,'w')
 
 ss = "//Hard-coded parts of attenuation coefficents\n"
 of1.write(ss)
@@ -36,10 +36,10 @@ of1.write("\n")
 int Amn_fxn_L1(double *chebys,int ncol) {
 
   double Amn[Nl][Nc] = {
-      {1.1,2.1,3.1},
-      {4.1,5.1,6.1},
-      {7.1,8.1,9.1},
-      {10.1,11.1,12.1}
+     {1.1,2.1,3.1},
+     {4.1,5.1,6.1},
+     {7.1,8.1,9.1},
+     {10.1,11.1,12.1}
   };
 
   int M  = Nl;
@@ -47,7 +47,7 @@ int Amn_fxn_L1(double *chebys,int ncol) {
   int i,j,r;
 
   for(i=0;i<M;i++) {
-      r            = i+M*j;
+      r         = i+M*j;
       chebys[r] = Amn[i][ncol];
   }
 }
@@ -101,29 +101,29 @@ for lh in range(0,2):
         ##1st line of matrix;
         ss  = "  double Amn["+str(Nl)+"]["+str(Nc)+"] = {\n"
         of1.write(ss)
-        ss  = "      {"+vals[0]
+        ss  = "     {"+vals[0]
         for j in range(1,Nc):
             ss  = ss+","+vals[j]
 
-        ss  = ss+"},\n"
+        ss = ss+"},\n"
         of1.write(ss) 
 
         ## rest of the lines of matrix;
         for i in range(1,Nl):
-            vals  = lines[i].split()
-            ss  = "      {"+vals[0]
+            vals = lines[i].split()
+            ss   = "     {"+vals[0]
             for j in range(1,Nc):
-                ss  = ss+","+vals[j]
+                ss = ss+","+vals[j]
 
-            ss  = ss+"}"
+            ss = ss+"}"
             if i<Nl-1:
-                ss  = ss+",\n"
+                ss = ss+",\n"
             else:
-                ss  = ss+"\n"
+                ss = ss+"\n"
 
             of1.write(ss)
 
-        ss  = "  };\n"
+        ss = "  };\n"
         of1.write(ss) 
         of1.write("\n") 
 
