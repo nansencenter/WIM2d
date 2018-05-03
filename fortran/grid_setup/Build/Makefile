@@ -12,7 +12,7 @@ bin	:=	../bin
 
 # set path for compiler
 # NB relative to this directory
-VPATH 	:=	.:../src:$(src)/misc
+VPATH :=	.:../src:$(src)/misc
 
 # directory where objects are kept
 ODIR	:=	objs
@@ -37,12 +37,12 @@ F2PY_FLAGS=--fcompiler=$(FC) --f77flags="$(IFLAGS) $(OFLAGS)"
 # fortran program to run WIM
 # - executable called by run_WIM2d.sh
 #   (cd ../run; ./run_WIM2d.sh)
-PROG_F		:=	$(ODIR)/p_save_grid.o
+PROG_F	:=	$(ODIR)/p_save_grid.o
 TARGET_F	:=	grid_setup.exec
 
 # fortran interface program to run WIM in ipython
 # - NB f2py needs the full path
-PROG_PY		:=	save_grid_f2py.F
+PROG_PY	:=	save_grid_f2py.F
 TARGET_PY	:=	save_grid_f2py
 
 OBJS		:=      \
@@ -61,11 +61,11 @@ exec: $(PROG_F) $(OBJS)
 	$(FC) -o $(TARGET_F) $^ $(FCFLAGS) $(IFLAGS)
 	mv $(TARGET_F) $(bin)
 
-# Link objects to make python module $(TARGET_PY).so
+# Link objects to make python module $(TARGET_PY)*.so
 py:	$(PROG_PY) $(OBJS)
 	mkdir -p $(bin)
 	$(F2PY) -c -m $(TARGET_PY) $^ $(F2PY_FLAGS)
-	mv $(TARGET_PY).so $(bin)
+	mv $(TARGET_PY)*.so $(bin)
 
 all: exec py
 
@@ -83,7 +83,7 @@ clean:
 # vclean: delete executable, and delete modules and objects
 vclean:
 	rm -f	$(bin)/$(TARGET_F) \
-	   	$(bin)/$(TARGET_PY).so \
+	   	$(bin)/$(TARGET_PY)*.so \
 	   	$(ODIR)/*.o \
 	   	$(MDIR)/*.mod
 
