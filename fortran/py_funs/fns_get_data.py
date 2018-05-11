@@ -146,7 +146,7 @@ def fn_read_general_binary(afile, vlist=None):
         # check vbls are in binary files
         recnos = {}
         for vbl in vlist:
-            vname = check_names(vbl, binfo['recnos'].keys(), stop=True)
+            vname = check_names(vbl, list(binfo['recnos']), stop=True)
             recnos.update({vbl:binfo['recnos'][vname]})
 
     nv = binfo['Nrecs']
@@ -204,6 +204,8 @@ def fn_check_grid(outdir):
     # from binary files
 
     afile = outdir+'/wim_grid.a'
+    if not os.path.exists(afile):
+        return dict()
 
     grid_prams, info = fn_read_general_binary(afile)
 
@@ -290,17 +292,29 @@ def fn_check_prog(outdir, cts):
 
 class file_list:
 
-    def __init__(self, directory, pattern):
-        self.dirname    = directory
-        self.pattern    = pattern
-        self.times      = []
-        self.files      = []
-        self.Nfiles     = 0
+    def __init__(self, directory, pattern,
+            grid_prams = None, grid_dir = None):
+        self.dirname   = directory
+        self.pattern   = pattern
+        self.times     = []
+        self.files     = []
+        self.Nfiles    = 0
         self.variables = []
 
         # check if directory exists before continuing
         if not os.path.exists(self.dirname):
             return
+
+        self.grid_prams = grid_prams
+        if grid_prams is None:
+            if grid_dir is not None:
+                gp = fn_check_grid(grid_dir)
+                if len(gp)>0:
+                    self.grid_prams = gp
+            if self.grid_prams is None:
+                gp = fn_check_grid(self.dirname)
+                if len(gp)>0:
+                    self.grid_prams = gp
 
         # if directory exists,  sort the files
         all_files = os.listdir(self.dirname)
@@ -321,7 +335,7 @@ class file_list:
                     steplist.append(int(stepno))
 
         # sort according to steplist:
-        slist       = sorted([(e, i) for i, e in enumerate(steplist)])
+        slist = sorted([(e, i) for i, e in enumerate(steplist)])
         self.times  = [e for e, i in slist]
         self.files  = [alist[i] for e, i in slist]
         self.Nfiles = len(alist)
@@ -329,7 +343,7 @@ class file_list:
         if self.Nfiles>0:
             bfile = self.files[0].replace('.a', '.b')
             info  = fn_bfile_info(self.dirname+'/'+bfile)
-            self.variables = info['recnos'].keys()
+            self.variables = list(info['recnos'])
 
         return
 
@@ -376,8 +390,8 @@ class file_list:
                 afile = pdir+'/'+pf
                 #
                 fields = fn_read_general_binary(afile, vlist=Vlist, **kwargs)[0]
-                for key in fields.keys():
-                    key2 = check_names(key, zlims.keys(), stop=False)
+                for key in fields:
+                    key2 = check_names(key, list(zlims), stop=False)
                     if key2!="":
                         zmin = fields[key].min()
                         zmax = fields[key].max()
@@ -388,14 +402,14 @@ class file_list:
                 #
                 tlist.append('_'+pf[4:-2])
 
-        for vbl in fields.keys():
-            key2 = check_names(key, zlims.keys(), stop=False)
+        for vbl in fields:
+            key2 = check_names(key, list(zlims), stop=False)
             if key2!="":
                 print("range in "+vbl, zlims[key2][0], zlims[key2][1])
 
 
         # do the plots
-        for vbl in fields.keys():
+        for vbl in fields:
             print('\n')
             print('Plotting results for '+vbl)
             print('\n')
@@ -413,32 +427,35 @@ class file_list:
         return
 
 
-    def plot_step(self, grid_prams, figdir3=None, time_index=0, vlist=None, **kwargs):
+    def plot_step(self, grid_prams, time_index=0, vlist=None,
+            figdir=None, sep_fig_dirs=True, **kwargs):
 
         pf    = self.files[time_index]
         afile = self.dirname+'/'+pf
         tstr  = pf[4:-2]
 
-        DO_SAVE = (figdir3 is not None)
+        DO_SAVE = (figdir is not None)
         if DO_SAVE:
-            if not os.path.exists(figdir3):
-                os.mkdir(figdir3)
-
-
+            if not os.path.exists(figdir):
+                os.mkdir(figdir)
 
         # do the plots
         fields = fn_read_general_binary(afile, vlist=vlist)[0]
 
-        for vbl in fields.keys():
-            if DO_SAVE:
-                figdir3B = figdir3+'/'+vbl
-                if not os.path.exists(figdir3B):
-                    os.mkdir(figdir3B)
-            else:
-                figdir3B = None
-
-        Fplt.fn_plot_gen(grid_prams, fields, figdir=figdir3B, \
-             text=tstr, **kwargs)
+        if not sep_fig_dirs:
+            Fplt.fn_plot_gen(grid_prams, fields, figdir=figdir,
+                 text=tstr, **kwargs)
+        else:
+            for vbl in fields:
+                subdir = figdir
+                if DO_SAVE:
+                    subdir = figdir+'/'+vbl
+                    if not os.path.exists(subdir):
+                        os.mkdir(subdir)
+                else:
+                    subdir = None
+                Fplt.fn_plot_gen(grid_prams, {vbl: fields[vbl]},
+                        figdir=subdir, text=tstr, **kwargs)
         return
 
 class wim_results:
