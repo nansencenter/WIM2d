@@ -14,7 +14,7 @@ def fn_bfile_info(bfile):
     bid.close()
 
     int_list = ['nx', 'ny', 'Nrecs', 'Norder'] # these are integers not floats
-    binfo     = {'recnos':{}}  # dictionary with info about fields in corresponding .a file
+    binfo     = {'recnos': {}}  # dictionary with info about fields in corresponding .a file
 
     do_vlist = 0
     count     = 0
@@ -164,7 +164,7 @@ def fn_read_general_binary(afile, vlist=None):
 
     out    = {}
     for vbl in recnos:
-        out.update({vbl:get_array(aid, recnos[vbl], nx, ny, order=order, fmt_size=fmt_size)})
+        out.update({vbl: get_array(aid, recnos[vbl], nx, ny, order=order, fmt_size=fmt_size)})
 
     aid.close()
 
@@ -277,12 +277,12 @@ def fn_check_prog(outdir, cts):
         # convert from int to str of correct length
         fils  = os.listdir(outdir+'/binaries/prog/')
         # cts0  = fils[0].strip('wim_prog')[:-2]
-        n      = 0
+        n = 0
         while '.swp' in fils[n] or '.DS_Store' in fils[n]:
              n = n+1
-        cts0  = fils[n].strip('wim_prog')[:-2]
-        fmt    = '%'+str(len(cts0))+'.'+str(len(cts0))+'d'
-        cts    = fmt %(cts)
+        cts0 = fils[n].strip('wim_prog')[:-2]
+        fmt  = '%'+str(len(cts0))+'.'+str(len(cts0))+'d'
+        cts  = fmt %(cts)
         print(cts0, cts)
 
     afile = outdir+'/binaries/prog/wim_prog'+cts+'.a'
@@ -306,7 +306,7 @@ class file_list:
         all_files = os.listdir(self.dirname)
 
         # find the .a files
-        alist     = []
+        alist    = []
         steplist = []
         for pf in all_files:
             if (pattern in pf) and ('.a'==pf[-2:]):
@@ -321,20 +321,20 @@ class file_list:
                     steplist.append(int(stepno))
 
         # sort according to steplist:
-        slist         = sorted([(e, i) for i, e in enumerate(steplist)])
+        slist       = sorted([(e, i) for i, e in enumerate(steplist)])
         self.times  = [e for e, i in slist]
         self.files  = [alist[i] for e, i in slist]
         self.Nfiles = len(alist)
 
         if self.Nfiles>0:
-            bfile             = self.files[0].replace('.a', '.b')
-            info              = fn_bfile_info(self.dirname+'/'+bfile)
+            bfile = self.files[0].replace('.a', '.b')
+            info  = fn_bfile_info(self.dirname+'/'+bfile)
             self.variables = info['recnos'].keys()
 
         return
 
     def plot_steps(self, grid_prams, figdir3, zlims=None, vlist=None, **kwargs):
-        pdir          = self.dirname
+        pdir = self.dirname
 
         if not os.path.exists(figdir3):
             os.mkdir(figdir3)
@@ -415,7 +415,7 @@ class file_list:
 
     def plot_step(self, grid_prams, figdir3=None, time_index=0, vlist=None, **kwargs):
 
-        pf     = self.files[time_index]
+        pf    = self.files[time_index]
         afile = self.dirname+'/'+pf
         tstr  = pf[4:-2]
 
@@ -468,11 +468,11 @@ class wim_results:
 
         else:
             dirs = [self.bindir, outdir+'/../grid']
-            i     = 0
+            i = 0
 
             while (self.grid_dir is None) and (i<len(dirs)):
                 dir_i = dirs[i]
-                lst    = os.listdir(dir_i)
+                lst   = os.listdir(dir_i)
                 for f in lst:
                     if 'wim_grid' in f and '.a' in f:
                         self.grid_dir = dir_i
@@ -483,7 +483,7 @@ class wim_results:
                 raise ValueError('wim_grid.[a, b] not found')
 
         # check for initial conditions
-        binlist          = os.listdir(self.bindir)
+        binlist = os.listdir(self.bindir)
         self.init_list = file_list(self.bindir, 'wim_init')
 
         if self.init_list.Nfiles==0:
@@ -538,16 +538,16 @@ class wim_results:
 
         if field_type=="initial":
             file_list = self.init_list
-            short      = "init"
+            short     = "init"
         elif field_type=="progress":
             file_list = self.prog_list
-            short      = "prog"
+            short     = "prog"
         elif field_type=="final":
             file_list = self.out_list
-            short      = "out"
+            short     = "out"
         elif field_type=="inc":
             file_list = self.inc_list
-            short      = "inc"
+            short     = "inc"
         else:
             raise ValueError("unknown field_type: "+field_type)
 
@@ -579,20 +579,20 @@ class wim_results:
 
         if field_type=="initial":
             file_list = self.init_list
-            short      = "init"
-            outdir     = "init"
+            short     = "init"
+            outdir    = "init"
         elif field_type=="progress":
             file_list = self.prog_list
-            short      = "prog"
-            outdir     = "prog"
+            short     = "prog"
+            outdir    = "prog"
         elif field_type=="final":
             file_list = self.out_list
-            short      = "out"
-            outdir     = "final"
+            short     = "out"
+            outdir    = "final"
         elif field_type=="inc":
-            file_list    = self.inc_list
-            short         = "inc"
-            outdir        = "incwaves"
+            file_list = self.inc_list
+            short     = "inc"
+            outdir    = "incwaves"
         else:
             raise ValueError("unknown field_type: "+field_type)
 
@@ -636,16 +636,16 @@ class wim_results:
         print('\nPLOTTING LAND MASK...\n')
 
         if not show:
-            hold      = False
-            figdir    = self.figdir
+            hold   = False
+            figdir = self.figdir
             if not os.path.exists(figdir):
                 os.mkdir(figdir)
             figdir += '/grid'
             if not os.path.exists(figdir):
                 os.mkdir(figdir)
         else:
-            figdir    = None
-            hold      = True
+            figdir = None
+            hold   = True
 
         grid_prams  = self.get_grid()
         Fplt.fn_plot_gen(grid_prams, grid_prams, vlist=['LANDMASK'], \
