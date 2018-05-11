@@ -203,19 +203,6 @@ def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
         y = grid_prams['Y'][0,:]+dy/2.
         y = np.concatenate([[y[0]-dy],y])/1.e3
 
-    # dictionary of figure names
-    figs = {'icec'      : 'icec'+text+'.png',
-            'iceh'      : 'iceh'+text+'.png',
-            'dfloe'     : 'Dmax'+text+'.png',
-            'taux'      : 'taux'+text+'.png',
-            'tauy'      : 'tauy'+text+'.png',
-            'Hs'        : 'Hs'+text+'.png',
-            'Tp'        : 'Tp'+text+'.png',
-            'mwd'       : 'mwd'+text+'.png',
-            'ICE_MASK'  : 'ice_mask'+text+'.png',
-            'WAVE_MASK' : 'wave_mask'+text+'.png',
-            'LANDMASK'  : 'land_mask'+text+'.png'}
-
     # dictionary of labels for colorbars
     labs    = {'icec'      : '$c$',
                'iceh'      : '$h$, m',
@@ -225,37 +212,32 @@ def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
                'Hs'        : '$H_{s}$, m',
                'Tp'        : '$T_p$, s',
                'mwd'       : 'mwd, degrees',
+               'MWD'       : 'mwd, degrees',
                'ICE_MASK'  : 'Ice mask',
                'WAVE_MASK' : 'Wave mask',
                'LANDMASK'  : 'Land mask'}
 
+    # dictionary of figure names
+    figs = {v: '%s_%s.png' %(v.lower(), text) for v in labs}
+    figs['LANDMASK'] = 'land_mask_'+text+'.png'
+
     # Default is let python choose range for variables
-    zlims  = {'icec'     : None,
-              'iceh'     : None,
-              'dfloe'    : None,
-              'taux'     : None,
-              'tauy'     : None,
-              'Hs'       : None,
-              'Tp'       : None,
-              'mwd'      : None,
-              'ICE_MASK' : None,
-              'WAVE_MASK': None,
-              'LANDMASK' : None}
+    zlims  = {v: None for v in labs}
 
     # allow for other variations of key names
-    znames = zlims.keys()
+    znames = list(zlims)
     if zlims_in is not None:
-        for key in zlims_in.keys():
+        for key in zlims_in:
             key2 = Fdat.check_names(key,znames)
             if key2!="":
                 zlims[key2] = zlims_in[key]
 
     # make plots
     if vlist is None:
-        vlist = fields.keys()
+        vlist = list(fields)
 
     for key in vlist:
-        key3 = Fdat.check_names(key,fields.keys())
+        key3 = Fdat.check_names(key,list(fields))
 
         key2 = Fdat.check_names(key,znames,stop=False)
         zlim = None
@@ -265,8 +247,8 @@ def fn_plot_gen(grid_prams,fields,figdir=None,zlims_in=None,
             zlim    = zlims[key2]
             lab     = labs[key2]
             figname = figs[key2]
-        else:
-            key2_ = Fdat.check_names(key,zlims_in.keys(),stop=False)
+        elif zlims_in is not None:
+            key2_ = Fdat.check_names(key,list(zlims_in),stop=False)
             if key2_!="":
                 zlim = zlims_in[key2_]
 
@@ -319,7 +301,6 @@ def fn_plot_final_V1d(grid_prams,Tp_vec,out_fields,figdir):
     if not os.path.exists(figdir):
         os.mkdir(figdir)
 
-    # keys  = out_fields.keys()
     keys = ['dfloe','taux','Hs']
     x    = grid_prams['X']/1.0e3
 
