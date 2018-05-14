@@ -287,8 +287,10 @@ if ~DTYP
       
       if absorb==0
          Vx = V(:,[Im;Iz]);
+         Dx = D([Im;Iz]);
       else
          Vx = V(:,Im);
+         Dx = D([Im]);
       end
     
    %%%%%%%%%%%%%%%%%%%% 
@@ -409,9 +411,9 @@ if ~DTYP
          
          c = Vbc\Ibc; clear Vbc Ibc
       
-      end % END IF absorb==0
+      end % END IF absorb>0
       
-   end % END IF wdt==inf
+   end % END IF wth~=inf
 else
    cprintf('red',['Not coded yet' '\n'])
 end
@@ -634,13 +636,12 @@ if strcmp(wth,'inf')
    %%%%%%%%%%%%%%%%%%% 
    %%%  Inf width  %%%
    %%%%%%%%%%%%%%%%%%% 
-   eigen_info   = struct('u0',u0,...
-      'V',V0,...
-      'D0',D0,...
-      'coeffs',c0,...
-      'width',wth,...
-      'absorb',absorb,...
-      'angles',th_vec);
+   eigen_info   = struct('V',Vx,...
+                         'D0',Dx,...
+                         'coeffs',c0,...
+                         'width',wth,...
+                         'absorb',absorb,...
+                         'angles',th_vec);
 
    %%%%%%%%%%%%%%%
    if absorb==0 %%
