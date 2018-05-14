@@ -76,6 +76,7 @@ if 1
    dtheta       = 2*pi/Ndir;
    m0           = dtheta*sum(Edir,2);
    Hs_ss        = real(4*sqrt(m0));
+   m0_inc       = dtheta*sum(Edir(1,j_inc),2);%[Hs_inc,4*sqrt(m0_inc)]
 
    if 0
       %%test normalisation of Edir
@@ -89,7 +90,7 @@ if 1
    xp_km = (xvec_ss-xvec_ss(1))/1e3;
    figure(1);%%ratio
    hold on;
-   plot(xp_km,Hs_ss/Hs_ss(1),col_v2);
+   plot(xp_km,Hs_ss/Hs_inc,col_v2);
    xl = xlabel('x, km');
    yl = ylabel('H_s/H_{s,inc}');
    set(xl,'fontname','Times','fontsize',14);
@@ -136,59 +137,6 @@ cols           = {'--c','--m','-b'};
 leg_text       = {'SSB (TW1)','SSB (TW2)','Time-dep'};
 
 DO_INIT = 1;
-jleg = max(1,length(legend_labs));
-for j=1:3
-   fname = file_name{j}
-   if exist(fname)
-      legend_labs{end+1} = leg_text{j};
-      fid = fopen(fname);
-
-      %% read past header
-      found_hashes   = 0;
-      while ~found_hashes
-         C  = fgets(fid);
-         if length(C)>=5
-            if strcmp('#####',C(1:5))
-               found_hashes   = 1;
-
-               %% next line will be blank, so skip it
-               %% - rest of file is 2 columns of data
-               C  = fgets(fid);
-            end
-         end
-      end
-
-      %%read data
-      C  = textscan(fid,'%f%f');
-      fclose(fid);
-
-      x  = C{1};
-      Hs = C{2};
-      if DO_INIT
-         x0       = x(1);
-         DO_INIT  = 0;
-      end
-      jz = find(x>=x0,1,'first');
-      y0 = Hs(jz);
-      %%
-      figure(1);
-      hold on;
-      plot((x-x0)/1e3,Hs/y0,cols{j});
-      hold off;
-      xlim([0,wth/1e3]);
-      %%
-      figure(2);
-      hold on;
-      plot(x/1e3,Hs,cols{j});
-      xl = xlabel('x, km');
-      yl = ylabel('H_s, m');
-      set(xl,'fontname','Times','fontsize',14);
-      set(yl,'fontname','Times','fontsize',14);
-      hold off;
-   else
-      disp(['file ', fname, ' not present - skipping']);
-   end
-end
 
 %% add legends and save fig's
 figure(1);
@@ -202,7 +150,7 @@ saveas(gcf,figname);
 
 figure(2);
 box on;
-legend(legend_labs{jleg:end});
+legend(legend_labs{end});
 figname  = [outdir,'/fig_eg_HsVsX_abs_W',wstr,'.png'];
 disp(['Saving to ',figname]);
 saveas(gcf,figname);
