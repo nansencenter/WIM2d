@@ -38,8 +38,8 @@ Param = ModParam_def(Param,1,Vert_Modes,0,0,Nangles)
 %%
 COMM  = 1;
 
-%PLOT  = 0;%% No plotting inside fn_Boltzmann_Steady.m
-PLOT  = 2;%% Plot inside - and compare to external energy calculation
+PLOT  = 0;%% No plotting inside fn_Boltzmann_Steady.m
+%PLOT  = 2;%% Plot inside - and compare to external energy calculation
 
 outputs  = 'eigen-info';
 
@@ -65,12 +65,13 @@ end
 if 1
    Hs_inc  = 3;
    x_edge  = -220e3;
+   W_inf = 200; 
    if wth == 'inf'
-      xvec_ss = x_edge+linspace(0,200e3,400).';
+      xvec_ss = x_edge+linspace(0,W_inf*1e3,400).';
    else
       xvec_ss = x_edge+linspace(0,wth,400).';
    end
-   Ndir    = length(eigen_info.angles);%%now different to Nangles - why?
+   Ndir  = length(eigen_info.angles);%%now different to Nangles - why?
    %%
    [Edir,j_inc] = fn_Boltzmann_calcEdir(eigen_info,xvec_ss-xvec_ss(1),Hs_inc);
    dtheta       = 2*pi/Ndir;
@@ -127,26 +128,35 @@ if 1
    fclose(fid);
 end
 
-%% add plots made by python/fortran code
-w2d_path       = getenv('WIM2D_PATH');
-figdir         = [w2d_path,'/fortran/run/fig_scripts/figs/TC2S'];
-file_name{1}   = [figdir,'/test_steady2.dat'];%%steady state
-file_name{2}   = [figdir,'/test_steady2_FT.dat'];%%steady state (FT)
-file_name{3}   = [figdir,'/test_steady1.dat'];%%time-dependant code after a long time
-cols           = {'--c','--m','-b'};
-leg_text       = {'SSB (TW1)','SSB (TW2)','Time-dep'};
-
-DO_INIT = 1;
 
 %% add legends and save fig's
 figure(1);
 box on;
-if length(legend_labs)>0
+if length(legend_labs)>1
    legend(legend_labs);
 end
-figname  = [outdir,'/fig_eg_HsVsX_ratio_W',wstr,'.png'];
-disp(['Saving to ',figname]);
-saveas(gcf,figname);
+ylim([.5,1.7]);
+nearplot = 0;
+if wth=='inf'
+   %% only do the near-edge plot if infinite MIZ width
+   nearplot = 1;
+else
+   %% show Hs for whole MIZ width
+   figname  = [outdir,'/fig_eg_HsVsX_ratio_W',wstr,'.png'];
+   disp(['Saving to ',figname]);
+   saveas(gcf,figname);
+
+   %% also do the near-edge plot if large enough floe length
+   nearplot = (wth>=W_inf*1e3);
+end
+
+
+if nearplot
+   figname  = [outdir,'/fig_eg_HsVsX_ratio_near_edge_W',wstr,'.png'];
+   disp(['Saving to ',figname]);
+   xlim([0,W_inf]);
+   saveas(gcf,figname);
+end
 
 figure(2);
 box on;
