@@ -17,15 +17,17 @@ function [I,incs] = fn_Boltzmann_calcEdir(eigen_info,x,Hs_inc)
 %% Outputs:
 %% I: rows are directional energy spectrum at each point of x
 
-u0       = eigen_info.u0;
-v0       = eigen_info.v0;
 V        = eigen_info.V;
 D0       = eigen_info.D0;
-D1       = eigen_info.D1;
 c        = eigen_info.coeffs;
 wth      = eigen_info.width;
 th_vec   = eigen_info.angles/pi;
 absorb   = eigen_info.absorb;
+if wth~='inf'
+   u0 = eigen_info.u0;% one of zero eigenvectors 
+   v0 = eigen_info.v0;% complementary function to u0 (satisfies same eqn but is linearly indep) 
+   D1 = eigen_info.D1;% positive eigenvals
+end
 
 if ~exist('x','var')
    x  = [0;wth];
@@ -41,21 +43,29 @@ Ndir  = length(th_vec);
 Nx    = length(x);
 I     = zeros(Nx,Ndir);
 
-if absorb==0
-   %% x  = 0
-   I0 = [u0,V]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
+if wth=='inf'
+   I0 = V*c;
    for loop_x=1:length(x)
-      Ix = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-      %%
+      Ix = V*diag(exp(D0*x(loop_x)))*c;
       I(loop_x,:) = real(Ix).';
    end
 else
-   %% x  = 0
-   I0 = V*diag([exp(D0*0);exp(D1*(0-wth))])*c;
-   for loop_x=1:length(x)
-      Ix = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-      %%
-      I(loop_x,:) = real(Ix).';
+   if absorb==0
+      %% x  = 0
+      I0 = [u0,V]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
+      for loop_x=1:length(x)
+         Ix = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+         %%
+         I(loop_x,:) = real(Ix).';
+      end
+   else
+      %% x  = 0
+      I0 = V*diag([exp(D0*0);exp(D1*(0-wth))])*c;
+      for loop_x=1:length(x)
+         Ix = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+         %%
+         I(loop_x,:) = real(Ix).';
+      end
    end
 end
 
