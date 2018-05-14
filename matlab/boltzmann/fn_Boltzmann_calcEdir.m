@@ -69,9 +69,13 @@ else
    end
 end
 
-dtheta   = 2*pi/Ndir;
-m0_inc   = sum(I0(incs))*dtheta;          %% integrate wrt theta over incident directions
-I        = (.25*Hs_inc)^2/real(m0_inc)*I; %% renormalise I so inc waves have required Hs at x=0
+dtheta = 2*pi/Ndir;
+%m0_ref = sum(I0(refs))*dtheta
+m0_inc = sum(I0(incs))*dtheta;     %% integrate wrt theta over incident directions
+I = (.25*Hs_inc)^2/real(m0_inc)*I; %% renormalise I so inc waves have required Hs at x=0
+%[sum(I(1,incs))*dtheta,(.25*Hs_inc)^2]
+%sum(I(1,refs))*dtheta
+%sum(I(1,:))*dtheta
 
 if 0
    dtheta
