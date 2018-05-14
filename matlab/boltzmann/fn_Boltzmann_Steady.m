@@ -425,203 +425,206 @@ end
 if PLOT
    if ~DTYP
       
-    figure(fig); hold on %h1 = subplot(1,1,1);
-    %%%%%%%%%%%%%%%%%%% 
-    %%%  Inf width  %%%
-    %%%%%%%%%%%%%%%%%%% 
-    if strcmp(wth,'inf')
-     
-     %%% PLOT I(theta) for increasing values of x
-     if PLOT == 1
-     
-     %%%%%%%%%%%%%%%
-     if absorb==0 %%
-     %%%%%%%%%%%%%%% 
-     
-      for loop_x=1:length(x)
-       I = Vx*diag(exp(D([Im;Iz])*x(loop_x)))*c0;
-       if ~isempty(find(abs(imag(I))>tol))
-        cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-         num2str(max(abs(imag(I)))), '\n'])
-       end
-       I = [I(end);I];
-       plot(gca,[-pi,th_vec]/pi,real(I))
-       set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-       title(['x=' num2str(x(loop_x))])
-       xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-       if PS==0
-        cprintf('m',['>> paused: hit any key to continue \n'])
-        pause
-       else
-        pause(PS)
-       end
-      end
-      close(gcf)
-      if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
-     
-     %%%%%%%
-     else %% absorb~=0
-     %%%%%%%
-     
-      for loop_x=1:length(x)
-       I = Vx*diag(exp(D(Im)*x(loop_x)))*c0;
-       if ~isempty(find(abs(imag(I))>tol))
-        cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-         num2str(max(abs(imag(I)))), '\n'])
-       end
-       I = [I(end);I];
-       plot(gca,[-pi,th_vec]/pi,real(I))
-       set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-       title(['x=' num2str(x(loop_x))])
-       xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-       if PS==0
-        cprintf('m',['>> paused: hit any key to continue \n'])
-        pause
-       else
-        pause(PS)
-       end
-      end
-      close(gcf)
-      if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
-     
-     end % END IF absorb ==0
-     
-     %%% PLOT Hs(x)
-     %%%%%%%%%%%%%%%%%%%
-     elseif PLOT == 2 %%
-     %%%%%%%%%%%%%%%%%%% 
-     
-     %%%%%%%%%%%%%%%
-     if absorb==0 %%
-     %%%%%%%%%%%%%%% 
-      I0 = Vx*diag(exp(D([Im;Iz])*0))*c0;
-      H0 = real(sqrt(sum([I0(end);I0]))); clear I0
-      H_vec = 0*x;
-      for loop_x=1:length(x)
-       I = Vx*diag(exp(D([Im;Iz])*x(loop_x)))*c0;
-       I = [I(end);I];
-       H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
-      end
-      plot(x/1e3,H_vec,col); set(gca,'box','on')
-      xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
-      if DO_SAVE
-       save(sv_file,'x','H_vec','-append')
-      end % END DO_SAVE    
-     %%%%%%%
-     else %% absorb~=0
-     %%%%%%% 
-      I0 = Vx*diag(exp(D([Im])*0))*c0;
-      H0 = real(sqrt(sum([I0(end);I0]))); clear I0
-      H_vec = 0*x;
-      for loop_x=1:length(x)
-       I = Vx*diag(exp(D([Im])*x(loop_x)))*c0;
-       I = [I(end);I];
-       H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
-      end
-      plot(x/1e3,H_vec,col); set(gca,'box','on')
-      xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
-      if DO_SAVE
-       save(sv_file,'x','H_vec','-append')
-      end % END DO_SAVE
-     end % END IF absorb==0
-     end % END if PLOT==
-     
-    %%%%%%%%%%%%%%%%%%%% 
-    %%% Finite width %%%
-    %%%%%%%%%%%%%%%%%%%%
-    
-    else
-     %%% PLOT I(theta) for increasing values of x
-     if PLOT==1
-     %%%%%%%%%%%%%%% 
-     if absorb==0 %% 
-      %%%%%%%%%%%%%%%
-      for loop_x=1:length(x)
-       I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-       if ~isempty(find(abs(imag(I))>tol))
-        cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-         num2str(max(abs(imag(I)))), '\n'])
-       end
-       I = [I(end);I];
-       plot(gca,[-pi,th_vec]/pi,real(I))
-       set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-       title(['x=' num2str(x(loop_x))])
-       xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-       %set(gca,'yscale','log')
-       if PS==0
-        cprintf('m',['>> paused: hit any key to continue \n'])
-        pause
-       else
-        pause(PS)
-       end
-      end
-     %%%%%%%
-     else %%
-     %%%%%%% 
-      for loop_x=1:length(x)
-       I = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-       if ~isempty(find(abs(imag(I))>tol))
-        cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
-         num2str(max(abs(imag(I)))), '\n'])
-       end
-       I = [I(end);I];
-       plot(gca,[-pi,th_vec]/pi,real(I))
-       set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
-       title(['x=' num2str(x(loop_x))])
-       xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
-       %set(gca,'yscale','log')
-       if PS==0
-        cprintf('m',['>> paused: hit any key to continue \n'])
-        pause
-       else
-        pause(PS)
-       end
-      end
-     
-     end % END IF absorb==0
-     
-     close(gcf)
-     
-     % Plot Hs = 4*sqrt(m0) where m0 = int I(theta) dtheta
-     % Nb. actually plot ratio Hs(x)/Hs(0)
-     elseif PLOT == 2
-      %%%%%%%%%%%%%%%
-      if absorb==0 %%
-      %%%%%%%%%%%%%%%
-%      I0 = [u0,V]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
-%      H0 = real(sqrt(sum([I0(end);I0]))); clear I0
-       I0 = [u0,V]*diag([1;1;exp(D0*0);exp(D1*(0-wth))])*c;
-       H0 = real(sqrt(sum([I0(incs)]))); clear I0
-       H_vec = 0*x; 
-       for loop_x=1:length(x)
-        I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-        I = [I(end);I];
-        H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
-       end
-       plot(x/1e3,H_vec,col); set(gca,'box','on')
-       xlabel('x [km]','fontsize',14); 
-       %ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
-       ylabel('H_{s}(x)/H_{s,inc}','fontsize',14);
-      %%%%%%%
-      else %%
-      %%%%%%%
+      figure(fig); hold on %h1 = subplot(1,1,1);
+      %%%%%%%%%%%%%%%%%%% 
+      %%%  Inf width  %%%
+      %%%%%%%%%%%%%%%%%%% 
+      if strcmp(wth,'inf')
+       
+         %%% PLOT I(theta) for increasing values of x
+         if PLOT == 1
+         
+            %%%%%%%%%%%%%%%
+            if absorb==0 %%
+            %%%%%%%%%%%%%%% 
+            
+               for loop_x=1:length(x)
+                  I = Vx*diag(exp(D([Im;Iz])*x(loop_x)))*c0;
+                  if ~isempty(find(abs(imag(I))>tol))
+                     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+                        num2str(max(abs(imag(I)))), '\n'])
+                  end
+                  I = [I(end);I];
+                  plot(gca,[-pi,th_vec]/pi,real(I))
+                  set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+                  title(['x=' num2str(x(loop_x))])
+                  xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+                  if PS==0
+                     cprintf('m',['>> paused: hit any key to continue \n'])
+                     pause
+                  else
+                     pause(PS)
+                  end
+               end
+               close(gcf)
+               if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
+            
+            %%%%%%%
+            else %% absorb~=0
+            %%%%%%%
+            
+               for loop_x=1:length(x)
+                  I = Vx*diag(exp(D(Im)*x(loop_x)))*c0;
+                  if ~isempty(find(abs(imag(I))>tol))
+                     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+                     num2str(max(abs(imag(I)))), '\n'])
+                  end
+                  I = [I(end);I];
+                  plot(gca,[-pi,th_vec]/pi,real(I))
+                  set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+                  title(['x=' num2str(x(loop_x))])
+                  xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+                  if PS==0
+                     cprintf('m',['>> paused: hit any key to continue \n'])
+                     pause
+                  else
+                     pause(PS)
+                  end
+               end
+               close(gcf)
+               if COMM; cprintf('blue',['>> const = ' num2str(I(1)) '\n']); end
+            
+            end % END IF absorb ==0
+         
+         %%% PLOT Hs(x)
+         %%%%%%%%%%%%%%%%%%%
+         elseif PLOT == 2 %%
+         %%%%%%%%%%%%%%%%%%% 
+         
+            f_inline = inline(fn_inc);
+            %m0_inc = quad(fn_inc,-pi/2,pi/2)
+            dtheta = th_vec(2)-th_vec(1);
+            m0_inc = sum(f_inline(th_vec(incs)))*dtheta;
+            Hs_inc = 4*sqrt(m0_inc);
+            %%%%%%%%%%%%%%%
+            if absorb==0 %%
+            %%%%%%%%%%%%%%% 
+               H_vec = 0*x;
+               for loop_x=1:length(x)
+                  I = Vx*diag(exp(D([Im;Iz])*x(loop_x)))*c0;
+                  H_vec(loop_x) = real(4*sqrt(sum(I*dtheta))/Hs_inc);
+                  clear I;
+               end
+               plot(x/1e3,H_vec,col); set(gca,'box','on')
+               xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+               if DO_SAVE
+                  save(sv_file,'x','H_vec','-append')
+               end % END DO_SAVE    
+            %%%%%%%
+            else %% absorb~=0
+            %%%%%%% 
+               H_vec = 0*x;
+               for loop_x=1:length(x)
+                  I = Vx*diag(exp(D([Im])*x(loop_x)))*c0;
+                  H_vec(loop_x) = real(4*sqrt(sum(I*dtheta))/Hs_inc);
+                  clear I;
+               end
+               plot(x/1e3,H_vec,col);
+               set(gca,'box','on')
+               xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+               if DO_SAVE
+                  save(sv_file,'x','H_vec','-append')
+               end % END DO_SAVE
+            end % END IF absorb==0
+         end % END if PLOT==
+       
+      %%%%%%%%%%%%%%%%%%%% 
+      %%% Finite width %%%
+      %%%%%%%%%%%%%%%%%%%%
       
-      I0 = V*diag([exp(D0*0);exp(D1*(0-wth))])*c;
-      H0 = real(sqrt(sum([I0(end);I0]))); clear I0
-      H_vec = 0*x;
-      for loop_x=1:length(x)
-       I = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
-       I = [I(end);I];
-       H_vec(loop_x) = real(sqrt(sum(I)))/H0; clear I
-      end
-      plot(x/1e3,H_vec,col); set(gca,'box','on')
-      xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
-      end % END IF absorb==0
-     end % END IF PLOT==
-    end % ENF IF wth==inf
+      else
+         %%% PLOT I(theta) for increasing values of x
+         if PLOT==1
+            %%%%%%%%%%%%%%% 
+            if absorb==0 %% 
+               %%%%%%%%%%%%%%%
+               for loop_x=1:length(x)
+                  I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+                  if ~isempty(find(abs(imag(I))>tol))
+                     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+                     num2str(max(abs(imag(I)))), '\n'])
+                  end
+                  I = [I(end);I];
+                  plot(gca,[-pi,th_vec]/pi,real(I))
+                  set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+                  title(['x=' num2str(x(loop_x))])
+                  xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+                  %set(gca,'yscale','log')
+                  if PS==0
+                     cprintf('m',['>> paused: hit any key to continue \n'])
+                     pause
+                  else
+                     pause(PS)
+                  end
+               end
+            %%%%%%%
+            else %%
+            %%%%%%% 
+               for loop_x=1:length(x)
+                  I = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+                  if ~isempty(find(abs(imag(I))>tol))
+                     cprintf('red',['Check I: ', int2str(loop_x), ', ', ...
+                     num2str(max(abs(imag(I)))), '\n'])
+                  end
+                  I = [I(end);I];
+                  plot(gca,[-pi,th_vec]/pi,real(I))
+                  set(gca, 'ylim',[0,max(I0)],'xlim',[-1,1])
+                  title(['x=' num2str(x(loop_x))])
+                  xlabel('\theta','fontsize',16); ylabel('I','fontsize',16);
+                  %set(gca,'yscale','log')
+                  if PS==0
+                     cprintf('m',['>> paused: hit any key to continue \n'])
+                     pause
+                  else
+                     pause(PS)
+                  end
+               end
+            
+            end % END IF absorb==0
+            
+            close(gcf)
+            
+            % Plot Hs = 4*sqrt(m0) where m0 = int I(theta) dtheta
+            % NB. actually plot ratio Hs(x)/Hs_inc
+         elseif PLOT == 2
+            %%%%%%%%%%%%%%%
+            f_inline = inline(fn_inc);
+            %m0_inc = quad(fn_inc,-pi/2,pi/2)
+            dtheta = th_vec(2)-th_vec(1);
+            m0_inc = sum(f_inline(th_vec(incs)))*dtheta;
+            Hs_inc = 4*sqrt(m0_inc);
+
+            if absorb==0 %%
+            %%%%%%%%%%%%%%%
+               H_vec = 0*x; 
+               for loop_x=1:length(x)
+                  I = [x(loop_x)*v0+u0,V]*diag([1;1;exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+                  H_vec(loop_x) = real(4*sqrt(sum(I*dtheta)))/Hs_inc;
+                  clear I
+               end
+               plot(x/1e3,H_vec,col); set(gca,'box','on')
+               xlabel('x [km]','fontsize',14); 
+               %ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+               ylabel('H_{s}(x)/H_{s,inc}','fontsize',14);
+            %%%%%%%
+            else %%
+            %%%%%%%
+          
+               H_vec = 0*x;
+               for loop_x=1:length(x)
+                  I = V*diag([exp(D0*x(loop_x));exp(D1*(x(loop_x)-wth))])*c;
+                  H_vec(loop_x) = real(4*sqrt(sum(I*dtheta)))/Hs_inc;
+                  clear I;
+               end
+               plot(x/1e3,H_vec,col); set(gca,'box','on')
+               xlabel('x [km]','fontsize',14); ylabel('H_{s}(x)/H_{s}(0)','fontsize',14);
+            end % END IF absorb==0
+
+         end % END IF PLOT==
+      end % ENF IF wth==inf
      
    else
-    cprintf('red',['Not coded yet' '\n'])
+      cprintf('red',['Not coded yet' '\n'])
    end  
    hold off
 end%%PLOT
@@ -711,14 +714,14 @@ else
    else %%
       %%%%%%% 
       eigen_info   = struct('u0',NaN,...
-      'v0',NaN,...
-      'V',V,...
-      'D0',D0,...
-      'D1',D1,...
-      'coeffs',c,...
-      'width',wth,...
-      'absorb',absorb,...
-      'angles_on_pi',th_vec);
+                            'v0',NaN,...
+                            'V',V,...
+                            'D0',D0,...
+                            'D1',D1,...
+                            'coeffs',c,...
+                            'width',wth,...
+                            'absorb',absorb,...
+                            'angles_on_pi',th_vec);
 
       I0 = V(incs,:)*diag([exp(D0*0);exp(D1*(0-wth))])*c;
       I  = V(incs,:)*diag([exp(D0*Param.MIZ_length);...
