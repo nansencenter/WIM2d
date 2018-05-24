@@ -65,6 +65,15 @@ if ~exist('Param','var'); Param = ParamDef_Default(RIGID);
 if ~exist('fn_inc','var'); fn_inc = 'cos(th_vec).^2'; end
 %if ~exist('fn_inc','var'); fn_inc = 'series_delta(th_vec,25)'; end
 
+if ~exist('normalisation_type','var')
+   %% this is only for ISO>0:
+   %% - want to choose between scaling 'ISO' by c/A_floe (floe density)
+   %%   (as done in non-iso scattering)
+   %%   or not
+   %% - default is not
+   normalisation_type = 0;
+end
+
 % if absorb~=0
 %  cprintf('red',['>>> Check solution for absorb~=0 ... exiting \n'])
 %  return
@@ -210,16 +219,18 @@ else %%%%%%%%%%%%%
    %%%%%%%%%%%%%%%%%%
    R_mat1 = zeros(length(th_vec));
    for loop_th=1:length(th_vec)
-    R_mat1(loop_th,:) = S;
+      R_mat1(loop_th,:) = S;
    end
 end
 
-if 0
-   R_mat0 = -beta + absorb + 0*S;
-else
-   R_mat0 = -sum(R_mat1,1) + absorb;
+R_mat0 = -sum(R_mat1,1) + absorb;
+R_mat = diag(R_mat0)+R_mat1;
+if ISO==0 | normalisation_type==1
+   %% scale by floe density, c/(pi*radius^2)
+   %% - always do this for non iso scattering
+   %% - optional for iso scattering
+   R_mat = conc/pi/((Param.floe_diam/2)^2)*R_mat;
 end
-R_mat = conc*(diag(R_mat0)+R_mat1)/pi/((Param.floe_diam/2)^2);
 
 if DO_SAVE
    K = conc*(R_mat1)/pi/((Param.floe_diam/2)^2);
