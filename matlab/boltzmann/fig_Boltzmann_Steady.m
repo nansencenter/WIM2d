@@ -40,6 +40,7 @@ COMM  = 1;
 
 PLOT  = 0;%% No plotting inside fn_Boltzmann_Steady.m
 %PLOT  = 2;%% Plot inside - and compare to external energy calculation
+figformat = '.eps';%'.png';
 
 outputs  = 'eigen-info';
 
@@ -65,7 +66,7 @@ end
 if 1
    Hs_inc  = 3;
    x_edge  = -220e3;
-   W_inf = 200; 
+   W_inf = 200;%1e3; 
    if wth == 'inf'
       xvec_ss = x_edge+linspace(0,W_inf*1e3,400).';
    else
@@ -142,7 +143,7 @@ if wth=='inf'
    nearplot = 1;
 else
    %% show Hs for whole MIZ width
-   figname  = [outdir,'/fig_eg_HsVsX_ratio_W',wstr,'.png'];
+   figname  = [outdir,'/fig_eg_HsVsX_ratio_W',wstr,figformat];
    disp(['Saving to ',figname]);
    saveas(gcf,figname);
 
@@ -152,7 +153,7 @@ end
 
 
 if nearplot
-   figname  = [outdir,'/fig_eg_HsVsX_ratio_near_edge_W',wstr,'.png'];
+   figname = [outdir,'/fig_eg_HsVsX_ratio_near_edge_W',wstr,figformat];
    disp(['Saving to ',figname]);
    xlim([0,W_inf]);
    saveas(gcf,figname);
@@ -161,6 +162,6 @@ end
 figure(2);
 box on;
 legend(legend_labs{end});
-figname  = [outdir,'/fig_eg_HsVsX_abs_W',wstr,'.png'];
+figname  = [outdir,'/fig_eg_HsVsX_abs_W',wstr,figformat];
 disp(['Saving to ',figname]);
 saveas(gcf,figname);
