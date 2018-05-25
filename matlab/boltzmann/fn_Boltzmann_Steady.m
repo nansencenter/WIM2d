@@ -66,6 +66,7 @@ if ~exist('fn_inc','var'); fn_inc = 'cos(th_vec).^2'; end
 %if ~exist('fn_inc','var'); fn_inc = 'series_delta(th_vec,25)'; end
 
 if ~exist('normalisation_type','var')
+   %% TODO make this an input
    %% this is only for ISO>0:
    %% - want to choose between scaling 'ISO' by c/A_floe (floe density)
    %%   (as done in non-iso scattering)
@@ -96,8 +97,9 @@ if ~exist('tol','var'); tol=1e-5; end
 if ~exist('DTYP','var'); DTYP=0; end
 
 th_res = Param.th_res;
-
-th_vec = linspace(0,1,2*th_res); th_vec = unique([-th_vec,th_vec]);
+   %th_res an integer, so always an odd no of bins
+th_vec = linspace(0,1,2*th_res);%avoids 0.5 since odd no of bins and using end points
+th_vec = unique([-th_vec,th_vec]);
 th_vec(1)=[]; 
  
 refs = find(or(th_vec>0.5,th_vec<-0.5));
@@ -167,8 +169,8 @@ else
    out(1).name  = 'E';
    %out(1).value = ISO/length(th_vec) + 0*th_vec;
    out(1).value = ISO/2/pi + 0*th_vec;
-     % TW (May `15): multiply by dx=2*pi/Ndir later
-     % => final R_mat1 = dx*(ISO/2/pi)*ones(Ndir,Ndir) = (ISO/Ndir)*ones(Ndir,Ndir)
+     % NB multiply by dtheta=2*pi/Ndir later
+     % => final R_mat1 = dtheta*(ISO/2/pi)*ones(Ndir,Ndir) = (ISO/Ndir)*ones(Ndir,Ndir)
 end
 
 for loop_out=1:length(out)
@@ -189,10 +191,8 @@ end % end loop_out
 %%% FINITE DIFFERENCE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Nb. This is the trap rule (because it's periodic)
-
-dx = 2*pi/length(th_vec);
-
+% NB. This is the trapezium rule (because it's periodic)
+dtheta = 2*pi/length(th_vec);
 L_mat = cos(th_vec);
 L_mat = diag(L_mat);
 
@@ -212,7 +212,6 @@ if ~ISO %%%%%%%%%%%%%%%%
       mk=mk-1;
    end
    clear mk
-   R_mat1 = dx*R_mat1;
  
    %%% ISOTROPIC %%%
 else %%%%%%%%%%%%%
@@ -223,18 +222,30 @@ else %%%%%%%%%%%%%
    end
 end
 
+R_mat1 = dtheta*R_mat1;%integrate wrt theta
 R_mat0 = -sum(R_mat1,1) + absorb;
 R_mat = diag(R_mat0)+R_mat1;
 if ISO==0 | normalisation_type==1
    %% scale by floe density, c/(pi*radius^2)
    %% - always do this for non iso scattering
    %% - optional for iso scattering
-   R_mat = conc/pi/((Param.floe_diam/2)^2)*R_mat;
+   sc_fac = conc/pi/((Param.floe_diam/2)^2);
+   if ISO>0
+      disp(['ISO = ',...
+            num2str(ISO)]);
+      disp(['scaled ISO = ',...
+            num2str(ISO*sc_fac)]);
+      %ISO, sc_fac*R_mat0(1), pause
+   end
+else
+   sc_fac = 1;
+   %ISO, sc_fac*R_mat0(1), pause
 end
+R_mat = sc_fac*R_mat;
 
 if DO_SAVE
-   K = conc*(R_mat1)/pi/((Param.floe_diam/2)^2);
-   alpha = conc*(R_mat0(1,1))/pi/((Param.floe_diam/2)^2);
+   K = sc_fac*R_mat1;
+   alpha = sc_fac*R_mat0(1,1);
    
    save(sv_file,'th_vec','K','alpha','-append')
    
@@ -245,7 +256,8 @@ end % END DO_SAVE
 %% 2. Eigenvalues & eigenvectors %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[V,D] = eig(R_mat,L_mat); D = diag(D);
+[V,D] = eig(R_mat,L_mat);
+D = diag(D);%convert from diagonal matrix to a vector
 
 % min(abs(D))
 % abs(det(V))
