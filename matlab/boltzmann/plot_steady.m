@@ -1,0 +1,9 @@
+W_inf = 20;
+lens = (W_inf/200)*[100,...
+                    500,...
+                    1000,...
+                    10000];%%correspond to W_inf=200
+for j=1:length(lens)
+   fig_Boltzmann_Steady(lens(j));
+end
+fig_Boltzmann_Steady('inf');
