@@ -40,7 +40,8 @@ COMM  = 1;
 
 PLOT  = 0;%% No plotting inside fn_Boltzmann_Steady.m
 %PLOT  = 2;%% Plot inside - and compare to external energy calculation
-figformat = '.eps';%'.png';
+figformat = '.png';
+%figformat = '.eps';
 
 outputs  = 'eigen-info';
 
@@ -66,11 +67,13 @@ end
 if 1
    Hs_inc  = 3;
    x_edge  = -220e3;
-   W_inf = 200;%1e3; 
+   W_inf = 20;%for plotting
+   %W_inf = 200;%for plotting
+   npts = 1000;
    if wth == 'inf'
-      xvec_ss = x_edge+linspace(0,W_inf*1e3,400).';
+      xvec_ss = x_edge+linspace(0,W_inf*1e3,npts).';
    else
-      xvec_ss = x_edge+linspace(0,wth,400).';
+      xvec_ss = x_edge+linspace(0,wth,npts).';
    end
    Ndir  = length(eigen_info.angles);%%now different to Nangles - why?
    %%
