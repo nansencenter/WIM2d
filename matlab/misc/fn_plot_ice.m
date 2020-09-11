@@ -7,9 +7,11 @@ jL       = find(grid_prams.LANDMASK==1);
 %%
 vbls  = {'cice','hice','Dmax'};
 if ny==1
-   lab3  = {'\itc','\ith, \rmm','\itD_{\rm max}, \rmm'};
+%    lab3  = {'\itc','\ith, \rmm','\itD_{\rm max}, \rmm'};
+   lab3  = {'$c$','$h$, m','$D_{\rm max}$, m'};
 else
-   lab3  = {'Concentration','Thickness, m','\itD_{\rm max}, \rmm'};
+%    lab3  = {'Concentration','Thickness, m','\itD_{\rm max}, \rmm'};
+   lab3  = {'Concentration','Thickness, m','$D_{\rm max}$, m'};
 end
 
 for j=1:3

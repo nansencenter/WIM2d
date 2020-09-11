@@ -13,16 +13,18 @@ end
 hold on;
 set(gca,'FontName','Times','FontSize',fontsize);
 if ~isempty(x_lbl)
-   hx = xlabel(x_lbl);
-   set(hx,'FontName','Times','FontSize',fontsize,...
-         'FontWeight','light');
-         %'Interpreter','latex');
+   hx = xlabel(x_lbl,'Interpreter','latex');
+%    hx = xlabel(x_lbl);
+%    set(hx,'FontName','Times','FontSize',fontsize,...
+%          'FontWeight','light');
+%          %'Interpreter','latex');
 end
 if ~isempty(y_lbl)
-   hy = ylabel(y_lbl);
-   set(hy,'FontName','Times','FontSize',fontsize,...
-         'FontWeight','light');
-         %'Interpreter','latex');
+   hy = ylabel(y_lbl,'Interpreter','latex');
+%    hy = ylabel(y_lbl);
+%    set(hy,'FontName','Times','FontSize',fontsize,...
+%          'FontWeight','light');
+%          %'Interpreter','latex');
 end
 hold off;
 

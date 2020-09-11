@@ -4,7 +4,8 @@ function H  = fn_plot1d(x,y,labs,STEPPING)
 %% Date: 20150820, 13:32:28 CEST
 
 if ~exist('labs','var')
-   labs  = {'\itx, \rmkm',' '};
+%    labs  = {'\itx, \rmkm',' '};
+  labs  = {'$x$, km',' '};
 end
 
 if ~exist('STEPPING')

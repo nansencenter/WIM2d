@@ -803,7 +803,7 @@ if params_in.PLOT_PROG
    if ~params_in.DO_VIS
     h3 = figure('visible','off','name','progress');
    else
-    h3 = figure(3); clf; fn_fullscreen;
+    h3 = figure(3); clf; fn_halfscreen; %fn_fullscreen;
    end
  fig_dir  = [params_in.outdir,'/figs/prog'];
  eval(['!mkdir -p ',fig_dir]);
@@ -1596,6 +1596,8 @@ else
                   fn_plot_spec_2(gridprams.X,gridprams.Y,out_fields.Hs,out_fields.tau_x,...
                      out_fields.Dmax,out_fields.tau_y);
                end
+               
+               sgtitle(h3,['$t=$' sprintf('%0.1f',(n-1)*dt) '; $n=$' int2str(n) ' / ' int2str(nt)],'fontsize',15,'interpreter','latex');  
 
                if params_in.SV_FIG==1
 
@@ -2349,8 +2351,11 @@ function fn_plot_spec_2(X,Y,Hs,tau_x,Dmax,tau_y)
 
 [nx,ny]  = size(X);
 vbls     = {'Hs','Dmax','tau_x','tau_y'};
-lab3     = {'{\itH}_{\rm s}, m','{\itD}_{\rm max}, m',...
-            '{\tau}_{x}, \rmPa','{\tau}_{y}, \rmPa'};
+% lab3     = {'{\itH}_{\rm s}, m','{\itD}_{\rm max}, m',...
+%             '{\tau}_{x}, \rmPa','{\tau}_{y}, \rmPa'};
+
+lab3     = {'$H_{\textnormal{s}}$, m','${D}_{\textnormal{max}}$, m',...
+            '${\tau}_{x}$, Pa','${\tau}_{y}$, Pa'};
 
 %%fix positions so figures can be compared more easily between computers
 pos{1}   = [0.130000000000000   0.583837209302326   0.334659090909091   0.341162790697674];
@@ -2362,10 +2367,12 @@ for j=1:4
    subplot('position',pos{j});
    eval(['Z = ',vbls{j},';']);
    if ny==1
-      labs  = {'\itx, \rmkm',lab3{j}};
+%       labs  = {'\itx, \rmkm',lab3{j}};
+      labs  = {'$x$, km',lab3{j}};
       H  = fn_plot1d(X/1e3,Z,labs);
    else
-      labs  = {'\itx, \rmkm','\ity, \rmkm',lab3{j}};
+%       labs  = {'\itx, \rmkm','\ity, \rmkm',lab3{j}};
+      labs  = {'$x$, km','$y$, km',lab3{j}};
       fn_pcolor(X(:,1)/1e3,Y(1,:)/1e3,Z,labs);
    end
 end
