@@ -57,9 +57,10 @@ if ~isfield(s1,'young');
 
 end
 
-% Flexural strength (Timco and O'Brien 1994)
-s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
-
+if ~isfield(s1,'sigma_c')
+ % Flexural strength (Timco and O'Brien 1994)
+ s1.sigma_c  = 1.76e6.*exp(-5.88.*sqrt(s1.vbf)); % [Pa]
+end
 
 %%Breaking criterion option
 if ~isfield(s1,'BRK_OPT');
@@ -87,7 +88,9 @@ s1.flex_rig_coeff = s1.young/12/(1-s1.poisson^2);
 
 % Parameters for the floe size distribution
 fsd_params     = set_FSD_params();
-s1.Dmax_min    = fsd_params.Dmax_min;  % min floe size [m]
+if ~isfield(s1,'Dmax_min');
+ s1.Dmax_min    = fsd_params.Dmax_min;  % min floe size [m]
+end
 s1.xi          = fsd_params.xi;        % [-]
 s1.fragility   = fsd_params.fragility; % [-]
 s1.Dthresh     = fsd_params.Dthresh;   % change from power law to uniform FSD here [m]

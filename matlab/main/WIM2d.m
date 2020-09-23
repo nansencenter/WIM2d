@@ -306,6 +306,12 @@ end
 if ~isnan(params_in.visc_ws)
    ice_prams.visc_ws  = params_in.visc_ws;
 end
+if ~isnan(params_in.sigma_c)
+   ice_prams.sigma_c  = params_in.sigma_c;
+end
+if ~isnan(params_in.Dmax_min)
+   ice_prams.Dmax_min  = params_in.Dmax_min;
+end
 ice_prams.BRK_OPT    = params_in.BRK_OPT;
 ice_prams.cohesion   = params_in.cohesion;
 ice_prams.friction   = params_in.friction;
