@@ -17,6 +17,7 @@ else
    Tmin              = inc_options.Tmin;
    Tmax              = inc_options.Tmax;
    DIRSPEC_INC_OPT   = inc_options.DIRSPEC_INC_OPT;
+   FRQSPEC_INC_OPT   = inc_options.FRQSPEC_INC_OPT;
 end
 
 %%frequency grid:
@@ -69,7 +70,11 @@ for i=1:nx
             %% Bretschneider spectrum
             %% - freq spectrum
             om    = 2*pi*freq;
-            Sfreq = SDF_Bretschneider(om,{Tp,Hs});
+            if FRQSPEC_INC_OPT
+             Sfreq = SDF_PM(om,{Tp,Hs});
+            else
+             Sfreq = SDF_Bretschneider(om,{Tp,Hs});
+            end
          else
             Sfreq = (Hs/4)^2;%%Hs=4*sqrt(Sfreq*wt_om), wt_om=1
          end

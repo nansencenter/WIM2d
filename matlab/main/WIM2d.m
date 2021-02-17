@@ -312,6 +312,12 @@ end
 if ~isnan(params_in.Dmax_min)
    ice_prams.Dmax_min  = params_in.Dmax_min;
 end
+if isfield(params_in,'strain_c')
+   ice_prams.strain_c  = params_in.strain_c;
+end
+if isfield(params_in,'use_kice')
+   ice_prams.use_kice  = params_in.use_kice;
+end
 ice_prams.BRK_OPT    = params_in.BRK_OPT;
 ice_prams.cohesion   = params_in.cohesion;
 ice_prams.friction   = params_in.friction;
@@ -560,6 +566,9 @@ dt       = duration/nt;%%reduce dt so it divides duration perfectly
 % uc    = amin+.7*(amax-amin);
 
 diagnostics.wave_travel_dist = duration*ag;
+diagnostics.nt = nt;
+diagnostics.dt = dt;
+diagnostics.duration = duration;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Display parameters
@@ -845,6 +854,20 @@ else
    SV_BIN   = 0;
 end
 
+%%% Calculated frequency of max incident energy
+
+Tpk = zeros(gridprams.nx,gridprams.ny);
+
+for i = 1:gridprams.nx
+ for j = 1:gridprams.ny
+  if WAVE_MASK(i,j)
+   [~,ind]  = max(squeeze(S_inc(i,j,1,:)));
+   Tpk(i,j) = 2*pi/om_vec(ind);                                  clear ind 
+  end
+ end
+end
+
+wave_fields.Tpk = Tpk;                                           clear Tpk
 
 if (SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -859,10 +882,12 @@ if (SV_BIN==1) & (params_in.DO_CHECK_INIT==1)
    pairs{end+1}   = {'Hs'  ,wave_fields.Hs};
    pairs{end+1}   = {'Tp'  ,wave_fields.Tp};
    pairs{end+1}   = {'mwd' ,wave_fields.mwd};
+   pairs{end+1}   = {'Tpk' ,wave_fields.Tpk};
    %%
    fn_save_binary(Froot,Bdims,year_info,pairs);
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
+
 
 if (SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
 
@@ -878,6 +903,7 @@ if (SV_BIN==1) & (params_in.DO_CHECK_PROG==1)
    pairs{end+1}   = {'Hs',wave_fields.Hs};
    pairs{end+1}   = {'Tp',wave_fields.Tp};
    pairs{end+1}   = {'mwd',wave_fields.mwd};
+   pairs{end+1}   = {'Tpk',wave_fields.Tpk};
    %%
    fn_save_binary(Froot,Bdims,year_info,pairs);
    %eval(['!cat ',Froot,'.b'])
@@ -980,6 +1006,7 @@ else
       mom2  = zeros(gridprams.nx,gridprams.ny);
       mom0w = zeros(gridprams.nx,gridprams.ny);
       mom2w = zeros(gridprams.nx,gridprams.ny);
+      Tpk   = mom0; Spk = mom0;
 
       %% wave stresses;
       tau_x = zeros(gridprams.nx,gridprams.ny);
@@ -1245,6 +1272,12 @@ else
             %% convert from water amp's to ice amp's;
             F     = disp_ratio(i,j,jw);%%|T| also
             k_ice = 2*pi/wlng_ice(i,j,jw);
+            
+            %% Peak values
+            if S_freq(i,j)>Spk(i,j)
+             Spk(i,j) = S_freq(i,j);
+             Tpk(i,j) = 2*pi/om_vec(jw);
+            end
 
             %% SPECTRAL MOMENTS;
             %%take abs as small errors can make S_freq negative
@@ -1290,6 +1323,8 @@ else
          jnz                  = find(mom2w>0);
          out_fields.Tp(jnz)  = 2*pi*sqrt(mom0w(jnz)./mom2w(jnz));
       end
+      
+      out_fields.Tpk = Tpk;
 
       %% wave stresses
       out_fields.tau_x  = tau_x;
@@ -1849,6 +1884,7 @@ else
          pairs{end+1}   = {'Hs'   ,out_fields.Hs};
          pairs{end+1}   = {'Tp'   ,out_fields.Tp};
          pairs{end+1}   = {'mwd'  ,out_fields.mwd};
+         pairs{end+1}   = {'Tpk'  ,out_fields.Tpk};
          %%
          fn_save_binary(Froot,Bdims,year_info,pairs);
       end
@@ -1880,6 +1916,7 @@ if (SV_BIN==1)&(params_in.DO_CHECK_FINAL==1)
    pairs{end+1}   = {'Hs'   ,out_fields.Hs};
    pairs{end+1}   = {'Tp'   ,out_fields.Tp};
    pairs{end+1}   = {'mwd'  ,out_fields.mwd};
+   pairs{end+1}   = {'Tpk'  ,out_fields.Tpk};
    %%
    fn_save_binary(Froot,Bdims,year_info,pairs);
 end

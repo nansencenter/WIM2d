@@ -13,7 +13,7 @@ if nargin==0
       %% test R-P drag
       ice_prams.drag_rp = 13;
       ice_prams.visc_ws = 0;
-   elseif 1
+   elseif -0.5
       %% test W-S viscoelastic
       ice_prams.drag_rp = 0;
       ice_prams.visc_ws = 1;
@@ -82,6 +82,10 @@ for j_=1:length(om)
       wn_ice   = kice(j)
       wn_wtr   = kwtr(j)
    end
+end
+
+if ice_prams.use_kice==0
+ kice = kwtr;
 end
 
 %% get attenuation due to Robinson-Palmer drag:

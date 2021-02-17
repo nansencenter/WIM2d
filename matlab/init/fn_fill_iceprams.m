@@ -81,6 +81,13 @@ elseif s1.BRK_OPT==2%% Marchenko's stress criterion
 elseif s1.BRK_OPT==3%% Mohr-Coulomb stress criterion
    %% - convert to strain criterion
    s1 = fn_cohesion(s1,'cohesion');
+else
+ s1          = fn_cohesion(s1,'strain');
+end
+
+%% Use ice wavenumber or water wavenumber?
+if ~isfield(s1,'use_kice')
+ s1.use_kice  = 1;
 end
 
 %% flex rigidity = s1.flex_rig_coeff*h^3
